@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { Fragment, type ReactNode } from "react";
 import {
   Bot, Building2, ChartColumn, ChevronRight, Clock3, FolderOpen, MessageCircle,
-  Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, TriangleAlert, Users,
+  Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, Tag, TriangleAlert, Users, Wallet,
 } from "@/components/icons";
 import { useTheme } from "@/lib/theme";
 import type { CargoMenu, IconeMenu, ItemMenu } from "@/lib/menu";
@@ -26,6 +26,8 @@ const ICONES: Record<IconeMenu, (p: { size?: number }) => ReactNode> = {
   config: (p) => <Settings {...p} />,
   logs: (p) => <ScrollText {...p} />,
   whatsapp: (p) => <MessageCircle {...p} />,
+  planos: (p) => <Tag {...p} />,
+  pagamento: (p) => <Wallet {...p} />,
 };
 
 const PERFIL: Record<CargoMenu, string> = {

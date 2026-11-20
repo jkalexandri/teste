@@ -1,0 +1,13 @@
+// Garante que quem chama é um Super Admin com sessão válida (para ações do servidor).
+import "server-only";
+import { Cargo } from "@filapro/db";
+import { obterSessao } from "./session";
+import { motivoSemAcesso } from "./acesso";
+
+export async function exigirSuperAdmin() {
+  const sessao = await obterSessao();
+  if (!sessao || sessao.precisaTrocar || motivoSemAcesso(sessao) || sessao.usuario.cargo !== Cargo.SUPERADMIN) {
+    throw new Error("Acesso negado.");
+  }
+  return sessao;
+}

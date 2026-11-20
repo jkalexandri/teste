@@ -200,3 +200,28 @@ export const Layers = makeIcon("layers", [
   ["path", { d: "M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" }],
   ["path", { d: "M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" }],
 ]);
+
+// ---- Ícones dos planos ----
+export const Check = makeIcon("check", [["path", { d: "M20 6 9 17l-5-5" }]]);
+
+export const Gift = makeIcon("gift", [
+  ["rect", { x: "3", y: "8", width: "18", height: "4", rx: "1" }],
+  ["path", { d: "M12 8v13" }],
+  ["path", { d: "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" }],
+  ["path", { d: "M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" }],
+]);
+
+export const Tag = makeIcon("tag", [
+  ["path", { d: "M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" }],
+  ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor" }],
+]);
+
+export const Wallet = makeIcon("wallet", [
+  ["path", { d: "M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" }],
+  ["path", { d: "M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" }],
+]);
+
+export const Pencil = makeIcon("pencil", [
+  ["path", { d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" }],
+  ["path", { d: "m15 5 4 4" }],
+]);

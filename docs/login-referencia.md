@@ -57,7 +57,7 @@ Tokens do app (resto das telas): ver seção 9.
 6. **Pílula de status**: bolinha verde pulsando + `Sistema Online • Fila Ativa • 99.9% Uptime` (10px, bold).
 
 ### Lado direito
-1. Botão de tema acima do card, alinhado à direita: `🌙 Tema escuro` / `☀️ Tema claro` (`.login-ghost-btn`).
+1. Acima do card, alinhados à direita (decisão #28): botão **Planos** (fundo `#2dd4ff`, texto `#04120a`, ícone de etiqueta) e, depois dele, o botão de tema **só com o ícone** lua/sol (`.login-ghost-btn`).
 2. Card `.login-glass .login-card`, `rounded-[18px]`, padding `p-3 sm:p-3.5`:
    - Bolinha verde + `ACESSO SEGURO` (10px, tracking .18em, emerald-300)
    - `Acesse sua conta` (Sora 19px extrabold, branco)

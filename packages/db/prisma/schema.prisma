@@ -90,3 +90,48 @@ model Sessao {
 
   @@index([usuarioId])
 }
+
+/// Catálogo de planos exibido no popup "Planos" do login (decisões #22, #26, #27).
+/// Todo o conteúdo é editado pelo Super Admin. Valores em centavos.
+model Plano {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  nome            String
+  modulo          Modulo
+  /// Quantidade de usuários do pacote (o Admin da Empresa não conta — decisão #23).
+  /// Vazio no Personalizado (definido pelo Super Admin em cada empresa).
+  usuarios        Int?
+  gratis          Boolean  @default(false)
+  personalizado   Boolean  @default(false)
+  precoAntigo     Int?
+  precoAtual      Int?
+  periodo         String   @default("mês")
+  prazoDias       Int      @default(31)
+  /// Limites do teste grátis (só no Free — decisão #34).
+  testeDias       Int?
+  testeDisparos   Int?
+  selo            String   @default("")
+  frase           String   @default("")
+  condicoes       String   @default("")
+  ofertaTexto     String   @default("")
+  recursos        String[] @default([])
+  textoBotao      String   @default("Escolher plano")
+  visivel         Boolean  @default(false)
+  destaque        Boolean  @default(false)
+  ordem           Int      @default(0)
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+}
+
+/// Configurações de venda (registro único, id = "config").
+model ConfigVenda {
+  id                    String   @id @default("config")
+  /// Formas de pagamento ativas. Por enquanto só PIX (decisão #29).
+  formasPagamento       String[] @default(["PIX"])
+  chavePix              String   @default("")
+  nomeRecebedor         String   @default("")
+  cidadeRecebedor       String   @default("")
+  /// Contato do plano Personalizado (decisão #35), ex.: WhatsApp.
+  contatoPersonalizado  String   @default("")
+  atualizadoEm          DateTime @updatedAt
+}

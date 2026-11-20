@@ -5,6 +5,7 @@ Envio de WhatsApp para leads, com IA, antibloqueio e fila na nuvem 24/7.
 - Especificação: `docs/prompt_claude_code_filapro.md`
 - Decisões: `docs/decisoes.md`
 - Referência do login: `docs/login-referencia.md`
+- Pacotes, planos e pagamento: decisões #22 a #36
 
 ## Rodar localmente
 Requisitos: Node 22 e pnpm 10.

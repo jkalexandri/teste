@@ -1,6 +1,7 @@
 // Teste de ponta a ponta da etapa 3 (menu por perfil, acesso, aviso de expiração).
 // Requer: app em http://localhost:3005 e Postgres local com seed. Uso: node apps/web/tests/etapa3-layout.e2e.cjs <pasta-prints>
 const { chromium } = require('playwright');
+const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
@@ -47,7 +48,7 @@ const OUT = process.argv[2];
   // Super Admin
   [c, p] = await entrar('superadmin@disparopro.com.br', 'Super@12345678', 'individual');
   const m = await menu(p);
-  ok('Menu do Super Admin', m.length === 11 && m.includes('Relatório Empresarial'), m.join(', '));
+  ok('Menu do Super Admin', m.length === 13 && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);

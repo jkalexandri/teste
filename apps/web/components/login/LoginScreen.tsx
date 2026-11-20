@@ -7,8 +7,9 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEven
 import CircuitBackground from "./CircuitBackground";
 import {
   ArrowRight, Building2, ChevronRight, CircleCheck, CircleDashed, Eye, EyeOff,
-  Lock, Mail, Moon, ShieldCheck, Sparkles, Sun, TriangleAlert, Users, Zap,
+  Lock, Mail, Moon, ShieldCheck, Sparkles, Sun, Tag, TriangleAlert, Users, Zap,
 } from "@/components/icons";
+import PopupPlanos from "@/components/planos/PopupPlanos";
 import { checkPassword } from "@/lib/password-policy";
 import { useTheme } from "@/lib/theme";
 import { IS_PRODUCTION } from "@/lib/env";
@@ -102,6 +103,9 @@ export default function LoginScreen() {
   const [aviso, setAviso] = useState("");
   const regras = useMemo(() => checkPassword(senha), [senha]);
   const formOk = regras.every((r) => r.ok) && email.includes("@");
+
+  // Popup "Planos" (decisão #25)
+  const [planosAberto, setPlanosAberto] = useState(false);
 
   // Recuperação de senha
   const [recuperando, setRecuperando] = useState(false);
@@ -290,9 +294,23 @@ export default function LoginScreen() {
 
         {/* ===== Lado direito: tema + card de login ===== */}
         <div className="login-right relative z-[1] lg:w-[48%] flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center p-2 sm:p-2.5 lg:p-3">
-          <div className="w-full max-w-[420px] flex justify-end mb-1">
-            <button onClick={toggleTheme} className="login-ghost-btn !px-2.5 !py-1.5" aria-label="Alternar tema">
-              {theme === "light" ? (<><Moon size={13} /> Tema escuro</>) : (<><Sun size={13} /> Tema claro</>)}
+          {/* Botão "Planos" antes do tema; tema só com ícone (decisão #28) */}
+          <div className="w-full max-w-[420px] flex justify-end gap-1.5 mb-1">
+            <button
+              type="button"
+              onClick={() => setPlanosAberto(true)}
+              className="rounded-xl px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1.5"
+              style={{ background: "#2dd4ff", color: "#04120a" }}
+            >
+              <Tag size={13} /> Planos
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="login-ghost-btn !px-2 !py-1.5"
+              aria-label={theme === "light" ? "Usar tema escuro" : "Usar tema claro"}
+              title={theme === "light" ? "Tema escuro" : "Tema claro"}
+            >
+              {theme === "light" ? <Moon size={13} /> : <Sun size={13} />}
             </button>
           </div>
 
@@ -525,6 +543,7 @@ export default function LoginScreen() {
           </div>
         </div>
       </div>
+      {planosAberto && <PopupPlanos onFechar={() => setPlanosAberto(false)} />}
     </div>
   );
 }

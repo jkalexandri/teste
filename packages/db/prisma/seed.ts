@@ -83,7 +83,28 @@ async function criarContasDeTeste() {
   console.log("Contas de teste prontas (" + contas.length + ").");
 }
 
+// Catálogo inicial (decisão #22). Só nome, módulo e usuários — preços e textos
+// ficam vazios e todos os planos começam OCULTOS até o Super Admin preencher.
+// Não sobrescreve planos já editados.
+async function criarPlanos() {
+  const planos = [
+    { slug: "free", nome: "Free", modulo: Modulo.INDIVIDUAL, usuarios: 1, gratis: true, testeDias: 7, testeDisparos: 20 },
+    { slug: "individual", nome: "Individual", modulo: Modulo.INDIVIDUAL, usuarios: 1 },
+    { slug: "basico", nome: "Básico", modulo: Modulo.EMPRESARIAL, usuarios: 3 },
+    { slug: "padrao", nome: "Padrão", modulo: Modulo.EMPRESARIAL, usuarios: 10, destaque: true },
+    { slug: "premium", nome: "Premium", modulo: Modulo.EMPRESARIAL, usuarios: 30 },
+    { slug: "elite", nome: "Elite", modulo: Modulo.EMPRESARIAL, usuarios: 50 },
+    { slug: "personalizado", nome: "Personalizado", modulo: Modulo.EMPRESARIAL, usuarios: null, personalizado: true },
+  ];
+  for (const [ordem, p] of planos.entries()) {
+    await prisma.plano.upsert({ where: { slug: p.slug }, update: {}, create: { ...p, ordem } });
+  }
+  await prisma.configVenda.upsert({ where: { id: "config" }, update: {}, create: { id: "config" } });
+  console.log("Catálogo de planos pronto (" + planos.length + ").");
+}
+
 async function main() {
+  await criarPlanos();
   await criarSuperAdmin();
   if (!PRODUCAO) await criarContasDeTeste();
 }
