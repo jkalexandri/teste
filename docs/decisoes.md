@@ -32,3 +32,15 @@ Navegador ──> imobfile.com.br (Vercel)          Next.js: login e telas
 | **VPS** (Hetzner, Contabo, Hostinger) | Mais barato em escala, controle total | Exige administrar o servidor (Docker, atualizações, backup) | R$ 40–150/mês |
 
 Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, o servidor precisa crescer junto.
+
+## Regras de negócio (20/11/2026)
+| # | Decisão |
+|---|---|
+| 5 | **Cadastro, expiração e papéis seguem o prompt FilaPro:** sem cadastro público (Super Admin cria contas), expiração a cada 31 dias ou prazo do admin, papéis Super Admin / Admin da Empresa (não envia) / Usuário. |
+| 6 | **Janela de horário de envio mantida** (padrão 8h–20h, ajustável pelo Admin da Empresa ou pelo usuário Individual). |
+
+## Fase 2 — IMPORTANTE, implementar depois do MVP
+- **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
+- **Cobrança automática por assinatura (Asaas):** PIX, boleto e cartão; troca de plano; compra de usuários extras.
+- **Cadastro público** ligado ao teste grátis.
+- O código do MVP deve ser estruturado para receber estes itens sem retrabalho (planos e limites no banco, não fixos no código).
