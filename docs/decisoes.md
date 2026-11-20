@@ -52,6 +52,11 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 18 | **Tela WhatsApp do usuário:** conexão por QR Code usando a **API própria** deste projeto (sem API oficial): QR Code, status da conexão e desconectar. |
 | 19 | **Detalhes de segurança aprovados:** sessão expira no máximo em 24 h no servidor (mesmo com o navegador aberto); senha temporária de recuperação vale 24 h (a do Super Admin na instalação, 7 dias); a senha atual continua valendo após um pedido de recuperação até a pessoa usar a temporária; empresa inativa exibe "Empresa inativa. Fale com o administrador." |
 | 20 | **Ordem das etapas aprovada:** 3 layout/menu/dashboards · 4 Super Admin (empresas, pacotes, individuais) · 5 usuários e expiração · 6 API própria do WhatsApp + QR Code (VPS) · 7 leads · 8 campanhas/antibloqueio/fila · 9 Empresa \| IA · 10 Conversas IA · 11 relatórios · 12 configurações, logs e deploy. |
+| 21 | **Aviso de expiração** (popup de 10 s e chip no topo, a partir de 10 dias antes) vale também para o **Admin da Empresa**. |
+| 22 | **Pacotes:** Free (teste grátis), Individual, Básico (3 usuários), Padrão (10), Premium (30), Elite (50) e Personalizado (quantidade definida pelo Super Admin). |
+| 23 | **O Admin da Empresa não conta no limite do pacote** (ele só gerencia, não usa os recursos). O limite vale só para usuários. |
+| 24 | **Diminuir o pacote:** usuários existentes continuam; o admin só pode criar usuários até o limite do pacote. |
+| 25 | **Menu "Planos" na tela de login:** abre um popup com as opções de compra dos pacotes (modelo visual: print enviado pelo dono — aguardando). |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
