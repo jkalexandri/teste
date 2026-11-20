@@ -5,7 +5,7 @@
 | 1 | **Sem API oficial da Meta.** A API de WhatsApp é própria, criada neste projeto, com conexão por QR Code. | 20/11/2026 |
 | 2 | **Feixes de luz do login:** cada um dos 5 feixes percorre o circuito em **4,2 s** (duração fixa), em trilha e direção aleatórias, em loop infinito. | 20/11/2026 |
 | 3 | **Contas demo só para teste.** Criadas por script (seed) apenas nos ambientes local e de testes. Em produção não existem. Os botões "Entrar como Super Admin / Admin da Empresa / Usuário" do login aparecem **só no ambiente de testes**; em produção o card termina no botão "Entrar". | 20/11/2026 |
-| 4 | **Envio 24/7:** o app (telas) roda na Vercel; a API, a fila de envio e as sessões do WhatsApp rodam num servidor sempre ligado em `api.imobfile.com.br`. Provedor a definir (ver abaixo). | 20/11/2026 |
+| 4 | **Envio 24/7:** o app (telas) roda na Vercel; a API, a fila de envio e as sessões do WhatsApp rodam num servidor sempre ligado em `api.imobfile.com.br`. Provedor: **VPS** (decidido em 20/11/2026). | 20/11/2026 |
 
 ## Arquitetura de hospedagem
 
@@ -50,6 +50,8 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 16 | **Textos do login em produção:** "Senha mínima..." e "Sem cadastro público..." **não aparecem** no site real; o card termina no botão "Entrar". |
 | 17 | **Menu por perfil** (grupos na ordem Principal, Vendas, Administrativo, Configurações, Sistema; grupo vazio fica oculto): **Usuário** — Principal: Dashboard · Vendas: Campanhas, Leads, Conversas IA, Arquivos · Configurações: Empresa \| IA (só leitura no Empresarial), WhatsApp. **Admin da Empresa** — Principal: Dashboard · Vendas: Todos os disparos · Administrativo: Usuários, Empresas (só a própria) · Configurações: Empresa \| IA, Configurações · Sistema: Logs. **Super Admin** — Principal: Dashboard · Vendas: Todos os disparos, Disparos por usuários, Campanhas, Leads · Administrativo: Empresas, Usuários Individuais e o subgrupo **Relatório** (Empresarial, Individual, Leads Empresarial, Lead Individual). |
 | 18 | **Tela WhatsApp do usuário:** conexão por QR Code usando a **API própria** deste projeto (sem API oficial): QR Code, status da conexão e desconectar. |
+| 19 | **Detalhes de segurança aprovados:** sessão expira no máximo em 24 h no servidor (mesmo com o navegador aberto); senha temporária de recuperação vale 24 h (a do Super Admin na instalação, 7 dias); a senha atual continua valendo após um pedido de recuperação até a pessoa usar a temporária; empresa inativa exibe "Empresa inativa. Fale com o administrador." |
+| 20 | **Ordem das etapas aprovada:** 3 layout/menu/dashboards · 4 Super Admin (empresas, pacotes, individuais) · 5 usuários e expiração · 6 API própria do WhatsApp + QR Code (VPS) · 7 leads · 8 campanhas/antibloqueio/fila · 9 Empresa \| IA · 10 Conversas IA · 11 relatórios · 12 configurações, logs e deploy. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
