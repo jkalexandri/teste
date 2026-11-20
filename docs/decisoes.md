@@ -73,6 +73,9 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 39 | **Tela após o PIX:** "Assim que confirmarmos o pagamento, você receberá por e-mail o acesso com uma senha temporária." |
 | 40 | **Prorrogar pacote:** soma o prazo do plano (ex.: +31 dias) a partir do vencimento atual; se já venceu, a partir de hoje. |
 | 41 | **Detalhes aprovados da compra:** senha temporária de conta nova vale 7 dias; pedido vencido (24 h) ainda pode ser confirmado (pagamento atrasado); no máximo 3 pedidos em aberto por e-mail; o PIX leva o código do pedido como identificador. |
+| 42 | **Link de renovação** enviado **10 dias antes** do vencimento e lembrete **3 dias antes**. Recebe: Admin da Empresa (Empresarial) ou o próprio usuário (Individual). Por e-mail; pelo WhatsApp após a etapa 6. Envio diário automático (Vercel Cron). |
+| 43 | **Na renovação o cliente pode trocar de plano.** |
+| 44 | **Cliente que compra pela tela de Planos com e-mail já cadastrado** (Admin da Empresa ou usuário Individual): a compra **renova a conta existente**, mantendo usuários, leads e histórico. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
