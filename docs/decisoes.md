@@ -68,6 +68,9 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 34 | **Plano Free:** conta criada na hora após informar os dados; **1 teste por e-mail**; vale **7 dias ou 20 disparos**, o que acontecer primeiro. |
 | 35 | **Plano Personalizado:** o contato (ex.: WhatsApp) é definido pelo Super Admin. |
 | 36 | **Renovação:** o cliente recebe um **link de renovação**; se não renovar até o vencimento, renova pela tela de Planos. |
+| 37 | **Pedido PIX vale 24 h**; depois disso fica como expirado. |
+| 38 | **Aviso de novo pedido pelo WhatsApp** do Super Admin. Depende da API própria do WhatsApp (etapa 6): até lá, os pedidos aparecem com contador no menu **Pedidos**. |
+| 39 | **Tela após o PIX:** "Assim que confirmarmos o pagamento, você receberá por e-mail o acesso com uma senha temporária." |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
