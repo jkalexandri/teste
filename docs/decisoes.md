@@ -71,6 +71,8 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 37 | **Pedido PIX vale 24 h**; depois disso fica como expirado. |
 | 38 | **Aviso de novo pedido pelo WhatsApp** do Super Admin. Depende da API própria do WhatsApp (etapa 6): até lá, os pedidos aparecem com contador no menu **Pedidos**. |
 | 39 | **Tela após o PIX:** "Assim que confirmarmos o pagamento, você receberá por e-mail o acesso com uma senha temporária." |
+| 40 | **Prorrogar pacote:** soma o prazo do plano (ex.: +31 dias) a partir do vencimento atual; se já venceu, a partir de hoje. |
+| 41 | **Detalhes aprovados da compra:** senha temporária de conta nova vale 7 dias; pedido vencido (24 h) ainda pode ser confirmado (pagamento atrasado); no máximo 3 pedidos em aberto por e-mail; o PIX leva o código do pedido como identificador. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
