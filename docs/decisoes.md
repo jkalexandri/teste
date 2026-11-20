@@ -60,9 +60,14 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 26 | **Plano em destaque** no popup: o de **10 usuários (Padrão)** — padrão inicial, alterável pelo Super Admin. |
 | 27 | **Planos 100% configuráveis pelo Super Admin** (novo item de menu): nome, usuários, preços, selo de desconto, frase, condições, caixa de oferta, recursos, plano em destaque, ordem e **quais planos aparecem no popup** (o popup se ajusta à quantidade escolhida). |
 | 28 | **Login — botão Planos:** o botão de tema fica **só com o ícone** (sem texto "Tema escuro/claro"); o botão **"Planos"** vem **antes** dele, com cor de destaque já existente na tela. (Alteração do login ordenada pelo dono.) |
-| 29 | **"Escolher plano" leva à forma de pagamento.** Por enquanto só **PIX**; outras formas configuráveis depois. Fluxo de pagamento: a definir. |
+| 29 | **"Escolher plano" leva à forma de pagamento.** Por enquanto só **PIX**; outras formas configuráveis depois. |
 | 30 | **Criar empresa:** o Super Admin informa nome e e-mail do Admin da Empresa, que recebe senha temporária por e-mail. |
 | 31 | **Criar Usuário Individual:** o Super Admin informa nome, e-mail, WhatsApp e prazo (padrão 31 dias); a pessoa recebe senha temporária por e-mail. |
+| 32 | **Compra:** o comprador informa nome, e-mail, WhatsApp e (planos de empresa) nome da empresa. Quem compra plano de empresa vira o **Admin da Empresa**. |
+| 33 | **PIX com confirmação manual (opção A):** o sistema gera QR Code e "copia e cola" com a chave PIX configurada; o pedido entra em **Pedidos**; o Super Admin confere e clica em "Confirmar pagamento"; a conta é criada e a senha temporária vai por e-mail. Na fase 2 troca para confirmação automática (Asaas/Mercado Pago). |
+| 34 | **Plano Free:** conta criada na hora após informar os dados; **1 teste por e-mail**; vale **7 dias ou 20 disparos**, o que acontecer primeiro. |
+| 35 | **Plano Personalizado:** o contato (ex.: WhatsApp) é definido pelo Super Admin. |
+| 36 | **Renovação:** o cliente recebe um **link de renovação**; se não renovar até o vencimento, renova pela tela de Planos. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
