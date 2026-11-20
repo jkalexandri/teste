@@ -35,7 +35,8 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 ## Andamento
 - [x] Etapa 1 — estrutura do projeto e tela de login idêntica à prévia
 - [x] Etapa 2 — usuários, banco de dados e entrada no sistema
-- [ ] Etapa 3 — layout do app (menu lateral) e dashboards por perfil
+- [x] Etapa 3 — layout do app (menu lateral) e dashboards por perfil
+- [ ] Etapa 4 — Super Admin: empresas, pacotes e usuários individuais
 
 ## Banco de dados (desenvolvimento)
 ```bash

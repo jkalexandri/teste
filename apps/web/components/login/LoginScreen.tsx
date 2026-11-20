@@ -116,6 +116,14 @@ export default function LoginScreen() {
     } catch {
       /* sem acesso ao armazenamento */
     }
+    // Motivo de saída forçada (pacote expirado, empresa inativa, bloqueio).
+    const motivo = new URLSearchParams(window.location.search).get("motivo");
+    const MOTIVOS: Record<string, string> = {
+      expirado: "Acesso expirado. Fale com o administrador.",
+      inativa: "Empresa inativa. Fale com o administrador.",
+      bloqueado: "Acesso bloqueado. Fale com o administrador.",
+    };
+    if (motivo && MOTIVOS[motivo]) setErro(MOTIVOS[motivo]);
   }, []);
 
   async function entrar(emailEnvio: string, senhaEnvio: string, moduloEnvio: Modulo) {

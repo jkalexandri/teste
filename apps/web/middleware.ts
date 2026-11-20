@@ -1,17 +1,22 @@
 // Proteção das páginas: sem cookie de sessão, volta para o login.
-// A validação completa da sessão (banco) acontece em cada página.
+// Também repassa o caminho atual (x-pathname) para o layout conferir
+// se o perfil pode abrir a tela. A validação completa da sessão (banco)
+// acontece no layout de cada área.
 import { NextResponse, type NextRequest } from "next/server";
 
 const COOKIE_SESSAO = "filapro_sessao";
-const PROTEGIDAS = ["/dashboard", "/primeiro-acesso"];
+const PUBLICAS = ["/login"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const protegida = PROTEGIDAS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-  if (protegida && !req.cookies.get(COOKIE_SESSAO)) {
+  const publica = pathname === "/" || PUBLICAS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  if (!publica && !req.cookies.get(COOKIE_SESSAO)) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-  return NextResponse.next();
+  const headers = new Headers(req.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
-export const config = { matcher: ["/dashboard/:path*", "/primeiro-acesso/:path*"] };
+// Não passa por API, arquivos estáticos e internos do Next.
+export const config = { matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"] };

@@ -6,6 +6,7 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { prisma } from "@filapro/db";
 
 export const COOKIE_SESSAO = "filapro_sessao";
@@ -34,7 +35,7 @@ export async function criarSessao(usuarioId: string, precisaTrocar: boolean) {
 }
 
 /** Retorna a sessão válida atual com o usuário e a empresa, ou null. */
-export async function obterSessao() {
+export const obterSessao = cache(async function obterSessao() {
   const jar = await cookies();
   const token = jar.get(COOKIE_SESSAO)?.value;
   if (!token) return null;
@@ -44,7 +45,7 @@ export async function obterSessao() {
   });
   if (!sessao || sessao.expiraEm < new Date()) return null;
   return sessao;
-}
+});
 
 export async function encerrarSessao() {
   const jar = await cookies();
