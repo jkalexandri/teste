@@ -263,9 +263,7 @@ export default function LoginScreen() {
                   <span className="text-[10px] font-extrabold tracking-[0.18em] text-emerald-300">ACESSO SEGURO</span>
                 </div>
                 <h2 className="font-display text-[19px] font-extrabold leading-tight text-white mt-1">Acesse sua conta</h2>
-                <p className="text-[11px] mt-0.5 text-slate-400">
-                  Escolha o módulo. Individual e Empresarial não se comunicam e não veem o conteúdo um do outro.
-                </p>
+                {/* Texto "Escolha o módulo..." removido por ordem do dono do projeto (decisoes.md #7). */}
 
                 <div className="flex gap-1.5 mt-1.5" role="tablist" aria-label="Escolha o módulo">
                   <button
@@ -293,12 +291,7 @@ export default function LoginScreen() {
                     Módulo Empresarial
                   </button>
                 </div>
-                <p className="text-[10.5px] mt-1 text-slate-400">
-                  Módulo atual:{" "}
-                  <b className="text-white">
-                    {modulo === "individual" ? "Individual — só os próprios dados" : "Empresarial — só a própria empresa"}
-                  </b>
-                </p>
+                {/* Linha "Módulo atual: ..." removida por ordem do dono do projeto (decisoes.md #7). */}
 
                 <form onSubmit={onSubmit} className="space-y-1.5 mt-2">
                   <div>

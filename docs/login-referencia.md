@@ -61,9 +61,9 @@ Tokens do app (resto das telas): ver seção 9.
 2. Card `.login-glass .login-card`, `rounded-[18px]`, padding `p-3 sm:p-3.5`:
    - Bolinha verde + `ACESSO SEGURO` (10px, tracking .18em, emerald-300)
    - `Acesse sua conta` (Sora 19px extrabold, branco)
-   - Texto: `Escolha o módulo. Individual e Empresarial não se comunicam e não veem o conteúdo um do outro.`
+   - ~~Texto "Escolha o módulo..."~~ — **removido** (decisoes.md #7)
    - **Abas de módulo**: `Módulo Individual` (ativo: fundo `#25D366`) · `Módulo Empresarial` (ativo: fundo `#2dd4ff`)
-   - `Módulo atual: Individual — só os próprios dados` / `Empresarial — só a própria empresa`
+   - ~~Linha "Módulo atual: ..."~~ — **removida**; não usar este espaço para exibir informação (decisoes.md #7)
    - Campo **E-mail** (ícone `Mail`, `#7dffb8`) — placeholder `voce@empresa.com.br`
    - Campo **Senha** (ícone `Lock`, olho mostrar/ocultar) — placeholder `Sua senha de acesso`
    - `☐ Lembrar de mim` · `Esqueci minha senha` (cyan-300)
