@@ -26,6 +26,8 @@ const DEMO_ACCOUNTS = IS_PRODUCTION
       userEmpresarial: { email: "ana@empresaexemplo.com.br", password: "User@12345678" },
     };
 
+const EMAIL_KEY = "filapro-email-lembrado";
+
 const ML = "75.6px"; // recuo dos textos do lado esquerdo (igual à prévia)
 
 // Ícones dos 3 blocos de benefício: auto-pulso aleatório a cada ~4s (±0,5s).
@@ -106,24 +108,55 @@ export default function LoginScreen() {
   const [recEmail, setRecEmail] = useState("");
   const [recEnviado, setRecEnviado] = useState(false);
 
+  // "Lembrar de mim": guarda só o e-mail (decisão #10). A senha fica a cargo do navegador.
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem(EMAIL_KEY);
+      if (salvo) setEmail(salvo);
+    } catch {
+      /* sem acesso ao armazenamento */
+    }
+  }, []);
+
+  async function entrar(emailEnvio: string, senhaEnvio: string, moduloEnvio: Modulo) {
+    setErro("");
+    setAviso("");
+    const r = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailEnvio, senha: senhaEnvio, modulo: moduloEnvio }),
+    });
+    const dados = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      setErro(dados.erro || "Não foi possível entrar. Tente novamente.");
+      return;
+    }
+    try {
+      if (lembrar) localStorage.setItem(EMAIL_KEY, emailEnvio.trim());
+      else localStorage.removeItem(EMAIL_KEY);
+    } catch {
+      /* ignora */
+    }
+    window.location.href = dados.destino || "/dashboard";
+  }
+
   function onSubmit(ev: FormEvent) {
     ev.preventDefault();
-    setAviso("");
     if (!formOk) {
+      setAviso("");
       setErro("Confira o e-mail e todos os requisitos da senha antes de entrar.");
       return;
     }
-    setErro("");
-    // TODO etapa 2: autenticar no banco (usuário, módulo, papel, expiração).
-    setAviso("Dados válidos. A entrada no sistema será ligada na etapa 2 (usuários e banco de dados).");
+    void entrar(email, senha, modulo);
   }
 
+  // Botões de teste: preenchem e entram direto, como na prévia (só fora de produção).
   function fillDemo(acc: { email: string; password: string }, mod?: Modulo) {
+    const m = mod ?? modulo;
     if (mod) setModulo(mod);
     setEmail(acc.email);
     setSenha(acc.password);
-    setErro("");
-    setAviso("");
+    void entrar(acc.email, acc.password, m);
   }
 
   function fecharRecuperacao() {
@@ -441,8 +474,13 @@ export default function LoginScreen() {
                       className="mt-3 space-y-3"
                       onSubmit={(e) => {
                         e.preventDefault();
-                        // TODO etapa 2: gerar senha temporária e enviar por e-mail.
-                        if (recEmail.includes("@")) setRecEnviado(true);
+                        if (!recEmail.includes("@")) return;
+                        // Resposta é sempre a mesma, exista o e-mail ou não.
+                        void fetch("/api/auth/recuperar", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email: recEmail }),
+                        }).finally(() => setRecEnviado(true));
                       }}
                     >
                       <label className="login-label" htmlFor="rec-email">E-mail cadastrado</label>

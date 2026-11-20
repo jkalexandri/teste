@@ -5,6 +5,16 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "lint": "pnpm --filter web lint"
+    "lint": "pnpm --filter web lint",
+    "db:migrate": "pnpm --filter @filapro/db migrate:dev",
+    "db:seed": "pnpm --filter @filapro/db seed"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild"
+    ]
   }
 }

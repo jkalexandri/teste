@@ -1,0 +1,116 @@
+// Teste de ponta a ponta das regras de login (etapa 2).
+// Requer: app rodando em http://localhost:3005, Postgres local (porta 5433) com seed aplicado.
+// Uso: node apps/web/tests/login-regras.e2e.cjs
+const { chromium } = require('playwright');
+const { execSync } = require('child_process');
+const fs = require('fs');
+const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
+const BASE = 'http://localhost:3005';
+const res = [];
+const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} — ${nome}${extra ? ' (' + extra + ')' : ''}`);
+
+(async () => {
+  const b = await chromium.launch();
+  const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); return [c, await c.newPage()]; };
+  const login = async (p, email, senha, modulo) => {
+    await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
+    if (modulo === 'empresarial') await p.click('text=Módulo Empresarial');
+    await p.fill('#email', email); await p.fill('#senha', senha);
+    await p.click('button[type=submit]');
+    await p.waitForTimeout(1200);
+  };
+  const erroTxt = async (p) => (await p.locator('.text-rose-200').allInnerTexts()).join(' ');
+
+  // 1. Botão demo Usuário (Individual) entra direto
+  let [c, p] = await novo();
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
+  await p.click('text=Entrar como Usuário (Individual)');
+  await p.waitForURL('**/dashboard', { timeout: 5000 }).catch(() => {});
+  ok('Botão demo entra direto no dashboard', p.url().endsWith('/dashboard'));
+  ok('Dashboard mostra o usuário certo', (await p.content()).includes('Usuário Demo'));
+  const ck = (await c.cookies()).find(x => x.name === 'filapro_sessao');
+  ok('Cookie de sessão some ao fechar o navegador (sem validade)', ck && ck.expires === -1);
+  ok('Cookie protegido (httpOnly)', ck && ck.httpOnly);
+  // 2. Sair
+  await p.click('text=Sair'); await p.waitForURL('**/login');
+  await p.goto(BASE + '/dashboard'); await p.waitForTimeout(500);
+  ok('Depois de sair, /dashboard volta para o login', p.url().endsWith('/login'));
+  // 9. Lembrar de mim guardou o e-mail
+  ok('Lembrar de mim preenche o e-mail', (await p.inputValue('#email')) === 'usuario@disparopro.com.br');
+  await c.close();
+
+  // 3. Aba errada
+  [c, p] = await novo();
+  await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'individual');
+  ok('Aba errada é bloqueada', (await erroTxt(p)).includes('pertence ao módulo Empresarial'), await erroTxt(p));
+  await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'empresarial');
+  ok('Aba certa entra', p.url().endsWith('/dashboard'));
+  await c.close();
+
+  // 4. Super Admin entra por qualquer aba
+  for (const m of ['individual', 'empresarial']) {
+    [c, p] = await novo();
+    await login(p, 'superadmin@disparopro.com.br', 'Super@12345678', m);
+    ok(`Super Admin entra pela aba ${m}`, p.url().endsWith('/dashboard'));
+    await c.close();
+  }
+
+  // 5. 5 senhas erradas → bloqueio 15 min
+  [c, p] = await novo();
+  for (let i = 0; i < 5; i++) await login(p, 'ana@empresaexemplo.com.br', 'Errada@1234567', 'empresarial');
+  ok('5ª senha errada bloqueia', (await erroTxt(p)).includes('bloqueado por 15 minutos'), await erroTxt(p));
+  await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'empresarial');
+  ok('Bloqueado mesmo com a senha certa', (await erroTxt(p)).includes('Tente novamente em'), await erroTxt(p));
+  sql("update \"Usuario\" set \"bloqueadoAte\"=null, \"tentativasFalhas\"=0 where email='ana@empresaexemplo.com.br'");
+  await c.close();
+
+  // 6. Pacote expirado: todos da empresa
+  sql("update \"Empresa\" set \"expiraEm\"=now()-interval '1 day' where id='teste-empresa-exemplo'");
+  for (const e of [['admin-empresa@empresaexemplo.com.br', 'Admin@12345678'], ['ana@empresaexemplo.com.br', 'User@12345678']]) {
+    [c, p] = await novo();
+    await login(p, e[0], e[1], 'empresarial');
+    ok(`Pacote expirado bloqueia ${e[0]}`, (await erroTxt(p)).includes('Acesso expirado'), await erroTxt(p));
+    await c.close();
+  }
+  sql("update \"Empresa\" set \"expiraEm\"=now()+interval '26 day' where id='teste-empresa-exemplo'");
+
+  // 7. Recuperação de senha + primeiro acesso
+  [c, p] = await novo();
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
+  await p.click('text=Esqueci minha senha');
+  await p.fill('#rec-email', 'usuario@disparopro.com.br');
+  await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1500);
+  ok('Recuperação mostra "Solicitação registrada"', await p.locator('text=Solicitação registrada').count() === 1);
+  const log = fs.readFileSync('/var/tmp/web.log', 'utf8');
+  const temp = (log.match(/senha temporária do FilaPro Leads é: (\S+)/g) || []).pop()?.split(': ')[1];
+  ok('E-mail com senha temporária gerado', !!temp);
+  await login(p, 'usuario@disparopro.com.br', temp, 'individual');
+  ok('Senha temporária leva ao primeiro acesso', p.url().endsWith('/primeiro-acesso'));
+  await p.goto(BASE + '/dashboard'); await p.waitForTimeout(500);
+  ok('Sem trocar a senha não acessa o dashboard', p.url().endsWith('/primeiro-acesso'));
+  await p.fill('#new-pw', 'fraca'); await p.click('text=Salvar nova senha e entrar'); await p.waitForTimeout(500);
+  ok('Senha nova fraca é recusada', await p.locator('text=precisa cumprir todos os requisitos').count() === 1);
+  await p.fill('#new-pw', 'NovaSenha@2026x'); await p.click('text=Salvar nova senha e entrar');
+  await p.waitForURL('**/dashboard', { timeout: 5000 }).catch(() => {});
+  ok('Senha nova forte entra no dashboard', p.url().endsWith('/dashboard'));
+  await c.close();
+  [c, p] = await novo();
+  await login(p, 'usuario@disparopro.com.br', 'User@12345678', 'individual');
+  ok('Senha antiga deixa de valer após a troca', (await erroTxt(p)).includes('incorretos'));
+  await login(p, 'usuario@disparopro.com.br', temp, 'individual');
+  ok('Senha temporária deixa de valer após a troca', (await erroTxt(p)).includes('incorretos'));
+  await login(p, 'usuario@disparopro.com.br', 'NovaSenha@2026x', 'individual');
+  ok('Senha nova funciona', p.url().endsWith('/dashboard'));
+  await c.close();
+
+  // 8. E-mail inexistente na recuperação: mesma resposta
+  [c, p] = await novo();
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
+  await p.click('text=Esqueci minha senha'); await p.fill('#rec-email', 'naoexiste@x.com');
+  await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1000);
+  ok('E-mail inexistente: mesma resposta (não revela cadastro)', await p.locator('text=Solicitação registrada').count() === 1);
+  await c.close();
+
+  console.log(res.join('\n'));
+  await b.close();
+})();

@@ -1,0 +1,92 @@
+// Modelo de dados do FilaPro Leads — etapa 2 (empresas, usuários e sessões).
+// Regras em docs/decisoes.md. Comentários em português.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Módulos do sistema. Individual e Empresarial não se comunicam.
+enum Modulo {
+  INDIVIDUAL
+  EMPRESARIAL
+}
+
+/// Papéis. Admin da Empresa NÃO envia mensagens e NÃO usa API/WhatsApp.
+enum Cargo {
+  SUPERADMIN
+  ADMIN_EMPRESA
+  USUARIO
+}
+
+enum StatusUsuario {
+  ATIVO
+  BLOQUEADO
+}
+
+/// Conta que compra o pacote. No módulo Individual, cada usuário tem a sua
+/// própria conta (limite de 1 usuário). No Empresarial, todos os usuários da
+/// empresa compartilham o mesmo pacote e expiram juntos (decisão #13).
+model Empresa {
+  id              String   @id @default(cuid())
+  nome            String
+  modulo          Modulo
+  pacote          String
+  limiteUsuarios  Int
+  ativa           Boolean  @default(true)
+  expiraEm        DateTime
+  prazoDias       Int      @default(31)
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+  usuarios        Usuario[]
+
+  @@index([modulo])
+}
+
+model Usuario {
+  id                 String        @id @default(cuid())
+  nome               String
+  email              String        @unique
+  cargo              Cargo
+  status             StatusUsuario @default(ATIVO)
+  whatsapp           String?
+  /// Super Admin não pertence a nenhuma empresa.
+  empresaId          String?
+  empresa            Empresa?      @relation(fields: [empresaId], references: [id])
+
+  /// Senha definitiva (hash). Vazia até o primeiro acesso.
+  senhaHash          String?
+  /// Senha temporária (hash) enviada por e-mail. Obriga a troca no primeiro acesso (decisão #12).
+  senhaTempHash      String?
+  senhaTempExpiraEm  DateTime?
+
+  /// Bloqueio após 5 senhas erradas, por 15 minutos (decisão #14).
+  tentativasFalhas   Int           @default(0)
+  bloqueadoAte       DateTime?
+
+  ultimoAcesso       DateTime?
+  criadoEm           DateTime      @default(now())
+  atualizadoEm       DateTime      @updatedAt
+  sessoes            Sessao[]
+
+  @@index([empresaId])
+}
+
+/// Sessão de login. O cookie é de sessão (some ao fechar o navegador — decisão #10).
+/// Guardamos só o hash do token.
+model Sessao {
+  id              String   @id @default(cuid())
+  tokenHash       String   @unique
+  usuarioId       String
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  /// true enquanto o usuário entrou com senha temporária e ainda não trocou.
+  precisaTrocar   Boolean  @default(false)
+  criadoEm        DateTime @default(now())
+  expiraEm        DateTime
+
+  @@index([usuarioId])
+}

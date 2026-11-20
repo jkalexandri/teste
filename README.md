@@ -34,4 +34,20 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 
 ## Andamento
 - [x] Etapa 1 — estrutura do projeto e tela de login idêntica à prévia
-- [ ] Etapa 2 — usuários, banco de dados e entrada no sistema
+- [x] Etapa 2 — usuários, banco de dados e entrada no sistema
+- [ ] Etapa 3 — layout do app (menu lateral) e dashboards por perfil
+
+## Banco de dados (desenvolvimento)
+```bash
+cp packages/db/.env.example packages/db/.env
+```
+
+```bash
+pnpm db:migrate
+```
+
+```bash
+pnpm db:seed
+```
+
+O seed cria o Super Admin (e-mail em `SUPERADMIN_EMAIL`, senha temporária mostrada no terminal) e, fora de produção, as contas de teste.
