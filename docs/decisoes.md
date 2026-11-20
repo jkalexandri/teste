@@ -48,6 +48,8 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 14 | **Senha errada:** após 5 tentativas erradas, bloqueio de 15 minutos. |
 | 15 | **Super Admin:** criado automaticamente na instalação, com o e-mail definido na variável privada `SUPERADMIN_EMAIL` (não fica no código, o repositório é público). Recebe senha temporária e troca no primeiro acesso. |
 | 16 | **Textos do login em produção:** "Senha mínima..." e "Sem cadastro público..." **não aparecem** no site real; o card termina no botão "Entrar". |
+| 17 | **Menu por perfil** (grupos na ordem Principal, Vendas, Administrativo, Configurações, Sistema; grupo vazio fica oculto): **Usuário** — Principal: Dashboard · Vendas: Campanhas, Leads, Conversas IA, Arquivos · Configurações: Empresa \| IA (só leitura no Empresarial), WhatsApp. **Admin da Empresa** — Principal: Dashboard · Vendas: Todos os disparos · Administrativo: Usuários, Empresas (só a própria) · Configurações: Empresa \| IA, Configurações · Sistema: Logs. **Super Admin** — Principal: Dashboard · Vendas: Todos os disparos, Disparos por usuários, Campanhas, Leads · Administrativo: Empresas, Usuários Individuais e o subgrupo **Relatório** (Empresarial, Individual, Leads Empresarial, Lead Individual). |
+| 18 | **Tela WhatsApp do usuário:** conexão por QR Code usando a **API própria** deste projeto (sem API oficial): QR Code, status da conexão e desconectar. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
