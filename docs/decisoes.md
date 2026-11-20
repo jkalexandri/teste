@@ -57,6 +57,12 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 23 | **O Admin da Empresa não conta no limite do pacote** (ele só gerencia, não usa os recursos). O limite vale só para usuários. |
 | 24 | **Diminuir o pacote:** usuários existentes continuam; o admin só pode criar usuários até o limite do pacote. |
 | 25 | **Menu "Planos" na tela de login:** abre um popup com as opções de compra dos pacotes (modelo visual: `docs/referencias/modelo-popup-planos.png` — cartões lado a lado com selo de desconto, nome, descrição, preço antigo riscado, preço /mês, botão "Escolher plano", condições, destaque promocional e lista de recursos; um cartão em destaque). Conteúdo dos cartões: a definir. |
+| 26 | **Plano em destaque** no popup: o de **10 usuários (Padrão)** — padrão inicial, alterável pelo Super Admin. |
+| 27 | **Planos 100% configuráveis pelo Super Admin** (novo item de menu): nome, usuários, preços, selo de desconto, frase, condições, caixa de oferta, recursos, plano em destaque, ordem e **quais planos aparecem no popup** (o popup se ajusta à quantidade escolhida). |
+| 28 | **Login — botão Planos:** o botão de tema fica **só com o ícone** (sem texto "Tema escuro/claro"); o botão **"Planos"** vem **antes** dele, com cor de destaque já existente na tela. (Alteração do login ordenada pelo dono.) |
+| 29 | **"Escolher plano" leva à forma de pagamento.** Por enquanto só **PIX**; outras formas configuráveis depois. Fluxo de pagamento: a definir. |
+| 30 | **Criar empresa:** o Super Admin informa nome e e-mail do Admin da Empresa, que recebe senha temporária por e-mail. |
+| 31 | **Criar Usuário Individual:** o Super Admin informa nome, e-mail, WhatsApp e prazo (padrão 31 dias); a pessoa recebe senha temporária por e-mail. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
