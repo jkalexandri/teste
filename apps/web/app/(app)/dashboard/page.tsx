@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   if (u.cargo === Cargo.SUPERADMIN) {
     const empresas = await prisma.empresa.findMany({
       where: { modulo: Modulo.EMPRESARIAL },
-      include: { usuarios: { select: { id: true } } },
+      include: { usuarios: { where: { cargo: Cargo.USUARIO }, select: { id: true } } }, // Admin não conta (decisão #23)
       orderBy: { nome: "asc" },
     });
     const individuais = await prisma.usuario.findMany({

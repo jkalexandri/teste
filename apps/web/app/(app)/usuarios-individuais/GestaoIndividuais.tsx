@@ -1,0 +1,135 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/app/Toast";
+import { Plus, X } from "@/components/icons";
+import { prorrogarEmpresa } from "../empresas/actions";
+import { alternarBloqueio, criarIndividual, reenviarAcesso } from "./actions";
+
+type Linha = {
+  id: string; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
+  expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean;
+};
+type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number };
+
+export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linha[]; planos: Plano[] }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [pendente, iniciar] = useTransition();
+  const [criando, setCriando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [planoId, setPlanoId] = useState(planos.find((p) => !p.gratis)?.id ?? planos[0]?.id ?? "");
+  const [busca, setBusca] = useState("");
+  const plano = planos.find((p) => p.id === planoId);
+  const lista = usuarios.filter((u) => (u.nome + u.email + u.whatsapp).toLowerCase().includes(busca.toLowerCase()));
+
+  function agir(fn: () => Promise<{ ok: boolean; mensagem: string }>) {
+    iniciar(async () => {
+      const r = await fn();
+      toast(r.mensagem, r.ok ? "ok" : "erro");
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <div className="mt-3">
+        {!criando ? (
+          <button className="btn-primary" onClick={() => { setErro(""); setCriando(true); }}><Plus size={14} /> Novo usuário individual</button>
+        ) : (
+          <form
+            className="card p-3 sm:p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              iniciar(async () => {
+                const r = await criarIndividual(fd);
+                if (!r.ok) { setErro(r.mensagem); return; }
+                toast(r.mensagem);
+                setCriando(false);
+                router.refresh();
+              });
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <h2 className="font-display font-bold text-[14px]">Novo usuário individual</h2>
+              <button type="button" className="btn-ghost !p-1.5" onClick={() => setCriando(false)} aria-label="Fechar"><X size={14} /></button>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-2.5 mt-2">
+              <div><label className="label" htmlFor="ind-nome">Nome</label><input id="ind-nome" name="nome" className="input" /></div>
+              <div><label className="label" htmlFor="ind-email">E-mail (login)</label><input id="ind-email" name="email" type="email" className="input" /></div>
+              <div><label className="label" htmlFor="ind-whats">WhatsApp</label><input id="ind-whats" name="whatsapp" className="input" placeholder="(11) 90000-0000" /></div>
+              <div>
+                <label className="label" htmlFor="ind-plano">Plano</label>
+                <select id="ind-plano" name="planoId" className="input" value={planoId} onChange={(e) => setPlanoId(e.target.value)}>
+                  {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="ind-prazo">Prazo (dias)</label>
+                <input id="ind-prazo" name="prazoDias" type="number" min={1} className="input" defaultValue={plano?.prazoDias ?? 31} key={planoId} />
+              </div>
+            </div>
+            <p className="help mt-2">A pessoa recebe por e-mail uma senha temporária e troca no primeiro acesso.</p>
+            {erro && <p className="text-[12px] font-semibold text-[#b42318] mt-2">{erro}</p>}
+            <div className="flex gap-2 mt-3">
+              <button className="btn-primary" disabled={pendente}>{pendente ? "Criando…" : "Criar e enviar acesso"}</button>
+              <button type="button" className="btn-ghost" onClick={() => setCriando(false)}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      <div className="card p-3 mt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-display font-bold text-[14px]">Usuários individuais ({usuarios.length})</h2>
+          <input className="input !w-full sm:!w-[260px] sm:ml-auto !py-1.5" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, e-mail ou WhatsApp" />
+        </div>
+        {lista.length === 0 ? (
+          <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Nenhum usuário individual encontrado.</p>
+        ) : (
+          <div className="table-wrap mt-2">
+            <table style={{ minWidth: 900 }}>
+              <thead><tr><th>Usuário</th><th>Plano</th><th>Expira em</th><th>Dias restantes</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody>
+                {lista.map((u) => (
+                  <tr key={u.id}>
+                    <td>
+                      <b>{u.nome}</b>
+                      <span className="block text-[11px]" style={{ color: "var(--muted)" }}>{u.email}{u.whatsapp && ` • ${u.whatsapp}`}</span>
+                    </td>
+                    <td>{u.pacote}</td>
+                    <td>{u.expiraEm ? new Date(u.expiraEm).toLocaleDateString("pt-BR") : "—"}</td>
+                    <td>
+                      <span className="chip" style={u.dias < 0 ? { background: "#ffeef0", color: "#9e1d2f" } : u.dias <= 10 ? { background: "#fff7e0", color: "#8a5a00" } : { background: "var(--surface-3)", color: "var(--muted)" }}>
+                        {u.dias < 0 ? "Expirado" : u.dias === 0 ? "Expira hoje" : `${u.dias} ${u.dias === 1 ? "dia" : "dias"}`}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="chip" style={u.ativo ? { background: "var(--primary-soft)", color: "#087a44" } : { background: "#ffeef0", color: "#9e1d2f" }}>
+                        {u.ativo ? "Ativo" : "Bloqueado"}
+                      </span>
+                      {u.primeiroAcesso && <span className="block text-[11px] mt-0.5" style={{ color: "var(--muted)" }}>aguardando 1º acesso</span>}
+                    </td>
+                    <td>
+                      <div className="flex gap-1 flex-wrap">
+                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(u.empresaId))}>Prorrogar</button>
+                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Bloquear" : "Desbloquear"} ${u.nome}?`) && agir(() => alternarBloqueio(u.id))}>
+                          {u.ativo ? "Bloquear" : "Desbloquear"}
+                        </button>
+                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Enviar nova senha temporária para ${u.email}?`) && agir(() => reenviarAcesso(u.id))}>
+                          Reenviar acesso
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

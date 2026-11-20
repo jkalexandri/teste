@@ -10,6 +10,14 @@ export const VALIDADE_TEMP_CONTA_NOVA_DIAS = 7;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://imobfile.com.br";
 
+/** Prorrogar (decisão #40): soma os dias ao vencimento atual; se já venceu, a partir de hoje. */
+export function novoVencimento(expiraEm: Date, dias: number) {
+  const base = expiraEm > new Date() ? new Date(expiraEm) : new Date();
+  base.setHours(23, 59, 59, 999);
+  base.setDate(base.getDate() + dias);
+  return base;
+}
+
 export function fimDoPrazo(dias: number) {
   const d = new Date();
   d.setHours(23, 59, 59, 999);

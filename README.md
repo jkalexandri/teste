@@ -39,7 +39,7 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 3 — layout do app (menu lateral) e dashboards por perfil
 - [x] Etapa 4a — planos configuráveis, pagamento e botão Planos no login
 - [x] Etapa 4b — compra por PIX, Pedidos e teste grátis
-- [ ] Etapa 4c — Super Admin: empresas e usuários individuais
+- [x] Etapa 4c — Super Admin: empresas e usuários individuais
 - [ ] Etapa 4d — renovação
 
 ## Banco de dados (desenvolvimento)
