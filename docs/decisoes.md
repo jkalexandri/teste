@@ -41,7 +41,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 7 | **Login — card:** removidos o texto "Escolha o módulo. Individual e Empresarial não se comunicam..." e a linha "Módulo atual: ...". Esse espaço não deve ser usado para exibir informação. |
 | 8 | **Banco de dados:** PostgreSQL pela **Vercel** (integração Neon) por enquanto. Pode migrar depois para Railway/VPS sem mudar código (só trocar `DATABASE_URL` e copiar os dados). Em desenvolvimento, Postgres local. |
 | 9 | **E-mail transacional:** **Resend**, com o domínio imobfile.com.br (senhas temporárias e recuperação de senha). |
-| 10 | **Lembrar de mim:** ficar logado por até **10 dias** e manter o usuário preenchido. Forma de guardar a senha: aguardando confirmação (proposta: e-mail salvo pelo sistema, senha salva pelo gerenciador do navegador). |
+| 10 | **Lembrar de mim:** guarda apenas o **e-mail** preenchido. **Não** mantém o usuário logado. A senha **não** é guardada pelo sistema — o usuário pode salvá-la no gerenciador de senhas do navegador, se preferir. Duração da sessão: a confirmar. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
