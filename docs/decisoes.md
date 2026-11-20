@@ -56,7 +56,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 22 | **Pacotes:** Free (teste grátis), Individual, Básico (3 usuários), Padrão (10), Premium (30), Elite (50) e Personalizado (quantidade definida pelo Super Admin). |
 | 23 | **O Admin da Empresa não conta no limite do pacote** (ele só gerencia, não usa os recursos). O limite vale só para usuários. |
 | 24 | **Diminuir o pacote:** usuários existentes continuam; o admin só pode criar usuários até o limite do pacote. |
-| 25 | **Menu "Planos" na tela de login:** abre um popup com as opções de compra dos pacotes (modelo visual: print enviado pelo dono — aguardando). |
+| 25 | **Menu "Planos" na tela de login:** abre um popup com as opções de compra dos pacotes (modelo visual: `docs/referencias/modelo-popup-planos.png` — cartões lado a lado com selo de desconto, nome, descrição, preço antigo riscado, preço /mês, botão "Escolher plano", condições, destaque promocional e lista de recursos; um cartão em destaque). Conteúdo dos cartões: a definir. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
