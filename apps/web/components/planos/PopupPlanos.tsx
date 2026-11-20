@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { X } from "@/components/icons";
 import { linkContato, type PlanoPublico } from "@/lib/planos";
 import CartaoPlano from "./CartaoPlano";
+import Checkout from "./Checkout";
 
 type Dados = { planos: PlanoPublico[]; contatoPersonalizado: string };
 
@@ -33,6 +34,7 @@ export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; on
 export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
   const [dados, setDados] = useState<Dados | null>(null);
   const [aviso, setAviso] = useState("");
+  const [escolhido, setEscolhido] = useState<PlanoPublico | null>(null);
 
   useEffect(() => {
     fetch("/api/planos")
@@ -58,8 +60,8 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
       setAviso(dados?.contatoPersonalizado ? `Fale conosco: ${dados.contatoPersonalizado}` : "Contato ainda não configurado.");
       return;
     }
-    // TODO etapa 4b: dados do comprador → PIX → pedido (Free: conta criada na hora).
-    setAviso(`Plano ${p.nome}: a compra por PIX será liberada na próxima entrega (etapa 4b).`);
+    setAviso("");
+    setEscolhido(p);
   }
 
   return (
@@ -87,6 +89,8 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
           <p className="text-[13px] text-slate-400">Carregando planos…</p>
         ) : dados.planos.length === 0 ? (
           <div className="login-glass rounded-[18px] p-5 text-[13px] text-slate-300">Nenhum plano disponível no momento.</div>
+        ) : escolhido ? (
+          <Checkout plano={escolhido} onVoltar={() => setEscolhido(null)} />
         ) : (
           <GradePlanos planos={dados.planos} onEscolher={escolher} />
         )}

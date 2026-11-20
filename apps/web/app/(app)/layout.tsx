@@ -4,6 +4,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { prisma, Cargo, StatusPedido } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { diasRestantes, motivoSemAcesso } from "@/lib/auth/acesso";
 import { menuDoCargo, rotaPermitida } from "@/lib/menu";
@@ -23,6 +24,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const caminho = (await headers()).get("x-pathname") || "/dashboard";
   if (!rotaPermitida(u.cargo, caminho)) redirect("/dashboard");
 
+  // Contador de pedidos aguardando confirmação (Super Admin).
+  const contadores: Record<string, number> = {};
+  if (u.cargo === Cargo.SUPERADMIN) {
+    contadores["/pedidos"] = await prisma.pedido.count({
+      where: { status: { in: [StatusPedido.AGUARDANDO] }, expiraEm: { gt: new Date() } },
+    });
+  }
+
   return (
     <AppShell
       dados={{
@@ -32,6 +41,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         dias: diasRestantes(sessao),
         expiraEm: u.empresa ? u.empresa.expiraEm.toISOString() : null,
         menu: menuDoCargo(u.cargo),
+        contadores,
       }}
     >
       {children}

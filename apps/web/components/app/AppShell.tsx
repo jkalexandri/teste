@@ -43,6 +43,7 @@ export type DadosShell = {
   dias: number | null;
   expiraEm: string | null;
   menu: ItemMenu[];
+  contadores?: Record<string, number>;
 };
 
 async function sair() {
@@ -112,7 +113,12 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                     >
                       {ICONES[item.icone]({ size: 17 })}
                       {item.label}
-                      {ativo(item) && <ChevronRight size={15} className="ml-auto" />}
+                      {!!dados.contadores?.[item.href] && (
+                        <span className="ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-extrabold leading-none" style={{ background: "#e5484d", color: "#fff" }}>
+                          {dados.contadores[item.href]}
+                        </span>
+                      )}
+                      {ativo(item) && <ChevronRight size={15} className={dados.contadores?.[item.href] ? "" : "ml-auto"} />}
                     </Link>
                   </Fragment>
                 );

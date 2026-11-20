@@ -188,3 +188,6 @@ table{width:100%;border-collapse:collapse;min-width:520px}
 thead th{position:sticky;top:0;background:var(--surface);z-index:1}
 th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;line-height:1.35}
+
+/* Campos da compra (sem ícone à esquerda): recuo normal. Não afeta o login. */
+.login-input.sem-icone{padding-left:12px!important}

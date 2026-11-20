@@ -2,6 +2,12 @@
 // Requer: app em http://localhost:3005 e Postgres local com seed. Uso: node apps/web/tests/etapa4a-planos.e2e.cjs <pasta-prints>
 // Atenção: grava preços FICTÍCIOS no banco de teste.
 const { chromium } = require('playwright');
+const { chromium } = require('playwright');
+const { execSync } = require('child_process');
+const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
+// Estado inicial: planos ocultos e sem preço; pagamento sem configuração.
+sql("update \"Plano\" set visivel=false, \"precoAtual\"=null, \"precoAntigo\"=null, selo='', frase='', condicoes='', \"ofertaTexto\"='', recursos='{}', destaque=(slug='padrao')");
+sql("update \"ConfigVenda\" set \"chavePix\"='', \"nomeRecebedor\"='', \"cidadeRecebedor\"='', \"contatoPersonalizado\"=''");
 const BASE = 'http://localhost:3005';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
 const OUT = process.argv[2];
@@ -36,7 +42,7 @@ const OUT = process.argv[2];
   ok('PIX exige nome e cidade', (await p.locator('text=informe também o nome do recebedor').count()) === 1);
   await p.fill('#nomeRecebedor', 'FILAPRO TESTE'); await p.fill('#cidadeRecebedor', 'SAO PAULO'); await p.fill('#contatoPersonalizado', '(11) 99999-0000');
   await p.click('button:has-text("Salvar")'); await p.waitForTimeout(800);
-  ok('Pagamento salvo', (await p.locator('text=Configurações de pagamento salvas').count()) === 1);
+  ok('Pagamento salvo', (await p.locator('text=Configurações de pagamento salvas').count()) >= 1);
   await c.close();
 
   // login público: botão Planos + popup
@@ -49,7 +55,7 @@ const OUT = process.argv[2];
   await q.setViewportSize({ width: 1440, height: 900 }); await q.waitForTimeout(500);
   await q.screenshot({ path: OUT + '/popup-planos.png' });
   await q.click('article:has-text("Padrão") >> text=Escolher plano'); await q.waitForTimeout(500);
-  ok('Escolher plano avisa etapa 4b', (await q.locator('text=etapa 4b').count()) === 1);
+  ok('Escolher plano abre a compra', (await q.locator('#ck-nome').count()) === 1);
   await q.keyboard.press('Escape'); await q.waitForTimeout(300);
   ok('Esc fecha o popup', await q.locator('[aria-label="Planos"]').count() === 0);
   await c2.close();

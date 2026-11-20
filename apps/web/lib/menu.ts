@@ -41,6 +41,8 @@ const ADMIN_EMPRESA: ItemMenu[] = [
 
 const SUPERADMIN: ItemMenu[] = [
   { href: "/dashboard", label: "Dashboard", icone: "dashboard", grupo: "Principal", etapa: 3 },
+  // Decisão #33: pedidos de compra por PIX com confirmação manual.
+  { href: "/pedidos", label: "Pedidos", icone: "pagamento", grupo: "Vendas", etapa: 4 },
   { href: "/todos-os-disparos", label: "Todos os disparos", icone: "envio", grupo: "Vendas", etapa: 8 },
   { href: "/disparos-por-usuarios", label: "Disparos por usuários", icone: "usuarios", grupo: "Vendas", etapa: 8 },
   { href: "/campanhas", label: "Campanhas", icone: "play", grupo: "Vendas", etapa: 8 },

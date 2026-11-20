@@ -48,7 +48,7 @@ const OUT = process.argv[2];
   // Super Admin
   [c, p] = await entrar('superadmin@disparopro.com.br', 'Super@12345678', 'individual');
   const m = await menu(p);
-  ok('Menu do Super Admin', m.length === 13 && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
+  ok('Menu do Super Admin', m.length === 14 && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);

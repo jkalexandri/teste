@@ -40,9 +40,14 @@ model Empresa {
   ativa           Boolean  @default(true)
   expiraEm        DateTime
   prazoDias       Int      @default(31)
+  /// Plano de origem (compra/renovação). Vazio em contas criadas manualmente.
+  planoId         String?
+  /// Limite de disparos do teste grátis (Free — decisão #34). Vazio = sem limite.
+  limiteDisparos  Int?
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
   usuarios        Usuario[]
+  pedidos         Pedido[]
 
   @@index([modulo])
 }
@@ -134,4 +139,50 @@ model ConfigVenda {
   /// Contato do plano Personalizado (decisão #35), ex.: WhatsApp.
   contatoPersonalizado  String   @default("")
   atualizadoEm          DateTime @updatedAt
+}
+
+enum StatusPedido {
+  AGUARDANDO
+  PAGO
+  CANCELADO
+  EXPIRADO
+}
+
+/// Pedido de compra feito pelo popup "Planos" (decisões #32, #33, #37).
+/// PIX com confirmação manual pelo Super Admin.
+model Pedido {
+  id              String       @id @default(cuid())
+  /// Código curto mostrado ao cliente e usado como identificador do PIX.
+  codigo          String       @unique
+  status          StatusPedido @default(AGUARDANDO)
+  /// Cópia dos dados do plano no momento da compra.
+  planoId         String
+  planoNome       String
+  modulo          Modulo
+  usuarios        Int?
+  prazoDias       Int
+  valor           Int
+  /// Dados do comprador
+  nome            String
+  email           String
+  whatsapp        String
+  empresaNome     String?
+  pixCopiaECola   String
+  expiraEm        DateTime
+  criadoEm        DateTime     @default(now())
+  confirmadoEm    DateTime?
+  confirmadoPor   String?
+  canceladoEm     DateTime?
+  /// Conta criada na confirmação
+  empresaId       String?
+  empresa         Empresa?     @relation(fields: [empresaId], references: [id])
+
+  @@index([status])
+  @@index([email])
+}
+
+/// E-mails que já usaram o teste grátis (1 teste por e-mail — decisão #34).
+model TesteGratisUsado {
+  email     String   @id
+  usadoEm   DateTime @default(now())
 }
