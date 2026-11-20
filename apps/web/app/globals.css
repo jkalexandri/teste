@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Tokens de cor do app (copiados da prévia). Tema claro é o padrão.
+   ========================================================================== */
+:root {
+  --safe-area-inset-top: 0px;
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --surface-2: #eef7f0;
+  --surface-3: #f8faf9;
+  --text: #101815;
+  --muted: #5b6b62;
+  --muted-2: #8a9a90;
+  --border: #dce6df;
+  --primary: #0e9f5a;
+  --primary-dark: #087a44;
+  --primary-soft: #dff6e9;
+  --accent: #ffb020;
+  --danger: #e5484d;
+  --info: #2563eb;
+  --shadow: 0 6px 18px rgba(16, 40, 28, .07);
+  --radius: 14px;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1512;
+  --surface: #16211c;
+  --surface-2: #1d2e26;
+  --surface-3: #1a2822;
+  --text: #eef5f1;
+  --muted: #a9bdb1;
+  --muted-2: #7f9488;
+  --border: #2a3a32;
+  --primary: #22c06f;
+  --primary-dark: #2ee07f;
+  --primary-soft: #173e2a;
+  --accent: #ffbe3d;
+  --shadow: 0 8px 20px rgba(0, 0, 0, .35);
+}
+
+* { box-sizing: border-box }
+
+html, body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+button, input, textarea, select { font: inherit }
+a { color: inherit }
+
+.font-display { font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif }
+
+/* ==========================================================================
+   LOGIN — copiado 1:1 da prévia. NÃO ALTERAR sem ordem expressa.
+   ========================================================================== */
+.login-future{background:#050A14;color:#eaf6ff;position:relative;isolation:isolate}
+.login-future::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(37,211,102,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(37,211,102,.12) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 90% 80% at 30% 20%,#000 30%,transparent 78%);mask-image:radial-gradient(ellipse 90% 80% at 30% 20%,#000 30%,transparent 78%)}
+.login-orb{position:absolute;border-radius:999px;filter:blur(70px);pointer-events:none;z-index:0}
+.login-particle{position:absolute;border-radius:999px;pointer-events:none;z-index:0;animation:loginFloat 7s ease-in-out infinite}
+@keyframes loginFloat{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-18px);opacity:.95}}
+@keyframes loginPulse{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}50%{box-shadow:0 0 0 7px rgba(37,211,102,0)}}
+.login-pulse{animation:loginPulse 2s ease-in-out infinite}
+.login-glass{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.login-neon-text{background:linear-gradient(90deg,#fff 10%,#7dffb8 42%,#4dd8ff 78%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(37,211,102,.38))}
+.login-shell{height:calc(100dvh - var(--safe-area-inset-top));max-height:calc(100dvh - var(--safe-area-inset-top));min-height:0;overflow:hidden}
+.login-shell>*{min-height:0;overflow:hidden}
+.login-aside{overflow:hidden}
+.login-right{overflow:hidden}
+.login-card{max-height:100%;overflow:hidden}
+.benefit-card{padding:6px 8px!important}
+@media (max-width:1023px){.login-shell{flex-direction:column}.login-aside{flex:0 0 auto}.login-right{flex:1 1 auto;min-height:0}.login-aside>*{margin-left:0!important}.login-aside h1{font-size:20px!important}.login-aside .login-brand{font-size:22pt!important}.login-aside p{max-width:100%!important}}
+@media (max-height:560px){.login-aside p.text-slate-300{display:none!important}.login-aside .login-status-pill{display:none!important}}
+@media (max-height:700px){.login-hide-short{display:none!important}.login-aside h1{font-size:19px!important}}
+@media (max-height:620px){.login-aside .login-status-pill{display:none!important}}
+.login-shell>*{min-height:0}
+.login-input{width:100%;background:rgba(3,10,20,.72)!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:12px!important;padding:7px 10px 7px 38px!important;color:#eaf6ff!important;outline:none!important;font-size:12.5px}
+.login-input::-moz-placeholder{color:#7d8ea3}
+.login-input::placeholder{color:#7d8ea3}
+.login-input:focus{border-color:#25D366!important;box-shadow:0 0 0 3px rgba(37,211,102,.18),0 0 22px rgba(37,211,102,.18)!important}
+.login-cta{width:100%;border:0;border-radius:12px;padding:8px 14px;font-weight:800;color:#04120a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;background:linear-gradient(90deg,#25D366,#2dd4ff);box-shadow:0 10px 30px rgba(37,211,102,.32),inset 0 1px 0 rgba(255,255,255,.45)}
+.login-cta:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.login-ghost-btn{border:1px solid rgba(255,255,255,.16)!important;background:rgba(255,255,255,.06)!important;color:#eaf6ff!important;border-radius:12px!important;padding:6px 7px!important;font-weight:700!important;font-size:11px!important;line-height:1.25!important;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.login-label{font-size:11px;font-weight:700;margin-bottom:3px;display:block;color:#cfe8dc}
+@media (max-height:760px){.login-compact-hide{display:none!important}}
+.login-ghost-btn:hover{border-color:rgba(37,211,102,.55)!important;box-shadow:0 0 18px rgba(37,211,102,.14)}
+.login-label{font-size:11px;font-weight:700;margin-bottom:4px;display:block;color:#cfe8dc}
+.login-check{color:#9fb3c8;font-size:12px;font-weight:600}
+.login-circuit{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.login-circuit .circuit-glow{filter:drop-shadow(0 0 10px rgba(37,211,102,.8))}
+.login-circuit .circuit-glow-cyan{filter:drop-shadow(0 0 10px rgba(45,212,255,.75))}
+.login-circuit .circuit-node{filter:drop-shadow(0 0 8px rgba(37,211,102,.7))}
+.login-circuit .circuit-node-cyan{filter:drop-shadow(0 0 8px rgba(45,212,255,.65))}
+.login-future::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 62% 58% at 22% 38%,rgba(2,6,14,.58) 0%,rgba(2,6,14,.28) 42%,transparent 72%),radial-gradient(ellipse 58% 62% at 78% 58%,rgba(2,6,14,.55) 0%,rgba(2,6,14,.25) 42%,transparent 72%)}
+@keyframes circuitDash{to{stroke-dashoffset:-128}}
+.login-circuit .circuit-flow{stroke-dasharray:5 11;animation:circuitDash 7s linear infinite}
+@keyframes circuitPulse{0%{stroke-dashoffset:280;opacity:0}12%{opacity:1}82%{opacity:1}100%{stroke-dashoffset:-280;opacity:0}}
+.login-circuit .circuit-pulse{stroke-dasharray:18 262;animation:circuitPulse 5.5s ease-in-out infinite}
+.login-circuit .circuit-pulse-slow{stroke-dasharray:16 300;animation:circuitPulse 7.5s ease-in-out infinite;animation-delay:1.4s}
+/* Nós interativos do circuito: só o anel externo de cada nó recebe o ponteiro.
+   Os círculos externos têm r="9", "10" ou "11"; os internos ficam com pointer-events:none. */
+.login-circuit circle{pointer-events:none}
+.login-circuit circle[r="9"],.login-circuit circle[r="10"],.login-circuit circle[r="11"]{pointer-events:all;cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .3s ease,filter .3s ease,stroke-width .3s ease,opacity .3s ease;animation:circuitNodeBreathe 3.6s ease-in-out infinite}
+.login-circuit circle:nth-of-type(12n+1){animation-delay:0s;animation-duration:3.4s}
+.login-circuit circle:nth-of-type(12n+4){animation-delay:.6s;animation-duration:4.4s}
+.login-circuit circle:nth-of-type(12n+7){animation-delay:1.2s;animation-duration:3s}
+.login-circuit circle:nth-of-type(12n+10){animation-delay:1.8s;animation-duration:4.9s}
+.login-circuit circle[r="9"]:hover,.login-circuit circle[r="10"]:hover,.login-circuit circle[r="11"]:hover{animation:none;transform:scale(1.8);stroke-width:3;filter:drop-shadow(0 0 16px rgba(255,255,255,.95)) drop-shadow(0 0 8px rgba(37,211,102,.8))}
+.login-circuit .circuit-node:hover{filter:drop-shadow(0 0 18px rgba(37,211,102,1)) drop-shadow(0 0 8px rgba(125,255,184,.9))}
+.login-circuit .circuit-node-cyan:hover{filter:drop-shadow(0 0 18px rgba(45,212,255,1)) drop-shadow(0 0 8px rgba(127,231,255,.9))}
+.login-circuit .circuit-node:focus-visible,.login-circuit .circuit-node-cyan:focus-visible{outline:none}
+.login-circuit.is-node-active .circuit-glow{filter:drop-shadow(0 0 18px rgba(37,211,102,1))}
+.login-circuit.is-node-active .circuit-glow-cyan{filter:drop-shadow(0 0 18px rgba(45,212,255,1))}
+.circuit-node-click-pulse{pointer-events:none;transform-box:fill-box;transform-origin:center;animation:circuitNodeClick 1s ease-out forwards}
+.circuit-node-click-glow{pointer-events:none;transform-box:fill-box;transform-origin:center;animation:circuitNodeClickGlow 1s ease-out forwards}
+@keyframes circuitNodeClick{0%{transform:scale(1);opacity:.95}35%{transform:scale(2.2);opacity:.95}100%{transform:scale(1);opacity:0}}
+@keyframes circuitNodeClickGlow{0%{transform:scale(1);opacity:.35}35%{transform:scale(1.9);opacity:.35}100%{transform:scale(1);opacity:0}}
+@keyframes circuitNodeBreathe{0%,100%{transform:scale(1);opacity:.82}50%{transform:scale(1.28);opacity:1}}
+@keyframes circuitEnergy{from{stroke-dashoffset:274}to{stroke-dashoffset:-274}}
+@keyframes circuitEnergyReverse{from{stroke-dashoffset:-274}to{stroke-dashoffset:274}}
+@keyframes circuitSeq{0%,100%{opacity:0}8%{opacity:1}26%{opacity:1}34%{opacity:.12}}
+@keyframes circuitTraceGlow{0%,100%{opacity:.55}50%{opacity:.95}}
+.circuit-energy,.circuit-seq{pointer-events:none}
+.circuit-energy path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14 260;animation:circuitEnergy 6s linear infinite;opacity:.95}
+.circuit-energy .energy-b{animation:circuitEnergyReverse 8.5s linear infinite;animation-delay:1.2s}
+.circuit-energy .energy-c{animation-duration:5s;animation-delay:.5s}
+.circuit-energy .energy-d{animation:circuitEnergyReverse 7s linear infinite;animation-delay:2.1s}
+.circuit-energy .energy-e{animation-duration:9.5s;animation-delay:.9s}
+.circuit-energy .energy-f{animation-duration:4.2s;animation-delay:1.7s}
+.circuit-energy .energy-g{animation:circuitEnergyReverse 11s linear infinite;animation-delay:2.8s}
+.circuit-energy .energy-h{animation-duration:7.8s;animation-delay:.3s}
+.circuit-seq path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:3;animation:circuitSeq 4.8s ease-in-out infinite}
+.circuit-seq .seq-2{animation-delay:1.2s}
+.circuit-seq .seq-3{animation-delay:2.4s}
+.circuit-seq .seq-4{animation-delay:3.6s}
+.login-circuit .circuit-glow,.login-circuit .circuit-glow-cyan{animation:circuitTraceGlow 5.5s ease-in-out infinite}
+.login-circuit .circuit-glow-cyan{animation-delay:1.4s;animation-duration:6.8s}
+/* Ícones interativos dos 3 blocos de benefícios do login. */
+.benefit-card{transition:box-shadow .3s ease,border-color .3s ease,background-color .3s ease}
+.benefit-card.is-active{border-color:rgba(37,211,102,.65)!important;background:rgba(255,255,255,.10)!important;box-shadow:0 0 0 1px rgba(37,211,102,.45),0 0 28px rgba(37,211,102,.35),0 18px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important}
+.benefit-icon{cursor:pointer;border:0;padding:0;transform-origin:center;will-change:transform;transition:transform .3s ease,box-shadow .3s ease,filter .3s ease}
+.benefit-icon:hover{transform:scale(1.5);filter:brightness(1.18);box-shadow:0 0 0 3px rgba(125,255,184,.55),0 0 26px rgba(37,211,102,.65)!important}
+.benefit-icon--cyan:hover{box-shadow:0 0 0 3px rgba(127,231,255,.55),0 0 26px rgba(45,212,255,.65)!important}
+.benefit-icon.is-auto{transform:scale(1.35);filter:brightness(1.28);box-shadow:0 0 0 3px rgba(125,255,184,.55),0 0 32px rgba(37,211,102,.75)!important}
+.benefit-icon--cyan.is-auto{box-shadow:0 0 0 3px rgba(127,231,255,.55),0 0 32px rgba(45,212,255,.75)!important}
+.benefit-icon.is-auto:hover{transform:scale(1.65);filter:brightness(1.35)}
+.benefit-card.is-auto{border-color:rgba(37,211,102,.45)!important;box-shadow:0 0 24px rgba(37,211,102,.22),0 18px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.benefit-icon:focus-visible{outline:2px solid #7dffb8;outline-offset:3px}
+.benefit-card.is-active .benefit-icon{animation:benefitIconPulse 1s ease-out;box-shadow:0 0 0 3px rgba(125,255,184,.65),0 0 30px rgba(37,211,102,.75)!important}
+.benefit-card.is-active .benefit-icon--cyan{box-shadow:0 0 0 3px rgba(127,231,255,.65),0 0 30px rgba(45,212,255,.75)!important}
+@keyframes benefitIconPulse{0%{transform:scale(1)}30%{transform:scale(1.6)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.benefit-icon{transition:none}.benefit-card.is-active .benefit-icon{animation:none}.benefit-icon.is-auto{transform:none;filter:none;box-shadow:none!important}.login-circuit circle[r="9"],.login-circuit circle[r="10"],.login-circuit circle[r="11"]{transition:none;animation:none}.circuit-node-click-pulse,.circuit-node-click-glow{animation-duration:.01s}.circuit-energy path,.circuit-seq path,.login-circuit .circuit-glow,.login-circuit .circuit-glow-cyan{animation:none}}
+/* 5 feixes de luz nos circuitos do login: camada de fundo, nunca bloqueia cliques. */
+.light-beams{pointer-events:none}
+.light-beams *{pointer-events:none}
+.light-beam-head{filter:drop-shadow(0 0 6px rgba(125,255,184,.95)) drop-shadow(0 0 12px rgba(37,211,102,.8))}
+@media (prefers-reduced-motion:reduce){.light-beams{display:none}}
+@media (max-width:640px){.login-brand{margin-left:0!important;font-size:24pt!important;white-space:normal!important}}
