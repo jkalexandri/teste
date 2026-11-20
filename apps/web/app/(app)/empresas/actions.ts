@@ -83,7 +83,10 @@ export async function prorrogarEmpresa(empresaId: string): Promise<R> {
   const plano = e.planoId ? await prisma.plano.findUnique({ where: { id: e.planoId } }) : null;
   const dias = plano?.prazoDias ?? e.prazoDias;
   const nova = novoVencimento(e.expiraEm, dias);
-  await prisma.empresa.update({ where: { id: empresaId }, data: { expiraEm: nova } });
+  await prisma.empresa.update({
+    where: { id: empresaId },
+    data: { expiraEm: nova, tokenRenovacao: null, avisoRenovacao10Em: null, avisoRenovacao3Em: null },
+  });
   revalidatePath("/empresas");
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: prorrogado por ${dias} dias, até ${nova.toLocaleDateString("pt-BR")}.` };

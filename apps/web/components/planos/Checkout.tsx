@@ -3,10 +3,11 @@
 // Compra pelo popup "Planos": dados do comprador → PIX (planos pagos) ou
 // conta criada na hora (Free). Decisões #32, #33, #34, #39.
 import { useState } from "react";
-import { ChevronRight, CircleCheck, Copy, TriangleAlert } from "@/components/icons";
+import { ChevronRight, CircleCheck, TriangleAlert } from "@/components/icons";
+import TelaPix, { type DadosPix } from "./TelaPix";
 import { formatarReais, type PlanoPublico } from "@/lib/planos";
 
-type Pix = { codigo: string; plano: string; valor: number; copiaECola: string; qrCode: string; expiraEm: string };
+type Pix = DadosPix;
 
 function mascaraFone(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -26,7 +27,6 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
   const [enviando, setEnviando] = useState(false);
   const [pix, setPix] = useState<Pix | null>(null);
   const [freeOk, setFreeOk] = useState(false);
-  const [copiado, setCopiado] = useState(false);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -46,22 +46,6 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
     }
     if (plano.gratis) setFreeOk(true);
     else setPix(d);
-  }
-
-  async function copiar() {
-    if (!pix) return;
-    try {
-      await navigator.clipboard.writeText(pix.copiaECola);
-    } catch {
-      const t = document.createElement("textarea");
-      t.value = pix.copiaECola;
-      document.body.appendChild(t);
-      t.select();
-      document.execCommand("copy");
-      t.remove();
-    }
-    setCopiado(true);
-    window.setTimeout(() => setCopiado(false), 2000);
   }
 
   const resumo = plano.gratis
@@ -85,28 +69,7 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
           </p>
         </div>
       ) : pix ? (
-        <div className="mt-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <img src={pix.qrCode} alt="QR Code do PIX" width={180} height={180} className="rounded-xl bg-white p-2 shrink-0" />
-            <div className="text-[13px] leading-relaxed">
-              <p>Valor: <b className="text-white text-[16px]">{formatarReais(pix.valor)}</b></p>
-              <p className="text-slate-400">Pedido <b className="text-slate-200">{pix.codigo}</b></p>
-              <p className="text-slate-400">
-                Válido até {new Date(pix.expiraEm).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-              </p>
-            </div>
-          </div>
-          <label className="login-label mt-3" htmlFor="pix-cc">PIX copia e cola</label>
-          <div className="flex gap-1.5">
-            <input id="pix-cc" readOnly value={pix.copiaECola} className="login-input sem-icone font-mono" onFocus={(e) => e.currentTarget.select()} />
-            <button type="button" onClick={copiar} className="login-ghost-btn !px-3 shrink-0">
-              <Copy size={14} /> {copiado ? "Copiado!" : "Copiar"}
-            </button>
-          </div>
-          <div className="mt-3 rounded-xl p-3 text-[13px] leading-relaxed text-slate-300" style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.30)" }}>
-            Assim que confirmarmos o pagamento, você receberá por e-mail o acesso com uma senha temporária.
-          </div>
-        </div>
+        <TelaPix pix={pix} />
       ) : (
         <form onSubmit={enviar} className="mt-4 space-y-2.5">
           <div>
@@ -127,7 +90,8 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
             <label className="login-label" htmlFor="ck-whats">WhatsApp</label>
             <input id="ck-whats" className="login-input sem-icone" value={whatsapp} onChange={(e) => setWhatsapp(mascaraFone(e.target.value))} placeholder="(11) 90000-0000" inputMode="tel" />
           </div>
-          {empresarial && <p className="text-[11px] text-slate-400">Quem compra um plano de empresa se torna o Administrador da empresa.</p>}
+          {empresarial && <p className="text-[11px] text-slate-400">Quem compra um plano de empresa se torna o Administrador da empresa. Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
+          {!empresarial && !plano.gratis && <p className="text-[11px] text-slate-400">Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
           {erro && (
             <div className="flex gap-2 text-[12px] font-semibold text-rose-200 bg-rose-500/15 border border-rose-400/30 rounded-xl p-2">
               <TriangleAlert size={15} className="shrink-0" /> {erro}

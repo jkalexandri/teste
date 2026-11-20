@@ -7,7 +7,7 @@ import { useToast } from "@/components/app/Toast";
 import { cancelarPedido, confirmarPagamento } from "./actions";
 
 type Pedido = {
-  id: string; codigo: string; status: "AGUARDANDO" | "PAGO" | "CANCELADO" | "EXPIRADO";
+  id: string; codigo: string; renovacao: boolean; status: "AGUARDANDO" | "PAGO" | "CANCELADO" | "EXPIRADO";
   planoNome: string; modulo: "INDIVIDUAL" | "EMPRESARIAL"; usuarios: number | null; valor: number;
   nome: string; email: string; whatsapp: string; empresaNome: string | null;
   criadoEm: string; expiraEm: string; confirmadoEm: string | null;
@@ -69,7 +69,10 @@ export default function ListaPedidos({ pedidos }: { pedidos: Pedido[] }) {
             <tbody>
               {lista.map((p) => (
                 <tr key={p.id}>
-                  <td className="font-bold font-mono">{p.codigo}</td>
+                  <td className="font-bold font-mono">
+                    {p.codigo}
+                    {p.renovacao && <span className="chip block mt-0.5 font-sans" style={{ background: "#eef2ff", color: "#3730a3" }}>Renovação</span>}
+                  </td>
                   <td style={{ whiteSpace: "nowrap" }}>{data(p.criadoEm)}</td>
                   <td>
                     <b>{p.planoNome}</b>

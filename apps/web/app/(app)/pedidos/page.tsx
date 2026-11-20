@@ -23,6 +23,7 @@ export default async function PedidosPage() {
         pedidos={pedidos.map((p) => ({
           id: p.id,
           codigo: p.codigo,
+          renovacao: p.renovacao,
           status: p.status,
           planoNome: p.planoNome,
           modulo: p.modulo,

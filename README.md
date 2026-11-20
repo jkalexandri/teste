@@ -40,7 +40,8 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 4a — planos configuráveis, pagamento e botão Planos no login
 - [x] Etapa 4b — compra por PIX, Pedidos e teste grátis
 - [x] Etapa 4c — Super Admin: empresas e usuários individuais
-- [ ] Etapa 4d — renovação
+- [x] Etapa 4d — renovação (link 10 e 3 dias antes, troca de plano, compra com e-mail existente)
+- [ ] Etapa 5 — usuários das empresas, expiração e avisos
 
 ## Banco de dados (desenvolvimento)
 ```bash
@@ -56,3 +57,7 @@ pnpm db:seed
 ```
 
 O seed cria o Super Admin (e-mail em `SUPERADMIN_EMAIL`, senha temporária mostrada no terminal) e, fora de produção, as contas de teste.
+
+## Agendador diário (renovação)
+`apps/web/vercel.json` agenda `GET /api/cron/renovacao` todo dia às 12:00 UTC (9h de Brasília).
+Na Vercel, defina a variável `CRON_SECRET`; a Vercel a envia automaticamente nas chamadas do agendador.

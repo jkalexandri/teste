@@ -44,6 +44,10 @@ model Empresa {
   planoId         String?
   /// Limite de disparos do teste grátis (Free — decisão #34). Vazio = sem limite.
   limiteDisparos  Int?
+  /// Renovação (decisões #42–#44): token do link e controle dos avisos do ciclo atual.
+  tokenRenovacao      String?   @unique
+  avisoRenovacao10Em  DateTime?
+  avisoRenovacao3Em   DateTime?
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
   usuarios        Usuario[]
@@ -155,6 +159,8 @@ model Pedido {
   /// Código curto mostrado ao cliente e usado como identificador do PIX.
   codigo          String       @unique
   status          StatusPedido @default(AGUARDANDO)
+  /// true = renova a conta existente (empresaId já vem preenchido) — decisão #44.
+  renovacao       Boolean      @default(false)
   /// Cópia dos dados do plano no momento da compra.
   planoId         String
   planoNome       String

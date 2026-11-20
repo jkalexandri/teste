@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma, Modulo, StatusPedido } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas } from "@/lib/contas";
+import { aplicarRenovacao, enviarEmailRenovacaoConfirmada } from "@/lib/renovacao";
 
 type R = { ok: boolean; mensagem: string };
 
@@ -16,6 +17,21 @@ export async function confirmarPagamento(id: string): Promise<R> {
   if (!pedido) return { ok: false, mensagem: "Pedido não encontrado." };
   if (pedido.status === StatusPedido.PAGO) return { ok: false, mensagem: "Este pedido já foi confirmado." };
   if (pedido.status === StatusPedido.CANCELADO) return { ok: false, mensagem: "Pedido cancelado não pode ser confirmado." };
+
+  // Renovação (decisões #43 e #44): troca o plano, se mudou, e soma o prazo.
+  if (pedido.renovacao) {
+    const empresa = await prisma.$transaction(async (tx) => {
+      const marcado = await tx.pedido.updateMany({
+        where: { id, status: { in: [StatusPedido.AGUARDANDO, StatusPedido.EXPIRADO] } },
+        data: { status: StatusPedido.PAGO, confirmadoEm: new Date(), confirmadoPor: sessao.usuario.email },
+      });
+      if (marcado.count === 0) throw new Error("Pedido já processado.");
+      return aplicarRenovacao(pedido, tx);
+    });
+    await enviarEmailRenovacaoConfirmada(pedido.nome, pedido.email, empresa, pedido.valor);
+    revalidatePath("/pedidos");
+    return { ok: true, mensagem: `Renovação confirmada: ${empresa.nome} até ${empresa.expiraEm.toLocaleDateString("pt-BR")}.` };
+  }
   if (await prisma.usuario.findUnique({ where: { email: pedido.email } })) {
     return { ok: false, mensagem: `O e-mail ${pedido.email} já tem acesso. Verifique antes de confirmar.` };
   }
