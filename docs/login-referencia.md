@@ -158,7 +158,11 @@ O print enviado pelo dono do projeto bate com o código. Valem **o print e o có
 ### Ainda a confirmar
 1. Feixes: manter durações aleatórias do código (4.2–9.8s) ou forçar ciclo de 4s?
 2. Contas demo: as do código (4 perfis) ou as do prompt (2 perfis)?
-3. A prévia exibe textos "Conectado via API Oficial" e "Não usamos Baileys…" (fora do login) — conflitam com a decisão de usar conexão própria por QR Code.
+
+### Decidido
+- **Sem API oficial da Meta.** A API de WhatsApp é própria, criada neste projeto (conexão por QR Code).
+  Os textos da prévia "Conectado via API Oficial", "QR via provedor homologado" e "Não usamos Baileys…"
+  (fora do login) serão substituídos por textos que reflitam a conexão própria por QR Code.
 
 ## 9. Tokens do app (demais telas)
 ```css
