@@ -41,11 +41,13 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 7 | **Login — card:** removidos o texto "Escolha o módulo. Individual e Empresarial não se comunicam..." e a linha "Módulo atual: ...". Esse espaço não deve ser usado para exibir informação. |
 | 8 | **Banco de dados:** PostgreSQL pela **Vercel** (integração Neon) por enquanto. Pode migrar depois para Railway/VPS sem mudar código (só trocar `DATABASE_URL` e copiar os dados). Em desenvolvimento, Postgres local. |
 | 9 | **E-mail transacional:** **Resend**, com o domínio imobfile.com.br (senhas temporárias e recuperação de senha). |
-| 10 | **Lembrar de mim:** guarda apenas o **e-mail** preenchido. **Não** mantém o usuário logado. A senha **não** é guardada pelo sistema — o usuário pode salvá-la no gerenciador de senhas do navegador, se preferir. Duração da sessão: a confirmar. |
+| 10 | **Lembrar de mim:** guarda apenas o **e-mail** preenchido. **Não** mantém o usuário logado. A senha **não** é guardada pelo sistema — o usuário pode salvá-la no gerenciador de senhas do navegador, se preferir. A sessão dura **até fechar o navegador**. |
 | 11 | **Abas de módulo no login:** usuário que entrar pela aba errada é bloqueado com "Este acesso pertence ao módulo X". **Super Admin entra por qualquer aba.** |
 | 12 | **Primeiro acesso:** quem tem senha temporária é obrigado a criar uma senha nova antes de entrar. |
 | 13 | **Expiração por pacote:** a empresa compra um pacote com X usuários e um prazo único; **todos os usuários da empresa expiram juntos**. Acesso expirado: "Acesso expirado. Fale com o administrador." e não entra. |
 | 14 | **Senha errada:** após 5 tentativas erradas, bloqueio de 15 minutos. |
+| 15 | **Super Admin:** criado automaticamente na instalação, com o e-mail definido na variável privada `SUPERADMIN_EMAIL` (não fica no código, o repositório é público). Recebe senha temporária e troca no primeiro acesso. |
+| 16 | **Textos do login em produção:** "Senha mínima..." e "Sem cadastro público..." **não aparecem** no site real; o card termina no botão "Entrar". |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
