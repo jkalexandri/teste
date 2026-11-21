@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         (existente.cargo === Cargo.USUARIO && existente.empresa.modulo === Modulo.INDIVIDUAL));
     if (!responsavel || !existente.empresa) {
       return NextResponse.json(
-        { erro: "Este e-mail já tem acesso ao FilaPro. A renovação é feita pelo administrador da sua empresa." },
+        { erro: "Este e-mail já tem acesso ao FilaPro Leads. A renovação é feita pelo administrador da sua empresa." },
         { status: 409 },
       );
     }

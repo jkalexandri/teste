@@ -1,4 +1,4 @@
-// Política de senha do FilaPro (prompt seção 3.4):
+// Política de senha do FilaPro Leads (prompt seção 3.4):
 // mínimo de 12 caracteres, com maiúscula, minúscula, número e caractere especial.
 export type PasswordRule = { label: string; ok: boolean };
 

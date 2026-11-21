@@ -39,7 +39,7 @@ export async function criarUsuario(form: FormData): Promise<R> {
     return { ok: false, mensagem: `Limite do pacote atingido (${v.ativos} / ${v.limite}). Desative um usuário ou aumente o pacote.` };
   }
   if (await prisma.usuario.findUnique({ where: { email: dados.email } })) {
-    return { ok: false, mensagem: `O e-mail ${dados.email} já tem acesso ao FilaPro.` };
+    return { ok: false, mensagem: `O e-mail ${dados.email} já tem acesso ao FilaPro Leads.` };
   }
   const { usuario, senhaTemporaria } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form) });
   const enviado = await enviarEmailBoasVindas(usuario.nome, usuario.email, senhaTemporaria, v.empresa.pacote, Modulo.EMPRESARIAL);

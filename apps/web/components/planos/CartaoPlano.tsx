@@ -1,7 +1,7 @@
 "use client";
 
 // Cartão de plano do popup "Planos" — estrutura do modelo enviado pelo dono
-// (docs/referencias/modelo-popup-planos.png) com as cores do FilaPro.
+// (docs/referencias/modelo-popup-planos.png) com as cores do FilaPro Leads.
 // Todo o conteúdo vem do Super Admin (decisão #27).
 import { Check, Gift, Sparkles } from "@/components/icons";
 import { formatarReais, type PlanoPublico } from "@/lib/planos";

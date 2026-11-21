@@ -15,7 +15,7 @@ export async function criarIndividual(form: FormData): Promise<R> {
   const erro = validarComprador(dados, false);
   if (erro) return { ok: false, mensagem: erro };
   if (await prisma.usuario.findUnique({ where: { email: dados.email } })) {
-    return { ok: false, mensagem: `O e-mail ${dados.email} já tem acesso ao FilaPro.` };
+    return { ok: false, mensagem: `O e-mail ${dados.email} já tem acesso ao FilaPro Leads.` };
   }
   const plano = await prisma.plano.findUnique({ where: { id: t(form, "planoId") } });
   if (!plano || plano.modulo !== Modulo.INDIVIDUAL) return { ok: false, mensagem: "Escolha um plano individual." };

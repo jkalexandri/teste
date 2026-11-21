@@ -33,7 +33,7 @@ export async function criarEmpresa(form: FormData): Promise<R> {
   const erro = validarComprador({ ...admin, whatsapp: admin.whatsapp || "0000000000" }, false);
   if (erro) return { ok: false, mensagem: erro };
   if (await prisma.usuario.findUnique({ where: { email: admin.email } })) {
-    return { ok: false, mensagem: `O e-mail ${admin.email} já tem acesso ao FilaPro.` };
+    return { ok: false, mensagem: `O e-mail ${admin.email} já tem acesso ao FilaPro Leads.` };
   }
 
   const prazoDias = n(form, "prazoDias") ?? r.plano.prazoDias;

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const jaUsou = await prisma.testeGratisUsado.findUnique({ where: { email: dados.email } });
   const jaTem = await prisma.usuario.findUnique({ where: { email: dados.email } });
   if (jaUsou || jaTem) {
-    return NextResponse.json({ erro: "Este e-mail já usou o teste grátis ou já tem acesso ao FilaPro." }, { status: 409 });
+    return NextResponse.json({ erro: "Este e-mail já usou o teste grátis ou já tem acesso ao FilaPro Leads." }, { status: 409 });
   }
 
   const conta = await prisma.$transaction(async (tx) => {
