@@ -44,6 +44,8 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 5 — usuários das empresas (vagas, permissões, desativar, excluir com transferência)
 - [x] Etapa 6a — serviço 24/7 do WhatsApp (apps/worker), telas de conexão por QR e avisos pela plataforma
 - [x] Etapa 6b — instalação na VPS (pm2 + HTTPS em api.filaproleads.com.br) e teste real do QR Code. Ligar o site ao serviço (WORKER_URL/WORKER_TOKEN na Vercel) fica para a publicação (etapa 12).
+- [x] Etapa 7 — leads (manual, colar e planilha .xlsx/.csv), códigos legíveis, limites e permissões por perfil
+- [ ] Etapa 8 — campanhas, antibloqueio e fila de envio
 
 ## Banco de dados (desenvolvimento)
 ```bash
