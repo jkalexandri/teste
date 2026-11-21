@@ -82,6 +82,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 48 | **Sem campo "Observações"** no cadastro de usuário. |
 | 49 | **O Admin pode excluir um usuário**; antes, **transfere os dados dele (leads, campanhas, conversas) para outro usuário** da empresa. |
 | 50 | **Usuário desativado não ocupa vaga.** Se a vaga for preenchida por outro, o desativado **só pode ser reativado quando houver vaga** disponível. |
+| 51 | **Número da plataforma:** o Super Admin conecta, por QR Code no painel dele, um WhatsApp da plataforma. É esse número que envia os avisos do sistema (novo pedido, links de renovação) para o **WhatsApp do Super Admin** (campo próprio no painel) e para os clientes. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).

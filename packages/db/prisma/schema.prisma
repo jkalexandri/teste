@@ -83,6 +83,7 @@ model Usuario {
   criadoEm           DateTime      @default(now())
   atualizadoEm       DateTime      @updatedAt
   sessoes            Sessao[]
+  whatsapp_sessao    WhatsappSessao?
 
   @@index([empresaId])
 }
@@ -144,6 +145,8 @@ model ConfigVenda {
   cidadeRecebedor       String   @default("")
   /// Contato do plano Personalizado (decisão #35), ex.: WhatsApp.
   contatoPersonalizado  String   @default("")
+  /// WhatsApp do Super Admin que recebe os avisos de novo pedido (decisão #38).
+  numeroAvisos          String   @default("")
   atualizadoEm          DateTime @updatedAt
 }
 
@@ -193,4 +196,43 @@ model Pedido {
 model TesteGratisUsado {
   email     String   @id
   usadoEm   DateTime @default(now())
+}
+
+enum StatusWhatsapp {
+  DESCONECTADO
+  CONECTANDO
+  AGUARDANDO_QR
+  CONECTADO
+}
+
+/// Sessão do WhatsApp (API própria, conexão por QR Code — decisões #1 e #18).
+/// id = id do usuário, ou "plataforma" para o número que envia os avisos do sistema.
+/// O serviço 24/7 (apps/worker, na VPS) mantém a conexão e atualiza este registro;
+/// as telas leem daqui. Credenciais guardadas CRIPTOGRAFADAS.
+model WhatsappSessao {
+  id            String         @id
+  usuarioId     String?        @unique
+  usuario       Usuario?       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  status        StatusWhatsapp @default(DESCONECTADO)
+  numero        String?
+  /// QR Code atual (texto) enquanto aguarda a leitura.
+  qr            String?
+  qrEm          DateTime?
+  /// Credenciais da sessão (criptografadas com AES-256-GCM).
+  creds         String?
+  erro          String?
+  conectadoEm   DateTime?
+  atualizadoEm  DateTime       @updatedAt
+  chaves        WhatsappChave[]
+}
+
+/// Chaves de criptografia do WhatsApp da sessão (criptografadas).
+model WhatsappChave {
+  sessaoId  String
+  sessao    WhatsappSessao @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  tipo      String
+  chaveId   String
+  valor     String
+
+  @@id([sessaoId, tipo, chaveId])
 }
