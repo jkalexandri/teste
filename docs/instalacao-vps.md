@@ -167,6 +167,37 @@ Variáveis do projeto na Vercel:
 Depois: Super Admin → **Número da plataforma** → Conectar WhatsApp → ler o QR → salvar o seu WhatsApp
 para os avisos → **Enviar mensagem de teste**.
 
+## Etapa 8b — atualizar a VPS e testar uma campanha de verdade
+
+Na VPS (pode ser pelo Claude da VPS ou à mão), um comando de cada vez:
+
+```bash
+cd /opt/filapro/app
+git pull
+pnpm install
+pnpm --filter @filapro/db migrate:deploy
+mkdir -p /opt/filapro/arquivos
+grep -q PASTA_ARQUIVOS apps/worker/.env || echo 'PASTA_ARQUIVOS=/opt/filapro/arquivos' >> apps/worker/.env
+pm2 restart filapro-worker
+pm2 logs filapro-worker --lines 20
+```
+
+Teste real (precisa de **dois celulares**: um que ENVIA e outro que RECEBE):
+
+```bash
+cd /opt/filapro/app/apps/worker
+set -a && . ./.env && set +a
+pnpm teste-campanha 55DDDNUMERO
+```
+
+`55DDDNUMERO` = número que vai **receber** (ex.: 5511999999999). Para testar com imagem, coloque uma foto
+na VPS e rode `pnpm teste-campanha 55DDDNUMERO /caminho/foto.jpg`.
+
+1. Leia o QR com o celular que vai **enviar** (pode ser o mesmo número do teste do item 6).
+2. Deve aparecer `✅ Mensagem enviada.` e a mensagem chega no outro celular (com "digitando…" antes e o texto de descadastro no fim).
+3. No celular que recebeu, responda **SAIR** → deve aparecer `✅ Resposta "SAIR" recebida`.
+4. O script desconecta e apaga tudo o que criou.
+
 ## Atualizar o serviço (novas versões)
 
 ```bash

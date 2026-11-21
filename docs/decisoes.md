@@ -100,6 +100,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 66 | **Texto de descadastro padrão:** _"Se não quiser mais receber nossas mensagens, responda *SAIR*."_ (editável, com Restaurar). |
 | 67 | **Anexos na campanha:** **um anexo por campanha**, enviado junto com o texto (o texto vira a legenda). Tipos: **imagem (JPG/PNG) até 5 MB, PDF até 15 MB, vídeo curto e áudio**. Arquivos guardados **na VPS**. |
 | 68 | **Etapa 8:** variações da mensagem **escritas à mão** na etapa 8; na etapa 9 o botão "Atualizar prévia" passa a gerá-las com IA. **Vídeo até 16 MB e áudio até 16 MB.** **Feriados padrão:** nacionais oficiais (1/1, Sexta-feira Santa, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11, 25/12); Carnaval e Corpus Christi fora do padrão, mas o Super Admin pode incluir datas. Etapa 8 dividida em **8a** (tela de Campanhas), **8b** (envio na VPS) e **8c** (painéis). Fila de envio guardada no PostgreSQL (sem Redis). |
+| 69 | **"Incluir data e hora"** (Antibloqueio) coloca a data e a hora do envio no fim da mensagem (ex.: "21/11 14:32"), deixando cada mensagem um pouco diferente. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).

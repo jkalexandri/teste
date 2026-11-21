@@ -68,6 +68,7 @@ export default function ListaCampanhas({ aba, campanhas }: { aba: string; campan
                     <span className="block text-[11px]" style={{ color: "var(--muted)" }}>
                       {c.status === "AGENDADA" && c.agendadaPara ? `Agendada para ${data(c.agendadaPara)}` : `Criada em ${data(c.criadoEm)}`}
                     </span>
+                    {c.motivo && <span className="block text-[11px] font-semibold" style={{ color: "#8a5a00" }}>{c.motivo}</span>}
                   </td>
                   <td><span className="chip" style={{ background: MODOS[c.modo].fundo, color: MODOS[c.modo].cor }}>{MODOS[c.modo].rotulo}</span></td>
                   <td style={{ minWidth: 140 }}>

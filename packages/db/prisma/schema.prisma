@@ -240,6 +240,8 @@ model WhatsappSessao {
   creds         String?
   erro          String?
   conectadoEm   DateTime?
+  /// Primeira conexão deste número (aquecimento de número novo — decisão #64)
+  primeiraConexaoEm DateTime?
   atualizadoEm  DateTime       @updatedAt
   chaves        WhatsappChave[]
 }
@@ -286,6 +288,8 @@ model Lead {
   ativo               Boolean    @default(true)
   /// "Pediu para sair": envio bloqueado por 45 dias a partir daqui (decisão #57).
   pediuSairEm         DateTime?
+  /// Última resposta do lead (limite de 2 mensagens sem resposta em 30 dias — decisão #64)
+  ultimaRespostaEm    DateTime?
   /// Qualificação da IA (etapa 10).
   qualificacao        String?
   qualificacaoMotivo  String?

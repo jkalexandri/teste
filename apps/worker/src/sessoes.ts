@@ -1,21 +1,25 @@
 // Gerenciador das conexões do WhatsApp (uma por usuário + a da plataforma).
 // Mantém cada conexão viva, guarda o estado no banco (as telas leem de lá)
 // e reconecta sozinho em caso de queda.
-import makeWASocket, { Browsers, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, type WASocket } from "@whiskeysockets/baileys";
+import { readFile } from "node:fs/promises";
+import makeWASocket, { Browsers, fetchLatestBaileysVersion, isLidUser, makeCacheableSignalKeyStore, type AnyMessageContent, type WASocket } from "@whiskeysockets/baileys";
 import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
 import { numeroDoJid, paraJid } from "./numero.js";
 import { decidirQueda } from "./queda.js";
+import type { Conteudo, Remetente } from "./disparos.js";
 
 /** Id fixo da sessão do número da plataforma (decisão #51). */
 export const SESSAO_PLATAFORMA = "plataforma";
 
 type Conexao = { sock: WASocket; tentativas: number; encerrando: boolean; qrGerado: boolean };
 
-export class GerenciadorSessoes {
+export class GerenciadorSessoes implements Remetente {
   private conexoes = new Map<string, Conexao>();
   private versao: [number, number, number] | undefined;
+  /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
+  aoReceber: ((sessaoId: string, telefone: string, texto: string) => Promise<void>) | null = null;
 
   constructor(private chave: Buffer, private log: Logger) {}
 
@@ -68,6 +72,22 @@ export class GerenciadorSessoes {
       ultimaGravacao = ultimaGravacao.then(salvarCreds).catch((e) => this.log.error({ e, id }, "falha ao salvar credenciais"));
     });
 
+    // Respostas dos contatos (só conversas individuais, recebidas, com texto)
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+      if (type !== "notify" || !this.aoReceber) return;
+      for (const msg of messages) {
+        const k = msg.key;
+        if (k.fromMe || !k.remoteJid || k.remoteJid.endsWith("@g.us") || k.remoteJid === "status@broadcast") continue;
+        // No WhatsApp novo o contato pode vir como "LID"; o número real vem em remoteJidAlt.
+        const jid = isLidUser(k.remoteJid) ? k.remoteJidAlt ?? "" : k.remoteJid;
+        const telefone = numeroDoJid(jid);
+        if (!telefone || !/^\d{8,15}$/.test(telefone)) continue;
+        const m = msg.message;
+        const texto = m?.conversation ?? m?.extendedTextMessage?.text ?? m?.imageMessage?.caption ?? m?.videoMessage?.caption ?? m?.buttonsResponseMessage?.selectedDisplayText ?? "";
+        await this.aoReceber(id, telefone, texto).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
+      }
+    });
+
     sock.ev.on("connection.update", async (u) => {
       if (u.qr) {
         conexao.qrGerado = true;
@@ -76,6 +96,8 @@ export class GerenciadorSessoes {
       if (u.connection === "open") {
         conexao.tentativas = 0;
         await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date() });
+        // Primeira conexão deste número: base do aquecimento (decisão #64)
+        await prisma.whatsappSessao.updateMany({ where: { id, primeiraConexaoEm: null }, data: { primeiraConexaoEm: new Date() } });
         this.log.info({ id }, "WhatsApp conectado");
       }
       if (u.connection === "close") {
@@ -119,6 +141,50 @@ export class GerenciadorSessoes {
     if (!existe?.exists) return { ok: false, mensagem: "Este número não tem WhatsApp." };
     await c.sock.sendMessage(existe.jid, { text: texto });
     return { ok: true, mensagem: "Mensagem enviada." };
+  }
+
+  // ===== Remetente (usado pelo motor de disparos — etapa 8b) =====
+
+  conectado(id: string) {
+    return !!this.conexoes.get(id)?.sock.user;
+  }
+
+  async verificarNumero(id: string, telefone: string) {
+    const c = this.conexoes.get(id);
+    if (!c?.sock.user) throw new Error("WhatsApp não conectado");
+    // O telefone do lead já está completo (só dígitos, com o código do país).
+    if (!/^\d{8,15}$/.test(telefone)) return null;
+    const jid = `${telefone}@s.whatsapp.net`;
+    const [r] = (await c.sock.onWhatsApp(jid)) ?? [];
+    return r?.exists ? r.jid : null;
+  }
+
+  async digitando(id: string, jid: string, ms: number) {
+    const c = this.conexoes.get(id);
+    if (!c?.sock.user) return;
+    await c.sock.presenceSubscribe(jid).catch(() => undefined);
+    await c.sock.sendPresenceUpdate("composing", jid).catch(() => undefined);
+    await new Promise((r) => setTimeout(r, ms));
+    await c.sock.sendPresenceUpdate("paused", jid).catch(() => undefined);
+  }
+
+  /** Envia texto, ou o anexo com o texto como legenda (decisão #67). Áudio não tem legenda: vai o áudio e depois o texto. */
+  async enviar(id: string, jid: string, conteudo: Conteudo) {
+    const c = this.conexoes.get(id);
+    if (!c?.sock.user) throw new Error("WhatsApp não conectado");
+    const a = conteudo.anexo;
+    if (!a) {
+      await c.sock.sendMessage(jid, { text: conteudo.texto });
+      return;
+    }
+    const dados = await readFile(a.caminho);
+    let msg: AnyMessageContent;
+    if (a.tipo.startsWith("image/")) msg = { image: dados, caption: conteudo.texto, mimetype: a.tipo };
+    else if (a.tipo.startsWith("video/")) msg = { video: dados, caption: conteudo.texto, mimetype: a.tipo };
+    else if (a.tipo.startsWith("audio/")) msg = { audio: dados, mimetype: a.tipo };
+    else msg = { document: dados, mimetype: a.tipo, fileName: a.nome, caption: conteudo.texto };
+    await c.sock.sendMessage(jid, msg);
+    if (a.tipo.startsWith("audio/") && conteudo.texto) await c.sock.sendMessage(jid, { text: conteudo.texto });
   }
 
   /** Fecha as conexões sem deslogar (desligamento do serviço; o login continua salvo). */

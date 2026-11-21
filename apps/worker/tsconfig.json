@@ -7,7 +7,7 @@
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": false,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": ["node"]
   },

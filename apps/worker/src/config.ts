@@ -18,4 +18,6 @@ export const config = {
   nivelLog: process.env.NIVEL_LOG || "info",
   /** Pasta dos anexos das campanhas (decisão #67). Na VPS: /opt/filapro/arquivos */
   pastaArquivos: process.env.PASTA_ARQUIVOS || "./arquivos",
+  /** "desligado" só para testes locais das telas: não processa a fila de campanhas. */
+  disparos: process.env.DISPAROS !== "desligado",
 };

@@ -5,20 +5,27 @@ import { prisma } from "@filapro/db";
 import { config } from "./config.js";
 import { GerenciadorSessoes } from "./sessoes.js";
 import { criarApi } from "./api.js";
+import { MotorDisparos } from "./disparos.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
 const api = criarApi(sessoes, config.token, log, config.pastaArquivos);
+// Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
+const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), { pastaArquivos: config.pastaArquivos });
+sessoes.aoReceber = (sessaoId, telefone, texto) => motor.registrarResposta(sessaoId, telefone, texto);
 
 async function iniciar() {
   await api.listen({ port: config.porta, host: config.host });
   log.info(`Serviço no ar em http://${config.host}:${config.porta}`);
   await sessoes.iniciarTodas();
+  if (config.disparos) motor.iniciar();
+  else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
 }
 
 // Desligamento limpo (pm2 restart / reinício da VPS): fecha sem deslogar o WhatsApp.
 async function desligar(sinal: string) {
   log.info({ sinal }, "desligando");
+  motor.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);
   await prisma.$disconnect().catch(() => undefined);

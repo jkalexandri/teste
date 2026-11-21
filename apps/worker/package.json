@@ -6,8 +6,9 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
-    "teste-qr": "tsx scripts/teste-qr.ts"
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "teste-qr": "tsx scripts/teste-qr.ts",
+    "teste-campanha": "tsx scripts/teste-campanha.ts"
   },
   "dependencies": {
     "@filapro/db": "workspace:*",
