@@ -1,6 +1,6 @@
 // Dashboard por perfil (estrutura da prévia, prompt seção 11).
-// Só números reais do banco. Leads, campanhas e disparos ainda não existem
-// (etapas 7 e 8), por isso aparecem zerados.
+// Só números reais do banco. Leads reais desde a etapa 7; campanhas e disparos
+// ainda não existem (etapa 8), por isso aparecem zerados.
 // Regras: sem linha TOTAL no fim do resumo por usuário; sem "— só a sua empresa";
 // no Admin da Empresa, "Disparos por usuários" lista só os usuários (sem o Administrador).
 import { redirect } from "next/navigation";
@@ -11,6 +11,8 @@ import { diasRestantes } from "@/lib/auth/acesso";
 import Cabecalho from "@/components/app/Cabecalho";
 import { Clock3, Layers, Play, Send, ShieldCheck, Sparkles, TriangleAlert } from "@/components/icons";
 import Link from "next/link";
+import { formatarTelefone } from "@/lib/telefone";
+import { STATUS_LEAD } from "@/lib/leads-status";
 
 export const dynamic = "force-dynamic";
 
@@ -63,18 +65,19 @@ export default async function DashboardPage() {
   if (u.cargo === Cargo.SUPERADMIN) {
     const empresas = await prisma.empresa.findMany({
       where: { modulo: Modulo.EMPRESARIAL },
-      include: { usuarios: { where: { cargo: Cargo.USUARIO }, select: { id: true } } }, // Admin não conta (decisão #23)
+      include: { usuarios: { where: { cargo: Cargo.USUARIO }, select: { id: true } }, _count: { select: { leads: true } } }, // Admin não conta (decisão #23)
       orderBy: { nome: "asc" },
     });
     const individuais = await prisma.usuario.findMany({
       where: { cargo: Cargo.USUARIO, empresa: { modulo: Modulo.INDIVIDUAL } },
-      include: { empresa: true },
+      include: { empresa: { include: { _count: { select: { leads: true } } } } },
       orderBy: { nome: "asc" },
     });
+    const totalLeads = await prisma.lead.count();
     const cards = [
       { l: "Empresas", v: empresas.length },
       { l: "Usuários Individuais", v: individuais.length },
-      { l: "Leads (total)", v: 0 },
+      { l: "Leads (total)", v: totalLeads.toLocaleString("pt-BR") },
       { l: "Campanhas (total)", v: 0 },
       { l: "Enviados (total)", v: 0 },
       { l: "Em fila (total)", v: 0 },
@@ -114,7 +117,7 @@ export default async function DashboardPage() {
                       <td className="font-bold">{e.nome}</td>
                       <td>{e.usuarios.length} / {e.limiteUsuarios}</td>
                       <td>{diasAte(e.expiraEm)}</td>
-                      <td>0</td><td>0</td><td>0</td><td>0</td>
+                      <td>{e._count.leads.toLocaleString("pt-BR")}</td><td>0</td><td>0</td><td>0</td>
                     </tr>
                   ))}
                 </tbody>
@@ -141,7 +144,7 @@ export default async function DashboardPage() {
                         <span className="block text-[11px] font-normal" style={{ color: "var(--muted)" }}>{i.email}</span>
                       </td>
                       <td>{i.empresa ? diasAte(i.empresa.expiraEm) : "—"}</td>
-                      <td>0</td><td>0</td><td>0</td><td>0</td>
+                      <td>{(i.empresa?._count.leads ?? 0).toLocaleString("pt-BR")}</td><td>0</td><td>0</td><td>0</td>
                     </tr>
                   ))}
                 </tbody>
@@ -228,6 +231,7 @@ export default async function DashboardPage() {
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const primeiroNome = u.nome.split(" ")[0];
+  const recentes = await prisma.lead.findMany({ where: { usuarioId: u.id }, orderBy: { criadoEm: "desc" }, take: 5 });
   return (
     <section className="flex-1 flex flex-col">
       <Cabecalho
@@ -250,8 +254,25 @@ export default async function DashboardPage() {
       </div>
       <div className="grid lg:grid-cols-[1.55fr_.85fr] gap-3 mt-3">
         <div className="card p-3">
-          <h2 className="font-display font-bold text-[14px]">Leads recentes</h2>
-          <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Nenhum lead ainda. O cadastro de leads chega na etapa 7.</p>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display font-bold text-[14px]">Leads recentes</h2>
+            {u.permissoes.includes("leads") && <Link href="/leads" className="text-[12px] font-bold" style={{ color: "var(--primary)" }}>Ver todos os leads →</Link>}
+          </div>
+          {recentes.length === 0 ? (
+            <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Nenhum lead ainda.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {recentes.map((l) => (
+                <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg px-2 py-1.5" style={{ background: "var(--surface-3)" }}>
+                  <span className="min-w-0">
+                    <b className="text-[12px] [overflow-wrap:anywhere]">{l.nome || "(sem nome)"}</b>
+                    <span className="text-[11px] block" style={{ color: "var(--muted)" }}>{l.codigo} • {formatarTelefone(l.telefone)}</span>
+                  </span>
+                  <span className="chip" style={{ background: STATUS_LEAD[l.status].fundo, color: STATUS_LEAD[l.status].cor }}>{STATUS_LEAD[l.status].rotulo}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="card p-3">
           <h3 className="font-display font-bold text-[13px]">Próximos na fila</h3>

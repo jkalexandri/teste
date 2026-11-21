@@ -16,6 +16,9 @@ export default async function UsuariosPage() {
     where: { empresaId: empresa.id, cargo: Cargo.USUARIO },
     orderBy: { nome: "asc" },
   });
+  // Leads por usuário (para mostrar uso x limite — decisão #58)
+  const grupos = await prisma.lead.groupBy({ by: ["usuarioId"], where: { empresaId: empresa.id }, _count: { _all: true } });
+  const contagem = new Map(grupos.map((g) => [g.usuarioId, g._count._all]));
   return (
     <section className="flex-1 flex flex-col">
       <Cabecalho
@@ -27,6 +30,9 @@ export default async function UsuariosPage() {
         limite={empresa.limiteUsuarios}
         usuarios={usuarios.map((u) => ({
           id: u.id,
+          codigo: u.codigo ?? "",
+          limiteLeads: u.limiteLeads,
+          leads: contagem.get(u.id) ?? 0,
           nome: u.nome,
           email: u.email,
           whatsapp: u.whatsapp ?? "",

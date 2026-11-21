@@ -131,7 +131,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
               </div>
               <p className="text-[11px] leading-relaxed mt-1.5" style={{ color: "var(--muted)" }}>
                 {cargo === "SUPERADMIN"
-                  ? "Acesso total, sempre agrupado por empresa e por usuário individual, sem enviar mensagem por ninguém."
+                  ? "Acesso total, sempre agrupado por empresa e por usuário individual."
                   : cargo === "ADMIN_EMPRESA"
                     ? "O administrador vê contadores agregados da sua empresa. Admin não envia mensagens."
                     : "Você vê só seus leads, conversas e seu WhatsApp. Nenhum usuário acessa dados de outro."}

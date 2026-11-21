@@ -2,7 +2,7 @@
 // Cria a "Empresa" (no Individual, a conta da própria pessoa) e o usuário,
 // com senha temporária enviada por e-mail (troca obrigatória no 1º acesso).
 import "server-only";
-import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, type Prisma } from "@filapro/db";
+import { prisma, gerarHash, gerarSenhaTemporaria, proximoCodigo, Cargo, Modulo, type Prisma } from "@filapro/db";
 import { enviarEmail } from "@/lib/email";
 
 /** Senha temporária de conta nova vale 7 dias (mesma regra do Super Admin na instalação). */
@@ -33,14 +33,21 @@ export type NovaConta = {
   limiteUsuarios: number;
   prazoDias: number;
   limiteDisparos?: number | null;
+  /** Limite de leads da conta (decisão #58). Vazio = ilimitado. */
+  limiteLeads?: number | null;
   usuario: { nome: string; email: string; whatsapp?: string | null };
 };
 
 /** Cria conta + usuário (Admin da Empresa no Empresarial; Usuário no Individual). */
 export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient = prisma) {
   const temp = gerarSenhaTemporaria();
+  const empresarial = dados.modulo === Modulo.EMPRESARIAL;
+  // Códigos (decisão #63): empresa "E…" + Admin "EU…"; individual: conta e usuário com o mesmo número.
+  const codigoConta = await proximoCodigo(tx, empresarial ? "empresa" : "individual");
+  const codigoUsuario = empresarial ? await proximoCodigo(tx, "usuario_empresa") : codigoConta;
   const empresa = await tx.empresa.create({
     data: {
+      codigo: codigoConta,
       nome: dados.nomeConta,
       modulo: dados.modulo,
       pacote: dados.pacote,
@@ -49,10 +56,12 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       prazoDias: dados.prazoDias,
       expiraEm: fimDoPrazo(dados.prazoDias),
       limiteDisparos: dados.limiteDisparos ?? null,
+      limiteLeads: dados.limiteLeads ?? null,
     },
   });
   const usuario = await tx.usuario.create({
     data: {
+      codigo: codigoUsuario,
       nome: dados.usuario.nome,
       email: dados.usuario.email.toLowerCase(),
       whatsapp: dados.usuario.whatsapp || null,
@@ -94,17 +103,19 @@ export function validarComprador(c: { nome: string; email: string; whatsapp: str
 /** Cria um usuário dentro de uma empresa existente (Admin da Empresa — etapa 5). */
 export async function criarUsuarioNaEmpresa(
   empresaId: string,
-  u: { nome: string; email: string; whatsapp: string; permissoes: string[] },
+  u: { nome: string; email: string; whatsapp: string; permissoes: string[]; limiteLeads?: number | null },
 ) {
   const temp = gerarSenhaTemporaria();
   const usuario = await prisma.usuario.create({
     data: {
+      codigo: await proximoCodigo(prisma, "usuario_empresa"),
       nome: u.nome,
       email: u.email.toLowerCase(),
       whatsapp: u.whatsapp,
       cargo: Cargo.USUARIO,
       empresaId,
       permissoes: u.permissoes,
+      limiteLeads: u.limiteLeads ?? null,
       senhaTempHash: await gerarHash(temp),
       senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000),
     },

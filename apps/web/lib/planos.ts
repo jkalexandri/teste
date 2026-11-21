@@ -13,6 +13,8 @@ export type PlanoPublico = {
   prazoDias: number;
   testeDias: number | null;
   testeDisparos: number | null;
+  /** Limite de leads (decisão #58). Vazio = ilimitado. */
+  limiteLeads: number | null;
   selo: string;
   frase: string;
   condicoes: string;

@@ -30,6 +30,7 @@ export async function criarIndividual(form: FormData): Promise<R> {
     limiteUsuarios: 1,
     prazoDias,
     limiteDisparos: plano.gratis ? plano.testeDisparos ?? 20 : null,
+    limiteLeads: plano.limiteLeads,
     usuario: dados,
   });
   const enviado = await enviarEmailBoasVindas(dados.nome, dados.email, conta.senhaTemporaria, plano.nome, Modulo.INDIVIDUAL);

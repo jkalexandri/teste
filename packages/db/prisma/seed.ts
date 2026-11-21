@@ -4,6 +4,7 @@
 // - Só fora de produção: contas de teste usadas pelos botões demo do login (decisão #3).
 import { PrismaClient, Cargo, Modulo } from "@prisma/client";
 import { gerarHash, gerarSenhaTemporaria } from "../src/senha";
+import { proximoCodigo } from "../src/codigos";
 
 const prisma = new PrismaClient();
 const PRODUCAO = process.env.NEXT_PUBLIC_APP_ENV === "production";
@@ -29,6 +30,7 @@ async function criarSuperAdmin() {
   const temp = gerarSenhaTemporaria();
   await prisma.usuario.create({
     data: {
+      codigo: await proximoCodigo(prisma, "superadmin"),
       nome: process.env.SUPERADMIN_NOME || "Super Admin",
       email,
       cargo: Cargo.SUPERADMIN,
@@ -47,6 +49,8 @@ async function criarContasDeTeste() {
     update: {},
     create: {
       id: "teste-empresa-exemplo",
+      // Só gasta um número do contador se a conta ainda não existir.
+      codigo: (await prisma.empresa.findUnique({ where: { id: "teste-empresa-exemplo" } })) ? null : await proximoCodigo(prisma, "empresa"),
       nome: "Empresa Exemplo",
       modulo: Modulo.EMPRESARIAL,
       pacote: "Padrão",
@@ -59,6 +63,7 @@ async function criarContasDeTeste() {
     update: {},
     create: {
       id: "teste-conta-individual",
+      codigo: (await prisma.empresa.findUnique({ where: { id: "teste-conta-individual" } })) ? null : await proximoCodigo(prisma, "individual"),
       nome: "Conta Individual — Usuário Demo",
       modulo: Modulo.INDIVIDUAL,
       pacote: "Individual",
@@ -74,10 +79,14 @@ async function criarContasDeTeste() {
     { nome: "Usuário Demo", email: "usuario@disparopro.com.br", senha: "User@12345678", cargo: Cargo.USUARIO, empresaId: individual.id },
   ];
   for (const c of contas) {
-    await prisma.usuario.upsert({
-      where: { email: c.email },
-      update: {},
-      create: { nome: c.nome, email: c.email, cargo: c.cargo, empresaId: c.empresaId, senhaHash: await gerarHash(c.senha) },
+    if (await prisma.usuario.findUnique({ where: { email: c.email } })) continue;
+    // Código (decisão #63): Super Admin "S…", usuário de empresa "EU…", individual = número da conta.
+    const codigo =
+      c.cargo === Cargo.SUPERADMIN ? await proximoCodigo(prisma, "superadmin")
+      : c.empresaId === empresa.id ? await proximoCodigo(prisma, "usuario_empresa")
+      : individual.codigo;
+    await prisma.usuario.create({
+      data: { codigo, nome: c.nome, email: c.email, cargo: c.cargo, empresaId: c.empresaId, senhaHash: await gerarHash(c.senha) },
     });
   }
   console.log("Contas de teste prontas (" + contas.length + ").");

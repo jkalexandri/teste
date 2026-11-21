@@ -7,6 +7,7 @@ import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, StatusUsuario }
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
 import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
 import { PERMISSOES } from "@/lib/menu";
+import { lerLimite } from "@/lib/limite";
 
 type R = { ok: boolean; mensagem: string };
 const t = (f: FormData, k: string, max = 120) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -41,7 +42,9 @@ export async function criarUsuario(form: FormData): Promise<R> {
   if (await prisma.usuario.findUnique({ where: { email: dados.email } })) {
     return { ok: false, mensagem: `O e-mail ${dados.email} já tem acesso ao FilaPro Leads.` };
   }
-  const { usuario, senhaTemporaria } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form) });
+  const limiteLeads = lerLimite(form);
+  if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads do usuário ou marque “Ilimitado”." };
+  const { usuario, senhaTemporaria } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form), limiteLeads });
   const enviado = await enviarEmailBoasVindas(usuario.nome, usuario.email, senhaTemporaria, v.empresa.pacote, Modulo.EMPRESARIAL);
   revalidatePath("/usuarios");
   return {
@@ -60,7 +63,9 @@ export async function editarUsuario(id: string, form: FormData): Promise<R> {
   if (dados.email !== u.email && (await prisma.usuario.findUnique({ where: { email: dados.email } }))) {
     return { ok: false, mensagem: `O e-mail ${dados.email} já está em uso.` };
   }
-  await prisma.usuario.update({ where: { id }, data: { ...dados, permissoes: lerPermissoes(form) } });
+  const limiteLeads = lerLimite(form);
+  if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads do usuário ou marque “Ilimitado”." };
+  await prisma.usuario.update({ where: { id }, data: { ...dados, permissoes: lerPermissoes(form), limiteLeads } });
   revalidatePath("/usuarios");
   return { ok: true, mensagem: `Usuário ${dados.nome} atualizado.` };
 }
@@ -101,8 +106,8 @@ export async function alternarAtivo(id: string): Promise<R> {
 
 /**
  * Exclui o usuário depois de transferir os dados dele para outro usuário da
- * empresa (decisão #49). Leads, campanhas e conversas ainda não existem
- * (etapas 7, 8 e 10): quando existirem, a transferência entra aqui.
+ * empresa (decisão #49). Leads transferidos desde a etapa 7; campanhas e
+ * conversas entram aqui nas etapas 8 e 10.
  */
 export async function excluirUsuario(id: string, destinoId: string | null): Promise<R> {
   const s = await exigirAdminEmpresa();
@@ -119,7 +124,9 @@ export async function excluirUsuario(id: string, destinoId: string | null): Prom
   }
 
   await prisma.$transaction(async (tx) => {
-    // TODO etapas 7/8/10: transferir leads, campanhas e conversas de `u.id` para `destino.id`.
+    // Leads: passam para o usuário escolhido (o código do dono acompanha — decisão #63).
+    if (destino) await tx.lead.updateMany({ where: { usuarioId: id }, data: { usuarioId: destino.id, codigoUsuario: destino.codigo ?? "" } });
+    // TODO etapas 8/10: transferir campanhas e conversas de `u.id` para `destino.id`.
     await tx.sessao.deleteMany({ where: { usuarioId: id } });
     await tx.usuario.delete({ where: { id } });
   });

@@ -64,6 +64,8 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       expiraEm: novoVencimento(e.expiraEm, pedido.prazoDias),
       // Plano pago não tem limite de disparos do teste grátis.
       limiteDisparos: plano?.gratis ? e.limiteDisparos : null,
+      // Trocou de plano: passa a valer o limite de leads do novo plano (decisão #58).
+      ...(plano && plano.id !== e.planoId ? { limiteLeads: plano.limiteLeads } : {}),
       // Novo ciclo: zera os avisos e o link.
       tokenRenovacao: null,
       avisoRenovacao10Em: null,

@@ -7,6 +7,7 @@ import { formatarReais, type PlanoPublico } from "@/lib/planos";
 import { GradePlanos } from "@/components/planos/PopupPlanos";
 import { Eye, EyeOff, Pencil, Sparkles, X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
+import CampoLimite from "@/components/app/CampoLimite";
 import { alternarVisivel, definirDestaque, moverPlano, salvarPlano } from "./actions";
 
 const reais = (c: number | null) => (c == null ? "" : (c / 100).toFixed(2).replace(".", ","));
@@ -128,6 +129,10 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
               )}
               <Campo nome="periodo" rotulo="Período (aparece após o preço)" valor={editando.periodo} dica="Ex.: mês" />
               <Campo nome="prazoDias" rotulo="Prazo de acesso (dias)" valor={editando.prazoDias} tipo="number" />
+              <CampoLimite
+                valor={editando.limiteLeads}
+                dica={editando.modulo === "EMPRESARIAL" ? "Limite da empresa (soma de todos os usuários). Pode ser ajustado em cada empresa." : "Máximo de leads da conta."}
+              />
               {editando.gratis && (
                 <>
                   <Campo nome="testeDias" rotulo="Teste grátis: dias" valor={editando.testeDias ?? ""} tipo="number" />

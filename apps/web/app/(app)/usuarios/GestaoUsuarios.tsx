@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Pencil, Plus, X } from "@/components/icons";
 import { PERMISSOES } from "@/lib/menu";
+import CampoLimite from "@/components/app/CampoLimite";
 import { alternarAtivo, criarUsuario, editarUsuario, excluirUsuario, resetarSenha } from "./actions";
 
 type U = {
-  id: string; nome: string; email: string; whatsapp: string; ativo: boolean; pendente: boolean;
+  id: string; codigo: string; limiteLeads: number | null; leads: number; nome: string; email: string; whatsapp: string; ativo: boolean; pendente: boolean;
   permissoes: string[]; ultimoAcesso: string | null;
 };
 
@@ -71,11 +72,12 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
           <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Nenhum usuário cadastrado ainda.</p>
         ) : (
           <div className="table-wrap mt-2">
-            <table style={{ minWidth: 960, fontSize: 12 }}>
-              <thead><tr><th>Usuário</th><th>Permissões</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
+            <table style={{ minWidth: 1100, fontSize: 12 }}>
+              <thead><tr><th>Código</th><th>Usuário</th><th>Leads</th><th>Permissões</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
               <tbody>
                 {lista.map((u) => (
                   <tr key={u.id} style={{ height: 42 }}>
+                    <td style={{ whiteSpace: "nowrap", fontFamily: "monospace" }}>{u.codigo}</td>
                     <td style={{ whiteSpace: "nowrap", maxWidth: 320 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         <span style={{ width: 28, height: 28, borderRadius: 999, background: "var(--primary)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
@@ -85,6 +87,9 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
                           <b>{u.nome}</b><span style={{ color: "var(--muted)" }}> • {u.email}</span>
                         </span>
                       </div>
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {u.leads.toLocaleString("pt-BR")} / {u.limiteLeads == null ? "ilimitado" : u.limiteLeads.toLocaleString("pt-BR")}
                     </td>
                     <td className="text-[11px]" style={{ color: "var(--muted)" }}>
                       {PERMISSOES.filter((p) => u.permissoes.includes(p.id)).map((p) => p.label).join(", ") || "Nenhuma"}
@@ -140,7 +145,8 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
             <div className="grid sm:grid-cols-2 gap-2.5 mt-3">
               <div><label className="label" htmlFor="u-nome">Nome completo</label><input id="u-nome" name="nome" className="input" defaultValue={editando?.nome} /></div>
               <div><label className="label" htmlFor="u-email">E-mail (login)</label><input id="u-email" name="email" type="email" className="input" defaultValue={editando?.email} /></div>
-              <div className="sm:col-span-2"><label className="label" htmlFor="u-whats">WhatsApp próprio</label><input id="u-whats" name="whatsapp" className="input" placeholder="(11) 90000-0000" defaultValue={editando?.whatsapp} /></div>
+              <div><CampoLimite valor={editando ? editando.limiteLeads : null} rotulo="Limite de leads do usuário" id="u-limite" /></div>
+              <div><label className="label" htmlFor="u-whats">WhatsApp próprio</label><input id="u-whats" name="whatsapp" className="input" placeholder="(11) 90000-0000" defaultValue={editando?.whatsapp} /></div>
             </div>
             <span className="label mt-3">Permissões</span>
             <div className="flex flex-wrap gap-2">

@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Plus, X } from "@/components/icons";
-import { prorrogarEmpresa } from "../empresas/actions";
+import { definirLimiteLeads, prorrogarEmpresa } from "../empresas/actions";
+import CampoLimite from "@/components/app/CampoLimite";
 import { alternarBloqueio, criarIndividual, reenviarAcesso } from "./actions";
 
 type Linha = {
-  id: string; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
+  id: string; codigo: string; leads: number; limiteLeads: number | null; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
   expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean;
 };
 type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number };
@@ -21,8 +22,9 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
   const [erro, setErro] = useState("");
   const [planoId, setPlanoId] = useState(planos.find((p) => !p.gratis)?.id ?? planos[0]?.id ?? "");
   const [busca, setBusca] = useState("");
+  const [limitando, setLimitando] = useState<Linha | null>(null);
   const plano = planos.find((p) => p.id === planoId);
-  const lista = usuarios.filter((u) => (u.nome + u.email + u.whatsapp).toLowerCase().includes(busca.toLowerCase()));
+  const lista = usuarios.filter((u) => (u.codigo + u.nome + u.email + u.whatsapp).toLowerCase().includes(busca.toLowerCase()));
 
   function agir(fn: () => Promise<{ ok: boolean; mensagem: string }>) {
     iniciar(async () => {
@@ -90,15 +92,17 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
           <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Nenhum usuário individual encontrado.</p>
         ) : (
           <div className="table-wrap mt-2">
-            <table style={{ minWidth: 900 }}>
-              <thead><tr><th>Usuário</th><th>Plano</th><th>Expira em</th><th>Dias restantes</th><th>Status</th><th>Ações</th></tr></thead>
+            <table style={{ minWidth: 1100 }}>
+              <thead><tr><th>Código</th><th>Usuário</th><th>Leads</th><th>Plano</th><th>Expira em</th><th>Dias restantes</th><th>Status</th><th>Ações</th></tr></thead>
               <tbody>
                 {lista.map((u) => (
                   <tr key={u.id}>
+                    <td style={{ fontFamily: "monospace", whiteSpace: "nowrap" }}>{u.codigo}</td>
                     <td>
                       <b>{u.nome}</b>
                       <span className="block text-[11px]" style={{ color: "var(--muted)" }}>{u.email}{u.whatsapp && ` • ${u.whatsapp}`}</span>
                     </td>
+                    <td style={{ whiteSpace: "nowrap" }}>{u.leads.toLocaleString("pt-BR")} / {u.limiteLeads == null ? "ilimitado" : u.limiteLeads.toLocaleString("pt-BR")}</td>
                     <td>{u.pacote}</td>
                     <td>{u.expiraEm ? new Date(u.expiraEm).toLocaleDateString("pt-BR") : "—"}</td>
                     <td>
@@ -115,6 +119,7 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                     <td>
                       <div className="flex gap-1 flex-wrap">
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(u.empresaId))}>Prorrogar</button>
+                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => setLimitando(u)}>Limite de leads</button>
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Bloquear" : "Desbloquear"} ${u.nome}?`) && agir(() => alternarBloqueio(u.id))}>
                           {u.ativo ? "Bloquear" : "Desbloquear"}
                         </button>
@@ -130,6 +135,31 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
           </div>
         )}
       </div>
+      {/* Limite de leads da conta individual (decisão #58) */}
+      {limitando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3" style={{ background: "rgba(10,20,15,.55)" }} role="dialog" aria-modal="true" aria-label="Limite de leads">
+          <form
+            className="card w-full max-w-[400px] p-4"
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              const fd = new FormData(ev.currentTarget);
+              iniciar(async () => {
+                const r = await definirLimiteLeads(limitando.empresaId, fd);
+                toast(r.mensagem, r.ok ? "ok" : "erro");
+                if (r.ok) setLimitando(null);
+                router.refresh();
+              });
+            }}
+          >
+            <h2 className="font-display font-extrabold text-[16px]">Limite de leads • {limitando.nome}</h2>
+            <div className="mt-3"><CampoLimite valor={limitando.limiteLeads} id="ind-limite" /></div>
+            <div className="flex justify-end gap-2 mt-3">
+              <button type="button" className="btn-ghost" onClick={() => setLimitando(null)}>Cancelar</button>
+              <button className="btn-primary" disabled={pendente}>Salvar limite</button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 }

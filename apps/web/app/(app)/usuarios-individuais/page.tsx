@@ -17,7 +17,7 @@ export default async function IndividuaisPage() {
   const [usuarios, planos] = await Promise.all([
     prisma.usuario.findMany({
       where: { cargo: Cargo.USUARIO, empresa: { modulo: Modulo.INDIVIDUAL } },
-      include: { empresa: true },
+      include: { empresa: { include: { _count: { select: { leads: true } } } } },
       orderBy: { nome: "asc" },
     }),
     prisma.plano.findMany({ where: { modulo: Modulo.INDIVIDUAL }, orderBy: { ordem: "asc" } }),
@@ -33,6 +33,9 @@ export default async function IndividuaisPage() {
         planos={planos.map((p) => ({ id: p.id, nome: p.nome, gratis: p.gratis, prazoDias: p.gratis ? p.testeDias ?? 7 : p.prazoDias }))}
         usuarios={usuarios.map((u) => ({
           id: u.id,
+          codigo: u.codigo ?? "",
+          leads: u.empresa?._count.leads ?? 0,
+          limiteLeads: u.empresa?.limiteLeads ?? null,
           empresaId: u.empresaId!,
           nome: u.nome,
           email: u.email,

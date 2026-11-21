@@ -27,7 +27,8 @@ export async function sessaoDoAlvo(alvo: AlvoWhatsapp): Promise<{ sessaoId: stri
   const s = await obterSessao();
   if (!s || s.precisaTrocar || motivoSemAcesso(s)) return null;
   if (alvo === "plataforma") return s.usuario.cargo === Cargo.SUPERADMIN ? { sessaoId: SESSAO_PLATAFORMA } : null;
-  return s.usuario.cargo === Cargo.USUARIO ? { sessaoId: s.usuario.id, usuarioId: s.usuario.id } : null;
+  // Usuário e Super Admin (decisão #62) conectam o próprio WhatsApp; o Admin da Empresa não.
+  return s.usuario.cargo === Cargo.USUARIO || s.usuario.cargo === Cargo.SUPERADMIN ? { sessaoId: s.usuario.id, usuarioId: s.usuario.id } : null;
 }
 
 export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {

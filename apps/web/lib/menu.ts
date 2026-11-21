@@ -44,6 +44,8 @@ const USUARIO: ItemMenu[] = [
 const ADMIN_EMPRESA: ItemMenu[] = [
   { href: "/dashboard", label: "Dashboard", icone: "dashboard", grupo: "Principal", etapa: 3 },
   { href: "/todos-os-disparos", label: "Todos os disparos", icone: "envio", grupo: "Vendas", etapa: 8 },
+  // Decisão #56: o Admin da Empresa vê e cuida dos leads de todos os usuários da empresa.
+  { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7 },
   { href: "/usuarios", label: "Usuários", icone: "usuarios", grupo: "Administrativo", etapa: 5 },
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9 },
@@ -70,6 +72,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },
   // Decisão #51: WhatsApp da plataforma (avisos do sistema).
   { href: "/numero-plataforma", label: "Número da plataforma", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
+  // Decisão #62: o Super Admin também envia, pelo próprio WhatsApp.
+  { href: "/whatsapp", label: "Meu WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

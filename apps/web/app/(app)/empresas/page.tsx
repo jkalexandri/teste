@@ -23,11 +23,17 @@ export default async function EmpresasPage() {
 
   const empresas = await prisma.empresa.findMany({
     where: souSuper ? { modulo: Modulo.EMPRESARIAL } : { id: sessao.usuario.empresaId ?? "-" },
-    include: { usuarios: { select: { id: true, nome: true, email: true, cargo: true, status: true }, orderBy: { nome: "asc" } } },
+    include: {
+      usuarios: { select: { id: true, codigo: true, nome: true, email: true, cargo: true, status: true }, orderBy: { nome: "asc" } },
+      _count: { select: { leads: true } },
+    },
     orderBy: { nome: "asc" },
   });
   const linhas: EmpresaLinha[] = empresas.map((e) => ({
     id: e.id,
+    codigo: e.codigo ?? "",
+    leads: e._count.leads,
+    limiteLeads: e.limiteLeads,
     nome: e.nome,
     pacote: e.pacote,
     planoId: e.planoId,
@@ -37,7 +43,7 @@ export default async function EmpresasPage() {
     dias: dias(e.expiraEm),
     // O Admin da Empresa não conta no limite (decisão #23).
     usados: e.usuarios.filter((u) => u.cargo === Cargo.USUARIO).length,
-    usuarios: e.usuarios.map((u) => ({ id: u.id, nome: u.nome, email: u.email, admin: u.cargo === Cargo.ADMIN_EMPRESA, ativo: u.status === "ATIVO" })),
+    usuarios: e.usuarios.map((u) => ({ id: u.id, codigo: u.codigo ?? "", nome: u.nome, email: u.email, admin: u.cargo === Cargo.ADMIN_EMPRESA, ativo: u.status === "ATIVO" })),
   }));
 
   const planos = souSuper

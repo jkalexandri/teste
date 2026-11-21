@@ -52,6 +52,7 @@ export async function confirmarPagamento(id: string): Promise<R> {
         planoId: pedido.planoId,
         limiteUsuarios: empresarial ? pedido.usuarios ?? 1 : 1,
         prazoDias: pedido.prazoDias,
+        limiteLeads: (await tx.plano.findUnique({ where: { id: pedido.planoId } }))?.limiteLeads ?? null,
         usuario: { nome: pedido.nome, email: pedido.email, whatsapp: pedido.whatsapp },
       },
       tx,

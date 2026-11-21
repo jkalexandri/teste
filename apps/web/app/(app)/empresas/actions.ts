@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma, Cargo, Modulo } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
+import { lerLimite } from "@/lib/limite";
 import { criarConta, enviarEmailBoasVindas, novoVencimento, validarComprador } from "@/lib/contas";
 
 type R = { ok: boolean; mensagem: string };
@@ -44,6 +45,7 @@ export async function criarEmpresa(form: FormData): Promise<R> {
     planoId: r.plano.id,
     limiteUsuarios: r.limite,
     prazoDias,
+    limiteLeads: r.plano.limiteLeads,
     usuario: admin,
   });
   const enviado = await enviarEmailBoasVindas(admin.nome, admin.email, conta.senhaTemporaria, r.plano.nome, Modulo.EMPRESARIAL);
@@ -99,4 +101,17 @@ export async function alternarEmpresaAtiva(empresaId: string): Promise<R> {
   await prisma.empresa.update({ where: { id: empresaId }, data: { ativa: !e.ativa } });
   revalidatePath("/empresas");
   return { ok: true, mensagem: `${e.nome} ${e.ativa ? "inativada: os usuários não entram mais" : "ativada"}.` };
+}
+
+/** Limite de leads da conta (decisão #58): vazio = ilimitado. Vale para empresas e contas individuais. */
+export async function definirLimiteLeads(empresaId: string, form: FormData): Promise<R> {
+  await exigirSuperAdmin();
+  const e = await prisma.empresa.findUnique({ where: { id: empresaId } });
+  if (!e) return { ok: false, mensagem: "Conta não encontrada." };
+  const limite = lerLimite(form);
+  if (limite === "erro") return { ok: false, mensagem: "Informe o máximo de leads ou marque “Ilimitado”." };
+  await prisma.empresa.update({ where: { id: empresaId }, data: { limiteLeads: limite } });
+  revalidatePath("/empresas");
+  revalidatePath("/usuarios-individuais");
+  return { ok: true, mensagem: `${e.nome}: limite de leads ${limite == null ? "ilimitado" : `de ${limite.toLocaleString("pt-BR")}`}.` };
 }

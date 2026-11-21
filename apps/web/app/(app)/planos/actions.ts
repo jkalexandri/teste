@@ -3,6 +3,7 @@
 // Ações do Super Admin sobre o catálogo de planos (decisão #27).
 import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
+import { lerLimite } from "@/lib/limite";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { lerReais } from "@/lib/planos";
 
@@ -32,6 +33,8 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   }
 
   const prazoDias = inteiro(form.get("prazoDias")) || 31;
+  const limiteLeads = lerLimite(form);
+  if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads ou marque “Ilimitado”." };
   const recursos = texto(form.get("recursos"), 5000).split("\n").map((r) => r.trim()).filter(Boolean);
 
   await prisma.plano.update({
@@ -43,6 +46,7 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       precoAntigo: atual.gratis ? null : precoAntigo,
       periodo: texto(form.get("periodo"), 20) || "mês",
       prazoDias,
+      limiteLeads,
       testeDias: atual.gratis ? inteiro(form.get("testeDias")) : null,
       testeDisparos: atual.gratis ? inteiro(form.get("testeDisparos")) : null,
       selo: texto(form.get("selo"), 60),

@@ -460,7 +460,7 @@ export default function LoginScreen() {
                       </button>
                     </div>
                     <p className="login-compact-hide text-[10px] leading-relaxed mt-1.5 text-center text-slate-400">
-                      Admin não envia mensagens. Super Admin vê tudo, agrupado por empresa e por usuário individual, sem enviar mensagem por eles.
+                      Admin não envia mensagens. Super Admin vê tudo, agrupado por empresa e por usuário individual.
                     </p>
                     <p className="login-compact-hide text-[10px] leading-relaxed mt-2.5 text-center text-slate-400">
                       Senha mínima de 12 caracteres, com maiúscula, minúscula, número e caractere especial.

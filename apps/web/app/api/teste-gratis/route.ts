@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         limiteUsuarios: 1,
         prazoDias: plano.testeDias ?? 7,
         limiteDisparos: plano.testeDisparos ?? 20,
+        limiteLeads: plano.limiteLeads,
         usuario: { nome: dados.nome, email: dados.email, whatsapp: dados.whatsapp },
       },
       tx,

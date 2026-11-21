@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Building2, Plus, X } from "@/components/icons";
-import { alterarPacote, alternarEmpresaAtiva, criarEmpresa, prorrogarEmpresa } from "./actions";
+import { alterarPacote, alternarEmpresaAtiva, criarEmpresa, definirLimiteLeads, prorrogarEmpresa } from "./actions";
+import CampoLimite from "@/components/app/CampoLimite";
 
 export type EmpresaLinha = {
-  id: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean;
-  expiraEm: string; dias: number; usados: number;
-  usuarios: { id: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
+  id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean;
+  expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null;
+  usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
 };
 type PlanoOpcao = { id: string; nome: string; usuarios: number | null; personalizado: boolean; prazoDias: number };
 
@@ -31,6 +32,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
   const [planoNovo, setPlanoNovo] = useState(planos.find((p) => !p.personalizado)?.id ?? "");
   const [trocando, setTrocando] = useState<string | null>(null);
   const [planoTroca, setPlanoTroca] = useState("");
+  const [limitando, setLimitando] = useState<string | null>(null);
 
   const planoSel = planos.find((p) => p.id === planoNovo);
   const planoTrocaSel = planos.find((p) => p.id === planoTroca);
@@ -116,7 +118,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                       <Building2 size={17} />
                     </div>
                     <div className="min-w-0">
-                      <b className="text-[14px] [overflow-wrap:anywhere]">{e.nome}</b>
+                      <b className="text-[14px] [overflow-wrap:anywhere]"><span style={{ fontFamily: "monospace", color: "var(--muted)" }}>{e.codigo}</span> • {e.nome}</b>
                       <p className="text-[12px]" style={{ color: "var(--muted)" }}>
                         Pacote <b style={{ color: "var(--text)" }}>{e.pacote}</b> • {e.ativa ? "Ativa" : "Inativa"} • Expira em{" "}
                         <b style={{ color: "var(--text)" }}>{data(e.expiraEm)}</b> ({textoDias(e.dias)}, iguais para todos da empresa)
@@ -125,6 +127,9 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                   </div>
                   <span className="chip self-start" style={e.usados >= e.limite ? { background: "#fff7e0", color: "#8a5a00" } : { background: "var(--primary-soft)", color: "var(--primary-dark)" }}>
                     Usuários: {e.usados} / {e.limite}{e.usados >= e.limite ? " • limite atingido" : ""}
+                  </span>
+                  <span className="chip self-start" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>
+                    Leads: {e.leads.toLocaleString("pt-BR")} / {e.limiteLeads == null ? "ilimitado" : e.limiteLeads.toLocaleString("pt-BR")}
                   </span>
                 </div>
 
@@ -136,6 +141,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                     <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => { setTrocando(e.id); setPlanoTroca(e.planoId ?? planos[0]?.id ?? ""); }}>
                       Alterar pacote
                     </button>
+                    <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => setLimitando(limitando === e.id ? null : e.id)}>Limite de leads</button>
                     <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(e.id))}>Prorrogar</button>
                     <button
                       className="btn-ghost !py-1.5"
@@ -175,6 +181,23 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                   </form>
                 )}
 
+                {limitando === e.id && (
+                  <form
+                    className="rounded-lg p-2.5 mt-2 flex flex-wrap items-end gap-2"
+                    style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}
+                    onSubmit={(ev) => {
+                      ev.preventDefault();
+                      const fd = new FormData(ev.currentTarget);
+                      agir(() => definirLimiteLeads(e.id, fd), () => setLimitando(null));
+                    }}
+                  >
+                    <div className="min-w-[260px]"><CampoLimite valor={e.limiteLeads} rotulo="Limite de leads da empresa (todos os usuários)" id={`ll-${e.id}`} /></div>
+                    <button className="btn-primary" disabled={pendente}>Salvar limite</button>
+                    <button type="button" className="btn-ghost" onClick={() => setLimitando(null)}>Cancelar</button>
+                    <p className="help w-full">O Admin da Empresa pode definir, dentro disto, um limite para cada usuário.</p>
+                  </form>
+                )}
+
                 {aberta && (
                   <div className="rounded-lg p-2.5 mt-2" style={{ background: "var(--surface-3)" }}>
                     <b className="text-[12px]">Pessoas da empresa ({e.usuarios.length})</b>
@@ -184,7 +207,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                       <ul className="mt-1 space-y-1">
                         {e.usuarios.map((u) => (
                           <li key={u.id} className="text-[12px] [overflow-wrap:anywhere]">
-                            {u.nome} • {u.email} • {u.admin ? "Admin da Empresa (não conta no limite)" : "Usuário"}{!u.ativo && " • bloqueado"}
+                            <span style={{ fontFamily: "monospace" }}>{u.codigo}</span> • {u.nome} • {u.email} • {u.admin ? "Admin da Empresa (não conta no limite)" : "Usuário"}{!u.ativo && " • bloqueado"}
                           </li>
                         ))}
                       </ul>
