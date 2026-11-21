@@ -10,6 +10,7 @@ import { criptografar, descriptografar } from "../src/cripto.js";
 import { normalizarNumero, numeroDoJid, paraJid } from "../src/numero.js";
 import { apagarAuth, usarAuthNoBanco } from "../src/auth-banco.js";
 import { criarApi, type Sessoes } from "../src/api.js";
+import { decidirQueda } from "../src/queda.js";
 
 const chave = randomBytes(32);
 
@@ -92,6 +93,26 @@ test("API: exige token, valida dados e chama o gerenciador", async () => {
   assert.equal((await app.inject({ method: "POST", url: "/sessoes/plataforma/enviar", headers: auth, payload: { para: "11900000000", texto: "oi" } })).statusCode, 200);
   assert.equal((await app.inject({ method: "POST", url: "/sessoes/plataforma/enviar", headers: auth, payload: { para: "1100", texto: "oi" } })).statusCode, 409);
   await app.close();
+});
+
+test("queda: depois de ler o QR, o pedido de reinício (515) reconecta e NÃO apaga o login", () => {
+  // Antes da correção, o login recém-criado era apagado aqui e o celular mostrava "não foi possível conectar".
+  assert.deepEqual(decidirQueda(515, false, true, 0), { acao: "reconectar", esperaMs: 0 });
+  assert.deepEqual(decidirQueda(515, true, false, 3), { acao: "reconectar", esperaMs: 0 });
+});
+
+test("queda: demais casos", () => {
+  const q401 = decidirQueda(401, true, false, 0);
+  assert.equal(q401.acao, "encerrar");
+  assert.ok(q401.acao === "encerrar" && q401.apagarLogin && q401.erro.includes("desconectado pelo celular"));
+  const qrExpirou = decidirQueda(408, false, true, 0);
+  assert.ok(qrExpirou.acao === "encerrar" && qrExpirou.erro.includes("QR Code expirou"));
+  const semRede = decidirQueda(408, false, false, 0);
+  assert.ok(semRede.acao === "encerrar" && semRede.erro.includes("Não foi possível falar"));
+  // Já conectado antes e caiu a internet: reconecta com espera crescente (máx. 5 min)
+  assert.deepEqual(decidirQueda(428, true, false, 0), { acao: "reconectar", esperaMs: 2000 });
+  assert.deepEqual(decidirQueda(408, true, false, 3), { acao: "reconectar", esperaMs: 16000 });
+  assert.deepEqual(decidirQueda(503, true, false, 20), { acao: "reconectar", esperaMs: 300000 });
 });
 
 test.after(() => prisma.$disconnect());

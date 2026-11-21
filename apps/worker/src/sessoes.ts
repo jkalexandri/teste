@@ -1,34 +1,17 @@
 // Gerenciador das conexões do WhatsApp (uma por usuário + a da plataforma).
 // Mantém cada conexão viva, guarda o estado no banco (as telas leem de lá)
 // e reconecta sozinho em caso de queda.
-import makeWASocket, { Browsers, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, type WASocket } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, type WASocket } from "@whiskeysockets/baileys";
 import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
 import { numeroDoJid, paraJid } from "./numero.js";
+import { decidirQueda } from "./queda.js";
 
 /** Id fixo da sessão do número da plataforma (decisão #51). */
 export const SESSAO_PLATAFORMA = "plataforma";
 
 type Conexao = { sock: WASocket; tentativas: number; encerrando: boolean; qrGerado: boolean };
-
-/** Mensagens mostradas na tela quando a conexão cai. */
-const ERROS: Record<number, string> = {
-  [DisconnectReason.loggedOut]: "O WhatsApp foi desconectado pelo celular. Conecte de novo lendo o QR Code.",
-  [DisconnectReason.forbidden]: "O WhatsApp bloqueou este número. Verifique o número no celular.",
-  [DisconnectReason.connectionReplaced]: "Este WhatsApp foi aberto em outro lugar. Conecte de novo.",
-  [DisconnectReason.badSession]: "A sessão ficou inválida. Conecte de novo lendo o QR Code.",
-  [DisconnectReason.multideviceMismatch]: "Versão do WhatsApp incompatível. Atualize o app no celular e conecte de novo.",
-};
-
-/** Quedas que exigem novo QR (o login salvo deixa de valer). */
-const ENCERRA_LOGIN = new Set<number>([
-  DisconnectReason.loggedOut,
-  DisconnectReason.forbidden,
-  DisconnectReason.connectionReplaced,
-  DisconnectReason.badSession,
-  DisconnectReason.multideviceMismatch,
-]);
 
 export class GerenciadorSessoes {
   private conexoes = new Map<string, Conexao>();
@@ -76,7 +59,12 @@ export class GerenciadorSessoes {
     const conexao: Conexao = { sock, tentativas, encerrando: false, qrGerado: false };
     this.conexoes.set(id, conexao);
 
-    sock.ev.on("creds.update", () => void salvarCreds().catch((e) => this.log.error({ e, id }, "falha ao salvar credenciais")));
+    // Guarda a última gravação para esperar por ela antes de reconectar
+    // (senão a reconexão pode ler o login antigo do banco).
+    let ultimaGravacao: Promise<void> = Promise.resolve();
+    sock.ev.on("creds.update", () => {
+      ultimaGravacao = ultimaGravacao.then(salvarCreds).catch((e) => this.log.error({ e, id }, "falha ao salvar credenciais"));
+    });
 
     sock.ev.on("connection.update", async (u) => {
       if (u.qr) {
@@ -94,24 +82,15 @@ export class GerenciadorSessoes {
         const codigo = (u.lastDisconnect?.error as { output?: { statusCode?: number } } | undefined)?.output?.statusCode ?? 0;
         this.log.warn({ id, codigo }, "conexão fechada");
 
-        if (ENCERRA_LOGIN.has(codigo)) {
-          await apagarAuth(id);
-          await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: ERROS[codigo] ?? "Conexão encerrada." });
+        const d = decidirQueda(codigo, !!state.creds.me?.id, conexao.qrGerado, conexao.tentativas);
+        if (d.acao === "encerrar") {
+          if (d.apagarLogin) await apagarAuth(id);
+          await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro });
           return;
         }
-        if (!state.creds.registered) {
-          // Ninguém leu o QR a tempo (ou nem chegou a gerar): para até o usuário pedir de novo.
-          await apagarAuth(id);
-          const erro = conexao.qrGerado
-            ? "O QR Code expirou. Clique em Conectar para gerar outro."
-            : "Não foi possível falar com o WhatsApp agora. Tente conectar de novo em instantes.";
-          await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, erro });
-          return;
-        }
-        // Queda comum (internet, reinício pedido pelo WhatsApp): reconecta com espera crescente, até 5 min.
-        const espera = codigo === DisconnectReason.restartRequired ? 0 : Math.min(300_000, 2_000 * 2 ** conexao.tentativas);
-        await this.gravar(id, { status: StatusWhatsapp.CONECTANDO, qr: null });
-        setTimeout(() => void this.abrirSocket(id, conexao.tentativas + 1).catch((e) => this.log.error({ e, id }, "falha ao reconectar")), espera);
+        await ultimaGravacao;
+        await this.gravar(id, { status: StatusWhatsapp.CONECTANDO, qr: null, qrEm: null });
+        setTimeout(() => void this.abrirSocket(id, conexao.tentativas + 1).catch((e) => this.log.error({ e, id }, "falha ao reconectar")), d.esperaMs);
       }
     });
   }
