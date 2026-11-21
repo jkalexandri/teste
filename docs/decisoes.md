@@ -94,6 +94,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 60 | **Super Admin sem restrições:** pode tudo, **inclusive enviar mensagens** (substitui o "sem enviar mensagem" da decisão #5 e do prompt, seção do Super Admin). |
 | 61 | **Arquivo sem cabeçalho:** o sistema identifica sozinho a coluna do telefone (a que tem mais números válidos) e a do nome (a que tem mais textos). Sem coluna de nome, o lead entra com o **nome em branco**. Com cabeçalho, as colunas são achadas pelo nome, em qualquer posição. |
 | 62 | **Super Admin faz o mesmo que os usuários para enviar** (Meu WhatsApp, leads, campanhas). Todos os textos dizendo que o Super Admin não envia são removidos. O **Admin da Empresa continua sem enviar**. |
+| 63 | **Códigos legíveis (gravados em coluna própria, nunca se repetem no sistema):** Super Admin `S00001` · Empresa `E00001` · Conta/usuário individual `00001` · Usuário de empresa, inclusive o Admin, `EU00001` · Lead individual `L00001` · Lead de empresa `EL00001`. Uma sequência por tipo para o sistema inteiro; começa com 5 dígitos e cresce até 10. O lead guarda também o código do usuário e da empresa, para leitura direta no banco. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
