@@ -9,3 +9,6 @@ dist/
 .DS_Store
 .vercel
 *.tsbuildinfo
+
+# Registro do teste do QR (VPS)
+teste-qr.log

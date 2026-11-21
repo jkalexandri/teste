@@ -45,9 +45,11 @@ export class GerenciadorSessoes {
     if (!this.versao) {
       // Versão atual do WhatsApp Web; se não conseguir buscar, usa a padrão do Baileys.
       this.versao = await fetchLatestBaileysVersion().then((r) => r.version).catch(() => undefined);
+      this.log.info({ versao: this.versao ?? "padrão do Baileys" }, "versão do WhatsApp Web");
     }
     const { state, salvarCreds } = await usarAuthNoBanco(id, this.chave);
-    const logBaileys = this.log.child({ sessao: id }, { level: "warn" });
+    // Mensagens internas do Baileys: só avisos/erros, a não ser no modo de diagnóstico (debug).
+    const logBaileys = this.log.child({ sessao: id }, { level: this.log.isLevelEnabled("debug") ? "debug" : "warn" });
     const sock = makeWASocket({
       version: this.versao,
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logBaileys) },
