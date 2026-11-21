@@ -84,6 +84,14 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 50 | **Usuário desativado não ocupa vaga.** Se a vaga for preenchida por outro, o desativado **só pode ser reativado quando houver vaga** disponível. |
 | 51 | **Número da plataforma:** o Super Admin conecta, por QR Code no painel dele, um WhatsApp da plataforma. É esse número que envia os avisos do sistema (novo pedido, links de renovação) para o **WhatsApp do Super Admin** (campo próprio no painel) e para os clientes. |
 | 52 | **Domínio do sistema inteiro: `filaproleads.com.br`** (substitui imobfile.com.br). Comprado e com DNS na **Hostinger**. Site/telas na Vercel em `filaproleads.com.br`; serviço 24/7 na VPS em `api.filaproleads.com.br`; e-mails saem de `nao-responda@filaproleads.com.br` (domínio verificado no Resend). |
+| 53 | **Entrada de leads:** manual (um a um, ou colando vários — um por linha, formato `Nome; telefone`) **e** por arquivo **Excel (.xlsx) ou CSV**, verificando se o arquivo tem cabeçalho. |
+| 54 | **Telefone repetido:** no mesmo usuário é ignorado (com aviso). Na **empresa**, o número fica com **quem cadastrou primeiro**; o outro usuário vê só "já cadastrado por outro usuário da empresa" (sem o nome). Contas individuais são separadas entre si. |
+| 55 | **Números de outros países são aceitos** (com + e código do país). Número com 10 ou 11 dígitos é tratado como do Brasil (+55). |
+| 56 | **Quem altera leads:** **Usuário de empresa** edita só o nome, inativa e reativa. **Admin da Empresa** ganha a tela **Leads** com os leads de todos os usuários da empresa e pode alterar (inclusive telefone), inativar, reativar e excluir. **Usuário Individual** é o próprio admin: altera, inativa e reativa, mas **não exclui**. **Super Admin**: acesso total. Lead inativo não recebe campanhas. |
+| 57 | **"Não quero receber" (SAIR / PARAR / STOP):** o lead fica como **"Pediu para sair"** e o envio fica **bloqueado por 45 dias**. Depois disso, se o usuário colocar o lead numa campanha, o sistema avisa ("pediu para sair em dd/mm") e pergunta se quer **retirar** (opção padrão) ou manter. |
+| 58 | **Limite de leads definido pelo Super Admin** no plano: **ilimitado** ou um **máximo**. |
+| 59 | **Status do lead** (Novo, Em conversa, Qualificado, Objeção, Venda concluída, Bloqueado 24h, Pediu para sair) muda principalmente pela conversa, e o usuário **pode alterar manualmente**. |
+| 60 | **Super Admin sem restrições:** pode tudo, **inclusive enviar mensagens** (substitui o "sem enviar mensagem" da decisão #5 e do prompt, seção do Super Admin). |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
