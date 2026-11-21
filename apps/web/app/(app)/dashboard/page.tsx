@@ -239,7 +239,7 @@ export default async function DashboardPage() {
             <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)" }}>
               <ShieldCheck size={12} /> Só seus dados
             </span>
-            <Link href="/campanhas" className="btn-primary"><Play size={14} /> Criar campanha</Link>
+            {u.permissoes.includes("campanhas") && <Link href="/campanhas" className="btn-primary"><Play size={14} /> Criar campanha</Link>}
           </div>
         }
       />

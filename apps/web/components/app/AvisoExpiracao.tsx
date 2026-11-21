@@ -12,7 +12,7 @@ function hojeISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function AvisoExpiracao({ dias, expiraEm }: { dias: number; expiraEm: string }) {
+export default function AvisoExpiracao({ dias, expiraEm, souAdmin }: { dias: number; expiraEm: string; souAdmin?: boolean }) {
   const [visivel, setVisivel] = useState(false);
   const [restante, setRestante] = useState(DURACAO_MS);
 
@@ -77,7 +77,7 @@ export default function AvisoExpiracao({ dias, expiraEm }: { dias: number; expir
             </button>
           </div>
           <p className="text-[12px] mt-0.5 leading-relaxed" style={{ color: "var(--muted)" }}>
-            Fale com o administrador para renovar.
+            {souAdmin ? "Renove pelo link enviado para o seu e-mail." : "Fale com o administrador para renovar."}
           </p>
         </div>
       </div>

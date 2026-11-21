@@ -63,6 +63,8 @@ model Usuario {
   cargo              Cargo
   status             StatusUsuario @default(ATIVO)
   whatsapp           String?
+  /// Telas liberadas pelo Admin da Empresa (decisão #47). Dashboard e WhatsApp sempre liberados.
+  permissoes         String[]      @default(["leads", "campanhas", "conversas", "arquivos", "empresa-ia"])
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?
   empresa            Empresa?      @relation(fields: [empresaId], references: [id])

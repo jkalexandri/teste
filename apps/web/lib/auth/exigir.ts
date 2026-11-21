@@ -11,3 +11,12 @@ export async function exigirSuperAdmin() {
   }
   return sessao;
 }
+
+/** Garante Admin da Empresa com sessão e empresa válidas; devolve a sessão. */
+export async function exigirAdminEmpresa() {
+  const sessao = await obterSessao();
+  if (!sessao || sessao.precisaTrocar || motivoSemAcesso(sessao) || sessao.usuario.cargo !== Cargo.ADMIN_EMPRESA || !sessao.usuario.empresaId) {
+    throw new Error("Acesso negado.");
+  }
+  return sessao as typeof sessao & { usuario: { empresaId: string } };
+}

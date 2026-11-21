@@ -22,7 +22,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   const u = sessao.usuario;
   const caminho = (await headers()).get("x-pathname") || "/dashboard";
-  if (!rotaPermitida(u.cargo, caminho)) redirect("/dashboard");
+  // Permissões só se aplicam ao Usuário (decisão #47).
+  const permissoes = u.cargo === Cargo.USUARIO ? u.permissoes : undefined;
+  if (!rotaPermitida(u.cargo, caminho, permissoes)) redirect("/dashboard");
 
   // Contador de pedidos aguardando confirmação (Super Admin).
   const contadores: Record<string, number> = {};
@@ -40,7 +42,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         cargo: u.cargo,
         dias: diasRestantes(sessao),
         expiraEm: u.empresa ? u.empresa.expiraEm.toISOString() : null,
-        menu: menuDoCargo(u.cargo),
+        menu: menuDoCargo(u.cargo, permissoes),
         contadores,
       }}
     >

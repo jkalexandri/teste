@@ -161,7 +161,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                 <div className="font-bold text-[12px] [overflow-wrap:anywhere]">{dados.email}</div>
               </div>
               <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                {cargo === "USUARIO" && dias !== null && dias >= 0 && (
+                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && (
                   <span
                     className="chip"
                     style={
@@ -175,7 +175,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                     <Clock3 size={12} /> {dias === 0 ? "Expira hoje" : `Expira em ${dias} ${dias === 1 ? "dia" : "dias"}`}
                   </span>
                 )}
-                {cargo === "USUARIO" && dias !== null && dias < 0 && (
+                {cargo !== "SUPERADMIN" && dias !== null && dias < 0 && (
                   <span className="chip" style={{ background: "#ffeef0", color: "#9e1d2f" }}>
                     <TriangleAlert size={12} /> Acesso expirado
                   </span>
@@ -234,7 +234,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
           </div>
         </div>
 
-        {cargo === "USUARIO" && dias !== null && dados.expiraEm && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} />}
+        {cargo !== "SUPERADMIN" && dias !== null && dados.expiraEm && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} souAdmin={cargo === "ADMIN_EMPRESA"} />}
       </div>
     </ToastProvider>
   );

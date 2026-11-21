@@ -15,17 +15,29 @@ export type ItemMenu = {
   subgrupo?: string;
   /** Etapa em que o conteúdo da tela será entregue (decisão #20). */
   etapa: number;
+  /** Permissão exigida do Usuário (decisão #47). Sem permissão = sempre liberado. */
+  permissao?: Permissao;
 };
+
+/** Permissões que o Admin da Empresa pode liberar para cada usuário (decisão #47). */
+export const PERMISSOES = [
+  { id: "leads", label: "Leads" },
+  { id: "campanhas", label: "Campanhas" },
+  { id: "conversas", label: "Conversas IA" },
+  { id: "arquivos", label: "Arquivos" },
+  { id: "empresa-ia", label: "Empresa | IA" },
+] as const;
+export type Permissao = (typeof PERMISSOES)[number]["id"];
 
 export const ORDEM_GRUPOS = ["Principal", "Vendas", "Administrativo", "Configurações", "Sistema"] as const;
 
 const USUARIO: ItemMenu[] = [
   { href: "/dashboard", label: "Dashboard", icone: "dashboard", grupo: "Principal", etapa: 3 },
-  { href: "/campanhas", label: "Campanhas", icone: "envio", grupo: "Vendas", etapa: 8 },
-  { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7 },
-  { href: "/conversas", label: "Conversas IA", icone: "bot", grupo: "Vendas", etapa: 10 },
-  { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8 },
-  { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9 },
+  { href: "/campanhas", label: "Campanhas", icone: "envio", grupo: "Vendas", etapa: 8, permissao: "campanhas" },
+  { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7, permissao: "leads" },
+  { href: "/conversas", label: "Conversas IA", icone: "bot", grupo: "Vendas", etapa: 10, permissao: "conversas" },
+  { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8, permissao: "arquivos" },
+  { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9, permissao: "empresa-ia" },
   { href: "/whatsapp", label: "WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
 ];
 
@@ -58,17 +70,19 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },
 ];
 
-export function menuDoCargo(cargo: CargoMenu): ItemMenu[] {
-  const itens = cargo === "SUPERADMIN" ? SUPERADMIN : cargo === "ADMIN_EMPRESA" ? ADMIN_EMPRESA : USUARIO;
+export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {
+  const todos = cargo === "SUPERADMIN" ? SUPERADMIN : cargo === "ADMIN_EMPRESA" ? ADMIN_EMPRESA : USUARIO;
+  // Usuário: só as telas liberadas pelo Admin (decisão #47).
+  const itens = permissoes ? todos.filter((i) => !i.permissao || permissoes.includes(i.permissao)) : todos;
   // Ordena pelos grupos, mantendo a ordem interna de cada grupo.
   return ORDEM_GRUPOS.flatMap((g) => itens.filter((i) => i.grupo === g));
 }
 
 /** O perfil pode abrir esta rota? */
-export function rotaPermitida(cargo: CargoMenu, pathname: string): boolean {
-  return menuDoCargo(cargo).some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+export function rotaPermitida(cargo: CargoMenu, pathname: string, permissoes?: string[]): boolean {
+  return menuDoCargo(cargo, permissoes).some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
 }
 
-export function itemDaRota(cargo: CargoMenu, pathname: string): ItemMenu | undefined {
-  return menuDoCargo(cargo).find((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+export function itemDaRota(cargo: CargoMenu, pathname: string, permissoes?: string[]): ItemMenu | undefined {
+  return menuDoCargo(cargo, permissoes).find((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
 }

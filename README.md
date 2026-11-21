@@ -41,7 +41,8 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 4b — compra por PIX, Pedidos e teste grátis
 - [x] Etapa 4c — Super Admin: empresas e usuários individuais
 - [x] Etapa 4d — renovação (link 10 e 3 dias antes, troca de plano, compra com e-mail existente)
-- [ ] Etapa 5 — usuários das empresas, expiração e avisos
+- [x] Etapa 5 — usuários das empresas (vagas, permissões, desativar, excluir com transferência)
+- [ ] Etapa 6 — API própria do WhatsApp + conexão por QR Code (VPS)
 
 ## Banco de dados (desenvolvimento)
 ```bash

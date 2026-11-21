@@ -38,7 +38,7 @@ const OUT = process.argv[2];
   [c, p] = await entrar('admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'empresarial');
   ok('Menu do Admin', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Todos os disparos','Usuários','Empresas','Empresa | IA','Configurações','Logs']), (await menu(p)).join(', '));
   const linhas = await p.locator('table tbody tr').allInnerTexts();
-  ok('Disparos por usuários sem o Administrador', linhas.length === 1 && linhas[0].includes('Ana Souza'), linhas.join(' | '));
+  ok('Disparos por usuários sem o Administrador', linhas.length >= 1 && linhas.some(l => l.includes('Ana Souza')) && !linhas.some(l => l.includes('admin-empresa@')), linhas.length + ' linhas');
   ok('Dashboard sem linha TOTAL no resumo', (await p.locator('tfoot').count()) === 0);
   await p.screenshot({ path: OUT + '/dash-admin.png' });
   await p.goto(BASE + '/whatsapp'); await p.waitForTimeout(500);

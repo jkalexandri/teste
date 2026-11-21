@@ -90,3 +90,24 @@ export function validarComprador(c: { nome: string; email: string; whatsapp: str
   if (exigeEmpresa && (c.empresaNome || "").trim().length < 2) return "Informe o nome da empresa.";
   return null;
 }
+
+/** Cria um usuário dentro de uma empresa existente (Admin da Empresa — etapa 5). */
+export async function criarUsuarioNaEmpresa(
+  empresaId: string,
+  u: { nome: string; email: string; whatsapp: string; permissoes: string[] },
+) {
+  const temp = gerarSenhaTemporaria();
+  const usuario = await prisma.usuario.create({
+    data: {
+      nome: u.nome,
+      email: u.email.toLowerCase(),
+      whatsapp: u.whatsapp,
+      cargo: Cargo.USUARIO,
+      empresaId,
+      permissoes: u.permissoes,
+      senhaTempHash: await gerarHash(temp),
+      senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000),
+    },
+  });
+  return { usuario, senhaTemporaria: temp };
+}

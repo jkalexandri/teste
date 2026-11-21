@@ -12,7 +12,8 @@ export default async function SecaoEmConstrucao() {
   const sessao = await obterSessao();
   if (!sessao) redirect("/login");
   const caminho = (await headers()).get("x-pathname") || "";
-  const item = itemDaRota(sessao.usuario.cargo, caminho);
+  const u = sessao.usuario;
+  const item = itemDaRota(u.cargo, caminho, u.cargo === "USUARIO" ? u.permissoes : undefined);
   if (!item) redirect("/dashboard");
 
   return (
