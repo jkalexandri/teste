@@ -76,6 +76,12 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 42 | **Link de renovação** enviado **10 dias antes** do vencimento e lembrete **3 dias antes**. Recebe: Admin da Empresa (Empresarial) ou o próprio usuário (Individual). Por e-mail; pelo WhatsApp após a etapa 6. Envio diário automático (Vercel Cron). |
 | 43 | **Na renovação o cliente pode trocar de plano.** |
 | 44 | **Cliente que compra pela tela de Planos com e-mail já cadastrado** (Admin da Empresa ou usuário Individual): a compra **renova a conta existente**, mantendo usuários, leads e histórico. |
+| 45 | **Renovação não troca de módulo:** Individual renova com plano Individual; Empresarial com plano Empresarial. Trocar de módulo exige conta nova. |
+| 46 | **Usuário de empresa vence junto com o pacote** — o Admin não define prazo individual. |
+| 47 | **Permissões por usuário** (definidas pelo Admin da Empresa): Leads, Campanhas, Conversas IA, Arquivos, Empresa \| IA. Dashboard e WhatsApp sempre liberados. |
+| 48 | **Sem campo "Observações"** no cadastro de usuário. |
+| 49 | **O Admin pode excluir um usuário**; antes, **transfere os dados dele (leads, campanhas, conversas) para outro usuário** da empresa. |
+| 50 | **Usuário desativado não ocupa vaga.** Se a vaga for preenchida por outro, o desativado **só pode ser reativado quando houver vaga** disponível. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
