@@ -61,6 +61,7 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/disparos-por-usuarios", label: "Disparos por usuários", icone: "usuarios", grupo: "Vendas", etapa: 8 },
   { href: "/campanhas", label: "Campanhas", icone: "play", grupo: "Vendas", etapa: 8 },
   { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7 },
+  { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8 },
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/usuarios-individuais", label: "Usuários Individuais", icone: "usuarios", grupo: "Administrativo", etapa: 4 },
   { href: "/relatorios/empresarial", label: "Relatório Empresarial", icone: "empresa", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
@@ -74,6 +75,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/numero-plataforma", label: "Número da plataforma", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
   // Decisão #62: o Super Admin também envia, pelo próprio WhatsApp.
   { href: "/whatsapp", label: "Meu WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
+  // Decisão #65: faixa global de horário, feriados e a janela do Super Admin.
+  { href: "/regras-envio", label: "Regras de envio", icone: "config", grupo: "Configurações", etapa: 8 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

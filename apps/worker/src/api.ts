@@ -1,6 +1,9 @@
 // API HTTP do serviço 24/7. Só o site (Vercel) chama, com o WORKER_TOKEN.
 // O estado das sessões (QR, conectado...) fica no banco; as telas leem de lá.
 import { timingSafeEqual } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import Fastify, { type FastifyBaseLogger } from "fastify";
 import type { Logger } from "pino";
 
@@ -20,8 +23,13 @@ function tokenConfere(recebido: string | undefined, esperado: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger) {
+/** Maior anexo aceito (vídeo/áudio até 16 MB — decisão #68). */
+export const MAX_ARQUIVO = 16 * 1024 * 1024;
+
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos") {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
+  // Anexos chegam como bytes puros (application/octet-stream)
+  app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
 
   // Verificação de saúde (sem token) — usada para saber se o serviço está no ar.
   app.get("/saude", async () => ({ ok: true }));
@@ -54,6 +62,27 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger) {
     if (texto.length > 4000) return res.code(400).send({ ok: false, mensagem: "Texto muito longo." });
     const r = await sessoes.enviarTexto(req.params.id, para, texto);
     return res.code(r.ok ? 200 : 409).send(r);
+  });
+
+  // ===== Anexos das campanhas (decisão #67): guardados na VPS, um arquivo por id =====
+  app.put<{ Params: { id: string }; Body: Buffer }>("/arquivos/:id", async (req, res) => {
+    if (!Buffer.isBuffer(req.body) || req.body.length === 0) return res.code(400).send({ ok: false, mensagem: "Arquivo vazio." });
+    await mkdir(pastaArquivos, { recursive: true });
+    await writeFile(join(pastaArquivos, req.params.id), req.body);
+    return { ok: true, mensagem: "Arquivo guardado." };
+  });
+
+  app.get<{ Params: { id: string } }>("/arquivos/:id", async (req, res) => {
+    const caminho = join(pastaArquivos, req.params.id);
+    const info = await stat(caminho).catch(() => null);
+    if (!info) return res.code(404).send({ ok: false, mensagem: "Arquivo não encontrado." });
+    res.header("content-length", info.size).type("application/octet-stream");
+    return res.send(createReadStream(caminho));
+  });
+
+  app.delete<{ Params: { id: string } }>("/arquivos/:id", async (req) => {
+    await rm(join(pastaArquivos, req.params.id), { force: true });
+    return { ok: true, mensagem: "Arquivo apagado." };
   });
 
   return app;

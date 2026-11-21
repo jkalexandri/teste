@@ -16,4 +16,6 @@ export const config = {
   chaveCripto: createHash("sha256").update(obrigatoria("CHAVE_CRIPTO")).digest(),
   /** Nível do log (info em produção). */
   nivelLog: process.env.NIVEL_LOG || "info",
+  /** Pasta dos anexos das campanhas (decisão #67). Na VPS: /opt/filapro/arquivos */
+  pastaArquivos: process.env.PASTA_ARQUIVOS || "./arquivos",
 };

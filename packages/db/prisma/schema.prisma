@@ -48,6 +48,9 @@ model Empresa {
   limiteDisparos  Int?
   /// Limite de leads da conta (decisão #58). Vazio = ilimitado.
   limiteLeads     Int?
+  /// Janela de envio da conta (decisões #6 e #65), em minutos do dia (480 = 8h). Segunda a sábado.
+  janelaInicio    Int      @default(480)
+  janelaFim       Int      @default(1200)
   /// Renovação (decisões #42–#44): token do link e controle dos avisos do ciclo atual.
   tokenRenovacao      String?   @unique
   avisoRenovacao10Em  DateTime?
@@ -57,6 +60,7 @@ model Empresa {
   usuarios        Usuario[]
   pedidos         Pedido[]
   leads           Lead[]
+  campanhas       Campanha[]
 
   @@index([modulo])
 }
@@ -94,6 +98,8 @@ model Usuario {
   sessoes            Sessao[]
   whatsapp_sessao    WhatsappSessao?
   leads              Lead[]
+  campanhas          Campanha[]
+  arquivos           Arquivo[]
 
   @@index([empresaId])
 }
@@ -295,9 +301,127 @@ model Lead {
   codigoEmpresa       String?
   criadoEm            DateTime   @default(now())
   atualizadoEm        DateTime   @updatedAt
+  envios              Envio[]
 
   @@unique([empresaId, telefone])
   @@unique([usuarioId, telefone])
   @@index([usuarioId])
   @@index([empresaId])
+}
+
+/// Regras globais de envio, controladas pelo Super Admin (decisão #65). Registro único (id = "config").
+model ConfigEnvio {
+  id            String   @id @default("config")
+  /// Faixa permitida para qualquer janela (minutos do dia). Padrão 7h–21h.
+  horaMinima    Int      @default(420)
+  horaMaxima    Int      @default(1260)
+  /// Feriados: "MM-DD" (todo ano), "AAAA-MM-DD" (data única) ou "SEXTA-SANTA" (calculada).
+  feriados      String[] @default(["01-01", "SEXTA-SANTA", "04-21", "05-01", "09-07", "10-12", "11-02", "11-15", "11-20", "12-25"])
+  /// Janela do próprio Super Admin quando ele envia (decisão #62).
+  janelaInicioSuperAdmin Int @default(480)
+  janelaFimSuperAdmin    Int @default(1200)
+  atualizadoEm  DateTime @updatedAt
+}
+
+enum StatusCampanha {
+  RASCUNHO
+  AGENDADA
+  EM_ANDAMENTO
+  PAUSADA
+  CONCLUIDA
+  CANCELADA
+}
+
+enum ModoAntibloqueio {
+  CONSERVADOR
+  EQUILIBRADO
+  RAPIDO
+}
+
+/// Campanha (etapa 8 — prompt seções 8 e 9, decisões #64 a #68).
+model Campanha {
+  id                 String           @id @default(cuid())
+  usuarioId          String
+  usuario            Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  empresaId          String?
+  empresa            Empresa?         @relation(fields: [empresaId], references: [id])
+  status             StatusCampanha   @default(RASCUNHO)
+  assunto            String           @default("")
+  /// Mensagem de Referência (base para a IA na etapa 9)
+  referencia         String           @default("")
+  mensagem           String           @default("")
+  /// Variações 1, 2 e 3 (escritas à mão na etapa 8 — decisão #68)
+  variacoes          String[]         @default([])
+  /// Regras do Antibloqueio
+  modo               ModoAntibloqueio @default(CONSERVADOR)
+  bloqueio24h        Boolean          @default(true)
+  descadastro        Boolean          @default(true)
+  textoDescadastro   String           @default("")
+  incluirDataHora    Boolean          @default(false)
+  eliminarDuplicados Boolean          @default(true)
+  randomizar         Boolean          @default(true)
+  /// Leads: "todos" (todos os ativos) ou lista escolhida
+  selecaoTodos       Boolean          @default(true)
+  selecaoStatus      String[]         @default([])
+  leadsEscolhidos    String[]         @default([])
+  /// Leads que pediram para sair há mais de 45 dias e o usuário decidiu manter (decisão #57)
+  manterQuemSaiu     String[]         @default([])
+  /// Anexo (decisão #67)
+  arquivoId          String?
+  arquivo            Arquivo?         @relation(fields: [arquivoId], references: [id], onDelete: SetNull)
+  agendadaPara       DateTime?
+  iniciadaEm         DateTime?
+  concluidaEm        DateTime?
+  canceladaEm        DateTime?
+  motivo             String?
+  totalLeads         Int              @default(0)
+  criadoEm           DateTime         @default(now())
+  atualizadoEm       DateTime         @updatedAt
+  envios             Envio[]
+
+  @@index([usuarioId, status])
+  @@index([status])
+}
+
+enum StatusEnvio {
+  PENDENTE
+  ENVIADO
+  FALHOU
+  PULADO
+}
+
+/// Um envio por lead da campanha (fila guardada no PostgreSQL — decisão #68).
+model Envio {
+  id           String      @id @default(cuid())
+  campanhaId   String
+  campanha     Campanha    @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  leadId       String?
+  lead         Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  telefone     String
+  nome         String      @default("")
+  status       StatusEnvio @default(PENDENTE)
+  motivo       String?
+  /// Qual texto foi usado: 0 = principal, 1..3 = variações
+  versao       Int?
+  ordem        Int         @default(0)
+  enviadoEm    DateTime?
+  criadoEm     DateTime    @default(now())
+
+  @@unique([campanhaId, telefone])
+  @@index([campanhaId, status, ordem])
+  @@index([telefone, enviadoEm])
+}
+
+/// Arquivos enviados pelo usuário para anexar nas campanhas (decisão #67). O arquivo fica na VPS.
+model Arquivo {
+  id         String     @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nome       String
+  tipo       String
+  tamanho    Int
+  criadoEm   DateTime   @default(now())
+  campanhas  Campanha[]
+
+  @@index([usuarioId])
 }

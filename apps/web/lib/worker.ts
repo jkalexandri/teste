@@ -38,3 +38,46 @@ export async function workerNoAr(): Promise<boolean> {
     return false;
   }
 }
+
+// ===== Anexos (decisão #67): os arquivos ficam na VPS =====
+
+/** Envia os bytes do arquivo para a VPS. */
+export async function guardarArquivoNoWorker(id: string, dados: ArrayBuffer): Promise<RespostaWorker> {
+  if (!workerConfigurado()) return { ok: false, mensagem: FORA_DO_AR };
+  try {
+    const r = await fetch(new URL(`/arquivos/${encodeURIComponent(id)}`, process.env.WORKER_URL), {
+      method: "PUT",
+      headers: { authorization: `Bearer ${process.env.WORKER_TOKEN}`, "content-type": "application/octet-stream" },
+      body: dados,
+      cache: "no-store",
+      signal: AbortSignal.timeout(60_000),
+    });
+    return { ok: r.ok, mensagem: r.ok ? "Arquivo guardado." : "Não foi possível guardar o arquivo." };
+  } catch {
+    return { ok: false, mensagem: FORA_DO_AR };
+  }
+}
+
+/** Busca o arquivo na VPS (para a prévia). */
+export async function lerArquivoDoWorker(id: string): Promise<Response | null> {
+  if (!workerConfigurado()) return null;
+  try {
+    const r = await fetch(new URL(`/arquivos/${encodeURIComponent(id)}`, process.env.WORKER_URL), {
+      headers: { authorization: `Bearer ${process.env.WORKER_TOKEN}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(30_000),
+    });
+    return r.ok ? r : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function apagarArquivoDoWorker(id: string) {
+  if (!workerConfigurado()) return;
+  await fetch(new URL(`/arquivos/${encodeURIComponent(id)}`, process.env.WORKER_URL), {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${process.env.WORKER_TOKEN}` },
+    cache: "no-store",
+  }).catch(() => undefined);
+}

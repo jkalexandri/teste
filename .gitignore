@@ -12,3 +12,6 @@ dist/
 
 # Registro do teste do QR (VPS)
 teste-qr.log
+
+# Anexos guardados localmente pelo serviço 24/7
+apps/worker/arquivos/

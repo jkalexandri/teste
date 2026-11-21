@@ -101,7 +101,8 @@ cd /opt/filapro/app/apps/worker
 cp .env.example .env
 echo "WORKER_TOKEN=$(openssl rand -hex 32)"
 echo "CHAVE_CRIPTO=$(openssl rand -hex 32)"
-nano .env   # cole DATABASE_URL, WORKER_TOKEN e CHAVE_CRIPTO
+nano .env   # cole DATABASE_URL, WORKER_TOKEN e CHAVE_CRIPTO (e confira PASTA_ARQUIVOS)
+mkdir -p /opt/filapro/arquivos   # anexos das campanhas (etapa 8)
 chmod 600 .env
 ```
 

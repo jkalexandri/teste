@@ -95,6 +95,26 @@ test("API: exige token, valida dados e chama o gerenciador", async () => {
   await app.close();
 });
 
+test("API: guarda, devolve e apaga anexos (decisão #67)", async () => {
+  const { mkdtemp } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const pasta = await mkdtemp(join(tmpdir(), "anexos-"));
+  const falso: Sessoes = { conectar: async () => {}, desconectar: async () => {}, enviarTexto: async () => ({ ok: true, mensagem: "" }) };
+  const app = criarApi(falso, "tok", pino({ level: "silent" }), pasta);
+  const auth = { authorization: "Bearer tok" };
+  const dados = Buffer.from([0x25, 0x50, 0x44, 0x46, 1, 2, 3]);
+  assert.equal((await app.inject({ method: "PUT", url: "/arquivos/abc", payload: dados, headers: { "content-type": "application/octet-stream" } })).statusCode, 401);
+  assert.equal((await app.inject({ method: "PUT", url: "/arquivos/abc", payload: dados, headers: { ...auth, "content-type": "application/octet-stream" } })).statusCode, 200);
+  const g = await app.inject({ method: "GET", url: "/arquivos/abc", headers: auth });
+  assert.equal(g.statusCode, 200);
+  assert.deepEqual(g.rawPayload, dados);
+  assert.equal((await app.inject({ method: "GET", url: "/arquivos/..%2Fetc", headers: auth })).statusCode, 400);
+  assert.equal((await app.inject({ method: "DELETE", url: "/arquivos/abc", headers: auth })).statusCode, 200);
+  assert.equal((await app.inject({ method: "GET", url: "/arquivos/abc", headers: auth })).statusCode, 404);
+  await app.close();
+});
+
 test("queda: depois de ler o QR, o pedido de reinício (515) reconecta e NÃO apaga o login", () => {
   // Antes da correção, o login recém-criado era apagado aqui e o celular mostrava "não foi possível conectar".
   assert.deepEqual(decidirQueda(515, false, true, 0), { acao: "reconectar", esperaMs: 0 });

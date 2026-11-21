@@ -8,7 +8,7 @@ import { criarApi } from "./api.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
-const api = criarApi(sessoes, config.token, log);
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos);
 
 async function iniciar() {
   await api.listen({ port: config.porta, host: config.host });
