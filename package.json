@@ -7,7 +7,9 @@
     "build": "pnpm --filter web build",
     "lint": "pnpm --filter web lint",
     "db:migrate": "pnpm --filter @filapro/db migrate:dev",
-    "db:seed": "pnpm --filter @filapro/db seed"
+    "db:seed": "pnpm --filter @filapro/db seed",
+    "worker": "pnpm --filter worker dev",
+    "test:worker": "pnpm --filter worker test"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

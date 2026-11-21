@@ -5,6 +5,7 @@ import { prisma, Cargo, Modulo, type Empresa, type Pedido, type Prisma } from "@
 import { enviarEmail } from "@/lib/email";
 import { novoVencimento } from "@/lib/contas";
 import { formatarReais } from "@/lib/planos";
+import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 
@@ -41,7 +42,8 @@ export async function enviarAvisoRenovacao(empresa: Empresa, diasRestantes: numb
     `<p>Olá, ${resp.nome}.</p><p>O acesso de <b>${empresa.nome}</b> ao <b>FilaPro Leads</b> (plano ${empresa.pacote}) <b>${quando}</b>.</p>` +
     `<p><a href="${link}" style="display:inline-block;background:#0e9f5a;color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700">Renovar agora</a></p>` +
     `<p>Se quiser, você pode trocar de plano na renovação. O pagamento é por PIX.</p>`;
-  // TODO etapa 6: enviar também pelo WhatsApp (decisão #42).
+  // Decisão #42: também pelo WhatsApp (número da plataforma), quando o responsável tem WhatsApp cadastrado.
+  if (resp.whatsapp) await enviarPelaPlataforma(resp.whatsapp, texto);
   return enviarEmail({ para: resp.email, assunto: `Renove seu acesso ao FilaPro Leads — ${quando}`, texto, html });
 }
 

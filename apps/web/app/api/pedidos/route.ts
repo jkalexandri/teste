@@ -1,10 +1,11 @@
 // POST /api/pedidos — compra pelo popup "Planos" (decisões #32, #33, #37, #44).
 // E-mail já cadastrado do responsável pela conta (Admin da Empresa ou usuário
 // Individual) = renovação da conta existente.
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { prisma, Cargo, Modulo, StatusPedido } from "@filapro/db";
 import { validarComprador } from "@/lib/contas";
 import { criarPedidoPix } from "@/lib/pedidos";
+import { avisarNovoPedido } from "@/lib/avisos-whatsapp";
 
 const MAX_PEDIDOS_ABERTOS_POR_EMAIL = 3;
 const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" } as const;
@@ -66,5 +67,10 @@ export async function POST(req: Request) {
     renovarEmpresaId,
   });
   if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 503 });
+  // Decisão #38: aviso pelo WhatsApp ao Super Admin, depois de responder ao cliente.
+  after(() =>
+    avisarNovoPedido({ codigo: r.codigo, planoNome: r.plano, valor: r.valor, renovacao: r.renovacao, nome: dados.nome, email: dados.email, whatsapp: dados.whatsapp, empresaNome: dados.empresaNome || existente?.empresa?.nome })
+      .catch((e) => console.error("[whatsapp] falha no aviso de novo pedido", e)),
+  );
   return NextResponse.json(r);
 }

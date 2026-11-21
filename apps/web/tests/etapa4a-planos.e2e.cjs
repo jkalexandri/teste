@@ -2,7 +2,6 @@
 // Requer: app em http://localhost:3005 e Postgres local com seed. Uso: node apps/web/tests/etapa4a-planos.e2e.cjs <pasta-prints>
 // Atenção: grava preços FICTÍCIOS no banco de teste.
 const { chromium } = require('playwright');
-const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 // Estado inicial: planos ocultos e sem preço; pagamento sem configuração.

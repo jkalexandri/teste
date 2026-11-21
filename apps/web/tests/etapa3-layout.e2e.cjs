@@ -1,7 +1,6 @@
 // Teste de ponta a ponta da etapa 3 (menu por perfil, acesso, aviso de expiração).
 // Requer: app em http://localhost:3005 e Postgres local com seed. Uso: node apps/web/tests/etapa3-layout.e2e.cjs <pasta-prints>
 const { chromium } = require('playwright');
-const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
@@ -29,7 +28,7 @@ const OUT = process.argv[2];
   await p.goto(BASE + '/usuarios'); await p.waitForTimeout(500);
   ok('Usuário não abre tela de Admin (/usuarios)', p.url().endsWith('/dashboard'));
   await p.goto(BASE + '/whatsapp'); await p.waitForTimeout(500);
-  ok('Usuário abre /whatsapp (aviso da etapa 6)', (await p.locator('main').innerText()).includes('etapa 6'));
+  ok('Usuário abre /whatsapp (tela da etapa 6)', (await p.locator('main h1').innerText()).trim() === 'WhatsApp');
   await p.click('aside nav >> text=Leads'); await p.waitForURL('**/leads', { timeout: 6000 }).catch(() => {});
   ok('Clique no menu navega e marca item ativo', p.url().endsWith('/leads'));
   await c.close();
@@ -48,7 +47,7 @@ const OUT = process.argv[2];
   // Super Admin
   [c, p] = await entrar('superadmin@disparopro.com.br', 'Super@12345678', 'individual');
   const m = await menu(p);
-  ok('Menu do Super Admin', m.length === 14 && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
+  ok('Menu do Super Admin', m.length === 15 && m.includes('Número da plataforma') && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);

@@ -68,6 +68,8 @@ const SUPERADMIN: ItemMenu[] = [
   // Decisão #27: Super Admin configura os planos e a forma de pagamento.
   { href: "/planos", label: "Planos", icone: "planos", grupo: "Configurações", etapa: 4 },
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },
+  // Decisão #51: WhatsApp da plataforma (avisos do sistema).
+  { href: "/numero-plataforma", label: "Número da plataforma", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

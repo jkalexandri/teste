@@ -19,6 +19,7 @@ const emailsPara = (email, trecho) => fs.readFileSync('/var/tmp/web.log', 'utf8'
   // Estado inicial: Empresa Exemplo vence em 9 dias, sem avisos
   sql(`update "Empresa" set "expiraEm"=(current_date + 9)::timestamp + interval '23 hour 59 minute', "tokenRenovacao"=null, "avisoRenovacao10Em"=null, "avisoRenovacao3Em"=null, pacote='Padrão', "limiteUsuarios"=10, "planoId"=null where id='${EMP}'`);
   sql(`update "Pedido" set status='CANCELADO' where "empresaId"='${EMP}' and status='AGUARDANDO'`);
+  const usuariosAntes = sql(`select count(*) from "Usuario" where "empresaId"='${EMP}'`);
 
   const semAuth = await cron(false);
   ok('Agendador recusa chamada sem o segredo', semAuth.status === 401);
@@ -53,7 +54,7 @@ const emailsPara = (email, trecho) => fs.readFileSync('/var/tmp/web.log', 'utf8'
   const r = sql(`select pacote||'|'||"limiteUsuarios"||'|'||("expiraEm"::date - '${expAntes}'::date)||'|'||coalesce("tokenRenovacao",'nulo')||'|'||coalesce("avisoRenovacao10Em"::text,'nulo') from "Empresa" where id='${EMP}'`);
   ok('Renovação troca o plano, soma 31 dias e zera os avisos', r === 'Básico|3|31|nulo|nulo', r);
   ok('E-mail de renovação confirmada', emailsPara('admin-empresa@empresaexemplo.com.br', 'foi renovado até').length >= 1);
-  ok('Usuários da empresa continuam', sql(`select count(*) from "Usuario" where "empresaId"='${EMP}'`) === '2');
+  ok('Usuários da empresa continuam', sql(`select count(*) from "Usuario" where "empresaId"='${EMP}'`) === usuariosAntes);
   await p.goto(BASE + '/renovar/' + token, { waitUntil: 'networkidle' });
   ok('Link antigo deixa de valer', (await p.locator('text=inválido ou já foi utilizado').count()) === 1);
   await c.close();
