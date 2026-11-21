@@ -43,7 +43,7 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 4d — renovação (link 10 e 3 dias antes, troca de plano, compra com e-mail existente)
 - [x] Etapa 5 — usuários das empresas (vagas, permissões, desativar, excluir com transferência)
 - [x] Etapa 6a — serviço 24/7 do WhatsApp (apps/worker), telas de conexão por QR e avisos pela plataforma
-- [ ] Etapa 6b — instalação na VPS e teste real do QR Code (guia: `docs/instalacao-vps.md`)
+- [x] Etapa 6b — instalação na VPS (pm2 + HTTPS em api.filaproleads.com.br) e teste real do QR Code. Ligar o site ao serviço (WORKER_URL/WORKER_TOKEN na Vercel) fica para a publicação (etapa 12).
 
 ## Banco de dados (desenvolvimento)
 ```bash
