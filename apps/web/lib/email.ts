@@ -7,7 +7,7 @@ type Email = { para: string; assunto: string; html: string; texto: string };
 
 export async function enviarEmail({ para, assunto, html, texto }: Email): Promise<boolean> {
   const chave = process.env.RESEND_API_KEY;
-  const de = process.env.EMAIL_FROM || "FilaPro Leads <nao-responda@imobfile.com.br>";
+  const de = process.env.EMAIL_FROM || "FilaPro Leads <nao-responda@filaproleads.com.br>";
 
   if (!chave) {
     if (IS_PRODUCTION) {

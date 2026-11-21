@@ -1,6 +1,6 @@
 Leia o arquivo prompt_claude_code_filapro.md inteiro antes de codar. OBSERVAÇÃO MUITO IMPORTANTE: a tela de LOGIN tem que ser EXATAMENTE neste formato, incluindo TODA a parte de fundo, cores e animação visual. NÃO redesenhe, NÃO simplifique, NÃO troque cores, NÃO remova animação, NÃO mude posição, fonte ou tamanho. Se divergir, CORRIJA até ficar idêntico.
 
-STACK DEFINITIVA — NÃO MUDE: TypeScript, Next.js 15 App Router, React + Tailwind, PostgreSQL + Prisma, deploy Vercel, domínio imobfile.com.br, API https://api.imobfile.com.br.
+STACK DEFINITIVA — NÃO MUDE: TypeScript, Next.js 15 App Router, React + Tailwind, PostgreSQL + Prisma, deploy Vercel, domínio filaproleads.com.br, API https://api.filaproleads.com.br.
 
 LOGIN EXATO: cabe na tela sem scroll. Marca FilaPro Leads, selo IA • AUTOMAÇÃO • WHATSAPP, subtítulo "Envios com ritmo, contexto e proteção sua operação de". Blocos: Antibloqueio Inteligente, IA Qualifica e Trata Objeções, Online na Nuvem 24/7. Fundo com circuitos tecnológicos nas cores da tela, nós interativos que expandem/reduzem, animação ativa, 5 feixes de luz aleatórios em loop infinito a cada 4 segundos, ícones interativos. Tema claro padrão, lua/sol aplica na tela inteira e salva preferência. Sem cadastro público. Senha mínima 12 caracteres com maiúscula, minúscula, número e especial. Demo admin@disparopro.com.br / Admin@12345678 e usuario@disparopro.com.br / User@12345678.
 

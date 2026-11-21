@@ -6,7 +6,7 @@ import { enviarEmail } from "@/lib/email";
 import { novoVencimento } from "@/lib/contas";
 import { formatarReais } from "@/lib/planos";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://imobfile.com.br";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 
 /** Quem renova: o Admin da Empresa (Empresarial) ou o próprio usuário (Individual). */
 export async function responsavelDaConta(empresa: Pick<Empresa, "id" | "modulo">) {

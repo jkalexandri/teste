@@ -24,7 +24,7 @@ export default async function RenovarPage({ params }: { params: Promise<{ token:
         {!empresa ? (
           <div className="login-glass rounded-[18px] p-5 max-w-[480px] mx-auto text-[13px] text-slate-300">
             Este link de renovação é inválido ou já foi utilizado. Entre em{" "}
-            <a href="/login" className="font-bold text-cyan-300">imobfile.com.br</a> e use o botão “Planos” com o seu e-mail de acesso.
+            <a href="/login" className="font-bold text-cyan-300">filaproleads.com.br</a> e use o botão “Planos” com o seu e-mail de acesso.
           </div>
         ) : (
           <RenovarCliente

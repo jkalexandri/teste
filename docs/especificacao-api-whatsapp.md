@@ -1,6 +1,6 @@
 > **Nota:** especificação técnica montada na conversa inicial. Em caso de conflito, valem `prompt_claude_code_filapro.md` e `decisoes.md`.
 
-# Prompt: Plataforma SaaS de disparo de WhatsApp (imobfile.com.br)
+# Prompt: Plataforma SaaS de disparo de WhatsApp (filaproleads.com.br)
 
 ## Contexto
 Sou desenvolvedor e vou construir uma **plataforma SaaS de disparo e atendimento
@@ -43,16 +43,16 @@ e um **painel web** (para quem não é técnico).
 - Monorepo (pnpm workspaces): `apps/api`, `apps/worker`, `apps/sessions`, `apps/web`, `packages/*`
 
 ## Hospedagem e execução contínua (24/7)
-A plataforma roda na web, no domínio **imobfile.com.br**. **Todo o processamento
+A plataforma roda na web, no domínio **filaproleads.com.br**. **Todo o processamento
 acontece no servidor**: sessões do WhatsApp, campanhas, agendamentos, fila e retries
 continuam rodando mesmo sem nenhum usuário logado, com o navegador fechado ou o
 computador desligado.
 
 ### Domínio e subdomínios
-- Domínio `imobfile.com.br`, registrado no Registro.br e comprado via Wix. DNS gerenciado no Wix.
-- `imobfile.com.br` e `www`: site/landing page de vendas, **continua no Wix**.
-- `app.imobfile.com.br`: painel web (Next.js).
-- `api.imobfile.com.br`: API pública, webhooks do Asaas e WebSocket do painel.
+- Domínio `filaproleads.com.br`, comprado e com DNS gerenciado na **Hostinger** (decisão #52).
+- `filaproleads.com.br`: o app (Next.js na Vercel) — ver decisão #52.
+- `app.filaproleads.com.br`: painel web (Next.js).
+- `api.filaproleads.com.br`: API pública, webhooks do Asaas e WebSocket do painel.
 - Subdomínios criados como registros **A** apontando para o IP da VPS.
 - HTTPS obrigatório com certificado automático (Let's Encrypt via Caddy).
 
@@ -186,7 +186,7 @@ computador desligado.
 ### API pública
 - API Keys por organização (hash no banco, escopos, revogáveis).
 - Rate limit por API key conforme o plano.
-- Documentação pública (Swagger) em `api.imobfile.com.br/docs`, com exemplos.
+- Documentação pública (Swagger) em `api.filaproleads.com.br/docs`, com exemplos.
 
 ### Relatórios
 - Por campanha e por período: enviadas, entregues, lidas, falhas, respostas, opt-outs.
@@ -216,7 +216,7 @@ computador desligado.
    lista de endpoints e telas do painel. Espere minha aprovação.
 2. Implemente por etapas:
    1. Setup do monorepo, docker-compose, separação dos serviços e deploy inicial
-      em staging com HTTPS em `app.` e `api.imobfile.com.br`
+      em staging com HTTPS em `app.` e `api.filaproleads.com.br`
    2. Auth, organizações, usuários, papéis e convites
    3. Planos, limites e feature flags (sem cobrança ainda)
    4. **Gerenciador de sessões:** conexão por QR/pareamento, persistência

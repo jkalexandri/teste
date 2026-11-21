@@ -16,9 +16,9 @@ Funciona na web, online 24/7, e o envio continua rodando mesmo se o usuário sai
 - Frontend: React + Tailwind CSS
 - Banco: PostgreSQL + Prisma
 - Deploy: Vercel
-- Domínio principal: imobfile.com.br
-- API: https://api.imobfile.com.br
-- O app vai substituir o site atual em Wix. O domínio está no registro.br.
+- Domínio principal: filaproleads.com.br
+- API: https://api.filaproleads.com.br
+- Domínio comprado na Hostinger; DNS gerenciado na Hostinger (decisão #52).
 
 ## 3. TELA DE LOGIN — FORMATO EXATO, OBRIGATÓRIO
 
@@ -168,4 +168,4 @@ Funciona na web, online 24/7, e o envio continua rodando mesmo se o usuário sai
 - Código completo, organizado, comentado em português, sem dados inventados.
 - Login idêntico à prévia, com fundo, cores e animação.
 - Todas as telas funcionando com dados reais do banco, com isolamento por usuário/empresa.
-- Passo a passo de como rodar, como configurar .env, como fazer deploy na Vercel e como apontar o domínio imobfile.com.br e a API api.imobfile.com.br.
+- Passo a passo de como rodar, como configurar .env, como fazer deploy na Vercel e como apontar o domínio filaproleads.com.br e a API api.filaproleads.com.br.

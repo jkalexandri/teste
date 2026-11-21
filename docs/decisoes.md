@@ -5,15 +5,15 @@
 | 1 | **Sem API oficial da Meta.** A API de WhatsApp é própria, criada neste projeto, com conexão por QR Code. | 20/11/2026 |
 | 2 | **Feixes de luz do login:** cada um dos 5 feixes percorre o circuito em **4,2 s** (duração fixa), em trilha e direção aleatórias, em loop infinito. | 20/11/2026 |
 | 3 | **Contas demo só para teste.** Criadas por script (seed) apenas nos ambientes local e de testes. Em produção não existem. Os botões "Entrar como Super Admin / Admin da Empresa / Usuário" do login aparecem **só no ambiente de testes**; em produção o card termina no botão "Entrar". | 20/11/2026 |
-| 4 | **Envio 24/7:** o app (telas) roda na Vercel; a API, a fila de envio e as sessões do WhatsApp rodam num servidor sempre ligado em `api.imobfile.com.br`. Provedor: **VPS** (decidido em 20/11/2026). | 20/11/2026 |
+| 4 | **Envio 24/7:** o app (telas) roda na Vercel; a API, a fila de envio e as sessões do WhatsApp rodam num servidor sempre ligado em `api.filaproleads.com.br`. Provedor: **VPS** (decidido em 20/11/2026). | 20/11/2026 |
 
 ## Arquitetura de hospedagem
 
 ```
-Navegador ──> imobfile.com.br (Vercel)          Next.js: login e telas
+Navegador ──> filaproleads.com.br (Vercel)          Next.js: login e telas
                     │
                     ▼
-            api.imobfile.com.br (servidor 24/7)
+            api.filaproleads.com.br (servidor 24/7)
               ├─ API (TypeScript)               recebe pedidos do app
               ├─ Worker de envio                 fila + regras do Antibloqueio
               ├─ Sessões WhatsApp (QR Code)      uma conexão por usuário, sempre aberta
@@ -40,7 +40,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 6 | **Janela de horário de envio mantida** (padrão 8h–20h, ajustável pelo Admin da Empresa ou pelo usuário Individual). |
 | 7 | **Login — card:** removidos o texto "Escolha o módulo. Individual e Empresarial não se comunicam..." e a linha "Módulo atual: ...". Esse espaço não deve ser usado para exibir informação. |
 | 8 | **Banco de dados:** PostgreSQL pela **Vercel** (integração Neon) por enquanto. Pode migrar depois para Railway/VPS sem mudar código (só trocar `DATABASE_URL` e copiar os dados). Em desenvolvimento, Postgres local. |
-| 9 | **E-mail transacional:** **Resend**, com o domínio imobfile.com.br (senhas temporárias e recuperação de senha). |
+| 9 | **E-mail transacional:** **Resend**, com o domínio filaproleads.com.br (senhas temporárias e recuperação de senha). |
 | 10 | **Lembrar de mim:** guarda apenas o **e-mail** preenchido. **Não** mantém o usuário logado. A senha **não** é guardada pelo sistema — o usuário pode salvá-la no gerenciador de senhas do navegador, se preferir. A sessão dura **até fechar o navegador**. |
 | 11 | **Abas de módulo no login:** usuário que entrar pela aba errada é bloqueado com "Este acesso pertence ao módulo X". **Super Admin entra por qualquer aba.** |
 | 12 | **Primeiro acesso:** quem tem senha temporária é obrigado a criar uma senha nova antes de entrar. |
@@ -83,6 +83,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 49 | **O Admin pode excluir um usuário**; antes, **transfere os dados dele (leads, campanhas, conversas) para outro usuário** da empresa. |
 | 50 | **Usuário desativado não ocupa vaga.** Se a vaga for preenchida por outro, o desativado **só pode ser reativado quando houver vaga** disponível. |
 | 51 | **Número da plataforma:** o Super Admin conecta, por QR Code no painel dele, um WhatsApp da plataforma. É esse número que envia os avisos do sistema (novo pedido, links de renovação) para o **WhatsApp do Super Admin** (campo próprio no painel) e para os clientes. |
+| 52 | **Domínio do sistema inteiro: `filaproleads.com.br`** (substitui imobfile.com.br). Comprado e com DNS na **Hostinger**. Site/telas na Vercel em `filaproleads.com.br`; serviço 24/7 na VPS em `api.filaproleads.com.br`; e-mails saem de `nao-responda@filaproleads.com.br` (domínio verificado no Resend). |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).

@@ -8,7 +8,7 @@ import { enviarEmail } from "@/lib/email";
 /** Senha temporária de conta nova vale 7 dias (mesma regra do Super Admin na instalação). */
 export const VALIDADE_TEMP_CONTA_NOVA_DIAS = 7;
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://imobfile.com.br";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 
 /** Prorrogar (decisão #40): soma os dias ao vencimento atual; se já venceu, a partir de hoje. */
 export function novoVencimento(expiraEm: Date, dias: number) {
