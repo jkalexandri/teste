@@ -100,6 +100,12 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
           <button className="login-cta !py-3" type="submit" disabled={enviando}>
             {enviando ? "Enviando…" : plano.gratis ? "Criar minha conta de teste" : "Gerar PIX"}
           </button>
+          {/* Decisão #88: aceite dos Termos e da Política ao comprar */}
+          <p className="text-[11px] text-slate-400 text-center leading-snug" data-testid="aceite-termos">
+            Ao continuar, você concorda com os{" "}
+            <a href="/termos" target="_blank" rel="noreferrer" className="underline text-slate-300">Termos de Uso</a> e a{" "}
+            <a href="/privacidade" target="_blank" rel="noreferrer" className="underline text-slate-300">Política de Privacidade</a>.
+          </p>
         </form>
       )}
     </div>

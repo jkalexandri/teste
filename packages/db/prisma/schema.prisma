@@ -475,3 +475,17 @@ model UsoIA {
   @@index([criadoEm])
   @@index([empresaId, criadoEm])
 }
+
+/// Dados do responsável pelo FilaPro Leads usados na Política de Privacidade e nos Termos de Uso
+/// (decisão #88). Preenchidos pelo Super Admin — registro único (id = "config").
+model ConfigLegal {
+  id                String   @id @default("config")
+  responsavel       String   @default("")
+  documento         String   @default("")
+  endereco          String   @default("")
+  emailPrivacidade  String   @default("")
+  encarregadoNome   String   @default("")
+  encarregadoEmail  String   @default("")
+  foro              String   @default("")
+  atualizadoEm      DateTime @updatedAt
+}

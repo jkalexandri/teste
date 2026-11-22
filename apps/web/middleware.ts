@@ -5,7 +5,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const COOKIE_SESSAO = "filapro_sessao";
-const PUBLICAS = ["/login", "/renovar"];
+const PUBLICAS = ["/login", "/renovar", "/privacidade", "/termos"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

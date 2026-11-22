@@ -72,6 +72,8 @@ const SUPERADMIN: ItemMenu[] = [
   // Decisão #27: Super Admin configura os planos e a forma de pagamento.
   { href: "/planos", label: "Planos", icone: "planos", grupo: "Configurações", etapa: 4 },
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },
+  // Decisão #88: dados do responsável na Política de Privacidade e nos Termos
+  { href: "/dados-legais", label: "Dados legais", icone: "logs", grupo: "Configurações", etapa: 9 },
   // Decisão #51: WhatsApp da plataforma (avisos do sistema).
   { href: "/numero-plataforma", label: "Número da plataforma", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
   // Decisão #62: o Super Admin também envia, pelo próprio WhatsApp.
