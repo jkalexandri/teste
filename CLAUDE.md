@@ -16,7 +16,8 @@
 - Não redesenhar, não simplificar, não remover animação. A cada entrega, conferir o login com prints antes de avançar.
 
 ## Stack (não mudar)
-TypeScript, Next.js 15 (App Router), React + Tailwind CSS, PostgreSQL + Prisma, deploy Vercel (`filaproleads.com.br`).
+TypeScript, Next.js 15 (App Router), React + Tailwind CSS, PostgreSQL + Prisma.
+Publicação na VPS da Hostinger (decisão #99, autorizada pelo dono): site em `filaproleads.com.br`, banco PostgreSQL na mesma VPS com backup diário.
 Serviço 24/7 separado em `api.filaproleads.com.br` (API, fila, sessões WhatsApp por QR Code). Sem API oficial da Meta.
 
 ## Estrutura
