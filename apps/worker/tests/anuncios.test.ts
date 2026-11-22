@@ -168,7 +168,7 @@ test("limite de leads atingido: o lead de anúncio entra e o usuário é avisado
 
 test("avisos de lead respondeu e de lead Quente nas conversas", async () => {
   await prisma.lead.create({ data: { codigo: "EL-ANU-3", nome: "Eva", telefone: TEL, usuarioId: USU, empresaId: EMP, codigoUsuario: "x" } });
-  await at.receber(USU, TEL, { texto: "Quero agendar amanhã", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Quero agendar amanhã", tipo: "texto" });
   await aguardar();
   assert.ok(avisos.some((x) => /Eva .*respondeu: "Quero agendar amanhã"/.test(x.texto)), avisos.map((a) => a.texto).join(" | "));
   // O aviso de Quente chega no resumo (o de "respondeu" já saiu há menos de 10 minutos)
@@ -177,7 +177,7 @@ test("avisos de lead respondeu e de lead Quente nas conversas", async () => {
   assert.ok(avisos.some((x) => /Lead Quente: Eva/.test(x.texto)));
   // SAIR não gera aviso de "respondeu"
   const antes = avisos.length;
-  await at.receber(USU, TEL, { texto: "SAIR", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "SAIR", tipo: "texto" });
   await avisador.enviarResumos();
   assert.equal(avisos.length, antes);
 });

@@ -31,11 +31,14 @@ const MIN_AMOSTRA_SEM_WHATSAPP = 20;
 const MAX_SEM_WHATSAPP = 0.3;
 const DIA = 86_400_000;
 
-type Estado = { falhasSeguidas: number; noBloco: number; alvoBloco: number | null };
+/** Ritmo de cada número (decisão #79: cada número tem os próprios limites). */
+type Estado = { falhasSeguidas: number; noBloco: number; alvoBloco: number | null; descansaAte: number };
 
 export class MotorDisparos {
   private correndo = new Set<string>();
   private estados = new Map<string, Estado>();
+  /** Último número usado em cada campanha (rodízio — decisão #79) */
+  private ultimoNumero = new Map<string, string>();
   private relogio: ReturnType<typeof setInterval> | null = null;
 
   constructor(
@@ -51,7 +54,7 @@ export class MotorDisparos {
       /** Envia um aviso pelo WhatsApp da plataforma (decisão #70). */
       notificar?: (para: string, texto: string) => Promise<unknown>;
       /** Mensagem de campanha enviada: guarda no histórico da conversa (etapa 10). */
-      aoEnviar?: (leadId: string | null, conteudo: Conteudo, arquivoId: string | null) => Promise<unknown>;
+      aoEnviar?: (leadId: string | null, conteudo: Conteudo, arquivoId: string | null, sessaoId?: string) => Promise<unknown>;
     },
   ) {}
 
@@ -60,7 +63,7 @@ export class MotorDisparos {
   private dormir(ms: number) { return this.opcoes.dormir ? this.opcoes.dormir(ms) : new Promise<void>((r) => setTimeout(r, ms)); }
   private estado(u: string) {
     let e = this.estados.get(u);
-    if (!e) this.estados.set(u, (e = { falhasSeguidas: 0, noBloco: 0, alvoBloco: null }));
+    if (!e) this.estados.set(u, (e = { falhasSeguidas: 0, noBloco: 0, alvoBloco: null, descansaAte: 0 }));
     return e;
   }
 
@@ -80,9 +83,10 @@ export class MotorDisparos {
       data: { status: StatusCampanha.EM_ANDAMENTO, iniciadaEm: agora },
     });
     // Pausadas por queda do WhatsApp voltam sozinhas quando ele reconecta
-    const autoPausadas = await prisma.campanha.findMany({ where: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_DESCONECTADO }, select: { id: true, usuarioId: true } });
+    const autoPausadas = await prisma.campanha.findMany({ where: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_DESCONECTADO }, select: { id: true, usuarioId: true, sessoes: true } });
     for (const c of autoPausadas) {
-      if (this.remetente.conectado(c.usuarioId)) await prisma.campanha.update({ where: { id: c.id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null } });
+      const numeros = c.sessoes.length ? c.sessoes : [c.usuarioId];
+      if (numeros.some((n) => this.remetente.conectado(n))) await prisma.campanha.update({ where: { id: c.id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null } });
     }
     const remetentes = await prisma.campanha.findMany({ where: { status: StatusCampanha.EM_ANDAMENTO }, select: { usuarioId: true }, distinct: ["usuarioId"] });
     for (const { usuarioId } of remetentes) if (!this.correndo.has(usuarioId)) void this.correr(usuarioId);
@@ -116,11 +120,20 @@ export class MotorDisparos {
     if (!c) return { acao: "nada", esperaMs: 0 };
     const ids = campanhas.map((x) => x.id);
 
-    // 1) WhatsApp conectado? Se não, pausa e volta sozinha quando reconectar.
-    if (!this.remetente.conectado(usuarioId)) {
+    // 1) Números da campanha (rodízio — decisão #79). Nenhum conectado: pausa e volta sozinha quando reconectar.
+    const escolhidos = c.sessoes.length ? c.sessoes : [usuarioId];
+    const numeros = (await prisma.whatsappSessao.findMany({ where: { id: { in: escolhidos }, usuarioId, bloqueada: false } }))
+      .sort((a, b) => escolhidos.indexOf(a.id) - escolhidos.indexOf(b.id));
+    const conectados = numeros.filter((n) => this.remetente.conectado(n.id));
+    if (!conectados.length) {
       await prisma.campanha.updateMany({ where: { id: { in: ids } }, data: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_DESCONECTADO } });
       await this.avisar(c.id, "desconectado", `⏸️ FilaPro Leads: a campanha "${c.assunto}" foi pausada porque o seu WhatsApp desconectou. Ela volta sozinha quando ele reconectar. Se não voltar, abra o FilaPro Leads → WhatsApp e leia o QR Code.`);
       return { acao: "nada", esperaMs: 0, motivo: "desconectado" };
+    }
+    // Algum número caiu: a campanha continua pelos outros e avisa (decisão #79)
+    if (conectados.length < escolhidos.length) {
+      const fora = escolhidos.filter((id) => !conectados.some((n) => n.id === id)).map((id) => rotulo(numeros.find((n) => n.id === id), id === usuarioId));
+      await this.avisar(c.id, "numero-caiu", `⚠️ FilaPro Leads: ${fora.join(", ")} ${fora.length > 1 ? "estão desconectados" : "está desconectado"}. A campanha "${c.assunto}" continua pelos outros números. Para reconectar, abra FilaPro Leads → WhatsApp.`);
     }
 
     // 2) Janela de envio: segunda a sábado, sem feriados, dentro da faixa global (decisão #65)
@@ -135,23 +148,38 @@ export class MotorDisparos {
       return { acao: "aguardar", esperaMs: 60_000, motivo: j.motivo };
     }
 
-    // 3) Limites do número: por dia (com aquecimento de número novo) e por hora (decisão #64)
+    // 3) Limites de cada número: por dia (com aquecimento de número novo) e por hora (decisões #64 e #79)
     const m = MODOS[c.modo];
-    const sessao = await prisma.whatsappSessao.findUnique({ where: { id: usuarioId } });
-    const diasConectado = sessao?.primeiraConexaoEm ? Math.floor((agora.getTime() - sessao.primeiraConexaoEm.getTime()) / DIA) : 0;
-    const limiteDia = Math.min(m.porDia, limiteAquecimento(diasConectado) ?? Infinity);
     const inicioDia = inicioDoDiaSP(agora);
-    const [hoje, ultimaHora] = await Promise.all([
-      prisma.envio.count({ where: { campanha: { usuarioId }, status: StatusEnvio.ENVIADO, enviadoEm: { gte: inicioDia } } }),
-      prisma.envio.count({ where: { campanha: { usuarioId }, status: StatusEnvio.ENVIADO, enviadoEm: { gte: new Date(agora.getTime() - 3_600_000) } } }),
-    ]);
-    if (hoje >= limiteDia) {
+    const disponiveis: string[] = [];
+    let limiteDia = m.porDia, todosNoLimiteDia = true, menorDescanso = Infinity;
+    for (const n of conectados) {
+      const est = this.estado(n.id);
+      if (est.descansaAte > agora.getTime()) { todosNoLimiteDia = false; menorDescanso = Math.min(menorDescanso, est.descansaAte - agora.getTime()); continue; }
+      const diasConectado = n.primeiraConexaoEm ? Math.floor((agora.getTime() - n.primeiraConexaoEm.getTime()) / DIA) : 0;
+      const limite = Math.min(m.porDia, limiteAquecimento(diasConectado) ?? Infinity);
+      const [hoje, ultimaHora] = await Promise.all([
+        prisma.envio.count({ where: { sessaoId: n.id, status: StatusEnvio.ENVIADO, enviadoEm: { gte: inicioDia } } }),
+        prisma.envio.count({ where: { sessaoId: n.id, status: StatusEnvio.ENVIADO, enviadoEm: { gte: new Date(agora.getTime() - 3_600_000) } } }),
+      ]);
+      if (hoje >= limite) { limiteDia = limite; continue; }
+      todosNoLimiteDia = false;
+      if (ultimaHora < m.porHora) disponiveis.push(n.id);
+    }
+    if (todosNoLimiteDia) {
       await prisma.campanha.updateMany({ where: { id: { in: ids } }, data: { motivo: `${MOTIVO_LIMITE_DIA} (${limiteDia}/dia)` } });
       // Não pausa (decisão #70): continua sozinha no próximo dia de envio; só avisa.
       await this.avisar(c.id, "limite-dia", `ℹ️ FilaPro Leads: o seu número atingiu o limite de ${limiteDia} envios de hoje (proteção contra bloqueio). A campanha "${c.assunto}" continua sozinha no próximo dia de envio.`);
       return { acao: "aguardar", esperaMs: 10 * 60_000, motivo: "limite diário" };
     }
-    if (ultimaHora >= m.porHora) return { acao: "aguardar", esperaMs: 60_000, motivo: "limite por hora" };
+    if (!disponiveis.length) {
+      return menorDescanso < Infinity ? { acao: "aguardar", esperaMs: Math.min(menorDescanso, 60_000), motivo: "pausa entre blocos" } : { acao: "aguardar", esperaMs: 60_000, motivo: "limite por hora" };
+    }
+    // Rodízio: o próximo número disponível depois do último usado nesta campanha
+    const ultimo = this.ultimoNumero.get(c.id);
+    const ordem = conectados.map((n) => n.id);
+    const inicio = ultimo ? ordem.indexOf(ultimo) + 1 : 0;
+    const numero = [...ordem.slice(inicio), ...ordem.slice(0, inicio)].find((id) => disponiveis.includes(id))!;
 
     // 4) Teste grátis: limite de disparos (decisão #34)
     if (u.empresa?.limiteDisparos != null) {
@@ -181,9 +209,9 @@ export class MotorDisparos {
     // 7) O número tem WhatsApp? (decisão #64)
     let jid: string | null;
     try {
-      jid = await this.remetente.verificarNumero(usuarioId, envio.telefone);
+      jid = await this.remetente.verificarNumero(numero, envio.telefone);
     } catch (e) {
-      return this.falha(usuarioId, c.id, envio.id, e);
+      return this.falha(numero, c.id, envio.id, e, conectados.length);
     }
     if (!jid) {
       await prisma.envio.update({ where: { id: envio.id }, data: { status: StatusEnvio.PULADO, motivo: "Sem WhatsApp" } });
@@ -206,26 +234,31 @@ export class MotorDisparos {
 
     // 9) "Digitando…" proporcional ao texto, e envia
     try {
-      await this.remetente.digitando(usuarioId, jid, Math.min(8_000, 1_500 + texto.length * 40));
-      await this.remetente.enviar(usuarioId, jid, { texto, anexo });
+      await this.remetente.digitando(numero, jid, Math.min(8_000, 1_500 + texto.length * 40));
+      await this.remetente.enviar(numero, jid, { texto, anexo });
     } catch (e) {
-      return this.falha(usuarioId, c.id, envio.id, e);
+      return this.falha(numero, c.id, envio.id, e, conectados.length);
     }
-    await prisma.envio.update({ where: { id: envio.id }, data: { status: StatusEnvio.ENVIADO, enviadoEm: this.agora(), versao: escolhida.i, motivo: null } });
-    await this.opcoes.aoEnviar?.(envio.leadId, { texto, anexo }, c.arquivo?.id ?? null).catch((e) => this.log.warn({ e }, "histórico da conversa não gravado"));
+    this.ultimoNumero.set(c.id, numero);
+    await prisma.envio.update({ where: { id: envio.id }, data: { status: StatusEnvio.ENVIADO, enviadoEm: this.agora(), versao: escolhida.i, motivo: null, sessaoId: numero } });
+    await this.opcoes.aoEnviar?.(envio.leadId, { texto, anexo }, c.arquivo?.id ?? null, numero).catch((e) => this.log.warn({ e }, "histórico da conversa não gravado"));
     if (await this.conferirSemWhatsapp(c.id)) return { acao: "enviou", esperaMs: 0 };
 
-    // 10) Ritmo: intervalo sorteado; pausa maior a cada bloco de tamanho variável (±10%)
-    const e = this.estado(usuarioId);
+    // 10) Ritmo de cada número: intervalo sorteado; pausa maior a cada bloco de tamanho variável (±10%).
+    // Com vários números, o intervalo se divide entre eles: cada número mantém o próprio ritmo (decisão #79).
+    const e = this.estado(numero);
     e.falhasSeguidas = 0;
     e.noBloco++;
     e.alvoBloco ??= Math.round(m.bloco * (0.9 + this.sorteio() * 0.2));
+    const intervalo = Math.round((m.segMin + this.sorteio() * (m.segMax - m.segMin)) * 1000);
     if (e.noBloco >= e.alvoBloco) {
       e.noBloco = 0;
       e.alvoBloco = null;
-      return { acao: "enviou", esperaMs: m.esperaMin * 60_000, motivo: "pausa entre blocos" };
+      if (conectados.length === 1) return { acao: "enviou", esperaMs: m.esperaMin * 60_000, motivo: "pausa entre blocos" };
+      e.descansaAte = this.agora().getTime() + m.esperaMin * 60_000; // este número descansa; os outros seguem
+      return { acao: "enviou", esperaMs: Math.round(intervalo / conectados.length), motivo: "pausa entre blocos" };
     }
-    return { acao: "enviou", esperaMs: Math.round((m.segMin + this.sorteio() * (m.segMax - m.segMin)) * 1000) };
+    return { acao: "enviou", esperaMs: Math.round(intervalo / conectados.length) };
   }
 
   /** Lead inativo, que pediu para sair, bloqueio 24h ou 2 mensagens sem resposta em 30 dias. */
@@ -257,15 +290,21 @@ export class MotorDisparos {
     return false;
   }
 
-  private async falha(usuarioId: string, campanhaId: string, envioId: string, erro: unknown): Promise<ResultadoPasso> {
+  private async falha(numero: string, campanhaId: string, envioId: string, erro: unknown, totalNumeros = 1): Promise<ResultadoPasso> {
     const msg = erro instanceof Error ? erro.message : String(erro);
-    await prisma.envio.update({ where: { id: envioId }, data: { status: StatusEnvio.FALHOU, motivo: msg.slice(0, 200) } });
-    const e = this.estado(usuarioId);
+    await prisma.envio.update({ where: { id: envioId }, data: { status: StatusEnvio.FALHOU, motivo: msg.slice(0, 200), sessaoId: numero } });
+    const e = this.estado(numero);
     e.falhasSeguidas++;
-    this.log.warn({ usuarioId, campanhaId, erro: msg }, "falha no envio");
+    this.log.warn({ numero, campanhaId, erro: msg }, "falha no envio");
     if (e.falhasSeguidas >= MAX_FALHAS_SEGUIDAS) {
       e.falhasSeguidas = 0;
-      await this.pausar(campanhaId, `Pausada automaticamente: ${MAX_FALHAS_SEGUIDAS} falhas seguidas. Confira o WhatsApp antes de retomar.`);
+      if (totalNumeros > 1) {
+        // Com vários números: este descansa 30 minutos e a campanha continua pelos outros (decisão #79)
+        e.descansaAte = this.agora().getTime() + 30 * 60_000;
+        await this.avisar(campanhaId, "numero-falhas", `⚠️ FilaPro Leads: um dos seus números teve ${MAX_FALHAS_SEGUIDAS} falhas seguidas e ficou de fora por 30 minutos. A campanha continua pelos outros números. Confira em FilaPro Leads → WhatsApp.`);
+      } else {
+        await this.pausar(campanhaId, `Pausada automaticamente: ${MAX_FALHAS_SEGUIDAS} falhas seguidas. Confira o WhatsApp antes de retomar.`);
+      }
     }
     return { acao: "falhou", esperaMs: 10_000, motivo: msg };
   }
@@ -327,4 +366,11 @@ export class MotorDisparos {
 /** Meia-noite de hoje em São Paulo (UTC−3), como Date. */
 function inicioDoDiaSP(agora: Date) {
   return new Date(`${agoraSP(agora).data}T00:00:00-03:00`);
+}
+
+/** Nome do número para os avisos: apelido, número ou "o número principal". */
+function rotulo(n: { apelido: string; numero: string | null } | undefined, principal: boolean) {
+  if (n?.apelido) return `o número "${n.apelido}"`;
+  if (n?.numero) return `o número +${n.numero}`;
+  return principal ? "o seu número principal" : "um dos seus números";
 }

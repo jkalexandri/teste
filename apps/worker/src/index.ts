@@ -9,6 +9,7 @@ import { MotorDisparos } from "./disparos.js";
 import { Aprendizado } from "./aprender.js";
 import { Atendente } from "./conversas.js";
 import { Avisador } from "./avisos.js";
+import { donoDaSessao } from "./numeros.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
@@ -25,13 +26,19 @@ const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,
   // Avisos automáticos ao usuário saem pelo número da plataforma (decisões #51 e #70)
   notificar,
-  aoEnviar: (leadId, conteudo, arquivoId) => atendente.registrarCampanha(leadId, conteudo, arquivoId),
+  aoEnviar: (leadId, conteudo, arquivoId, sessaoId) => atendente.registrarCampanha(leadId, conteudo, arquivoId, sessaoId),
 });
+// Vários números por usuário (etapa 10c): cada mensagem é do usuário dono do número que recebeu
 sessoes.aoReceber = async (sessaoId, telefone, texto, extra) => {
-  await motor.registrarResposta(sessaoId, telefone, texto);
-  await atendente.receber(sessaoId, telefone, extra);
+  const dono = await donoDaSessao(sessaoId);
+  if (!dono) return; // número da plataforma
+  await motor.registrarResposta(dono, telefone, texto);
+  await atendente.receber(sessaoId, dono, telefone, extra);
 };
-sessoes.aoConectar = (sessaoId) => atendente.aoConectar(sessaoId);
+sessoes.aoConectar = async (sessaoId) => {
+  const dono = await donoDaSessao(sessaoId);
+  if (dono) await atendente.aoConectar(dono);
+};
 
 async function iniciar() {
   await api.listen({ port: config.porta, host: config.host });

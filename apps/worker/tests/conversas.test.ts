@@ -54,7 +54,7 @@ after(async () => {
 });
 
 test("quem não é lead é ignorado", async () => {
-  await at.receber(USU, "5511988887777", { texto: "Oi, tudo bem?", tipo: "texto" });
+  await at.receber(USU, USU, "5511988887777", { texto: "Oi, tudo bem?", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 0);
   assert.equal(await prisma.mensagem.count({ where: { lead: { usuarioId: USU } } }), 0);
@@ -62,7 +62,7 @@ test("quem não é lead é ignorado", async () => {
 
 test("a IA responde, guarda o histórico e qualifica", async () => {
   const l = await novoLead({ status: StatusLead.EM_CONVERSA });
-  await at.receber(USU, TEL, { texto: "Oi, quero saber mais", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Oi, quero saber mais", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 1);
   assert.equal(wa.enviados[0]!.jid, `${TEL}@s.whatsapp.net`);
@@ -73,7 +73,7 @@ test("a IA responde, guarda o histórico e qualifica", async () => {
   assert.equal(lead.naoLidas, 1);
   assert.ok(lead.ultimaMensagemEm);
 
-  await at.receber(USU, TEL, { texto: "Quero agendar para sábado", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Quero agendar para sábado", tipo: "texto" });
   await aguardar();
   lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
   assert.equal(lead.qualificacao, "QUENTE");
@@ -84,23 +84,23 @@ test("a IA responde, guarda o histórico e qualifica", async () => {
 test("várias mensagens seguidas recebem uma resposta só", async () => {
   at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 200 });
   await novoLead();
-  await at.receber(USU, TEL, { texto: "Oi", tipo: "texto" });
-  await at.receber(USU, TEL, { texto: "tudo bem?", tipo: "texto" });
-  await at.receber(USU, TEL, { texto: "queria informação", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "tudo bem?", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "queria informação", tipo: "texto" });
   await espera(500); await aguardar();
   assert.equal(wa.enviados.length, 1);
 });
 
 test("objeção marca o status Objeção", async () => {
   const l = await novoLead({ status: StatusLead.EM_CONVERSA });
-  await at.receber(USU, TEL, { texto: "Achei caro", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Achei caro", tipo: "texto" });
   await aguardar();
   assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).status, StatusLead.OBJECAO);
 });
 
 test("não sabe responder: diz que vai confirmar, pausa e avisa o usuário", async () => {
   const l = await novoLead();
-  await at.receber(USU, TEL, { texto: "Quanto custa a limpeza de pele?", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Quanto custa a limpeza de pele?", tipo: "texto" });
   await aguardar();
   assert.match(wa.enviados[0]!.conteudo.texto, /confirmar/);
   const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
@@ -108,7 +108,7 @@ test("não sabe responder: diz que vai confirmar, pausa e avisa o usuário", asy
   assert.equal(lead.iaPausaMotivo, MOTIVO_NAO_SEI);
   assert.equal(avisos.length, 1);
   // Pausada: a próxima mensagem fica guardada, mas a IA não responde
-  await at.receber(USU, TEL, { texto: "Oi?", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Oi?", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 1);
   assert.equal((await msgs(l.id)).length, 3);
@@ -116,21 +116,21 @@ test("não sabe responder: diz que vai confirmar, pausa e avisa o usuário", asy
 
 test("SAIR, IA desligada e venda concluída não mudam pela IA", async () => {
   await novoLead({ status: StatusLead.PEDIU_SAIR });
-  await at.receber(USU, TEL, { texto: "SAIR", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "SAIR", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 0);
 
   await prisma.lead.deleteMany({ where: { usuarioId: USU } });
   await prisma.usuario.update({ where: { id: USU }, data: { iaConversas: false } });
   await novoLead();
-  await at.receber(USU, TEL, { texto: "Oi", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 0, "IA desligada na conta");
 
   await prisma.lead.deleteMany({ where: { usuarioId: USU } });
   await prisma.usuario.update({ where: { id: USU }, data: { iaConversas: true } });
   const l = await novoLead({ status: StatusLead.VENDA_CONCLUIDA });
-  await at.receber(USU, TEL, { texto: "Quero agendar outra sessão", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Quero agendar outra sessão", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 1);
   assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).status, StatusLead.VENDA_CONCLUIDA, "só o usuário marca venda");
@@ -139,7 +139,7 @@ test("SAIR, IA desligada e venda concluída não mudam pela IA", async () => {
 test("áudio: pede para escrever e avisa o usuário, sem chamar a IA", async () => {
   await novoLead();
   const antes = await prisma.usoIA.count({ where: { usuarioId: USU } });
-  await at.receber(USU, TEL, { texto: "", tipo: "audio" });
+  await at.receber(USU, USU, TEL, { texto: "", tipo: "audio" });
   await aguardar();
   assert.equal(wa.enviados[0]!.conteudo.texto, TEXTO_AUDIO);
   assert.equal(avisos.length, 1);
@@ -149,7 +149,7 @@ test("áudio: pede para escrever e avisa o usuário, sem chamar a IA", async () 
 test("imagem vai para a IA", async () => {
   await novoLead();
   let baixou = false;
-  await at.receber(USU, TEL, { texto: "", tipo: "imagem", baixarImagem: async () => { baixou = true; return { tipo: "image/png", base64: "iVBORw0KGgo=" }; } });
+  await at.receber(USU, USU, TEL, { texto: "", tipo: "imagem", baixarImagem: async () => { baixou = true; return { tipo: "image/png", base64: "iVBORw0KGgo=" }; } });
   await aguardar();
   assert.equal(baixou, true);
   assert.equal(wa.enviados.length, 1);
@@ -158,7 +158,7 @@ test("imagem vai para a IA", async () => {
 test(`limite de ${MAX_IA_DIA} respostas da IA por dia: pausa e avisa`, async () => {
   const l = await novoLead();
   await prisma.mensagem.createMany({ data: Array.from({ length: MAX_IA_DIA }, () => ({ leadId: l.id, autor: AutorMensagem.IA, texto: "ok" })) });
-  await at.receber(USU, TEL, { texto: "Mais uma pergunta", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "Mais uma pergunta", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados.length, 0);
   const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
@@ -170,7 +170,7 @@ test("conversa longa: as mensagens antigas entram no resumo", async () => {
   const l = await novoLead();
   const base = Date.now() - 3600_000;
   await prisma.mensagem.createMany({ data: Array.from({ length: 24 }, (_, i) => ({ leadId: l.id, autor: i % 2 ? AutorMensagem.IA : AutorMensagem.LEAD, texto: `mensagem ${i}`, criadoEm: new Date(base + i * 1000) })) });
-  await at.receber(USU, TEL, { texto: "E aí?", tipo: "texto" });
+  await at.receber(USU, USU, TEL, { texto: "E aí?", tipo: "texto" });
   await aguardar();
   const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
   assert.match(lead.resumoConversa, /Resumo simulado/);

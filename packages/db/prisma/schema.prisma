@@ -52,6 +52,8 @@ model Empresa {
   treinarIA         Boolean @default(true)
   /// Leads de anúncios (recurso pago — decisões #90 e #94): copiado do plano; o Super Admin liga/desliga por conta
   leadsAnuncios     Boolean @default(false)
+  /// WhatsApps extras contratados (Individual — decisões #79, #80 e #95); vencem junto com o plano
+  whatsappsExtras   Int     @default(0)
   limiteMateriais   Int?
   limitePaginasMes  Int?
   /// Janela de envio da conta (decisões #6 e #65), em minutos do dia (480 = 8h). Segunda a sábado.
@@ -114,7 +116,8 @@ model Usuario {
   criadoEm           DateTime      @default(now())
   atualizadoEm       DateTime      @updatedAt
   sessoes            Sessao[]
-  whatsapp_sessao    WhatsappSessao?
+  /// Números de WhatsApp do usuário (o principal tem o id do usuário; extras só no Individual — decisões #79 e #95)
+  whatsapp_sessoes   WhatsappSessao[]
   leads              Lead[]
   campanhas          Campanha[]
   arquivos           Arquivo[]
@@ -165,6 +168,9 @@ model Plano {
   limitePaginasMes  Int?
   /// Leads de anúncios incluídos neste plano (decisão #90)
   leadsAnuncios     Boolean @default(false)
+  /// WhatsApp extra (só Individual — decisões #79 e #80): máximo de números por usuário (contando o principal) e preço de cada extra (centavos, por período)
+  maxWhatsapps      Int     @default(1)
+  precoWhatsappExtra Int?
   selo            String   @default("")
   frase           String   @default("")
   condicoes       String   @default("")
@@ -229,6 +235,11 @@ model Pedido {
   confirmadoEm    DateTime?
   confirmadoPor   String?
   canceladoEm     DateTime?
+  /// WhatsApp extra (decisões #80 e #95): quantos extras este pedido inclui; "somenteExtras" = compra no meio do período
+  whatsappsExtras Int          @default(0)
+  somenteExtras   Boolean      @default(false)
+  /// Renovação com menos extras: números que o cliente escolheu manter
+  manterSessoes   String[]     @default([])
   /// Conta criada na confirmação
   empresaId       String?
   empresa         Empresa?     @relation(fields: [empresaId], references: [id])
@@ -256,8 +267,13 @@ enum StatusWhatsapp {
 /// as telas leem daqui. Credenciais guardadas CRIPTOGRAFADAS.
 model WhatsappSessao {
   id            String         @id
-  usuarioId     String?        @unique
+  usuarioId     String?
   usuario       Usuario?       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  /// Apelido opcional do número (decisão #95) e ordem na tela
+  apelido       String         @default("")
+  ordem         Int            @default(0)
+  /// Número extra que saiu na renovação: QR bloqueado até comprar de novo (decisão #95)
+  bloqueada     Boolean        @default(false)
   status        StatusWhatsapp @default(DESCONECTADO)
   numero        String?
   /// QR Code atual (texto) enquanto aguarda a leitura.
@@ -271,6 +287,8 @@ model WhatsappSessao {
   primeiraConexaoEm DateTime?
   atualizadoEm  DateTime       @updatedAt
   chaves        WhatsappChave[]
+
+  @@index([usuarioId])
 }
 
 /// Chaves de criptografia do WhatsApp da sessão (criptografadas).
@@ -329,6 +347,8 @@ model Lead {
   resumidoAte         DateTime?
   ultimaMensagemEm    DateTime?
   naoLidas            Int        @default(0)
+  /// Número com que o lead está conversando (a conversa continua por ele — decisões #79 e #95)
+  sessaoId            String?
   mensagens           Mensagem[]
   /// Dono do lead
   usuarioId           String
@@ -369,6 +389,8 @@ model Mensagem {
   /// Anexo enviado pelo usuário/campanha (id do Arquivo) ou nome do arquivo recebido
   arquivoId   String?
   arquivoNome String?
+  /// Número que enviou/recebeu
+  sessaoId    String?
   criadoEm    DateTime      @default(now())
 
   @@index([leadId, criadoEm])
@@ -411,6 +433,8 @@ model Campanha {
   usuario            Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   empresaId          String?
   empresa            Empresa?         @relation(fields: [empresaId], references: [id])
+  /// Números escolhidos para enviar (rodízio — decisão #79). Vazio = o número principal.
+  sessoes            String[]         @default([])
   status             StatusCampanha   @default(RASCUNHO)
   assunto            String           @default("")
   /// Mensagem de Referência (base para a IA na etapa 9)
@@ -473,6 +497,8 @@ model Envio {
   motivo       String?
   /// Qual texto foi usado: 0 = principal, 1..3 = variações
   versao       Int?
+  /// Número que enviou (limites e saúde por número — decisão #79)
+  sessaoId     String?
   ordem        Int         @default(0)
   enviadoEm    DateTime?
   criadoEm     DateTime    @default(now())

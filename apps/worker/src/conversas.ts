@@ -7,6 +7,7 @@ import { prisma, AutorMensagem, Cargo, Modulo, StatusAnuncio, StatusLead } from 
 import { PALAVRAS_SAIR } from "@filapro/db/src/envio.ts";
 import { reservarCodigos } from "@filapro/db/src/codigos.ts";
 import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
+import { escolherNumero } from "./numeros.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
 import type { Conteudo, Remetente } from "./disparos.js";
@@ -81,20 +82,24 @@ export class Atendente {
   }
 
   /** Mensagem de campanha enviada: entra no histórico da conversa. */
-  async registrarCampanha(leadId: string | null, conteudo: Conteudo, arquivoId?: string | null) {
+  async registrarCampanha(leadId: string | null, conteudo: Conteudo, arquivoId?: string | null, sessaoId?: string) {
     if (!leadId) return;
     const tipo = conteudo.anexo ? tipoDoArquivo(conteudo.anexo.tipo) : "texto";
-    await prisma.mensagem.create({ data: { leadId, autor: AutorMensagem.CAMPANHA, texto: conteudo.texto, tipo, arquivoId: arquivoId ?? null, arquivoNome: conteudo.anexo?.nome ?? null } });
-    await prisma.lead.update({ where: { id: leadId }, data: { ultimaMensagemEm: this.agora() } }).catch(() => undefined);
+    await prisma.mensagem.create({ data: { leadId, autor: AutorMensagem.CAMPANHA, texto: conteudo.texto, tipo, arquivoId: arquivoId ?? null, arquivoNome: conteudo.anexo?.nome ?? null, sessaoId: sessaoId ?? null } });
+    await prisma.lead.update({ where: { id: leadId }, data: { ultimaMensagemEm: this.agora(), ...(sessaoId ? { sessaoId } : {}) } }).catch(() => undefined);
   }
 
-  /** Mensagem recebida de um contato. Quem não é lead é ignorado (decisão #92, item 9). */
-  async receber(sessaoId: string, telefone: string, r: Recebida) {
-    const lead = await prisma.lead.findFirst({ where: { usuarioId: sessaoId, telefone }, include: { usuario: true } });
+  /**
+   * Mensagem recebida de um contato pelo número `sessaoId` do usuário `usuarioId`.
+   * Quem não é lead é ignorado (decisão #92, item 9). A conversa continua pelo número que recebeu (decisão #79).
+   */
+  async receber(sessaoId: string, usuarioId: string, telefone: string, r: Recebida) {
+    const lead = await prisma.lead.findFirst({ where: { usuarioId, telefone }, include: { usuario: true } });
     if (!lead) return;
     const agora = this.agora();
-    await prisma.mensagem.create({ data: { leadId: lead.id, autor: AutorMensagem.LEAD, texto: r.texto, tipo: r.tipo } });
-    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: agora, naoLidas: { increment: 1 } } });
+    await prisma.mensagem.create({ data: { leadId: lead.id, autor: AutorMensagem.LEAD, texto: r.texto, tipo: r.tipo, sessaoId } });
+    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: agora, naoLidas: { increment: 1 }, sessaoId } });
+    lead.sessaoId = sessaoId;
 
     // SAIR/PARAR/STOP/CANCELAR e mensagens vazias não chamam a IA (decisões #75 e #83)
     const palavra = r.texto.trim().toUpperCase().replace(/[^A-ZÇÃÕÁÉÍÓÚ]/g, "");
@@ -127,16 +132,22 @@ export class Atendente {
   /** Para os testes: espera as respostas agendadas terminarem. */
   pendentes() { return this.timers.size; }
 
-  private async enviarComoEmpresa(lead: { id: string; usuarioId: string; telefone: string }, texto: string, autor: AutorMensagem) {
-    if (!this.remetente.conectado(lead.usuarioId)) {
+  /** Número por onde falar com o lead (o da conversa; senão o principal; senão outro conectado). */
+  private numeroDo(lead: { usuarioId: string; sessaoId: string | null }, preferido?: string | null) {
+    return escolherNumero((id) => this.remetente.conectado(id), lead.usuarioId, preferido === undefined ? lead.sessaoId : preferido);
+  }
+
+  private async enviarComoEmpresa(lead: { id: string; usuarioId: string; telefone: string; sessaoId: string | null }, texto: string, autor: AutorMensagem, preferido?: string | null) {
+    const numero = await this.numeroDo(lead, preferido);
+    if (!numero) {
       this.log.warn({ leadId: lead.id }, "WhatsApp desconectado: resposta não enviada");
       return false;
     }
     const jid = jidDe(lead.telefone);
-    await this.remetente.digitando(lead.usuarioId, jid, Math.min(8_000, 1_500 + texto.length * 40));
-    await this.remetente.enviar(lead.usuarioId, jid, { texto });
-    await prisma.mensagem.create({ data: { leadId: lead.id, autor, texto } });
-    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: this.agora() } });
+    await this.remetente.digitando(numero, jid, Math.min(8_000, 1_500 + texto.length * 40));
+    await this.remetente.enviar(numero, jid, { texto });
+    await prisma.mensagem.create({ data: { leadId: lead.id, autor, texto, sessaoId: numero } });
+    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: this.agora(), sessaoId: numero } });
     return true;
   }
 
@@ -160,7 +171,7 @@ export class Atendente {
       await this.avisarUsuario(lead.usuario, `⏸️ FilaPro Leads: a IA parou de responder ${nomeDo(lead)} hoje (limite de ${MAX_IA_DIA} respostas). Abra Conversas IA para continuar.`);
       return;
     }
-    if (!this.remetente.conectado(lead.usuarioId)) return;
+    if (!(await this.numeroDo(lead))) return;
 
     // Contexto enxuto: ficha (cache) + resumo + últimas mensagens (decisão #75)
     const ficha = await fichaDoUsuario(lead.usuario);
@@ -223,7 +234,9 @@ export class Atendente {
   async enviarManual(leadId: string, usuarioId: string, texto: string, arquivoId?: string | null) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead || lead.usuarioId !== usuarioId) return { ok: false, mensagem: "Conversa não encontrada." };
-    if (!this.remetente.conectado(usuarioId)) return { ok: false, mensagem: "Seu WhatsApp está desconectado. Conecte em WhatsApp e tente de novo." };
+    // Sai pelo número da conversa (decisão #95, item 7)
+    const numero = await this.numeroDo(lead);
+    if (!numero) return { ok: false, mensagem: "Seu WhatsApp está desconectado. Conecte em WhatsApp e tente de novo." };
     const arquivo = arquivoId ? await prisma.arquivo.findUnique({ where: { id: arquivoId } }) : null;
     if (arquivoId && (!arquivo || arquivo.usuarioId !== usuarioId)) return { ok: false, mensagem: "Arquivo não encontrado." };
     if (!texto.trim() && !arquivo) return { ok: false, mensagem: "Escreva a mensagem ou escolha um arquivo." };
@@ -231,17 +244,17 @@ export class Atendente {
     this.timers.delete(leadId);
     const anexo = arquivo ? { caminho: join(this.opcoes.pastaArquivos, arquivo.id), tipo: arquivo.tipo, nome: arquivo.nome } : undefined;
     try {
-      await this.remetente.enviar(usuarioId, jidDe(lead.telefone), { texto, anexo });
+      await this.remetente.enviar(numero, jidDe(lead.telefone), { texto, anexo });
     } catch (e) {
       this.log.warn({ e, leadId }, "mensagem manual não enviada");
       return { ok: false, mensagem: "Não foi possível enviar. Confira o WhatsApp e tente de novo." };
     }
     await prisma.mensagem.create({
-      data: { leadId, autor: AutorMensagem.USUARIO, texto, tipo: arquivo ? tipoDoArquivo(arquivo.tipo) : "texto", arquivoId: arquivo?.id ?? null, arquivoNome: arquivo?.nome ?? null },
+      data: { leadId, autor: AutorMensagem.USUARIO, texto, tipo: arquivo ? tipoDoArquivo(arquivo.tipo) : "texto", arquivoId: arquivo?.id ?? null, arquivoNome: arquivo?.nome ?? null, sessaoId: numero },
     });
     await prisma.lead.update({
       where: { id: leadId },
-      data: { ultimaMensagemEm: this.agora(), naoLidas: 0, iaPausada: true, iaPausaMotivo: MOTIVO_ASSUMIDA, ...(lead.status === StatusLead.NOVO ? { status: StatusLead.EM_CONVERSA } : {}) },
+      data: { ultimaMensagemEm: this.agora(), naoLidas: 0, sessaoId: numero, iaPausada: true, iaPausaMotivo: MOTIVO_ASSUMIDA, ...(lead.status === StatusLead.NOVO ? { status: StatusLead.EM_CONVERSA } : {}) },
     });
     return { ok: true, mensagem: "Mensagem enviada." };
   }
@@ -286,7 +299,8 @@ export class Atendente {
       return;
     }
     // WhatsApp desconectado: o lead espera e o usuário é avisado uma vez (decisão #84)
-    if (!this.remetente.conectado(dono.id)) {
+    // Lead de anúncio: começa pelo número principal; desconectado, por outro conectado (decisão #95, item 6)
+    if (!(await this.numeroDo(lead, dono.id))) {
       if (a.status !== StatusAnuncio.AGUARDANDO_WHATSAPP) {
         await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.AGUARDANDO_WHATSAPP } });
         await this.avisarUsuario(dono, `⚠️ FilaPro Leads: chegou um lead de anúncio (${nomeDo(lead)}), mas o seu WhatsApp está desconectado. A IA atende assim que ele reconectar: abra FilaPro Leads → WhatsApp.`);
@@ -306,7 +320,7 @@ export class Atendente {
       this.log.warn({ id, msg: e instanceof ErroIA ? e.message : String(e) }, "IA não escreveu a primeira mensagem");
       return; // a varredura tenta de novo
     }
-    if (!(await this.enviarComoEmpresa(lead, r.resposta, AutorMensagem.IA))) return;
+    if (!(await this.enviarComoEmpresa(lead, r.resposta, AutorMensagem.IA, dono.id))) return;
     const quando = this.agora();
     await prisma.lead.update({
       where: { id: lead.id },
