@@ -2,12 +2,16 @@
 // A resposta é sempre a mesma, exista o e-mail ou não (não revela quem é cadastrado).
 // A senha atual continua valendo até a pessoa entrar com a temporária e trocá-la.
 import { NextResponse } from "next/server";
+import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, gerarHash, gerarSenhaTemporaria, StatusUsuario } from "@filapro/db";
 import { enviarEmail, emailSenhaTemporaria } from "@/lib/email";
 
 const VALIDADE_TEMP_HORAS = 24;
 
 export async function POST(req: Request) {
+  // Limite por endereço de internet (decisão #105): 5 pedidos por hora
+  const limite = await limitarPorIp("recuperar", 5, 3600_000);
+  if (limite) return limite;
   const corpo = await req.json().catch(() => ({}));
   const email = String(corpo.email || "").trim().toLowerCase();
 

@@ -2,7 +2,7 @@
 // gravação das mensagens e avisos ao Super Admin.
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { prisma, Cargo } from "@filapro/db";
 import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
 import { chamarWorker, guardarArquivoNoWorker } from "@/lib/worker";
@@ -15,22 +15,8 @@ const hash = (t: string) => createHash("sha256").update(t).digest("hex");
 
 export type MsgInteressado = { id: string; autor: "VISITANTE" | "IA" | "SUPORTE"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
 
-// ===== Limites contra robôs (por endereço de internet e por conversa), em memória =====
-const batidas = new Map<string, number[]>();
-/** true = pode; false = passou do limite (máximo "max" vezes em "janelaMs"). */
-export function dentroDoLimite(chave: string, max: number, janelaMs: number) {
-  const agora = Date.now();
-  const l = (batidas.get(chave) ?? []).filter((t) => agora - t < janelaMs);
-  if (l.length >= max) { batidas.set(chave, l); return false; }
-  l.push(agora);
-  batidas.set(chave, l);
-  if (batidas.size > 5000) for (const [k, v] of batidas) if (!v.some((t) => agora - t < 3600_000)) batidas.delete(k);
-  return true;
-}
-export async function ipDoPedido() {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
-}
+// Limites contra robôs: lib/limite-acesso.ts (decisão #105)
+export { dentroDoLimite, ipDoPedido } from "@/lib/limite-acesso";
 
 /** Visitante do aparelho atual (pelo cookie), ou null. */
 export async function interessadoAtual() {

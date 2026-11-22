@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.29.0 — segurança (22/11/2026)
+
+### Super Admin
+- **Verificação em duas etapas** (menu Segurança): código do app autenticador a cada entrada, com códigos de recuperação.
+- **Alertas de segurança** no WhatsApp e no celular (bloqueios por senha errada e entrada por endereço novo).
+- Limite de tentativas por endereço de internet, cabeçalhos de segurança no site e script de proteção da VPS
+  (SSH só com chave, fail2ban e atualizações automáticas).
+
 ## v1.28.0 — modo manutenção e chat para interessados (22/11/2026)
 
 ### Para todos

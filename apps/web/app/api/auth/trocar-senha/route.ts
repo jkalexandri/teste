@@ -1,11 +1,15 @@
 // POST /api/auth/trocar-senha — primeiro acesso: troca a senha temporária pela definitiva.
 import { NextResponse } from "next/server";
+import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, gerarHash } from "@filapro/db";
 import { obterSessao, atualizarSessaoTrocaFeita } from "@/lib/auth/session";
 import { destinoPorCargo } from "@/lib/auth/login";
 import { isPasswordValid } from "@/lib/password-policy";
 
 export async function POST(req: Request) {
+  // Limite por endereço de internet (decisão #105): 10 tentativas a cada 10 minutos
+  const limite = await limitarPorIp("trocar-senha", 10, 10 * 60_000);
+  if (limite) return limite;
   const sessao = await obterSessao();
   if (!sessao) return NextResponse.json({ erro: "Sessão expirada. Entre novamente." }, { status: 401 });
 

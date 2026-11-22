@@ -1,11 +1,15 @@
 // POST /api/renovacao — renovação pelo link enviado por e-mail (decisões #42 e #43).
 // { token, planoId } → pedido PIX de renovação da conta (pode trocar de plano).
 import { NextResponse } from "next/server";
+import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, StatusPedido } from "@filapro/db";
 import { criarPedidoPix } from "@/lib/pedidos";
 import { responsavelDaConta } from "@/lib/renovacao";
 
 export async function POST(req: Request) {
+  // Limite por endereço de internet (decisão #105): 10 por hora
+  const limite = await limitarPorIp("renovacao", 10, 3600_000);
+  if (limite) return limite;
   const c = await req.json().catch(() => ({}));
   const token = String(c.token || "");
   const empresa = token ? await prisma.empresa.findUnique({ where: { tokenRenovacao: token } }) : null;

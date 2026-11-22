@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma, Cargo, StatusAnuncio, type Prisma } from "@filapro/db";
 import { lerFormulario } from "@/lib/anuncios";
 import { chamarWorker } from "@/lib/worker";
+import { dentroDoLimite, limitarPorIp } from "@/lib/limite-acesso";
 
 export const dynamic = "force-dynamic";
 const MAX_CORPO = 100 * 1024;
@@ -23,6 +24,10 @@ async function lerCorpo(req: Request): Promise<Record<string, unknown> | null> {
 
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  // Limites (decisão #105): 120 por minuto por endereço de internet e 60 por minuto por endereço de anúncios
+  const limite = await limitarPorIp("anuncios", 120, 60_000, "mensagem");
+  if (limite) return limite;
+  if (!dentroDoLimite(`anuncio-token:${token}`, 60, 60_000)) return NextResponse.json({ ok: false, mensagem: "Muitos leads seguidos. Aguarde um minuto." }, { status: 429 });
   if (!/^[A-Za-z0-9_-]{20,80}$/.test(token)) return NextResponse.json({ ok: false, mensagem: "Endereço inválido." }, { status: 404 });
   const u = await prisma.usuario.findUnique({ where: { tokenAnuncios: token }, include: { empresa: true } });
   if (!u || u.status !== "ATIVO") return NextResponse.json({ ok: false, mensagem: "Endereço inválido." }, { status: 404 });

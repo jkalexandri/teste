@@ -107,6 +107,7 @@ const EMP = 'teste-empresa-exemplo';
   await foto(p, 's-logos', '/logos');
   await foto(p, 's-dados-legais', '/dados-legais');
   await foto(p, 's-ajuda', '/ajuda');
+  await foto(p, 's-seguranca', '/seguranca');
   await foto(p, 's-online', '/online?aba=empresarial');
   await foto(p, 's-atendimento', `/atendimento?cliente=${ANA}`);
   const SA = sql(`select id from "Usuario" where email='superadmin@disparopro.com.br'`);

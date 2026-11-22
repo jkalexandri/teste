@@ -142,9 +142,20 @@ Acrescente as duas linhas (horários de Brasília = UTC−3):
 
 Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh`
 
+## 10b. Proteção da VPS (decisão #105)
+
+1. No **seu computador**, cadastre a sua chave SSH na VPS (se ainda não tiver uma chave: `ssh-keygen -t ed25519`):
+   `ssh-copy-id root@IP_DA_VPS` — e confira que entra **sem pedir senha**: `ssh root@IP_DA_VPS`.
+2. Na VPS: `bash /opt/filapro/app/deploy/seguranca-vps.sh`
+
+Liga: SSH só com chave (senha desligada), **fail2ban** (bloqueia por 1 hora quem errar 5 vezes) e **atualizações de segurança
+automáticas**. Se não houver chave cadastrada, o script **não** desliga a senha (para você não perder o acesso).
+Guarde bem a chave: sem ela, o acesso é pelo **console do painel da Hostinger**.
+
 ## 11. Primeiro uso (no site publicado)
 
 1. Entre com o seu e-mail e a senha temporária → crie a sua senha (pode usar **Gerar senha forte**).
+   Depois, no menu **Segurança**, ative a **verificação em duas etapas** e guarde os códigos de recuperação.
 2. **Dados legais**: preencha (aparecem na Política de Privacidade e nos Termos).
 3. **Inteligência Artificial**: cole a chave da Anthropic → **Testar** → **Salvar chave**.
 4. **Pagamento**: chave PIX e dados do recebedor.

@@ -2,6 +2,7 @@
 // E-mail já cadastrado do responsável pela conta (Admin da Empresa ou usuário
 // Individual) = renovação da conta existente.
 import { after, NextResponse } from "next/server";
+import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, Cargo, Modulo, StatusPedido } from "@filapro/db";
 import { validarComprador } from "@/lib/contas";
 import { criarPedidoPix } from "@/lib/pedidos";
@@ -11,6 +12,9 @@ const MAX_PEDIDOS_ABERTOS_POR_EMAIL = 3;
 const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" } as const;
 
 export async function POST(req: Request) {
+  // Limite por endereço de internet (decisão #105): 10 pedidos por hora
+  const limite = await limitarPorIp("pedidos", 10, 3600_000);
+  if (limite) return limite;
   const c = await req.json().catch(() => ({}));
   const dados = {
     planoId: String(c.planoId || ""),

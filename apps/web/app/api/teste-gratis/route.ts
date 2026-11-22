@@ -1,11 +1,15 @@
 // POST /api/teste-gratis — plano Free: conta criada na hora (decisão #34).
 // 1 teste por e-mail; vale X dias ou Y disparos (configurados no plano Free).
 import { NextResponse } from "next/server";
+import { limitarPorIp } from "@/lib/limite-acesso";
 import { ligarInteressadoAoCliente } from "@/lib/interessados";
 import { prisma, Modulo } from "@filapro/db";
 import { criarConta, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
 
 export async function POST(req: Request) {
+  // Limite por endereço de internet (decisão #105): 3 por hora
+  const limite = await limitarPorIp("teste-gratis", 3, 3600_000);
+  if (limite) return limite;
   const c = await req.json().catch(() => ({}));
   const dados = {
     planoId: String(c.planoId || ""),

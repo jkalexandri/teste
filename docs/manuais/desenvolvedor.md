@@ -141,6 +141,17 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - Compra confirmada (Pedidos ou teste grátis): `ligarInteressadoAoCliente` copia a conversa para o suporte do cliente.
 - Limpeza diária: interessados com mais de 180 dias.
 
+## Segurança (decisão #105)
+
+- **VPS:** `deploy/seguranca-vps.sh` (SSH só com chave — recusa se não houver chave —, fail2ban, unattended-upgrades).
+- **Cabeçalhos:** `next.config.mjs` (`headers()`): CSP, `X-Frame-Options: DENY`, nosniff, Referrer, Permissions e HSTS em produção.
+  Ao incluir algo de outro domínio (script, imagem, fonte), ajuste a CSP.
+- **Limites por endereço de internet:** `lib/limite-acesso.ts` (`limitarPorIp`, em memória; a própria máquina não conta fora de produção).
+- **Duas etapas:** `lib/auth/dois-fatores.ts` (TOTP RFC 6238, segredo criptografado com `CHAVE_CRIPTO`, códigos de recuperação com hash).
+  Sessão com `pendente2fa` não vale em `obterSessao`; a segunda etapa é `/verificacao` + `/api/auth/verificar`.
+- **Alertas:** `lib/alertas-seguranca.ts`.
+- **Dependências:** `pnpm audit --prod`; correções internas forçadas em `pnpm.overrides` do `package.json` da raiz.
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

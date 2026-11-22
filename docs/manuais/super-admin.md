@@ -235,6 +235,27 @@ A versão atual aparece no rodapé do menu e na tela de login (em teste). Todos 
 | Backup do banco | Automático todo dia às 03:30 (Brasília), guardado por 14 dias em `/opt/filapro/backups` |
 | Ver se está tudo no ar | `pm2 status` e https://api.filaproleads.com.br/saude |
 | Mudar de servidor | Siga o Manual do Desenvolvedor, seção *Mudar de servidor* |
+| Proteger a VPS (uma vez) | `bash /opt/filapro/app/deploy/seguranca-vps.sh` — SSH só com chave, fail2ban e atualizações de segurança automáticas |
+
+## Segurança (verificação em duas etapas)
+
+Menu **Segurança**: além da senha, a entrada passa a pedir o **código de 6 dígitos** do app autenticador do seu celular
+(Google Authenticator, Microsoft Authenticator ou Authy). **Recomendado ativar.**
+
+![Segurança](prints/s-seguranca.png)
+
+1. Instale o app autenticador → clique em **Ativar** → leia o QR Code com o app.
+2. Digite o código do app em **Confirmar e ativar**.
+3. Guarde os **10 códigos de recuperação** (fora do celular). Cada um permite entrar uma vez se você perder o celular.
+
+Depois de ativada: senha → tela do código. 5 códigos errados cancelam a tentativa (é preciso digitar a senha de novo). Para desativar
+ou gerar novos códigos de recuperação, informe o código atual do app.
+
+**Alertas de segurança** (no WhatsApp de avisos e no celular): a conta do Super Admin bloqueada por senha errada, 3 ou mais contas
+bloqueadas na plataforma em 1 hora e entrada do Super Admin por um endereço de internet novo.
+
+**Proteções automáticas:** limite de tentativas por endereço de internet (login, Esqueci minha senha, compra, teste grátis, renovação,
+leads de anúncios e chat), o sistema não pode ser aberto dentro de outro site e o navegador só carrega arquivos do próprio sistema.
 
 ## Modo manutenção (atualizações)
 

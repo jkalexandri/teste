@@ -26,8 +26,8 @@ export async function tokenDeSuperAdmin(token: string | undefined): Promise<bool
   if (c && Date.now() - c.em < 30_000) return c.sa;
   let sa = false;
   try {
-    const s = await prisma.sessao.findUnique({ where: { tokenHash: h }, select: { expiraEm: true, usuario: { select: { cargo: true } } } });
-    sa = !!s && s.expiraEm > new Date() && s.usuario.cargo === Cargo.SUPERADMIN;
+    const s = await prisma.sessao.findUnique({ where: { tokenHash: h }, select: { expiraEm: true, pendente2fa: true, usuario: { select: { cargo: true } } } });
+    sa = !!s && s.expiraEm > new Date() && !s.pendente2fa && s.usuario.cargo === Cargo.SUPERADMIN;
   } catch { /* banco indisponível: trata como cliente */ }
   if (saCache.size > 500) saCache.clear();
   saCache.set(h, { sa, em: Date.now() });

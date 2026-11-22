@@ -109,6 +109,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/inteligencia-artificial", label: "Inteligência Artificial", icone: "bot", grupo: "Configurações", etapa: 9 },
   // Decisão #99: o Super Admin vê os logs de todas as contas
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
+  // Decisão #105: verificação em duas etapas do Super Admin
+  { href: "/seguranca", label: "Segurança", icone: "config", grupo: "Sistema", etapa: 14 },
   { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 
