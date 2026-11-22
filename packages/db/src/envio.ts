@@ -24,7 +24,7 @@ export function limiteAquecimento(diasConectado: number): number | null {
 /** Texto de descadastro padrão (decisão #66). */
 export const TEXTO_DESCADASTRO_PADRAO = "Se não quiser mais receber nossas mensagens, responda *SAIR*.";
 /** Palavras que marcam o lead como "Pediu para sair" (decisão #57). */
-export const PALAVRAS_SAIR = ["SAIR", "PARAR", "STOP"];
+export const PALAVRAS_SAIR = ["SAIR", "PARAR", "STOP", "CANCELAR"];
 
 /** Máximo de mensagens sem resposta por lead em 30 dias (decisão #64). */
 export const MAX_SEM_RESPOSTA_30D = 2;
