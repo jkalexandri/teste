@@ -1,6 +1,6 @@
 // Dashboard por perfil (estrutura da prévia, prompt seção 11).
-// Só números reais do banco. Leads reais desde a etapa 7; campanhas e disparos
-// ainda não existem (etapa 8), por isso aparecem zerados.
+// Só números reais do banco: leads (etapa 7), campanhas e disparos (etapa 8c).
+// A qualificação da IA chega na etapa 10 (até lá, zero).
 // Regras: sem linha TOTAL no fim do resumo por usuário; sem "— só a sua empresa";
 // no Admin da Empresa, "Disparos por usuários" lista só os usuários (sem o Administrador).
 import { redirect } from "next/navigation";
@@ -13,6 +13,7 @@ import { Clock3, Layers, Play, Send, ShieldCheck, Sparkles, TriangleAlert } from
 import Link from "next/link";
 import { formatarTelefone } from "@/lib/telefone";
 import { STATUS_LEAD } from "@/lib/leads-status";
+import { COR_SAUDE, metricasPorUsuario, saudeDoNumero, somar, VAZIO } from "@/lib/metricas";
 
 export const dynamic = "force-dynamic";
 
@@ -74,15 +75,19 @@ export default async function DashboardPage() {
       orderBy: { nome: "asc" },
     });
     const totalLeads = await prisma.lead.count();
+    // Métricas de todos que enviam (usuários das empresas, individuais e o próprio Super Admin)
+    const m = await metricasPorUsuario([...empresas.flatMap((e) => e.usuarios.map((x) => x.id)), ...individuais.map((x) => x.id), u.id]);
+    const geral = somar([...m.values()]);
+    const daEmpresa = (e: (typeof empresas)[number]) => somar(e.usuarios.map((x) => m.get(x.id) ?? VAZIO));
     const cards = [
       { l: "Empresas", v: empresas.length },
       { l: "Usuários Individuais", v: individuais.length },
       { l: "Leads (total)", v: totalLeads.toLocaleString("pt-BR") },
-      { l: "Campanhas (total)", v: 0 },
-      { l: "Enviados (total)", v: 0 },
-      { l: "Em fila (total)", v: 0 },
-      { l: "Bloqueados 24h (total)", v: 0 },
-      { l: "Qualificados pela IA (total)", v: 0 },
+      { l: "Campanhas (total)", v: geral.campanhas },
+      { l: "Enviados (total)", v: geral.enviados },
+      { l: "Em fila (total)", v: geral.fila },
+      { l: "Bloqueados 24h (total)", v: geral.bloqueados24h },
+      { l: "Qualificados pela IA (total)", v: geral.qualificados },
     ];
     return (
       <section className="flex-1 flex flex-col">
@@ -117,7 +122,7 @@ export default async function DashboardPage() {
                       <td className="font-bold">{e.nome}</td>
                       <td>{e.usuarios.length} / {e.limiteUsuarios}</td>
                       <td>{diasAte(e.expiraEm)}</td>
-                      <td>{e._count.leads.toLocaleString("pt-BR")}</td><td>0</td><td>0</td><td>0</td>
+                      <td>{e._count.leads.toLocaleString("pt-BR")}</td><td>{daEmpresa(e).campanhas}</td><td>{daEmpresa(e).enviados}</td><td>{daEmpresa(e).fila}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -144,7 +149,7 @@ export default async function DashboardPage() {
                         <span className="block text-[11px] font-normal" style={{ color: "var(--muted)" }}>{i.email}</span>
                       </td>
                       <td>{i.empresa ? diasAte(i.empresa.expiraEm) : "—"}</td>
-                      <td>{(i.empresa?._count.leads ?? 0).toLocaleString("pt-BR")}</td><td>0</td><td>0</td><td>0</td>
+                      <td>{(i.empresa?._count.leads ?? 0).toLocaleString("pt-BR")}</td><td>{(m.get(i.id) ?? VAZIO).campanhas}</td><td>{(m.get(i.id) ?? VAZIO).enviados}</td><td>{(m.get(i.id) ?? VAZIO).fila}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,6 +167,9 @@ export default async function DashboardPage() {
       where: { empresaId: u.empresaId, cargo: Cargo.USUARIO }, // sem o Administrador
       orderBy: { nome: "asc" },
     });
+    const m = await metricasPorUsuario(usuarios.map((x) => x.id));
+    const t = somar(usuarios.map((x) => m.get(x.id) ?? VAZIO));
+    const valores = [t.fila, t.enviadosHoje, t.bloqueados24h, t.qualificados];
     const subs = [
       "Total de leads na fila • só os usuários da sua empresa",
       "Soma só dos usuários da sua empresa",
@@ -178,7 +186,7 @@ export default async function DashboardPage() {
         />
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
           {KPIS.map((k, i) => (
-            <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={0} titulo={k.titulo} sub={subs[i]} selo={seloTotal} />
+            <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valores[i] ?? 0} titulo={k.titulo} sub={subs[i]} selo={seloTotal} />
           ))}
         </div>
         <div className="card p-3 mt-3 flex flex-col">
@@ -209,7 +217,7 @@ export default async function DashboardPage() {
                           </span>
                         </div>
                       </td>
-                      <td style={{ fontWeight: 700 }}>0</td><td>0</td><td>0</td><td>0</td>
+                      <td style={{ fontWeight: 700 }}>{(m.get(x.id) ?? VAZIO).enviados}</td><td>{(m.get(x.id) ?? VAZIO).fila}</td><td>{(m.get(x.id) ?? VAZIO).bloqueados24h}</td><td>{(m.get(x.id) ?? VAZIO).qualificados}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -232,6 +240,18 @@ export default async function DashboardPage() {
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const primeiroNome = u.nome.split(" ")[0];
   const recentes = await prisma.lead.findMany({ where: { usuarioId: u.id }, orderBy: { criadoEm: "desc" }, take: 5 });
+  const [meus, saude, proximos] = await Promise.all([
+    metricasPorUsuario([u.id]),
+    saudeDoNumero(u.id),
+    prisma.envio.findMany({
+      where: { status: "PENDENTE", campanha: { usuarioId: u.id, status: "EM_ANDAMENTO" } },
+      orderBy: [{ campanha: { iniciadaEm: "asc" } }, { ordem: "asc" }],
+      take: 5,
+      include: { campanha: { select: { assunto: true } } },
+    }),
+  ]);
+  const mm = meus.get(u.id) ?? VAZIO;
+  const valoresUsuario = [mm.fila, mm.enviadosHoje, mm.bloqueados24h, mm.qualificados];
   return (
     <section className="flex-1 flex flex-col">
       <Cabecalho
@@ -248,8 +268,8 @@ export default async function DashboardPage() {
         }
       />
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
-        {KPIS.map((k) => (
-          <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={0} titulo={k.titulo} selo={seloSeus} />
+        {KPIS.map((k, i) => (
+          <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valoresUsuario[i] ?? 0} titulo={k.titulo} selo={seloSeus} />
         ))}
       </div>
       <div className="grid lg:grid-cols-[1.55fr_.85fr] gap-3 mt-3">
@@ -274,9 +294,46 @@ export default async function DashboardPage() {
             </ul>
           )}
         </div>
-        <div className="card p-3">
-          <h3 className="font-display font-bold text-[13px]">Próximos na fila</h3>
-          <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Fila vazia.</p>
+        <div className="flex flex-col gap-3">
+          <div className="card p-3">
+            <h3 className="font-display font-bold text-[13px]">Próximos na fila</h3>
+            {proximos.length === 0 ? (
+              <p className="text-[12px] mt-2" style={{ color: "var(--muted)" }}>Fila vazia.</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {proximos.map((e) => (
+                  <li key={e.id} className="text-[12px] rounded-lg px-2 py-1.5" style={{ background: "var(--surface-3)" }}>
+                    <b>{e.nome || "(sem nome)"}</b> <span style={{ color: "var(--muted)" }}>• {formatarTelefone(e.telefone)} • {e.campanha.assunto}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {/* Saúde do número (decisão #64) */}
+          <div className="card p-3" data-testid="saude-numero">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-display font-bold text-[13px]">Saúde do seu número</h3>
+              <span className="chip" style={{ background: COR_SAUDE[saude.nivel].fundo, color: COR_SAUDE[saude.nivel].cor }}>{saude.rotulo}</span>
+            </div>
+            <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>Últimos 7 dias • {saude.enviados7d} enviados</p>
+            {saude.nivel === "poucos-dados" ? (
+              <p className="text-[12px] mt-1.5" style={{ color: "var(--muted)" }}>A avaliação aparece depois de 20 envios na semana.</p>
+            ) : (
+              <>
+                <ul className="text-[12px] mt-1.5 grid grid-cols-2 gap-1">
+                  <li>Respostas: <b>{saude.taxaResposta}%</b></li>
+                  <li>Falhas: <b>{saude.taxaFalha}%</b></li>
+                  <li>Pediram para sair: <b>{saude.taxaSair}%</b></li>
+                  <li>Sem WhatsApp: <b>{saude.taxaSemWhatsapp}%</b></li>
+                </ul>
+                {saude.dicas.length > 0 && (
+                  <ul className="text-[11px] mt-1.5 list-disc pl-4" style={{ color: "#8a5a00" }}>
+                    {saude.dicas.map((d) => <li key={d}>{d}</li>)}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>
