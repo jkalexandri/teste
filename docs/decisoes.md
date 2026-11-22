@@ -115,6 +115,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 81 | **Número de avisos do usuário:** o usuário cadastra um WhatsApp para receber, pelo número da plataforma, avisos de **lead qualificado (só Quente)**, **lead novo de Facebook/Google Ads** e **lead respondeu** (exceto SAIR/PARAR/STOP/CANCELAR), cada um com **liga/desliga**. Muitos avisos juntos viram **um resumo** (ex.: a cada 10 minutos). |
 | 82 | **Leads de anúncios:** (a) **endereço de recebimento** próprio e secreto por usuário (Google Ads direto; Facebook/Instagram via Make/Zapier) e (b) **integração direta com o Facebook** (exige app e aprovação da Meta — depois do (a)). |
 | 83 | **CANCELAR** também marca "Pediu para sair" (junto com SAIR, PARAR e STOP — decisão #57), quando a mensagem for só a palavra. |
+| 84 | **Lead de anúncio (Google Ads, Facebook/Instagram Lead Ads):** ao chegar, entra na lista de leads do usuário e **a IA já inicia o atendimento** pelo WhatsApp do usuário (detalhes de horário e primeira mensagem a confirmar). |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
