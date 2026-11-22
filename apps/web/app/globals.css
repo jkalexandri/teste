@@ -195,13 +195,34 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical
 /* Páginas legais (decisão #88) */
 .texto-legal ul{list-style:disc;padding-left:1.25rem}.texto-legal li{margin:.25rem 0}.texto-legal a{text-decoration:underline}
 
-/* Impressão dos relatórios (etapa 11 — decisão #96): só o conteúdo, sem menu nem botões, em fundo branco */
+/* Impressão dos relatórios (etapa 11 — decisões #96 e #97) */
+.impressao { background: #fff; color: #13221a; padding: 8px 4px; }
+.impressao .folha { width: 100%; border-collapse: collapse; }
+.impressao .folha > thead > tr > td, .impressao .folha > tbody > tr > td { padding: 0; }
+.impressao-cabecalho { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-bottom: 8px; }
+.impressao-logo { height: 52px; width: auto; display: block; }
+.impressao-info { text-align: right; font-size: 10.5px; color: #5b6b62; line-height: 1.45; display: flex; flex-direction: column; }
+.impressao-info b { font-family: Sora, sans-serif; font-weight: 800; font-size: 14px; color: #13221a; }
+.impressao-info strong { color: #13221a; }
+.impressao-linha { height: 1.5px; background: #0b1f17; margin-bottom: 12px; }
+.impressao-resumo { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 12px; font-size: 11px; }
+.impressao-resumo small { display: block; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: #5b6b62; font-weight: 700; }
+.impressao-tabela { width: 100%; border-collapse: collapse; font-size: 10px; }
+.impressao-tabela th { text-align: left; font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; color: #5b6b62; border-bottom: 1px solid #cfd6d2; padding: 5px 4px; }
+.impressao-tabela td { padding: 5px 4px; border-bottom: 1px solid #edf0ee; }
+.impressao-tabela tr.total td { font-weight: 800; border-top: 1px solid #0b1f17; }
+.impressao-tabela thead, .impressao .folha > thead { display: table-header-group; }
+.impressao-tabela tr { break-inside: avoid; page-break-inside: avoid; }
+
+@page {
+  size: A4;
+  margin: 12mm 11mm 16mm 11mm;
+  @bottom-left { content: "FilaPro Leads • filaproleads.com.br"; font: 8.5pt "Plus Jakarta Sans", sans-serif; color: #5b6b62; }
+  @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8.5pt "Plus Jakarta Sans", sans-serif; color: #5b6b62; }
+}
 @media print {
   aside, header, nav, .nao-imprimir, [data-nao-imprimir] { display: none !important; }
   html, body { background: #fff !important; color: #000 !important; }
-  .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: auto; }
-  .table-wrap { overflow: visible !important; }
-  table { width: 100% !important; min-width: 0 !important; }
-  tr { break-inside: avoid; }
-  thead { display: table-header-group; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  main, main > *, .impressao { padding: 0 !important; margin: 0 !important; background: #fff !important; }
 }

@@ -94,6 +94,20 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok('Na impressão o menu e os botões somem', !(await p.locator('aside').isVisible()) && (await p.locator('header').isVisible()) === false);
   await p.screenshot({ path: OUT + '/rel-impressao.png' });
   await p.emulateMedia({ media: 'screen' });
+  // Decisão #97: cabeçalho com a logo, quem emitiu e a linha; quebra de página e "Página X de Y"
+  const cab = await p.locator('[data-testid=cabecalho-impressao]').innerText();
+  ok('Cabeçalho da impressão com o relatório e quem emitiu', cab.includes('Leads Empresarial') && cab.includes('Emitido por') && cab.includes(sql(`select nome from "Usuario" where id='${SA}'`)));
+  ok('Logo no cabeçalho', await p.evaluate(() => { const i = document.querySelector('.impressao-logo'); return !!i && i.complete && i.naturalWidth > 0; }));
+  ok('Menu do celular não aparece na impressão', await (async () => { await p.emulateMedia({ media: 'print' }); const v = await p.locator('.nao-imprimir').evaluateAll((es) => es.every((e) => getComputedStyle(e).display === 'none')); await p.emulateMedia({ media: 'screen' }); return v; })());
+  const pdf = path.join(OUT, 'relatorio.pdf');
+  await p.emulateMedia({ media: 'print' });
+  await p.pdf({ path: pdf, preferCSSPageSize: true, printBackground: true });
+  await p.emulateMedia({ media: null });
+  const paginas = Number(/Pages:\s+(\d+)/.exec(execSync(`pdfinfo ${pdf}`).toString())?.[1] ?? 0);
+  const texto = execSync(`pdftotext -layout ${pdf} -`).toString();
+  ok('PDF em várias páginas A4', paginas >= 2 && execSync(`pdfinfo ${pdf}`).toString().includes('(A4)'), String(paginas));
+  ok('Rodapé "Página X de Y" em todas as páginas', Array.from({ length: paginas }, (_, i) => `Página ${i + 1} de ${paginas}`).every((t) => texto.includes(t)));
+  ok('Cabeçalho repetido em todas as páginas', (texto.match(/Emitido por/g) || []).length === paginas);
 
   // ===== 4. Lead Individual (com o Super Admin) =====
   await p.goto(BASE + '/relatorios/lead-individual'); await espera(500);

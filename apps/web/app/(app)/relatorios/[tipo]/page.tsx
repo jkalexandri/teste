@@ -29,13 +29,59 @@ export default async function RelatorioPage({ params, searchParams }: { params: 
     return `?${q.toString()}`;
   };
 
+  const emitidoEm = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const unidade = t === "campanhas" ? "campanha" : "lead";
+  const totalTexto = r?.total !== undefined ? ` • ${r.total.toLocaleString("pt-BR")} ${unidade}${r.total === 1 ? "" : "s"}` : "";
+
+  // Impressão (decisão #97): cabeçalho com a logo, quem emitiu e a linha, repetido em cada folha (thead);
+  // quebra de página sem cortar linhas e rodapé "Página X de Y" (@page em globals.css).
+  if (imprimir && r) {
+    return (
+      <section className="impressao">
+        <AutoImprimir />
+        <table className="folha">
+          <thead>
+            <tr><td>
+              <div className="impressao-cabecalho" data-testid="cabecalho-impressao">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/api/logos/filapro-leads-vazada.svg" alt="FilaPro Leads" className="impressao-logo" />
+                <div className="impressao-info">
+                  <b>{r.titulo}</b>
+                  <span>Emitido por <strong>{s.usuario.nome}</strong></span>
+                  <span>em {emitidoEm}{totalTexto}</span>
+                </div>
+              </div>
+              <div className="impressao-linha" />
+            </td></tr>
+          </thead>
+          <tbody><tr><td>
+            {r.resumo && (
+              <div className="impressao-resumo" data-testid="resumo">
+                {r.resumo.map(([k, v]) => <div key={k}><small>{k}</small><b>{v}</b></div>)}
+              </div>
+            )}
+            {r.tabela.linhas.length === 0 ? <p>Nada encontrado com estes filtros.</p> : (
+              <table className="impressao-tabela" data-testid="tabela-relatorio">
+                <thead><tr>{r.tabela.colunas.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+                <tbody>
+                  {r.tabela.linhas.map((l, i) => (
+                    <tr key={i} className={String(l[1]).startsWith("Total") ? "total" : undefined}>
+                      {l.map((v, j) => <td key={j}>{typeof v === "number" ? v.toLocaleString("pt-BR") : v}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </td></tr></tbody>
+        </table>
+      </section>
+    );
+  }
+
   return (
     <section className="flex-1 flex flex-col relatorio">
-      {imprimir && <AutoImprimir />}
-      <Cabecalho rotulo="Administrativo • Relatório" titulo={r?.titulo ?? TIPOS[t]} descricao={imprimir ? `Emitido em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}` : undefined} />
-      {!imprimir && (
-        <BarraRelatorio tipo={t} contas={contas} rotuloConta={ROTULO_CONTA[t]} filtrosLeads={leads} filtroPeriodo={leads || t === "campanhas"} usuarios={r?.usuarios} temResultado={!!r} />
-      )}
+      <Cabecalho rotulo="Administrativo • Relatório" titulo={r?.titulo ?? TIPOS[t]} />
+      <BarraRelatorio tipo={t} contas={contas} rotuloConta={ROTULO_CONTA[t]} filtrosLeads={leads} filtroPeriodo={leads || t === "campanhas"} usuarios={r?.usuarios} temResultado={!!r} />
       {!r ? (
         <div className="card p-4 mt-3 text-[13px]" style={{ color: "var(--muted)" }}>Escolha {ROTULO_CONTA[t] === "Empresa" ? "a empresa" : "o usuário"} para ver o relatório.</div>
       ) : (

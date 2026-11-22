@@ -198,7 +198,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
             {/* ===== Menu no celular ===== */}
             <div
               data-safe-area-sticky-top
-              className="lg:hidden px-3 pt-2 flex gap-1.5 overflow-x-auto pb-1 shrink-0 no-scrollbar sticky z-30"
+              className="nao-imprimir lg:hidden px-3 pt-2 flex gap-1.5 overflow-x-auto pb-1 shrink-0 no-scrollbar sticky z-30"
               style={{ background: "var(--bg)", top: "calc(var(--safe-area-inset-top) + 52px)" }}
             >
               {menu.map((item) => (
