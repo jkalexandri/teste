@@ -1,0 +1,20 @@
+# /etc/caddy/Caddyfile — HTTPS automático (decisão #99)
+
+# Site
+filaproleads.com.br {
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy 127.0.0.1:3000
+}
+
+# www vai para o endereço principal
+www.filaproleads.com.br {
+	redir https://filaproleads.com.br{uri} permanent
+}
+
+# Serviço 24/7 (já existia)
+api.filaproleads.com.br {
+	reverse_proxy 127.0.0.1:4000
+}

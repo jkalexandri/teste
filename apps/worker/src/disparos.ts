@@ -8,6 +8,7 @@ import type { Logger } from "pino";
 import { prisma, Cargo, StatusCampanha, StatusEnvio, StatusLead } from "@filapro/db";
 // Regras puras compartilhadas com o site (import direto do arquivo: funciona igual em ESM e CJS)
 import { numeroDeAvisos } from "./avisos.js";
+import { enviarPush } from "./push.js";
 import { MODOS, MAX_SEM_RESPOSTA_30D, PALAVRAS_SAIR, agoraSP, dentroDaJanela, limiteAquecimento, montarMensagem, saudacao } from "@filapro/db/src/envio.ts";
 
 export type Conteudo = { texto: string; anexo?: { caminho: string; tipo: string; nome: string } };
@@ -329,6 +330,8 @@ export class MotorDisparos {
     const chave = c.avisarSempre && tipo !== "limite-dia" ? `${tipo}|${dia}|${this.agora().getTime()}` : `${tipo}|${dia}`;
     if (c.ultimoAviso === chave) return;
     await prisma.campanha.update({ where: { id: campanhaId }, data: { ultimoAviso: chave } });
+    // Também no celular (app — decisão #99)
+    await enviarPush(c.usuarioId, texto, "/campanhas").catch(() => undefined);
     // Número de avisos do usuário (tela Avisos — etapa 10b); sem ele, o WhatsApp do cadastro
     const numero = await numeroDeAvisos(c.usuario);
     if (!numero) return;

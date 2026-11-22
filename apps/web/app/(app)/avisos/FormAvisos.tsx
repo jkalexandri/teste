@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { salvarAvisos, testarAviso } from "./actions";
+import AtivarCelular from "./AtivarCelular";
 
 const TIPOS = [
   { campo: "avisoQuente", rotulo: "Lead qualificado (Quente)", dica: "Quando a IA classifica um lead como Quente." },
@@ -13,7 +14,7 @@ const TIPOS = [
 ] as const;
 
 export default function FormAvisos({ inicial }: {
-  inicial: { numeroAvisos: string; whatsapp: string; avisoQuente: boolean; avisoAnuncio: boolean; avisoRespondeu: boolean };
+  inicial: { numeroAvisos: string; whatsapp: string; avisoQuente: boolean; avisoAnuncio: boolean; avisoRespondeu: boolean; avisoCelular: boolean };
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -39,6 +40,12 @@ export default function FormAvisos({ inicial }: {
           </label>
         ))}
       </div>
+      {/* Notificações no celular (app — decisão #99) */}
+      <label className="flex items-start gap-2 cursor-pointer mt-3">
+        <input type="checkbox" name="avisoCelular" defaultChecked={inicial.avisoCelular} className="w-4 h-4 mt-0.5 accent-emerald-600" />
+        <span><b className="text-[13px]">Receber também no celular (app)</b><span className="help block">Os mesmos avisos chegam como notificação do FilaPro Leads nos aparelhos ativados abaixo.</span></span>
+      </label>
+      <AtivarCelular />
       <p className="help mt-3">Muitos avisos juntos viram um resumo: o primeiro chega na hora e os seguintes, em até 10 minutos, chegam juntos.</p>
       <div className="flex justify-end gap-2 mt-3">
         <button type="button" className="btn-ghost" disabled={pendente} onClick={() => iniciar(async () => { const r = await testarAviso(); toast(r.mensagem, r.ok ? "ok" : "erro"); })}>Enviar aviso de teste</button>

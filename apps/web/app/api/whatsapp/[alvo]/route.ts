@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { chamarWorker } from "@/lib/worker";
 import { lerEstado, sessaoDoAlvo, type AlvoWhatsapp } from "@/lib/whatsapp";
+import { logDaSessao } from "@/lib/logs";
 
 export const dynamic = "force-dynamic";
 
@@ -24,5 +25,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ alvo: s
   const { acao } = (await req.json().catch(() => ({}))) as { acao?: string };
   if (acao !== "conectar" && acao !== "desconectar") return NextResponse.json({ ok: false, mensagem: "Ação inválida." }, { status: 400 });
   const r = await chamarWorker(`/sessoes/${encodeURIComponent(s.sessaoId)}/${acao}`, acao === "conectar" ? { usuarioId: s.usuarioId } : undefined);
+  if (r.ok && acao === "desconectar") await logDaSessao("WHATSAPP", s.sessaoId === "plataforma" ? "Número da plataforma desconectado" : "WhatsApp desconectado pelo usuário");
   return NextResponse.json(r, { status: r.ok ? 200 : 503 });
 }

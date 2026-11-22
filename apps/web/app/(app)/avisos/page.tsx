@@ -26,7 +26,7 @@ export default async function AvisosPage() {
         inicial={{
           numeroAvisos: u.numeroAvisos ? formatarTelefone(u.numeroAvisos) : "",
           whatsapp: u.whatsapp ?? "",
-          avisoQuente: u.avisoQuente, avisoAnuncio: u.avisoAnuncio, avisoRespondeu: u.avisoRespondeu,
+          avisoQuente: u.avisoQuente, avisoAnuncio: u.avisoAnuncio, avisoRespondeu: u.avisoRespondeu, avisoCelular: u.avisoCelular,
         }}
       />
     </section>

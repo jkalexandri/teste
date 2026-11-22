@@ -116,6 +116,7 @@ export class GerenciadorSessoes implements Remetente {
         // Primeira conexão deste número: base do aquecimento (decisão #64)
         await prisma.whatsappSessao.updateMany({ where: { id, primeiraConexaoEm: null }, data: { primeiraConexaoEm: new Date() } });
         void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
+        void registrarLogSessao(id, `WhatsApp conectado (+${numeroDoJid(sock.user?.id) ?? ""})`);
         this.log.info({ id }, "WhatsApp conectado");
       }
       if (u.connection === "close") {
@@ -128,6 +129,7 @@ export class GerenciadorSessoes implements Remetente {
         if (d.acao === "encerrar") {
           if (d.apagarLogin) await apagarAuth(id);
           await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro });
+          void registrarLogSessao(id, `WhatsApp desconectado${d.erro ? `: ${d.erro}` : ""}`);
           return;
         }
         await ultimaGravacao;
@@ -213,4 +215,15 @@ export class GerenciadorSessoes implements Remetente {
     }
     this.conexoes.clear();
   }
+}
+
+/** Tela Logs (decisão #99): conexões e quedas do WhatsApp, na conta do dono do número. */
+async function registrarLogSessao(sessaoId: string, texto: string) {
+  try {
+    const s = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId }, include: { usuario: { select: { id: true, nome: true, email: true, empresaId: true } } } });
+    const u = s?.usuario;
+    await prisma.log.create({
+      data: { empresaId: u?.empresaId ?? null, usuarioId: u?.id ?? null, quem: u ? `${u.nome} (${u.email})` : "Número da plataforma", tipo: "WHATSAPP", texto: sessaoId === "plataforma" ? `Número da plataforma: ${texto}` : texto },
+    });
+  } catch { /* o log nunca interrompe a conexão */ }
 }

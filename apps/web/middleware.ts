@@ -19,4 +19,5 @@ export function middleware(req: NextRequest) {
 }
 
 // Não passa por API, arquivos estáticos e internos do Next.
-export const config = { matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"] };
+// Arquivos do app no celular (service worker, manifesto e ícones) também ficam livres (decisão #85).
+export const config = { matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|icones/).*)"] };

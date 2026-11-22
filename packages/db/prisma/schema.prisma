@@ -98,6 +98,8 @@ model Usuario {
   ultimoAvisoEm      DateTime?
   /// Endereço secreto de leads de anúncios (decisão #82)
   tokenAnuncios      String?       @unique
+  /// Notificações no celular (app — decisão #99): ligado/desligado e os aparelhos inscritos
+  avisoCelular       Boolean       @default(true)
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?
   empresa            Empresa?      @relation(fields: [empresaId], references: [id])
@@ -675,4 +677,35 @@ model LeadAnuncio {
 
   @@index([usuarioId, recebidoEm])
   @@index([status])
+}
+
+/// Registro de ações (tela Logs — decisão #99). Guardado por 90 dias.
+model Log {
+  id        String   @id @default(cuid())
+  criadoEm  DateTime @default(now())
+  /// Conta (para o Admin da Empresa ver os da empresa) e quem fez
+  empresaId String?
+  usuarioId String?
+  /// Nome e e-mail copiados na hora (o usuário pode ser excluído depois)
+  quem      String   @default("")
+  /// ENTRADA, SENHA, USUARIOS, LEADS, CAMPANHAS, WHATSAPP
+  tipo      String
+  texto     String
+  ip        String?
+
+  @@index([empresaId, criadoEm])
+  @@index([criadoEm])
+}
+
+/// Aparelho inscrito para receber notificações do app (PWA — decisão #99).
+model PushInscricao {
+  id        String   @id @default(cuid())
+  usuarioId String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  aparelho  String   @default("")
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId])
 }

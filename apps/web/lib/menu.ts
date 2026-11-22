@@ -100,6 +100,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/regras-envio", label: "Regras de envio", icone: "config", grupo: "Configurações", etapa: 8 },
   // Decisões #72 e #77: IA trocável e despesas com IA
   { href: "/inteligencia-artificial", label: "Inteligência Artificial", icone: "bot", grupo: "Configurações", etapa: 9 },
+  // Decisão #99: o Super Admin vê os logs de todas as contas
+  { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

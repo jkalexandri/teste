@@ -1,6 +1,6 @@
-// GET /api/cron/renovacao — roda 1x por dia (Vercel Cron, vercel.json).
+// GET /api/cron/renovacao — roda 1x por dia (agendador da VPS: deploy/rotinas.sh — decisão #99).
 // Envia o link de renovação 10 dias antes e o lembrete 3 dias antes (decisão #42).
-// Protegido por CRON_SECRET (a Vercel envia "Authorization: Bearer <CRON_SECRET>").
+// Protegido por CRON_SECRET (o agendador envia "Authorization: Bearer <CRON_SECRET>").
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
 import { enviarAvisoRenovacao } from "@/lib/renovacao";

@@ -4,6 +4,7 @@
 // Resumo: o primeiro aviso sai na hora; os que chegarem nos 10 minutos seguintes vão juntos num resumo.
 import type { Logger } from "pino";
 import { prisma, Cargo } from "@filapro/db";
+import { enviarPush, urlDoAviso } from "./push.js";
 
 export const INTERVALO_RESUMO_MS = 10 * 60_000;
 export type TipoAviso = "QUENTE" | "ANUNCIO" | "RESPONDEU";
@@ -59,6 +60,8 @@ export class Avisador {
 
   private async enviar(u: Destino, texto: string) {
     await prisma.usuario.update({ where: { id: u.id }, data: { ultimoAvisoEm: this.agora() } });
+    // Também no celular (app), se a pessoa ativou (decisão #99)
+    await enviarPush(u.id, texto, urlDoAviso(texto)).catch(() => undefined);
     const numero = await numeroDeAvisos(u);
     if (!numero || !this.opcoes.notificar) return;
     await this.opcoes.notificar(numero, texto).catch((e) => this.log.warn({ e }, "aviso pelo WhatsApp não enviado"));

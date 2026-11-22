@@ -3,6 +3,7 @@
 // Ações de Campanhas (etapa 8a). O envio em si acontece no serviço 24/7 (etapa 8b):
 // aqui a campanha é montada, salva como rascunho, agendada ou iniciada (fila criada no banco).
 import { revalidatePath } from "next/cache";
+import { logDaSessao } from "@/lib/logs";
 import { prisma, StatusCampanha, StatusEnvio, StatusWhatsapp, regraAnexo, type Prisma } from "@filapro/db";
 import { atorCampanhas, disparosRestantes, limparDados, numerosParaCampanha, resolverLeads, validarSessoes, type DadosCampanha } from "@/lib/campanhas";
 import { apagarArquivoDoWorker, guardarArquivoNoWorker } from "@/lib/worker";
@@ -137,6 +138,7 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
     return c.id;
   }, { timeout: 60_000 });
 
+  await logDaSessao("CAMPANHAS", quando ? `Campanha agendada: "${dados.assunto}" (${unicos.length} leads)` : `Campanha iniciada: "${dados.assunto}" (${unicos.length} leads)`);
   revalidatePath("/campanhas");
   return {
     ok: true,
@@ -153,6 +155,7 @@ export async function pausarCampanha(id: string): Promise<R> {
   if (!x || (x.c.status !== StatusCampanha.EM_ANDAMENTO && x.c.status !== StatusCampanha.AGENDADA)) return { ok: false, mensagem: "Campanha não está em andamento." };
   await prisma.campanha.update({ where: { id }, data: { status: StatusCampanha.PAUSADA, motivo: "Pausada pelo usuário." } });
   revalidatePath("/campanhas");
+  await logDaSessao("CAMPANHAS", `Campanha pausada: "${x.c.assunto}"`);
   return { ok: true, mensagem: "Campanha pausada." };
 }
 
@@ -164,6 +167,7 @@ export async function retomarCampanha(id: string): Promise<R> {
   if (!nums.some((n) => n.conectado && daCampanha.includes(n.id))) return { ok: false, mensagem: "Conecte o seu WhatsApp antes de retomar." };
   await prisma.campanha.update({ where: { id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null, iniciadaEm: x.c.iniciadaEm ?? new Date() } });
   revalidatePath("/campanhas");
+  await logDaSessao("CAMPANHAS", `Campanha retomada: "${x.c.assunto}"`);
   return { ok: true, mensagem: "Campanha retomada." };
 }
 
@@ -176,6 +180,7 @@ export async function cancelarCampanha(id: string, motivo: string): Promise<R> {
     prisma.envio.updateMany({ where: { campanhaId: id, status: StatusEnvio.PENDENTE }, data: { status: StatusEnvio.PULADO, motivo: "Campanha cancelada" } }),
   ]);
   revalidatePath("/campanhas");
+  await logDaSessao("CAMPANHAS", `Campanha cancelada: "${x.c.assunto}"`);
   return { ok: true, mensagem: "Campanha cancelada." };
 }
 

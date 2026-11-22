@@ -125,5 +125,12 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     return { ok: true, mensagem: "Atendendo o lead." };
   });
 
+  // ===== Notificações no celular (decisão #99): teste a partir da tela Avisos =====
+  app.post<{ Params: { id: string } }>("/push/:id/teste", async (req) => {
+    const { enviarPush } = await import("./push.js");
+    const n = await enviarPush(req.params.id, "✅ Notificação de teste: os avisos do FilaPro Leads chegam neste aparelho.", "/avisos");
+    return { ok: n > 0, mensagem: n > 0 ? `Notificação enviada para ${n} aparelho${n > 1 ? "s" : ""}.` : "Nenhum aparelho com notificações ativas." };
+  });
+
   return app;
 }

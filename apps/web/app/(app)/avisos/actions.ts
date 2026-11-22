@@ -6,6 +6,7 @@ import { prisma } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
+import { chamarWorker } from "@/lib/worker";
 
 type R = { ok: boolean; mensagem: string };
 
@@ -34,6 +35,7 @@ export async function salvarAvisos(form: FormData): Promise<R> {
       avisoQuente: form.get("avisoQuente") === "on",
       avisoAnuncio: form.get("avisoAnuncio") === "on",
       avisoRespondeu: form.get("avisoRespondeu") === "on",
+      avisoCelular: form.get("avisoCelular") === "on",
     },
   });
   revalidatePath("/avisos");
@@ -43,8 +45,11 @@ export async function salvarAvisos(form: FormData): Promise<R> {
 /** Manda um aviso de teste pelo número da plataforma. */
 export async function testarAviso(): Promise<R> {
   const u = await ator();
+  // Notificação no celular (se houver aparelho ativado — decisão #99)
+  const push = u.avisoCelular ? await chamarWorker(`/push/${u.id}/teste`) : { ok: false, mensagem: "" };
   const numero = numeroValido(u.numeroAvisos || u.whatsapp || "");
-  if (!numero) return { ok: false, mensagem: "Cadastre o número que recebe os avisos e salve antes de testar." };
+  if (!numero) return push.ok ? { ok: true, mensagem: push.mensagem } : { ok: false, mensagem: "Cadastre o número que recebe os avisos e salve antes de testar." };
   const r = await enviarPelaPlataforma(numero, "✅ FilaPro Leads: este é um aviso de teste. Os avisos dos seus leads chegam neste número.");
-  return r.ok ? { ok: true, mensagem: "Aviso de teste enviado. Confira o seu WhatsApp." } : { ok: false, mensagem: `Não foi possível enviar: ${r.mensagem}` };
+  const extra = push.ok ? ` ${push.mensagem}` : "";
+  return r.ok ? { ok: true, mensagem: `Aviso de teste enviado. Confira o seu WhatsApp.${extra}` } : { ok: push.ok, mensagem: `Não foi possível enviar pelo WhatsApp: ${r.mensagem}.${extra}` };
 }

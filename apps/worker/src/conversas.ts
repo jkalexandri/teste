@@ -8,6 +8,7 @@ import { PALAVRAS_SAIR } from "@filapro/db/src/envio.ts";
 import { reservarCodigos } from "@filapro/db/src/codigos.ts";
 import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
 import { escolherNumero } from "./numeros.js";
+import { enviarPush, urlDoAviso } from "./push.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
 import type { Conteudo, Remetente } from "./disparos.js";
@@ -78,6 +79,8 @@ export class Atendente {
   async limparAntigas() {
     const limite = new Date(this.agora().getTime() - DIAS_HISTORICO * 86400_000);
     const r = await prisma.mensagem.deleteMany({ where: { criadoEm: { lt: limite } } }).catch(() => ({ count: 0 }));
+    // Logs ficam 90 dias (decisão #99)
+    await prisma.log.deleteMany({ where: { criadoEm: { lt: new Date(this.agora().getTime() - 90 * 86400_000) } } }).catch(() => undefined);
     if (r.count) this.log.info({ apagadas: r.count }, "mensagens com mais de 365 dias apagadas");
   }
 
@@ -261,6 +264,8 @@ export class Atendente {
 
   /** Avisos ao usuário pelo número da plataforma (mesma regra dos avisos de campanha). */
   private async avisarUsuario(u: { id: string; cargo: Cargo; whatsapp: string | null; numeroAvisos: string | null }, texto: string) {
+    // Também no celular (app — decisão #99)
+    await enviarPush(u.id, texto, urlDoAviso(texto)).catch(() => undefined);
     if (!this.opcoes.notificar) return;
     const numero = await numeroDeAvisos(u);
     if (!numero) return;

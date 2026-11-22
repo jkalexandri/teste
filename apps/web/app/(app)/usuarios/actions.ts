@@ -3,6 +3,7 @@
 // Admin da Empresa → Usuários (decisões #23, #24, #46–#50).
 // Tudo limitado à empresa do próprio Admin.
 import { revalidatePath } from "next/cache";
+import { logDaSessao } from "@/lib/logs";
 import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, StatusUsuario } from "@filapro/db";
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
 import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
@@ -46,6 +47,7 @@ export async function criarUsuario(form: FormData): Promise<R> {
   if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads do usuário ou marque “Ilimitado”." };
   const { usuario, senhaTemporaria } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form), limiteLeads });
   const enviado = await enviarEmailBoasVindas(usuario.nome, usuario.email, senhaTemporaria, v.empresa.pacote, Modulo.EMPRESARIAL);
+  await logDaSessao("USUARIOS", `Usuário criado: ${usuario.nome} (${usuario.email})`, empresaId);
   revalidatePath("/usuarios");
   return {
     ok: true,
@@ -67,6 +69,7 @@ export async function editarUsuario(id: string, form: FormData): Promise<R> {
   if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads do usuário ou marque “Ilimitado”." };
   await prisma.usuario.update({ where: { id }, data: { ...dados, permissoes: lerPermissoes(form), limiteLeads } });
   revalidatePath("/usuarios");
+  await logDaSessao("USUARIOS", `Usuário alterado: ${dados.nome}`);
   return { ok: true, mensagem: `Usuário ${dados.nome} atualizado.` };
 }
 
@@ -80,6 +83,7 @@ export async function resetarSenha(id: string): Promise<R> {
     data: { senhaTempHash: await gerarHash(temp), senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000) },
   });
   const enviado = await enviarEmailBoasVindas(u.nome, u.email, temp, s.usuario.empresa?.pacote ?? "", Modulo.EMPRESARIAL);
+  await logDaSessao("USUARIOS", `Nova senha temporária para ${u.nome} (${u.email})`);
   revalidatePath("/usuarios");
   return enviado ? { ok: true, mensagem: `Nova senha temporária enviada para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
 }
@@ -93,6 +97,7 @@ export async function alternarAtivo(id: string): Promise<R> {
     await prisma.usuario.update({ where: { id }, data: { status: StatusUsuario.BLOQUEADO } });
     await prisma.sessao.deleteMany({ where: { usuarioId: id } });
     revalidatePath("/usuarios");
+    await logDaSessao("USUARIOS", `Usuário desativado: ${u.nome}`);
     return { ok: true, mensagem: `${u.nome} desativado. A vaga foi liberada.` };
   }
   const v = await vagas(s.usuario.empresaId);
@@ -101,6 +106,7 @@ export async function alternarAtivo(id: string): Promise<R> {
   }
   await prisma.usuario.update({ where: { id }, data: { status: StatusUsuario.ATIVO } });
   revalidatePath("/usuarios");
+  await logDaSessao("USUARIOS", `Usuário reativado: ${u.nome}`);
   return { ok: true, mensagem: `${u.nome} reativado.` };
 }
 
@@ -130,6 +136,7 @@ export async function excluirUsuario(id: string, destinoId: string | null): Prom
     await tx.sessao.deleteMany({ where: { usuarioId: id } });
     await tx.usuario.delete({ where: { id } });
   });
+  await logDaSessao("USUARIOS", destino ? `Usuário excluído: ${u.nome}; dados transferidos para ${destino.nome}` : `Usuário excluído: ${u.nome}`, u.empresaId);
   revalidatePath("/usuarios");
   return {
     ok: true,

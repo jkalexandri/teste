@@ -3,6 +3,7 @@
 // Ações da tela Leads (etapa 7 — decisões #53 a #59). Todas conferem a sessão e
 // o que o perfil pode fazer (decisão #56) no servidor.
 import { revalidatePath } from "next/cache";
+import { logDaSessao } from "@/lib/logs";
 import { readSheet } from "read-excel-file/node";
 import { prisma, Cargo, StatusLead } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
@@ -30,6 +31,7 @@ async function salvar(a: Ator, donoId: string, linhas: LinhaLead[], invalidos = 
   if ("erro" in r) return { ok: false, mensagem: r.erro };
   revalidatePath("/leads");
   const extra = invalidos ? ` • ${invalidos} com número inválido` : "";
+  if (r.salvos > 0) await logDaSessao("LEADS", `Leads cadastrados: ${textoResumo(r)}${extra}`);
   return { ok: r.salvos > 0, mensagem: textoResumo(r) + extra, resumo: r };
 }
 
@@ -130,6 +132,7 @@ export async function editarLead(id: string, form: FormData): Promise<R> {
   }
   await prisma.lead.update({ where: { id }, data: dados });
   revalidatePath("/leads");
+  await logDaSessao("LEADS", `Lead ${x.lead.codigo} alterado`, x.lead.empresaId);
   return { ok: true, mensagem: `Lead ${x.lead.codigo} atualizado.` };
 }
 
@@ -139,6 +142,7 @@ export async function alternarAtivoLead(id: string): Promise<R> {
   if (!x) return { ok: false, mensagem: "Lead não encontrado." };
   await prisma.lead.update({ where: { id }, data: { ativo: !x.lead.ativo } });
   revalidatePath("/leads");
+  await logDaSessao("LEADS", `Lead ${x.lead.codigo} ${x.lead.ativo ? "inativado" : "reativado"}`, x.lead.empresaId);
   return { ok: true, mensagem: `Lead ${x.lead.codigo} ${x.lead.ativo ? "inativado" : "reativado"}.` };
 }
 
@@ -156,6 +160,7 @@ export async function mudarStatusLead(id: string, status: string): Promise<R> {
     },
   });
   revalidatePath("/leads");
+  await logDaSessao("LEADS", `Status do lead ${x.lead.codigo} alterado para ${status}`, x.lead.empresaId);
   return { ok: true, mensagem: `Status do lead ${x.lead.codigo} alterado.` };
 }
 
@@ -166,5 +171,6 @@ export async function excluirLead(id: string): Promise<R> {
   if (!x.pode.excluir) return { ok: false, mensagem: "Só o Super Admin exclui leads." };
   await prisma.lead.delete({ where: { id } });
   revalidatePath("/leads");
+  await logDaSessao("LEADS", `Lead ${x.lead.codigo} excluído`, x.lead.empresaId);
   return { ok: true, mensagem: `Lead ${x.lead.codigo} excluído.` };
 }
