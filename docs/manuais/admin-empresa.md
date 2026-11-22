@@ -19,6 +19,16 @@ Mostra os números somados da empresa: leads, enviados hoje, fila, bloqueados 24
 
 ![Dashboard do Admin](prints/a-dashboard.png)
 
+### Disparos do período e pacote extra
+
+Se o plano da empresa tem **quantidade de disparos por período**, o Dashboard mostra o saldo **da empresa** (todos os usuários usam o
+mesmo): usados, total e quantos restam. Contam só as mensagens de campanha enviadas com sucesso.
+
+- Quando o saldo acaba, as campanhas de todos os usuários **pausam com aviso**; a IA continua atendendo.
+- **Comprar pacote:** escolha a quantidade de pacotes e pague o PIX. Quando o pagamento é confirmado, o saldo aumenta e as campanhas
+  pausadas por falta de saldo voltam sozinhas. Só o Admin compra.
+- O saldo (inclusive o dos pacotes) **zera na renovação**.
+
 ## Usuários
 
 Menu **Usuários**: quem envia as mensagens pela empresa.
@@ -89,6 +99,12 @@ alterados, leads cadastrados ou alterados, campanhas iniciadas, pausadas ou canc
 Filtre por usuário, tipo e período.
 
 ![Logs](prints/a-logs.png)
+
+## Suporte e mensagens do FilaPro Leads
+
+- Botão **💬 Suporte** (canto de baixo da tela): chat em tempo real com o suporte, com imagem ou PDF. Se o suporte chamar, o chat abre
+  sozinho. Você **não vê** as conversas dos seus usuários com o suporte (cada um vê só a própria).
+- **Mensagens no centro da tela:** avisos do FilaPro Leads; leia e clique em **OK**.
 
 ## Plano e renovação
 

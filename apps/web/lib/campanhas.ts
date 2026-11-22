@@ -1,4 +1,5 @@
 // Regras das campanhas no site (etapa 8a — prompt seção 8, decisões #57, #62, #64–#68).
+import { saldoDisparos } from "@filapro/db";
 import "server-only";
 import { prisma, Cargo, Modulo, StatusLead, StatusCampanha, type Prisma } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
@@ -93,11 +94,10 @@ export async function resolverLeads(usuarioId: string, d: Pick<DadosCampanha, "s
   return { enviar, bloqueados, antigosSair };
 }
 
-/** Disparos que o teste grátis ainda permite (decisão #34). null = sem limite. */
-export async function disparosRestantes(empresa: { id: string; limiteDisparos: number | null } | null) {
-  if (!empresa || empresa.limiteDisparos == null) return null;
-  const usados = await prisma.envio.count({ where: { campanha: { empresaId: empresa.id }, status: "ENVIADO" } });
-  return Math.max(0, empresa.limiteDisparos - usados);
+/** Disparos que ainda restam no período (teste grátis e planos por quantidade — decisões #34 e #102). null = sem limite. */
+export async function disparosRestantes(empresa: { id: string; limiteDisparos: number | null; disparosExtras: number; inicioPeriodo: Date } | null) {
+  const s = await saldoDisparos(prisma, empresa);
+  return s ? s.restantes : null;
 }
 
 /** Janela da conta (empresa / individual) ou do Super Admin. */

@@ -99,6 +99,9 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - **Motor de envio** (`disparos.ts`): um "corredor" por usuário, relendo tudo do banco a cada envio; rodízio entre números,
   limites por número e por modo (Conservador/Equilibrado/Rápido), aquecimento, janela, feriados e regras de pular lead.
 - **Conversas** (`conversas.ts`): a IA responde depois de 20–60 s; ficha da empresa em cache + resumo + últimas 12 mensagens.
+- **Saldo de disparos** (`packages/db/src/saldo.ts`, decisão #102): conta os `Envio` ENVIADO desde `Empresa.inicioPeriodo`;
+  limite = `Empresa.limiteDisparos` + `disparosExtras`. Sem saldo, o motor pausa com o motivo `MOTIVO_SEM_SALDO`; a confirmação do pacote
+  em Pedidos chama `retomarSemSaldo`.
 - **ESM/CJS:** no serviço, importe módulos puros pelo caminho do arquivo (ex.: `@filapro/db/src/envio.ts`,
   `@filapro/ia/src/conversa.ts`) para evitar erro de exportação.
 
@@ -107,6 +110,16 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - Configuração por tarefa na tela Inteligência Artificial (tabela `ConfigIA`), com a chave única em `tarefa = "_anthropic"`.
 - Todo uso é registrado em `UsoIA` com o custo em dólar (cache conta 10% na leitura e 125% na escrita).
 - O provedor **simulado** só funciona fora de produção (usado nos testes).
+
+## Online, suporte e mensagens (decisão #102)
+
+- `components/app/Presenca.tsx` (montado no layout interno) manda `POST /api/presenca` a cada 45 s, ao trocar de tela e ao voltar
+  para a aba: grava `vistoEm`, `telaAtual` e `aparelho`, e devolve a mensagem pendente (`Comunicado`) e o estado do suporte.
+- Online = `vistoEm` nos últimos 2 minutos (`ONLINE_MS` em `lib/suporte.ts`).
+- Suporte: `SuporteConversa`/`SuporteMensagem`; rotas `/api/suporte` (cliente), `/api/suporte/<usuário>` e `/chamar` (Super Admin),
+  `/api/suporte/arquivo/<id>`. Anexos ficam no serviço 24/7 como `sup-<id>`. O chat (`ChatSuporte.tsx`) busca novidades a cada 3 s.
+  Limpeza diária: mensagens com mais de 365 dias.
+- Mensagens aos usuários: `Comunicado` + `ComunicadoDestino` (um por destinatário; `lidoEm` ao clicar OK).
 
 ## Testes
 

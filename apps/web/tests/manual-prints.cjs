@@ -27,6 +27,13 @@ const EMP = 'teste-empresa-exemplo';
   sql(`insert into "Campanha"(id,"usuarioId","empresaId",assunto,mensagem,status,"totalLeads","criadoEm","iniciadaEm","concluidaEm","atualizadoEm") values ('man-c1','${ANA}','${EMP}','Manual: Promoção de dezembro','Oi {nome}, tudo bem?','CONCLUIDA',8,now()-interval '1 day',now()-interval '1 day',now()-interval '20 hours',now())`);
   nomes.forEach((n, i) => sql(`insert into "Envio"(id,"campanhaId","leadId",telefone,nome,ordem,status,"enviadoEm","sessaoId") values ('man-e${i}','man-c1','man-${i}','551198800${String(i).padStart(4, '0')}','${n}',${i},'${i === 7 ? 'PULADO' : 'ENVIADO'}',${i === 7 ? 'null' : "now()-interval '1 day'"},'${ANA}')`));
 
+  // Suporte e mensagem aos usuários (decisão #102)
+  sql(`delete from "SuporteConversa" where id='man-sup'`);
+  sql(`delete from "Comunicado" where id='man-com'`);
+  sql(`insert into "SuporteConversa"(id,"usuarioId","ultimaMensagemEm") values ('man-sup','${ANA}',now())`);
+  sql(`insert into "SuporteMensagem"(id,"conversaId",autor,"autorId",texto,"criadoEm") values
+    ('man-s1','man-sup','CLIENTE','${ANA}','Olá! Como coloco mais um número na campanha?',now()-interval '6 minutes'),
+    ('man-s2','man-sup','SUPORTE','sa','Oi, Ana! No passo 3 (Antibloqueio) da campanha você escolhe os números. Quer que eu te mostre?',now()-interval '4 minutes')`);
   const b = await chromium.launch();
   const ctx = async () => { const c = await b.newContext({ viewport: { width: 1280, height: 800 } }); const p = await c.newPage(); p.on('dialog', (d) => d.dismiss()); return [c, p]; };
   const entrar = async (p, email, senha, modulo) => {
@@ -58,6 +65,7 @@ const EMP = 'teste-empresa-exemplo';
   await foto(p, 'u-whatsapp', '/whatsapp');
   await foto(p, 'u-avisos', '/avisos');
   await foto(p, 'u-empresa-ia', '/empresa-ia');
+  await foto(p, 'u-suporte', '/dashboard', async (q) => { await q.click('[data-testid=botao-suporte]'); await espera(1500); });
   await c.close();
 
   // Usuário individual (anúncios e vários WhatsApps)
@@ -99,10 +107,18 @@ const EMP = 'teste-empresa-exemplo';
   await foto(p, 's-logos', '/logos');
   await foto(p, 's-dados-legais', '/dados-legais');
   await foto(p, 's-ajuda', '/ajuda');
+  await foto(p, 's-online', '/online?aba=empresarial');
+  await foto(p, 's-atendimento', `/atendimento?cliente=${ANA}`);
+  const SA = sql(`select id from "Usuario" where email='superadmin@disparopro.com.br'`);
+  sql(`insert into "Comunicado"(id,titulo,texto,publico,"autorId","criadoEm") values ('man-com','Novidade: suporte em tempo real','Agora você fala com o suporte pelo botão Suporte, no canto da tela.','Todos os clientes','${SA}',now())`);
+  sql(`insert into "ComunicadoDestino"(id,"comunicadoId","usuarioId","lidoEm") values ('man-cd1','man-com','${ANA}',now())`);
+  await foto(p, 's-comunicados', '/comunicados', async (p) => { await p.locator('[data-testid=comunicado] summary').first().click(); });
   await c.close();
   await b.close();
 
   sql(`delete from "Campanha" where assunto like 'Manual:%'`);
   sql(`delete from "Lead" where codigo like 'MAN-%'`);
+  sql(`delete from "SuporteConversa" where id='man-sup'`);
+  sql(`delete from "Comunicado" where id='man-com'`);
   console.log('Prints salvos em docs/manuais/prints');
 })().catch((e) => { console.error(e); process.exit(1); });

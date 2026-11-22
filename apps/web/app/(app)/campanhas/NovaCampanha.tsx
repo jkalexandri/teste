@@ -326,7 +326,7 @@ function PassoLeads({ d, set, totalLeadsAtivos, restantesTeste }: { d: Dados; se
           <p className="text-[12px] mt-1" style={{ color: "#9e1d2f" }}>{previa.bloqueados} pediram para sair há menos de 45 dias e estão bloqueados.</p>
         )}
         {previa && restantesTeste != null && (
-          <p className="text-[12px] mt-1" style={{ color: "#8a5a00" }}>Teste grátis: restam {restantesTeste} disparos. Os leads além disso ficam na fila sem enviar.</p>
+          <p className="text-[12px] mt-1" style={{ color: "#8a5a00" }}>Disparos do seu plano: restam {restantesTeste} neste período. Os leads além disso ficam na fila sem enviar.</p>
         )}
         {previa && previa.antigosSair.length > 0 && (
           <div className="mt-2 rounded-lg p-2.5" style={{ background: "#fff7e0" }} data-testid="aviso-sair">

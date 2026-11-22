@@ -155,6 +155,13 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                   <Campo nome="precoWhatsappExtra" rotulo="Preço de cada WhatsApp extra — R$" valor={reais(editando.precoWhatsappExtra ?? null)} dica="Por período do plano. Comprado no meio do período, é proporcional." />
                 </>
               )}
+              {!editando.gratis && (
+                <>
+                  <Campo nome="disparosPorPeriodo" rotulo="Disparos por período (vazio = sem limite)" valor={editando.disparosPorPeriodo ?? ""} tipo="number" dica="Plano por quantidade de envio: só mensagens de campanha contam." />
+                  <Campo nome="pacoteDisparos" rotulo="Pacote extra: quantidade de disparos" valor={editando.pacoteDisparos ?? ""} tipo="number" dica="Vazio = não vende pacote extra." />
+                  <Campo nome="precoPacoteDisparos" rotulo="Pacote extra: preço — R$" valor={reais(editando.precoPacoteDisparos ?? null)} />
+                </>
+              )}
               <label className="flex items-start gap-2 cursor-pointer sm:col-span-2">
                 <input type="checkbox" name="leadsAnuncios" id="f-leadsAnuncios" defaultChecked={!!editando.leadsAnuncios} className="w-4 h-4 mt-0.5 accent-emerald-600" />
                 <span><b className="text-[13px]">Leads de anúncios incluído</b><span className="help block">Google Ads e Facebook/Instagram entram sozinhos e a IA atende (recurso pago).</span></span>

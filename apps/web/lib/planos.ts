@@ -23,6 +23,10 @@ export type PlanoPublico = {
   /** WhatsApp extra (Individual — decisões #79 e #80): máximo de números e preço de cada extra (centavos) */
   maxWhatsapps?: number;
   precoWhatsappExtra?: number | null;
+  /** Plano por quantidade de envio (decisão #102) */
+  disparosPorPeriodo?: number | null;
+  pacoteDisparos?: number | null;
+  precoPacoteDisparos?: number | null;
   selo: string;
   frase: string;
   condicoes: string;

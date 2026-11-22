@@ -45,6 +45,11 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   const maxWhatsapps = comExtra ? Math.min(10, Math.max(1, inteiro(form.get("maxWhatsapps")) || 1)) : 1;
   const precoWhatsappExtra = comExtra ? lerReais(texto(form.get("precoWhatsappExtra"))) : null;
   if (maxWhatsapps > 1 && precoWhatsappExtra == null) return { ok: false, mensagem: "Informe o preço do WhatsApp extra (ou deixe 1 WhatsApp por usuário)." };
+  // Plano por quantidade de envio (decisão #102)
+  const disparosPorPeriodo = atual.gratis ? null : inteiro(form.get("disparosPorPeriodo")) || null;
+  const pacoteDisparos = atual.gratis ? null : inteiro(form.get("pacoteDisparos")) || null;
+  const precoPacoteDisparos = atual.gratis ? null : lerReais(texto(form.get("precoPacoteDisparos")));
+  if (pacoteDisparos && precoPacoteDisparos == null) return { ok: false, mensagem: "Informe o preço do pacote extra de disparos (ou deixe a quantidade vazia)." };
   const recursos = texto(form.get("recursos"), 5000).split("\n").map((r) => r.trim()).filter(Boolean);
 
   await prisma.plano.update({
@@ -63,6 +68,9 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       leadsAnuncios: form.get("leadsAnuncios") === "on",
       maxWhatsapps,
       precoWhatsappExtra,
+      disparosPorPeriodo,
+      pacoteDisparos,
+      precoPacoteDisparos: pacoteDisparos ? precoPacoteDisparos : null,
       testeDias: atual.gratis ? inteiro(form.get("testeDias")) : null,
       testeDisparos: atual.gratis ? inteiro(form.get("testeDisparos")) : null,
       selo: texto(form.get("selo"), 60),

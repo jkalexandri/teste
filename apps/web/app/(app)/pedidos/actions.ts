@@ -2,7 +2,7 @@
 
 // Ações do Super Admin sobre os pedidos (decisão #33: confirmação manual do PIX).
 import { revalidatePath } from "next/cache";
-import { prisma, Modulo, StatusPedido } from "@filapro/db";
+import { prisma, Modulo, StatusPedido, MOTIVO_SEM_SALDO } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas } from "@/lib/contas";
 import { aplicarRenovacao, enviarEmailRenovacaoConfirmada } from "@/lib/renovacao";
@@ -27,11 +27,12 @@ export async function confirmarPagamento(id: string): Promise<R> {
         data: { status: StatusPedido.PAGO, confirmadoEm: new Date(), confirmadoPor: sessao.usuario.email },
       });
       if (marcado.count === 0) throw new Error("Pedido já processado.");
-      return tx.empresa.update({ where: { id: pedido.empresaId! }, data: { whatsappsExtras: { increment: pedido.whatsappsExtras } } });
+      return tx.empresa.update({ where: { id: pedido.empresaId! }, data: { whatsappsExtras: { increment: pedido.whatsappsExtras }, disparosExtras: { increment: pedido.pacotesDisparos } } });
     });
-    await sincronizarExtrasDaConta(empresa.id);
+    if (pedido.whatsappsExtras) await sincronizarExtrasDaConta(empresa.id);
+    if (pedido.pacotesDisparos) await retomarSemSaldo(empresa.id);
     revalidatePath("/pedidos");
-    return { ok: true, mensagem: `WhatsApp extra liberado para ${empresa.nome} (${1 + empresa.whatsappsExtras} números).` };
+    return { ok: true, mensagem: pedido.pacotesDisparos ? `${pedido.pacotesDisparos} disparos extras liberados para ${empresa.nome}.` : `WhatsApp extra liberado para ${empresa.nome} (${1 + empresa.whatsappsExtras} números).` };
   }
 
   // Renovação (decisões #43 e #44): troca o plano, se mudou, e soma o prazo.
@@ -46,6 +47,7 @@ export async function confirmarPagamento(id: string): Promise<R> {
     });
     // Extras da renovação: os que o cliente escolheu manter ficam; os outros saem (decisão #95, item 3)
     await sincronizarExtrasDaConta(empresa.id, pedido.manterSessoes);
+    await retomarSemSaldo(empresa.id);
     await enviarEmailRenovacaoConfirmada(pedido.nome, pedido.email, empresa, pedido.valor);
     revalidatePath("/pedidos");
     return { ok: true, mensagem: `Renovação confirmada: ${empresa.nome} até ${empresa.expiraEm.toLocaleDateString("pt-BR")}.` };
@@ -98,4 +100,9 @@ export async function cancelarPedido(id: string): Promise<R> {
   });
   revalidatePath("/pedidos");
   return r.count ? { ok: true, mensagem: "Pedido cancelado." } : { ok: false, mensagem: "Este pedido não pode ser cancelado." };
+}
+
+/** Campanhas paradas por falta de saldo voltam sozinhas depois de comprar pacote ou renovar (decisão #102). */
+async function retomarSemSaldo(empresaId: string) {
+  await prisma.campanha.updateMany({ where: { empresaId, status: "PAUSADA", motivo: { startsWith: MOTIVO_SEM_SALDO } }, data: { status: "EM_ANDAMENTO", motivo: null } });
 }

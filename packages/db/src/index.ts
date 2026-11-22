@@ -10,3 +10,4 @@ export * from "@prisma/client";
 export * from "./senha";
 export * from "./codigos";
 export * from "./envio";
+export * from "./saldo";

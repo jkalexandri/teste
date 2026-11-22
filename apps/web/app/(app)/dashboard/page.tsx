@@ -3,6 +3,7 @@
 // A qualificação da IA chega na etapa 10 (até lá, zero).
 // Regras: sem linha TOTAL no fim do resumo por usuário; sem "— só a sua empresa";
 // no Admin da Empresa, "Disparos por usuários" lista só os usuários (sem o Administrador).
+import SaldoDisparos from "./SaldoDisparos";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { prisma, Cargo, Modulo } from "@filapro/db";
@@ -184,6 +185,8 @@ export default async function DashboardPage() {
           descricao={<>Acompanhamento por usuário da sua empresa: {u.empresa?.nome}. Outras empresas nunca aparecem aqui.</>}
           direita={<span className="chip" style={{ background: "#0b2f1f", color: "#fff" }}><Layers size={12} /> Total</span>}
         />
+        {/* Plano por quantidade de envio (decisão #102): saldo da empresa; o Admin compra pacotes */}
+        <SaldoDisparos empresa={u.empresa} podeComprar />
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
           {KPIS.map((k, i) => (
             <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valores[i] ?? 0} titulo={k.titulo} sub={subs[i]} selo={seloTotal} />
@@ -267,6 +270,8 @@ export default async function DashboardPage() {
           </div>
         }
       />
+      {/* Saldo de disparos (decisão #102): no Individual o próprio usuário compra; no Empresarial só vê */}
+      <SaldoDisparos empresa={u.empresa} podeComprar={u.empresa?.modulo === Modulo.INDIVIDUAL} />
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
         {KPIS.map((k, i) => (
           <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valoresUsuario[i] ?? 0} titulo={k.titulo} selo={seloSeus} />

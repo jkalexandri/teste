@@ -26,6 +26,19 @@ além da **saúde do seu número** (Boa, Atenção ou Ruim, nos últimos 7 dias)
 
 ![Dashboard do usuário](prints/u-dashboard.png)
 
+### Disparos do período
+
+Se o seu plano tem uma **quantidade de disparos por período**, o Dashboard mostra quantos você já usou e quantos restam:
+
+- só contam as mensagens de campanha **enviadas com sucesso** (as respostas da IA e as suas mensagens nas Conversas IA não contam);
+- quando o saldo acaba, as campanhas **pausam e você é avisado** — a IA continua atendendo quem responde;
+- no plano **Individual**, você pode **comprar um pacote extra** ali mesmo (pagamento por PIX). Assim que o pagamento é confirmado,
+  o saldo aumenta e as campanhas pausadas por falta de saldo voltam sozinhas;
+- no plano **Empresarial**, o saldo é **da empresa** (todos os usuários usam o mesmo) e só o administrador compra pacotes;
+- o saldo **zera na renovação** do plano.
+
+Planos vendidos só por prazo não têm esse limite: o cartão não aparece.
+
 ## Conectar o WhatsApp
 
 1. Menu **WhatsApp** → **Conectar WhatsApp**.
@@ -199,6 +212,22 @@ entram sozinhos na sua lista e **a IA já manda a primeira mensagem** sobre o as
 
 Não compartilhe o endereço. Se precisar, use **Gerar novo endereço** — o antigo para de funcionar na hora.
 
+## Suporte
+
+O botão **💬 Suporte**, no canto de baixo da tela, abre um chat com o suporte do FilaPro Leads:
+
+- escreva a dúvida e, se quiser, anexe uma **imagem (JPG/PNG) ou PDF** de até 15 MB;
+- a resposta aparece na hora, no mesmo chat; o número vermelho no botão mostra mensagens novas;
+- se o suporte quiser falar com você, o chat **abre sozinho** na sua tela (e chega uma notificação no celular, se ativada em Avisos);
+- a conversa fica guardada por 365 dias. No plano Empresarial, o administrador **não vê** as suas conversas com o suporte.
+
+![Suporte](prints/u-suporte.png)
+
+## Mensagens do FilaPro Leads
+
+Às vezes aparece uma **mensagem no centro da tela** (manutenção, novidades, avisos importantes). Leia e clique em **OK** para fechar —
+ela não aparece de novo. Se você estava fora do sistema, ela aparece no próximo acesso.
+
 ## Perguntas frequentes
 
 **A IA respondeu algo errado. O que faço?**
@@ -208,7 +237,8 @@ Clique em **Assumir conversa**, corrija com o lead e ensine a informação certa
 Não pelos próximos 45 dias. Depois disso, você decide na campanha se ele entra.
 
 **Minha campanha parou sozinha.**
-Veja o motivo na lista de campanhas (WhatsApp desconectado, falhas, limite do dia, fora do horário). Você também recebe o aviso no WhatsApp.
+Veja o motivo na lista de campanhas (WhatsApp desconectado, falhas, limite do dia, fora do horário, disparos do período acabaram).
+Você também recebe o aviso no WhatsApp.
 
 **Posso usar no celular?**
 Sim: instale o app (veja *Avisos e app no celular*).

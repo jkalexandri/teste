@@ -228,7 +228,7 @@ test("limite de disparos do teste grátis", async () => {
   assert.equal(wa.enviados.length, 2);
   const s = await status(c.id);
   assert.equal(s.status, StatusCampanha.PAUSADA);
-  assert.match(s.motivo ?? "", /teste grátis/);
+  assert.match(s.motivo ?? "", /^Disparos do período acabaram/);
 });
 
 test("resposta do lead: SAIR marca 'Pediu para sair'; outra resposta vira 'Em conversa'; ambos saem da fila", async () => {

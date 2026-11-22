@@ -31,6 +31,44 @@ Totais da plataforma agrupados por empresa e por usuário individual: leads, env
 
 ![Dashboard do Super Admin](prints/s-dashboard.png)
 
+## Online
+
+Quem está usando o sistema **agora** (ativo nos últimos 2 minutos), a **tela** aberta e o **aparelho** (Computador, Navegador do
+celular ou App no celular). A tela atualiza sozinha a cada 20 segundos.
+
+![Online](prints/s-online.png)
+
+- Abas **Super Admin**, **Individual**, **Empresarial** (agrupado por empresa) e **Todos** (todas as contas, com busca e o
+  **último acesso**).
+- **Chamar:** abre o chat do suporte na tela do cliente. **Conversa:** abre o histórico em Atendimento.
+
+## Atendimento (suporte em tempo real)
+
+Os clientes (Usuários e Admins da Empresa) chamam pelo botão **Suporte**. As conversas chegam aqui, com o número de mensagens novas
+também no menu.
+
+![Atendimento](prints/s-atendimento.png)
+
+- Escolha a conversa à esquerda e responda; pode anexar **imagem (JPG/PNG) ou PDF** até 15 MB.
+- **Falar com um cliente:** busque qualquer cliente e abra a conversa. **Chamar cliente:** o chat abre sozinho na tela dele e chega
+  uma notificação no celular (se ele ativou).
+- Se nenhum Super Admin estiver online quando um cliente escrever, você recebe um aviso no **WhatsApp de avisos** (cadastrado em
+  Número da plataforma) e no celular.
+- Histórico de 365 dias. O Admin da Empresa não vê as conversas dos usuários com o suporte.
+
+## Mensagens aos usuários
+
+Avisos que aparecem **em popup no centro da tela** do usuário e só fecham com **OK**. Quem estiver fora do sistema vê no próximo acesso.
+Não vai cópia por WhatsApp nem e-mail.
+
+![Mensagens aos usuários](prints/s-comunicados.png)
+
+- **Título**, **mensagem**, **link** (opcional, começando com https://) e **vale até** (opcional — depois da data, não aparece mais
+  para quem ainda não viu).
+- **Quem recebe:** todos os clientes, Admins das empresas, usuários das empresas, usuários individuais, todos de uma empresa ou
+  usuários escolhidos um a um.
+- **Enviadas:** quantos leram de cada mensagem; abra para ver **quem leu** (com data e hora) e quem ainda não leu.
+
 ## Pedidos (vendas por PIX)
 
 Toda compra feita no botão **Planos** da tela de login (ou renovação, ou WhatsApp extra) vira um pedido aqui, e você recebe um aviso no WhatsApp.
@@ -40,7 +78,8 @@ Toda compra feita no botão **Planos** da tela de login (ou renovação, ou What
 - Confira o PIX no seu banco (o **código do pedido** vai na identificação do PIX) e clique em **Confirmar pagamento**:
   - **compra nova:** a conta é criada e o acesso vai por e-mail;
   - **renovação:** o prazo é somado e o plano trocado, se mudou; os WhatsApps extras ficam como o cliente escolheu;
-  - **WhatsApp extra:** o número é liberado na tela WhatsApp do cliente.
+  - **WhatsApp extra:** o número é liberado na tela WhatsApp do cliente;
+  - **disparos extras:** o saldo do período da conta aumenta e as campanhas pausadas por falta de saldo voltam sozinhas.
 - **Cancelar** pedidos que não serão pagos. Pedidos vencidos (24 horas) também podem ser confirmados se o cliente pagou depois.
 
 ## Empresas
@@ -67,12 +106,20 @@ ao diminuir, saem os mais recentes).
 
 ![Planos](prints/s-planos.png)
 
+**Duas formas de vender:** só por **prazo** (sem limite de envios) ou por **prazo + quantidade de disparos por período**. Na segunda:
+
+- contam só as mensagens de campanha **enviadas com sucesso**; as respostas da IA não contam;
+- acabou o saldo: as campanhas **pausam e o cliente é avisado**; a IA continua atendendo;
+- o cliente dono da conta (Individual ou Admin da Empresa) compra **pacotes extras** pelo Dashboard, por PIX; você confirma em Pedidos;
+- no Empresarial o saldo é da empresa inteira; tudo **zera na renovação**.
+
 Os cartões do botão **Planos** da tela de login. Em cada plano:
 
 - nome, preços (antigo riscado e atual), período, prazo, usuários, selo, frase, condições, oferta, recursos e texto do botão;
 - **limite de leads**, **materiais da IA** e **páginas por mês** da IA;
 - **Leads de anúncios incluído** (recurso pago);
 - no plano Individual: **máximo de WhatsApps** e **preço do WhatsApp extra**;
+- **disparos por período** (em branco = vendido só por prazo, sem quantidade), **disparos por pacote extra** e **preço do pacote**;
 - no Free: dias e disparos do teste grátis;
 - **Visível** no login, **destaque** e ordem.
 

@@ -25,6 +25,8 @@ export async function criarPedidoPix(opts: {
   manterSessoes?: string[];
   /** Compra só de extras no meio do período: valor proporcional já calculado, conta existente */
   somenteExtras?: { empresaId: string; valor: number };
+  /** Pacotes extras de disparos (decisão #102): quantos pacotes */
+  pacotesDisparos?: number;
 }): Promise<{ erro: string } | RespostaPix> {
   const { plano } = opts;
   if (plano.precoAtual == null) return { erro: "Plano indisponível." };
@@ -53,6 +55,7 @@ export async function criarPedidoPix(opts: {
       empresaId: opts.renovarEmpresaId ?? opts.somenteExtras?.empresaId ?? null,
       whatsappsExtras: extras,
       somenteExtras: !!opts.somenteExtras,
+      pacotesDisparos: (opts.pacotesDisparos ?? 0) * (plano.pacoteDisparos ?? 0),
       manterSessoes: opts.manterSessoes ?? [],
       planoId: plano.id,
       planoNome: plano.nome,
@@ -71,7 +74,7 @@ export async function criarPedidoPix(opts: {
   // TODO etapa 6: avisar o Super Admin pelo WhatsApp (decisão #38).
   return {
     codigo: pedido.codigo,
-    plano: opts.somenteExtras ? `${extras} WhatsApp extra${extras > 1 ? "s" : ""} (${plano.nome})` : extras ? `${plano.nome} + ${extras} WhatsApp extra${extras > 1 ? "s" : ""}` : plano.nome,
+    plano: opts.pacotesDisparos ? `${opts.pacotesDisparos * (plano.pacoteDisparos ?? 0)} disparos extras (${plano.nome})` : opts.somenteExtras ? `${extras} WhatsApp extra${extras > 1 ? "s" : ""} (${plano.nome})` : extras ? `${plano.nome} + ${extras} WhatsApp extra${extras > 1 ? "s" : ""}` : plano.nome,
     valor: pedido.valor,
     copiaECola: pix,
     qrCode: await QRCode.toDataURL(pix, { margin: 1, width: 240 }),

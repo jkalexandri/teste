@@ -2,6 +2,22 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.27.0 — suporte em tempo real e disparos por quantidade (22/11/2026)
+
+### Para todos
+- Botão **Suporte**: chat em tempo real com o suporte, com imagem ou PDF; o chat abre sozinho quando o suporte chama.
+- **Mensagens do FilaPro Leads** em popup no centro da tela (fecham com OK).
+
+### Usuário Individual e Admin da Empresa
+- **Disparos do período** no Dashboard (planos vendidos por quantidade): usados, restantes e **compra de pacote extra** por PIX.
+  Sem saldo, as campanhas pausam com aviso e a IA continua atendendo; o saldo zera na renovação.
+
+### Super Admin
+- Planos vendidos **só por prazo** ou por **prazo + disparos por período**, com pacote extra (quantidade e preço).
+- Menu **Online**: quem está usando agora, em que tela e por qual aparelho (Super Admin, Individual, Empresarial e Todos).
+- Menu **Atendimento**: conversas do suporte, chamar qualquer cliente, aviso no WhatsApp e no celular quando você estiver offline.
+- Menu **Mensagens aos usuários**: para todos, grupos ou escolhidos, com link e validade opcionais e relatório de quem leu.
+
 ## v1.26.0 — primeira publicação (22/11/2026)
 
 ### Para todos

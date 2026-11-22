@@ -65,6 +65,10 @@ const ADMIN_EMPRESA: ItemMenu[] = [
 
 const SUPERADMIN: ItemMenu[] = [
   { href: "/dashboard", label: "Dashboard", icone: "dashboard", grupo: "Principal", etapa: 3 },
+  // Decisão #102: quem está online, suporte em tempo real e mensagens aos usuários
+  { href: "/online", label: "Online", icone: "usuarios", grupo: "Principal", etapa: 13 },
+  { href: "/atendimento", label: "Atendimento", icone: "ajuda", grupo: "Principal", etapa: 13 },
+  { href: "/comunicados", label: "Mensagens aos usuários", icone: "envio", grupo: "Principal", etapa: 13 },
   // Decisão #33: pedidos de compra por PIX com confirmação manual.
   { href: "/pedidos", label: "Pedidos", icone: "pagamento", grupo: "Vendas", etapa: 4 },
   { href: "/todos-os-disparos", label: "Todos os disparos", icone: "envio", grupo: "Vendas", etapa: 8 },
@@ -107,6 +111,14 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
   { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
+
+/** Nome da tela pelo endereço (usado no menu Online — decisão #102). */
+export function nomeDaTela(pathname: string | null | undefined): string {
+  if (!pathname) return "—";
+  const todos = [...SUPERADMIN, ...ADMIN_EMPRESA, ...USUARIO];
+  const achado = todos.filter((i) => pathname === i.href || pathname.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
+  return achado?.label ?? pathname;
+}
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {
   const todos = cargo === "SUPERADMIN" ? SUPERADMIN : cargo === "ADMIN_EMPRESA" ? ADMIN_EMPRESA : USUARIO;

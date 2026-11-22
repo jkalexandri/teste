@@ -9,6 +9,7 @@ import { prisma, Cargo, StatusCampanha, StatusEnvio, StatusLead } from "@filapro
 // Regras puras compartilhadas com o site (import direto do arquivo: funciona igual em ESM e CJS)
 import { numeroDeAvisos } from "./avisos.js";
 import { enviarPush } from "./push.js";
+import { MOTIVO_SEM_SALDO, saldoDisparos } from "@filapro/db/src/saldo.ts";
 import { MODOS, MAX_SEM_RESPOSTA_30D, PALAVRAS_SAIR, agoraSP, dentroDaJanela, limiteAquecimento, montarMensagem, saudacao } from "@filapro/db/src/envio.ts";
 
 export type Conteudo = { texto: string; anexo?: { caminho: string; tipo: string; nome: string } };
@@ -182,13 +183,15 @@ export class MotorDisparos {
     const inicio = ultimo ? ordem.indexOf(ultimo) + 1 : 0;
     const numero = [...ordem.slice(inicio), ...ordem.slice(0, inicio)].find((id) => disponiveis.includes(id))!;
 
-    // 4) Teste grátis: limite de disparos (decisão #34)
-    if (u.empresa?.limiteDisparos != null) {
-      const usados = await prisma.envio.count({ where: { campanha: { empresaId: u.empresa.id }, status: StatusEnvio.ENVIADO } });
-      if (usados >= u.empresa.limiteDisparos) {
-        await this.pausar(c.id, `Limite de ${u.empresa.limiteDisparos} disparos do teste grátis atingido.`);
-        return { acao: "aguardar", esperaMs: 0 };
-      }
+    // 4) Saldo de disparos: teste grátis (decisão #34) e planos por quantidade de envio (decisão #102)
+    const saldo = await saldoDisparos(prisma, u.empresa);
+    if (saldo && saldo.restantes <= 0) {
+      const plano = u.empresa?.planoId ? await prisma.plano.findUnique({ where: { id: u.empresa.planoId }, select: { gratis: true } }) : null;
+      const total = saldo.limite + saldo.extras;
+      await this.pausar(c.id, plano?.gratis
+        ? `${MOTIVO_SEM_SALDO}: limite de ${total} disparos do teste grátis atingido.`
+        : `${MOTIVO_SEM_SALDO}: os ${total} disparos do seu plano neste período foram usados. A campanha volta sozinha ao comprar um pacote extra ou renovar o plano.`);
+      return { acao: "aguardar", esperaMs: 0 };
     }
 
     // 5) Próximo da fila

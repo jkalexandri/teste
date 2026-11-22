@@ -48,7 +48,7 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
   const codigoConta = await proximoCodigo(tx, empresarial ? "empresa" : "individual");
   const codigoUsuario = empresarial ? await proximoCodigo(tx, "usuario_empresa") : codigoConta;
   // Limites de treinamento da IA vêm do plano (decisão #77); o Super Admin pode ajustar depois
-  const plano = dados.planoId ? await tx.plano.findUnique({ where: { id: dados.planoId }, select: { limiteMateriais: true, limitePaginasMes: true, leadsAnuncios: true } }) : null;
+  const plano = dados.planoId ? await tx.plano.findUnique({ where: { id: dados.planoId }, select: { limiteMateriais: true, limitePaginasMes: true, leadsAnuncios: true, disparosPorPeriodo: true } }) : null;
   const empresa = await tx.empresa.create({
     data: {
       codigo: codigoConta,
@@ -59,7 +59,8 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       limiteUsuarios: dados.limiteUsuarios,
       prazoDias: dados.prazoDias,
       expiraEm: fimDoPrazo(dados.prazoDias),
-      limiteDisparos: dados.limiteDisparos ?? null,
+      // Teste grátis: o limite do teste; plano por quantidade: os disparos por período (decisão #102)
+      limiteDisparos: dados.limiteDisparos ?? plano?.disparosPorPeriodo ?? null,
       limiteLeads: dados.limiteLeads ?? null,
       limiteMateriais: plano?.limiteMateriais ?? null,
       limitePaginasMes: plano?.limitePaginasMes ?? null,

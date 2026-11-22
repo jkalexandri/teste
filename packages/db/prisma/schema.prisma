@@ -54,6 +54,9 @@ model Empresa {
   leadsAnuncios     Boolean @default(false)
   /// WhatsApps extras contratados (Individual — decisões #79, #80 e #95); vencem junto com o plano
   whatsappsExtras   Int     @default(0)
+  /// Período atual de disparos (decisão #102): começa na compra/renovação; disparos de pacotes extras do período
+  inicioPeriodo     DateTime @default(now())
+  disparosExtras    Int      @default(0)
   limiteMateriais   Int?
   limitePaginasMes  Int?
   /// Janela de envio da conta (decisões #6 e #65), em minutos do dia (480 = 8h). Segunda a sábado.
@@ -100,6 +103,10 @@ model Usuario {
   tokenAnuncios      String?       @unique
   /// Notificações no celular (app — decisão #99): ligado/desligado e os aparelhos inscritos
   avisoCelular       Boolean       @default(true)
+  /// Menu Online (decisão #102): último sinal do navegador/app, tela atual e aparelho
+  vistoEm            DateTime?
+  telaAtual          String?
+  aparelho           String?
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?
   empresa            Empresa?      @relation(fields: [empresaId], references: [id])
@@ -173,6 +180,10 @@ model Plano {
   /// WhatsApp extra (só Individual — decisões #79 e #80): máximo de números por usuário (contando o principal) e preço de cada extra (centavos, por período)
   maxWhatsapps      Int     @default(1)
   precoWhatsappExtra Int?
+  /// Plano por quantidade de envio (decisão #102): disparos por período (vazio = sem limite) e pacote extra (quantidade e preço em centavos)
+  disparosPorPeriodo   Int?
+  pacoteDisparos       Int?
+  precoPacoteDisparos  Int?
   selo            String   @default("")
   frase           String   @default("")
   condicoes       String   @default("")
@@ -240,6 +251,8 @@ model Pedido {
   /// WhatsApp extra (decisões #80 e #95): quantos extras este pedido inclui; "somenteExtras" = compra no meio do período
   whatsappsExtras Int          @default(0)
   somenteExtras   Boolean      @default(false)
+  /// Disparos extras deste pedido (pacotes × quantidade do pacote — decisão #102)
+  pacotesDisparos Int          @default(0)
   /// Renovação com menos extras: números que o cliente escolheu manter
   manterSessoes   String[]     @default([])
   /// Conta criada na confirmação
@@ -708,4 +721,62 @@ model PushInscricao {
   criadoEm  DateTime @default(now())
 
   @@index([usuarioId])
+}
+
+/// Suporte em tempo real (decisão #102): uma conversa por cliente com o Super Admin.
+model SuporteConversa {
+  id               String   @id @default(cuid())
+  usuarioId        String   @unique
+  ultimaMensagemEm DateTime @default(now())
+  /// Não lidas por quem atende (Super Admin) e pelo cliente
+  naoLidasSuporte  Int      @default(0)
+  naoLidasCliente  Int      @default(0)
+  /// O Super Admin chamou o cliente: o chat abre sozinho na tela dele
+  chamadoEm        DateTime?
+  mensagens        SuporteMensagem[]
+
+  @@index([ultimaMensagemEm])
+}
+
+model SuporteMensagem {
+  id          String          @id @default(cuid())
+  conversaId  String
+  conversa    SuporteConversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  /// CLIENTE ou SUPORTE
+  autor       String
+  autorId     String
+  texto       String          @default("")
+  /// texto, imagem ou documento (anexo guardado no serviço 24/7 como "sup-<id>")
+  tipo        String          @default("texto")
+  arquivoNome String?
+  arquivoTipo String?
+  criadoEm    DateTime        @default(now())
+
+  @@index([conversaId, criadoEm])
+  @@index([criadoEm])
+}
+
+/// Mensagem do Super Admin para os usuários (popup com OK — decisão #102).
+model Comunicado {
+  id        String   @id @default(cuid())
+  titulo    String
+  texto     String
+  link      String?
+  validoAte DateTime?
+  /// Descrição de quem recebeu (ex.: "Todos", "Empresa Exemplo", "3 selecionados")
+  publico   String
+  autorId   String
+  criadoEm  DateTime @default(now())
+  destinos  ComunicadoDestino[]
+}
+
+model ComunicadoDestino {
+  id           String     @id @default(cuid())
+  comunicadoId String
+  comunicado   Comunicado @relation(fields: [comunicadoId], references: [id], onDelete: Cascade)
+  usuarioId    String
+  lidoEm       DateTime?
+
+  @@unique([comunicadoId, usuarioId])
+  @@index([usuarioId, lidoEm])
 }

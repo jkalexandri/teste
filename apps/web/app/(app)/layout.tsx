@@ -9,6 +9,8 @@ import { obterSessao } from "@/lib/auth/session";
 import { diasRestantes, motivoSemAcesso } from "@/lib/auth/acesso";
 import { menuDoCargo, rotaPermitida } from "@/lib/menu";
 import AppShell from "@/components/app/AppShell";
+import Presenca from "@/components/app/Presenca";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     contadores["/pedidos"] = await prisma.pedido.count({
       where: { status: { in: [StatusPedido.AGUARDANDO] }, expiraEm: { gt: new Date() } },
     });
+    // Suporte: conversas com mensagens novas (decisão #102)
+    contadores["/atendimento"] = await prisma.suporteConversa.count({ where: { naoLidasSuporte: { gt: 0 } } });
   }
 
   return (
@@ -47,6 +51,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {/* Online, mensagens do Super Admin e Suporte (decisão #102) */}
+      <Suspense fallback={null}><Presenca cliente={u.cargo !== Cargo.SUPERADMIN} /></Suspense>
     </AppShell>
   );
 }

@@ -126,6 +126,13 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
   });
 
   // ===== Notificações no celular (decisão #99): teste a partir da tela Avisos =====
+  // Notificação no celular avulsa (suporte — decisão #102)
+  app.post<{ Params: { id: string }; Body: { texto?: string; url?: string } | null }>("/push/:id/enviar", async (req) => {
+    const { enviarPush } = await import("./push.js");
+    const url = String(req.body?.url ?? "/dashboard");
+    const n = await enviarPush(req.params.id, String(req.body?.texto ?? "").slice(0, 300), url.startsWith("/") ? url : "/dashboard");
+    return { ok: true, mensagem: `${n} aparelho(s)` };
+  });
   app.post<{ Params: { id: string } }>("/push/:id/teste", async (req) => {
     const { enviarPush } = await import("./push.js");
     const n = await enviarPush(req.params.id, "✅ Notificação de teste: os avisos do FilaPro Leads chegam neste aparelho.", "/avisos");
