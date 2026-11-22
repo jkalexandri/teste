@@ -27,7 +27,10 @@ const EMP = "teste-vps-emp", USU = "teste-vps-usu";
 const log = pino({ level: "warn" });
 const g = new GerenciadorSessoes(config.chaveCripto, log);
 const motor = new MotorDisparos(g, log, { pastaArquivos: config.pastaArquivos, ignorarJanela: true });
-g.aoReceber = (s, tel, txt) => motor.registrarResposta(s, tel, txt);
+g.aoReceber = async (s, tel, txt) => {
+  console.log(`📩 Resposta recebida de ${tel}: "${txt}"`);
+  await motor.registrarResposta(s, tel, txt);
+};
 
 async function limpar() {
   await g.desconectar(USU).catch(() => undefined);

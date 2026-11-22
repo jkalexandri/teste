@@ -2,7 +2,7 @@
 // Mantém cada conexão viva, guarda o estado no banco (as telas leem de lá)
 // e reconecta sozinho em caso de queda.
 import { readFile } from "node:fs/promises";
-import makeWASocket, { Browsers, fetchLatestBaileysVersion, isLidUser, makeCacheableSignalKeyStore, type AnyMessageContent, type WASocket } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, extractMessageContent, fetchLatestBaileysVersion, isLidUser, makeCacheableSignalKeyStore, type AnyMessageContent, type WASocket } from "@whiskeysockets/baileys";
 import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
@@ -82,8 +82,10 @@ export class GerenciadorSessoes implements Remetente {
         const jid = isLidUser(k.remoteJid) ? k.remoteJidAlt ?? "" : k.remoteJid;
         const telefone = numeroDoJid(jid);
         if (!telefone || !/^\d{8,15}$/.test(telefone)) continue;
-        const m = msg.message;
-        const texto = m?.conversation ?? m?.extendedTextMessage?.text ?? m?.imageMessage?.caption ?? m?.videoMessage?.caption ?? m?.buttonsResponseMessage?.selectedDisplayText ?? "";
+        // Abre os "envelopes" do WhatsApp (mensagem temporária, visualização única, editada…) antes de ler o texto
+        const m = extractMessageContent(msg.message);
+        const texto = m?.conversation ?? m?.extendedTextMessage?.text ?? m?.imageMessage?.caption ?? m?.videoMessage?.caption ?? m?.buttonsResponseMessage?.selectedDisplayText ?? m?.listResponseMessage?.title ?? "";
+        this.log.info({ id, tipos: Object.keys(msg.message ?? {}), temTexto: !!texto }, "mensagem recebida de contato");
         await this.aoReceber(id, telefone, texto).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
       }
     });
