@@ -4,6 +4,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
 import { enviarAvisoRenovacao } from "@/lib/renovacao";
+import { Cargo } from "@filapro/db";
+import { avisarContasVencendo, sincronizarFinanceiro } from "@/lib/financeiro";
+import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
+import { chamarWorker } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
@@ -42,5 +46,13 @@ export async function GET(req: Request) {
       }
     }
   }
-  return NextResponse.json({ verificadas: contas.length, enviados10, enviados3 });
+  // Gestão financeira (decisão #106): despesas fixas do mês, IA do mês anterior e aviso das contas vencendo
+  const fin = await sincronizarFinanceiro().catch(() => null);
+  const contasAvisadas = await avisarContasVencendo(async (texto) => {
+    const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
+    if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, texto).catch(() => undefined);
+    const sas = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { id: true } });
+    for (const sa of sas) await chamarWorker(`/push/${sa.id}/enviar`, { texto: texto.slice(0, 280), url: "/financeiro/contas" }).catch(() => undefined);
+  }).catch(() => 0);
+  return NextResponse.json({ verificadas: contas.length, enviados10, enviados3, financeiro: { semCotacao: fin?.semCotacao ?? false, contasAvisadas } });
 }

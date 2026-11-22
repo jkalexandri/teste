@@ -87,6 +87,13 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/relatorios/lead-individual", label: "Lead Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   // Decisão #96: relatório de campanhas por conta e período
   { href: "/relatorios/campanhas", label: "Relatório de campanhas", icone: "envio", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
+  // Decisão #106: gestão financeira (só o Super Admin)
+  { href: "/financeiro", label: "Painel financeiro", icone: "pagamento", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
+  { href: "/financeiro/lancamentos", label: "Lançamentos", icone: "pagamento", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
+  { href: "/financeiro/contas", label: "Contas a pagar e receber", icone: "pagamento", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
+  { href: "/financeiro/fixas", label: "Despesas fixas", icone: "pagamento", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
+  { href: "/financeiro/relatorios", label: "Relatórios financeiros", icone: "pagamento", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
+  { href: "/financeiro/configuracoes", label: "Configurações financeiras", icone: "config", grupo: "Administrativo", subgrupo: "Financeiro", etapa: 16 },
   // Decisão #27: Super Admin configura os planos e a forma de pagamento.
   { href: "/planos", label: "Planos", icone: "planos", grupo: "Configurações", etapa: 4 },
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },

@@ -57,7 +57,10 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { cargo, menu, dias } = dados;
-  const ativo = (i: ItemMenu) => pathname === i.href || pathname.startsWith(i.href + "/");
+  // Destaca só o item mais específico (ex.: "/financeiro/contas" não acende também "/financeiro")
+  const casa = (i: ItemMenu) => pathname === i.href || pathname.startsWith(i.href + "/");
+  const maisEspecifico = menu.filter(casa).sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const ativo = (i: ItemMenu) => i.href === maisEspecifico;
   const admin = cargo !== "USUARIO";
 
   return (

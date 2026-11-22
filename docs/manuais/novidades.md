@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.30.0 — gestão financeira (23/11/2026)
+
+### Super Admin
+- Novo grupo **Financeiro**: painel do mês, lançamentos de receitas e despesas, contas a pagar e receber com avisos, despesas fixas
+  mensais, estornos, comprovantes, imposto previsto e 7 relatórios com Excel e impressão.
+- Pedidos confirmados, despesas fixas e a despesa com IA entram sozinhos.
+
 ## v1.29.0 — segurança (22/11/2026)
 
 ### Super Admin

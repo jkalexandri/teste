@@ -118,6 +118,33 @@ Cada usuário individual tem a própria conta e o próprio prazo. Ações: **Nov
 **Bloquear/Desbloquear**, **Reenviar acesso**, **IA: treino**, **Anúncios** e **WhatsApps** (números extras sem pedido;
 ao diminuir, saem os mais recentes).
 
+## Financeiro (faturamento e despesas)
+
+Grupo **Financeiro** do menu, só para o Super Admin. Tudo em **regime de caixa**: receitas e despesas contam no dia em que foram pagas.
+
+![Painel financeiro](prints/s-financeiro.png)
+
+- **Painel:** receitas, despesas, lucro, **imposto previsto**, a receber e a pagar do mês; o mês anterior; gráfico de 12 meses;
+  receita recorrente mensal, ticket médio, clientes ativos e pagantes; contas vencidas e dos próximos 7 dias.
+- **O que entra sozinho:**
+  - todo **pedido confirmado** vira receita paga (venda, renovação, WhatsApp extra ou pacote de disparos) — os antigos também;
+  - as **despesas fixas** do mês (como pendentes);
+  - no dia 1, a **despesa com IA** do mês anterior (dólar × cotação cadastrada em Inteligência Artificial).
+- **Lançamentos:** receitas e despesas com filtros (período, tipo, categoria, conta, situação). **+ Novo lançamento** (pago ou
+  pendente, com comprovante PDF/imagem opcional). Em cada linha: **Pagar/Receber**, **Anexar** comprovante, **Estornar** (receitas)
+  e **Cancelar**.
+- **Estorno:** devolve todo ou parte do valor de uma receita, ligado ao pedido, e abate do faturamento. Receita de pedido não se
+  cancela — se estorna.
+- **Contas a pagar e receber:** pendentes em Vencidas, Próximos 7 dias e Depois. Você recebe **aviso no WhatsApp e no celular**
+  das vencidas e das que vencem em até 3 dias (1 vez por dia).
+- **Despesas fixas:** descrição, valor, dia do vencimento, categoria e conta; **Pausar** quando acabar.
+- **Relatórios:** resultado por mês, fluxo de caixa, faturamento por plano, receitas e despesas por categoria, receita recorrente e
+  clientes ativos, cancelamentos (quem não renovou) e previsão de renovações (30/60/90 dias) — com **Baixar Excel** e **Imprimir**.
+- **Configurações:** alíquota do **imposto previsto** (% sobre o recebido no mês, ex.: Simples Nacional), categorias (prontas e
+  as suas) e contas bancárias.
+
+![Lançamentos](prints/s-financeiro-lancamentos.png)
+
 ## Planos
 
 ![Planos](prints/s-planos.png)

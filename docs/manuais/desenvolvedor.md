@@ -152,6 +152,15 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - **Alertas:** `lib/alertas-seguranca.ts`.
 - **Dependências:** `pnpm audit --prod`; correções internas forçadas em `pnpm.overrides` do `package.json` da raiz.
 
+## Gestão financeira (decisão #106)
+
+- Modelos `Lancamento` (valor em centavos; estorno = receita negativa com `estornoDeId`), `CategoriaFinanceira`, `ContaBancaria`,
+  `DespesaFixa`; `ConfigVenda.aliquotaImposto` e `avisoFinanceiroEm`.
+- `lib/financeiro.ts`: `sincronizarFinanceiro()` (idempotente pela `chaveAuto`: `pedido:<id>`, `fixa:<id>:<AAAA-MM>`, `ia:<AAAA-MM>`) —
+  roda ao abrir as telas e na rotina diária (`/api/cron/renovacao`), que também chama `avisarContasVencendo()`.
+- `lib/relatorios-financeiros.ts`: os 7 relatórios (tela, impressão e Excel em `/api/financeiro/relatorios/<tipo>`).
+- Comprovantes no serviço 24/7 como `fin-<id>` (`/api/financeiro/comprovante/<id>`).
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

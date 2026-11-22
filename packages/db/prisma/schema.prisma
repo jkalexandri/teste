@@ -219,6 +219,10 @@ model ConfigVenda {
   numeroAvisos          String   @default("")
   /// Cotação do dólar informada pelo Super Admin, para mostrar as despesas com IA em reais (decisão #77)
   cotacaoDolar          Float?
+  /// Gestão financeira (decisão #106): alíquota do imposto previsto (% sobre o faturamento recebido no mês)
+  aliquotaImposto       Float?
+  /// Último aviso de contas vencendo (no máximo 1 por dia)
+  avisoFinanceiroEm     DateTime?
   atualizadoEm          DateTime @updatedAt
 }
 
@@ -263,6 +267,8 @@ model Pedido {
   pacotesDisparos Int          @default(0)
   /// Renovação com menos extras: números que o cliente escolheu manter
   manterSessoes   String[]     @default([])
+  /// Receita e estorno na gestão financeira (decisão #106)
+  lancamentos     Lancamento[]
   /// Conta criada na confirmação
   empresaId       String?
   empresa         Empresa?     @relation(fields: [empresaId], references: [id])
@@ -842,4 +848,90 @@ model InteressadoMensagem {
   criadoEm      DateTime    @default(now())
 
   @@index([interessadoId, criadoEm])
+}
+
+// ===================== Gestão financeira (decisão #106) — só o Super Admin =====================
+
+enum TipoLancamento {
+  RECEITA
+  DESPESA
+}
+
+enum SituacaoLancamento {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+/// Categorias de receita e despesa (as prontas têm "padrao"; o Super Admin cria outras)
+model CategoriaFinanceira {
+  id          String         @id @default(cuid())
+  tipo        TipoLancamento
+  nome        String
+  padrao      Boolean        @default(false)
+  ativa       Boolean        @default(true)
+  ordem       Int            @default(100)
+  lancamentos Lancamento[]
+  fixas       DespesaFixa[]
+
+  @@unique([tipo, nome])
+}
+
+/// Contas bancárias (opcional em cada lançamento)
+model ContaBancaria {
+  id          String       @id @default(cuid())
+  nome        String       @unique
+  ativa       Boolean      @default(true)
+  criadoEm    DateTime     @default(now())
+  lancamentos Lancamento[]
+  fixas       DespesaFixa[]
+}
+
+/// Receita ou despesa. Valor em centavos (estorno = receita negativa, ligada à receita original).
+model Lancamento {
+  id               String              @id @default(cuid())
+  tipo             TipoLancamento
+  categoriaId      String?
+  categoria        CategoriaFinanceira? @relation(fields: [categoriaId], references: [id])
+  descricao        String
+  valor            Int
+  vencimento       DateTime
+  pagoEm           DateTime?
+  situacao         SituacaoLancamento  @default(PENDENTE)
+  contaId          String?
+  conta            ContaBancaria?      @relation(fields: [contaId], references: [id])
+  /// MANUAL, PEDIDO, FIXA, IA ou ESTORNO
+  origem           String              @default("MANUAL")
+  /// Chave das entradas automáticas (não repete): "pedido:<id>", "fixa:<id>:2026-11", "ia:2026-10", "estorno:<id>"
+  chaveAuto        String?             @unique
+  pedidoId         String?
+  pedido           Pedido?             @relation(fields: [pedidoId], references: [id])
+  despesaFixaId    String?
+  despesaFixa      DespesaFixa?        @relation(fields: [despesaFixaId], references: [id])
+  estornoDeId      String?
+  observacao       String?
+  /// Comprovante (PDF/imagem) guardado no serviço 24/7 como "fin-<id>"
+  comprovanteNome  String?
+  comprovanteTipo  String?
+  criadoPor        String?
+  criadoEm         DateTime            @default(now())
+  atualizadoEm     DateTime            @updatedAt
+
+  @@index([tipo, situacao, vencimento])
+  @@index([pagoEm])
+}
+
+/// Despesas fixas mensais: lançadas sozinhas todo mês como "pendente"
+model DespesaFixa {
+  id            String              @id @default(cuid())
+  descricao     String
+  valor         Int
+  diaVencimento Int
+  categoriaId   String?
+  categoria     CategoriaFinanceira? @relation(fields: [categoriaId], references: [id])
+  contaId       String?
+  conta         ContaBancaria?      @relation(fields: [contaId], references: [id])
+  ativa         Boolean             @default(true)
+  criadoEm      DateTime            @default(now())
+  lancamentos   Lancamento[]
 }
