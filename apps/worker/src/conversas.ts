@@ -3,12 +3,16 @@
 // com "digitando…", qualificando (Quente/Morno/Frio) e marcando o status na mesma chamada.
 import { join } from "node:path";
 import type { Logger } from "pino";
-import { prisma, AutorMensagem, Cargo, StatusLead } from "@filapro/db";
+import { prisma, AutorMensagem, Cargo, Modulo, StatusAnuncio, StatusLead } from "@filapro/db";
 import { PALAVRAS_SAIR } from "@filapro/db/src/envio.ts";
+import { reservarCodigos } from "@filapro/db/src/codigos.ts";
+import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
 import type { Conteudo, Remetente } from "./disparos.js";
 
+/** Ao reconectar, responde as mensagens de lead das últimas 48 horas que ficaram sem resposta. */
+export const HORAS_RECONEXAO = 48;
 /** Máximo de respostas da IA por conversa por dia (decisão #92). */
 export const MAX_IA_DIA = 30;
 /** Histórico guardado por 365 dias (especificação, seção 10). */
@@ -43,18 +47,28 @@ export class Atendente {
       /** Espera antes de responder (padrão 20–60 s — decisão #92). Nos testes, 0. */
       esperaMs?: () => number;
       agora?: () => Date;
+      /** Avisos com liga/desliga e resumo (etapa 10b) */
+      avisos?: { avisar(tipo: TipoAviso, donoId: string, texto: string): Promise<void> };
     },
   ) {}
 
   private agora() { return this.opcoes.agora?.() ?? new Date(); }
+  private emAtendimento = new Set<string>();
+  private varredura: ReturnType<typeof setInterval> | null = null;
+  private avisar(tipo: TipoAviso, donoId: string, texto: string) {
+    return this.opcoes.avisos?.avisar(tipo, donoId, texto).catch((e) => this.log.warn({ e }, "aviso não registrado"));
+  }
   private espera() { return this.opcoes.esperaMs?.() ?? 20_000 + Math.random() * 40_000; }
 
   iniciar() {
     void this.limparAntigas();
     this.limpeza = setInterval(() => void this.limparAntigas(), 24 * 3600_000);
+    // Leads de anúncios que não foram atendidos na hora (serviço fora, WhatsApp desconectado)
+    this.varredura = setInterval(() => void this.varrerAnuncios().catch((e) => this.log.error({ e }, "falha na varredura de anúncios")), 60_000);
   }
   parar() {
     if (this.limpeza) clearInterval(this.limpeza);
+    if (this.varredura) clearInterval(this.varredura);
     for (const t of this.timers.values()) clearTimeout(t);
     this.timers.clear();
   }
@@ -85,6 +99,9 @@ export class Atendente {
     // SAIR/PARAR/STOP/CANCELAR e mensagens vazias não chamam a IA (decisões #75 e #83)
     const palavra = r.texto.trim().toUpperCase().replace(/[^A-ZÇÃÕÁÉÍÓÚ]/g, "");
     if (PALAVRAS_SAIR.includes(palavra)) return;
+    // Aviso "lead respondeu" (decisão #81), exceto SAIR/PARAR/STOP/CANCELAR
+    const trecho = r.texto.trim() ? `"${r.texto.trim().slice(0, 120)}"` : r.tipo === "audio" ? "(áudio)" : r.tipo === "imagem" ? "(imagem)" : `(${r.tipo})`;
+    void this.avisar("RESPONDEU", lead.usuarioId, `💬 ${nomeDo(lead)} respondeu: ${trecho}`);
     if (!lead.usuario.iaConversas || lead.iaPausada) return;
     if (lead.status === StatusLead.PEDIU_SAIR) return;
 
@@ -180,6 +197,10 @@ export class Atendente {
         ...(r.naoSei ? { iaPausada: true, iaPausaMotivo: MOTIVO_NAO_SEI } : {}),
       },
     });
+    // Aviso de lead Quente (decisão #81): só quando passa a ser Quente
+    if (r.temperatura === "QUENTE" && lead.qualificacao !== "QUENTE") {
+      void this.avisar("QUENTE", lead.usuarioId, `🔥 Lead Quente: ${nomeDo(lead)}${r.motivo ? ` — ${r.motivo}` : ""}`);
+    }
     if (r.naoSei) {
       await this.avisarUsuario(lead.usuario, `❓ FilaPro Leads: o lead ${nomeDo(lead)} perguntou algo que a IA não sabe responder. A IA disse que vai confirmar e pausou a conversa. Abra Conversas IA para responder.`);
     }
@@ -226,14 +247,146 @@ export class Atendente {
   }
 
   /** Avisos ao usuário pelo número da plataforma (mesma regra dos avisos de campanha). */
-  private async avisarUsuario(u: { cargo: Cargo; whatsapp: string | null }, texto: string) {
+  private async avisarUsuario(u: { id: string; cargo: Cargo; whatsapp: string | null; numeroAvisos: string | null }, texto: string) {
     if (!this.opcoes.notificar) return;
-    let para = u.whatsapp ?? "";
-    if (u.cargo === Cargo.SUPERADMIN) para = (await prisma.configVenda.findUnique({ where: { id: "config" } }))?.numeroAvisos || para;
-    const dig = para.replace(/\D/g, "");
-    const numero = dig.length === 10 || dig.length === 11 ? "55" + dig : dig;
-    if (!/^\d{12,15}$/.test(numero)) return;
+    const numero = await numeroDeAvisos(u);
+    if (!numero) return;
     await this.opcoes.notificar(numero, texto).catch((e) => this.log.warn({ e }, "aviso pelo WhatsApp não enviado"));
+  }
+
+  // ===================== Leads de anúncios (etapa 10b — decisões #84 e #94) =====================
+
+  /** Lead que chegou pelo endereço de anúncios: cadastra (ou encontra) e a IA escreve a primeira mensagem. */
+  async atenderAnuncio(id: string) {
+    if (this.emAtendimento.has(id)) return;
+    this.emAtendimento.add(id);
+    try {
+      await this.atenderAnuncioAgora(id);
+    } finally {
+      this.emAtendimento.delete(id);
+    }
+  }
+
+  private async atenderAnuncioAgora(id: string) {
+    const a = await prisma.leadAnuncio.findUnique({ where: { id } });
+    if (!a || (a.status !== StatusAnuncio.RECEBIDO && a.status !== StatusAnuncio.AGUARDANDO_WHATSAPP)) return;
+    const primeiraVez = !a.leadId;
+    const lead = a.leadId ? await prisma.lead.findUnique({ where: { id: a.leadId }, include: { usuario: { include: { empresa: true } } } }) : await this.leadDoAnuncio(a);
+    if (!lead) {
+      await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: "Não foi possível cadastrar o lead." } });
+      return;
+    }
+    if (primeiraVez) {
+      await prisma.leadAnuncio.update({ where: { id }, data: { leadId: lead.id } });
+      void this.avisar("ANUNCIO", lead.usuarioId, `📣 Novo lead de anúncio: ${nomeDo(lead)}${a.assunto ? ` — ${a.assunto.split("\n")[0]!.slice(0, 100)}` : ""}`);
+    }
+    const dono = lead.usuario;
+    if (!dono.iaConversas || lead.iaPausada) {
+      await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: "IA desligada ou conversa assumida: responda pela tela Conversas IA." } });
+      return;
+    }
+    // WhatsApp desconectado: o lead espera e o usuário é avisado uma vez (decisão #84)
+    if (!this.remetente.conectado(dono.id)) {
+      if (a.status !== StatusAnuncio.AGUARDANDO_WHATSAPP) {
+        await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.AGUARDANDO_WHATSAPP } });
+        await this.avisarUsuario(dono, `⚠️ FilaPro Leads: chegou um lead de anúncio (${nomeDo(lead)}), mas o seu WhatsApp está desconectado. A IA atende assim que ele reconectar: abra FilaPro Leads → WhatsApp.`);
+      }
+      return;
+    }
+    const ficha = await fichaDoUsuario(dono);
+    const recentes = (await prisma.mensagem.findMany({ where: { leadId: lead.id }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();
+    const formulario = [a.nome ? `Nome: ${a.nome}` : "", a.email ? `E-mail: ${a.email}` : "", a.assunto].filter(Boolean).join("\n");
+    let r;
+    try {
+      r = await responderConversa(
+        { ficha: ficha.texto, comoQualificar: ficha.comoQualificar, resumo: lead.resumoConversa, nomeLead: lead.nome, recentes: recentes.map(paraIA), formularioAnuncio: formulario || "(sem detalhes)" },
+        { empresaId: lead.empresaId, usuarioId: dono.id },
+      );
+    } catch (e) {
+      this.log.warn({ id, msg: e instanceof ErroIA ? e.message : String(e) }, "IA não escreveu a primeira mensagem");
+      return; // a varredura tenta de novo
+    }
+    if (!(await this.enviarComoEmpresa(lead, r.resposta, AutorMensagem.IA))) return;
+    const quando = this.agora();
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        qualificacao: r.temperatura, qualificacaoMotivo: r.motivo || null, qualificacaoEm: quando,
+        ...(STATUS_DA_IA.includes(lead.status) ? { status: r.status as StatusLead } : {}),
+        // O assunto do formulário fica no resumo, para a IA lembrar nas próximas respostas
+        resumoConversa: `${lead.resumoConversa ? lead.resumoConversa + "\n" : ""}Veio de anúncio em ${quando.toLocaleDateString("pt-BR")}: ${formulario.replace(/\n/g, "; ").slice(0, 600)}`.slice(-2000),
+      },
+    });
+    await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ATENDIDO, atendidoEm: quando, erro: null } });
+    if (r.temperatura === "QUENTE" && lead.qualificacao !== "QUENTE") void this.avisar("QUENTE", dono.id, `🔥 Lead Quente: ${nomeDo(lead)}${r.motivo ? ` — ${r.motivo}` : ""}`);
+  }
+
+  /** Encontra o lead pelo telefone (não duplica — decisão #94) ou cadastra um novo. */
+  private async leadDoAnuncio(a: { usuarioId: string; telefone: string; nome: string }) {
+    const quem = await prisma.usuario.findUnique({ where: { id: a.usuarioId }, include: { empresa: true } });
+    if (!quem) return null;
+    const onde = quem.empresaId ? { empresaId: quem.empresaId, telefone: a.telefone } : { usuarioId: quem.id, telefone: a.telefone };
+    const incluir = { usuario: { include: { empresa: true } } } as const;
+    const existente = await prisma.lead.findFirst({ where: onde, include: incluir });
+    if (existente) {
+      // Pediu para sair antes, mas agora pediu contato: o bloqueio sai (decisão #94, item 2)
+      return prisma.lead.update({
+        where: { id: existente.id },
+        data: {
+          ativo: true,
+          ...(existente.status === StatusLead.PEDIU_SAIR ? { status: StatusLead.EM_CONVERSA, pediuSairEm: null } : {}),
+          ...(!existente.nome && a.nome ? { nome: a.nome } : {}),
+        },
+        include: incluir,
+      });
+    }
+    const empresarial = quem.empresa?.modulo === Modulo.EMPRESARIAL;
+    const [codigo] = await reservarCodigos(prisma, empresarial ? "lead_empresa" : "lead_individual", 1);
+    const novo = await prisma.lead.create({
+      data: { codigo: codigo!, nome: a.nome, telefone: a.telefone, usuarioId: quem.id, empresaId: quem.empresaId, codigoUsuario: quem.codigo ?? "", codigoEmpresa: quem.empresa?.codigo ?? null },
+      include: incluir,
+    });
+    // Limite de leads: o lead de anúncio entra mesmo assim e o usuário é avisado (decisão #94, item 3)
+    const acima = await this.acimaDoLimite(quem);
+    if (acima) await this.avisarUsuario(quem, `ℹ️ FilaPro Leads: o lead de anúncio ${nomeDo(novo)} foi cadastrado mesmo com o ${acima} atingido.`);
+    return novo;
+  }
+
+  private async acimaDoLimite(u: { id: string; limiteLeads: number | null; empresaId: string | null; empresa: { limiteLeads: number | null } | null }) {
+    if (u.limiteLeads != null && (await prisma.lead.count({ where: { usuarioId: u.id } })) > u.limiteLeads) return `limite de ${u.limiteLeads} leads do usuário`;
+    if (u.empresaId && u.empresa?.limiteLeads != null && (await prisma.lead.count({ where: { empresaId: u.empresaId } })) > u.empresa.limiteLeads) return `limite de ${u.empresa.limiteLeads} leads da conta`;
+    return null;
+  }
+
+  /** Atende os leads de anúncio que ficaram para trás (serviço fora do ar, WhatsApp desconectado, IA falhou). */
+  async varrerAnuncios() {
+    const pendentes = await prisma.leadAnuncio.findMany({
+      where: { status: { in: [StatusAnuncio.RECEBIDO, StatusAnuncio.AGUARDANDO_WHATSAPP] }, recebidoEm: { lt: new Date(this.agora().getTime() - 30_000) } },
+      orderBy: { recebidoEm: "asc" },
+      take: 50,
+    });
+    for (const p of pendentes) await this.atenderAnuncio(p.id).catch((e) => this.log.error({ e, id: p.id }, "falha ao atender lead de anúncio"));
+  }
+
+  /** WhatsApp reconectou: leads de anúncio que esperavam e respostas de campanha sem resposta (decisão #94, item 9). */
+  async aoConectar(usuarioId: string) {
+    // Só os leads deste usuário (o lead pode ser de outro usuário da empresa — quem cadastrou primeiro)
+    const esperando = await prisma.leadAnuncio.findMany({ where: { status: StatusAnuncio.AGUARDANDO_WHATSAPP }, select: { id: true, leadId: true } });
+    const ids = esperando.map((e) => e.leadId).filter((x): x is string => !!x);
+    const meus = new Set((await prisma.lead.findMany({ where: { id: { in: ids }, usuarioId }, select: { id: true } })).map((l) => l.id));
+    for (const p of esperando) if (p.leadId && meus.has(p.leadId)) await this.atenderAnuncio(p.id).catch(() => undefined);
+    const u = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+    if (!u?.iaConversas) return;
+    const desde = new Date(this.agora().getTime() - HORAS_RECONEXAO * 3600_000);
+    const leads = await prisma.lead.findMany({
+      where: { usuarioId, iaPausada: false, status: { not: StatusLead.PEDIU_SAIR }, ultimaMensagemEm: { gte: desde } },
+      select: { id: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true, tipo: true } } },
+    });
+    for (const l of leads) {
+      const ultima = l.mensagens[0];
+      if (ultima?.autor !== AutorMensagem.LEAD) continue;
+      this.agendar(l.id, () => (ultima.tipo === "audio" ? this.responderAudio(l.id) : this.responder(l.id)));
+    }
   }
 }
 

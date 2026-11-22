@@ -18,6 +18,8 @@ export type PlanoPublico = {
   /** Limites de treinamento da IA (decisão #77). Vazio = ilimitado. */
   limiteMateriais?: number | null;
   limitePaginasMes?: number | null;
+  /** Leads de anúncios incluídos (decisão #90) */
+  leadsAnuncios?: boolean;
   selo: string;
   frase: string;
   condicoes: string;

@@ -23,6 +23,8 @@ export class GerenciadorSessoes implements Remetente {
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
+  /** WhatsApp conectou (etapa 10b): atende quem ficou esperando enquanto estava desconectado. */
+  aoConectar: ((sessaoId: string) => Promise<void>) | null = null;
 
   constructor(private chave: Buffer, private log: Logger) {}
 
@@ -113,6 +115,7 @@ export class GerenciadorSessoes implements Remetente {
         await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date() });
         // Primeira conexão deste número: base do aquecimento (decisão #64)
         await prisma.whatsappSessao.updateMany({ where: { id, primeiraConexaoEm: null }, data: { primeiraConexaoEm: new Date() } });
+        void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
         this.log.info({ id }, "WhatsApp conectado");
       }
       if (u.connection === "close") {

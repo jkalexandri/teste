@@ -60,7 +60,11 @@ export function lerJsonConversa(texto: string): RespostaConversa | null {
 }
 
 export async function responderConversa(
-  d: { ficha: string; comoQualificar: string; resumo: string; recentes: MensagemConversa[]; nomeLead: string; imagem?: { tipo: string; base64: string } },
+  d: {
+    ficha: string; comoQualificar: string; resumo: string; recentes: MensagemConversa[]; nomeLead: string; imagem?: { tipo: string; base64: string };
+    /** Lead de anúncio (decisão #84): a IA escreve a PRIMEIRA mensagem sobre o assunto do formulário */
+    formularioAnuncio?: string;
+  },
   quem: QuemUsa,
 ) {
   // Ficha e orientação de qualificação no bloco fixo (cache — decisão #75)
@@ -68,8 +72,10 @@ export async function responderConversa(
   const corpo = [
     d.nomeLead ? `Nome do lead: ${d.nomeLead}` : "",
     d.resumo ? `Resumo da conversa até aqui:\n${d.resumo}` : "",
-    `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linha).join("\n")}`,
-    "Escreva a próxima resposta da Empresa.",
+    d.recentes.length ? `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linha).join("\n")}` : "",
+    d.formularioAnuncio
+      ? `Este lead acabou de preencher um formulário de anúncio pedindo contato. Dados do formulário:\n${d.formularioAnuncio}\n\nEscreva a PRIMEIRA mensagem da Empresa: cumprimente pelo nome, apresente-se em nome da empresa, fale do assunto do formulário e termine com uma pergunta.`
+      : "Escreva a próxima resposta da Empresa.",
   ].filter(Boolean).join("\n\n");
   const r = await chamarIA(
     "conversar",

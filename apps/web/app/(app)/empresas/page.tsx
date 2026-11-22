@@ -37,6 +37,7 @@ export default async function EmpresasPage() {
     leads: e._count.leads,
     limiteLeads: e.limiteLeads,
     treino: treinoDaConta(e),
+    leadsAnuncios: e.leadsAnuncios,
     nome: e.nome,
     pacote: e.pacote,
     planoId: e.planoId,

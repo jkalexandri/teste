@@ -8,6 +8,7 @@ import { criarApi } from "./api.js";
 import { MotorDisparos } from "./disparos.js";
 import { Aprendizado } from "./aprender.js";
 import { Atendente } from "./conversas.js";
+import { Avisador } from "./avisos.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
@@ -15,7 +16,9 @@ const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
 const aprendizado = new Aprendizado(log.child({ modulo: "aprender" }), config.pastaArquivos);
 const notificar = (para: string, texto: string) => sessoes.enviarTexto(SESSAO_PLATAFORMA, para, texto);
 // Conversas IA (etapa 10): a IA atende quem responde
-const atendente = new Atendente(sessoes, log.child({ modulo: "conversas" }), { pastaArquivos: config.pastaArquivos, notificar });
+// Avisos do usuário (etapa 10b): Quente, anúncio e respondeu, com resumo a cada 10 minutos
+const avisador = new Avisador(log.child({ modulo: "avisos" }), { notificar });
+const atendente = new Atendente(sessoes, log.child({ modulo: "conversas" }), { pastaArquivos: config.pastaArquivos, notificar, avisos: avisador });
 const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
@@ -28,12 +31,14 @@ sessoes.aoReceber = async (sessaoId, telefone, texto, extra) => {
   await motor.registrarResposta(sessaoId, telefone, texto);
   await atendente.receber(sessaoId, telefone, extra);
 };
+sessoes.aoConectar = (sessaoId) => atendente.aoConectar(sessaoId);
 
 async function iniciar() {
   await api.listen({ port: config.porta, host: config.host });
   log.info(`Serviço no ar em http://${config.host}:${config.porta}`);
   await sessoes.iniciarTodas();
   atendente.iniciar();
+  avisador.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
 }
@@ -43,6 +48,7 @@ async function desligar(sinal: string) {
   log.info({ sinal }, "desligando");
   motor.parar();
   atendente.parar();
+  avisador.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);
   await prisma.$disconnect().catch(() => undefined);

@@ -39,6 +39,9 @@ const USUARIO: ItemMenu[] = [
   { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8, permissao: "arquivos" },
   { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9, permissao: "empresa-ia" },
   { href: "/whatsapp", label: "WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
+  // Decisões #81, #82 e #94: avisos e leads de anúncios
+  { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
+  { href: "/leads-anuncios", label: "Leads de anúncios", icone: "play", grupo: "Configurações", etapa: 10, permissao: "leads" },
 ];
 
 const ADMIN_EMPRESA: ItemMenu[] = [
@@ -52,6 +55,8 @@ const ADMIN_EMPRESA: ItemMenu[] = [
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9 },
   { href: "/configuracoes", label: "Configurações", icone: "config", grupo: "Configurações", etapa: 12 },
+  // Decisão #81: o Admin recebe os avisos de todos os usuários da empresa
+  { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
 ];
 
@@ -84,6 +89,9 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/numero-plataforma", label: "Número da plataforma", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
   // Decisão #62: o Super Admin também envia, pelo próprio WhatsApp.
   { href: "/whatsapp", label: "Meu WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
+  // Decisão #94: o Super Admin também tem avisos e endereço de anúncios
+  { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
+  { href: "/leads-anuncios", label: "Leads de anúncios", icone: "play", grupo: "Configurações", etapa: 10 },
   // Decisão #65: faixa global de horário, feriados e a janela do Super Admin.
   { href: "/regras-envio", label: "Regras de envio", icone: "config", grupo: "Configurações", etapa: 8 },
   // Decisões #72 e #77: IA trocável e despesas com IA

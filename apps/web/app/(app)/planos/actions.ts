@@ -54,6 +54,8 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       limiteLeads,
       limiteMateriais,
       limitePaginasMes,
+      // Leads de anúncios incluídos no plano (decisão #90)
+      leadsAnuncios: form.get("leadsAnuncios") === "on",
       testeDias: atual.gratis ? inteiro(form.get("testeDias")) : null,
       testeDisparos: atual.gratis ? inteiro(form.get("testeDisparos")) : null,
       selo: texto(form.get("selo"), 60),

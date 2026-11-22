@@ -50,6 +50,8 @@ model Empresa {
   limiteLeads     Int?
   /// Treinamento da IA (decisão #77): liga/desliga e limites da conta (copiados do plano; o Super Admin pode ajustar)
   treinarIA         Boolean @default(true)
+  /// Leads de anúncios (recurso pago — decisões #90 e #94): copiado do plano; o Super Admin liga/desliga por conta
+  leadsAnuncios     Boolean @default(false)
   limiteMateriais   Int?
   limitePaginasMes  Int?
   /// Janela de envio da conta (decisões #6 e #65), em minutos do dia (480 = 8h). Segunda a sábado.
@@ -85,6 +87,15 @@ model Usuario {
   limiteLeads        Int?
   /// Conversas IA (decisão #92): a IA responde sozinha os leads deste usuário (liga/desliga geral)
   iaConversas        Boolean       @default(true)
+  /// Avisos do usuário (decisões #81 e #94): número que recebe e liga/desliga de cada tipo
+  numeroAvisos       String?
+  avisoQuente        Boolean       @default(true)
+  avisoAnuncio       Boolean       @default(true)
+  avisoRespondeu     Boolean       @default(true)
+  /// Quando saiu o último aviso (resumo a cada 10 minutos — decisão #94)
+  ultimoAvisoEm      DateTime?
+  /// Endereço secreto de leads de anúncios (decisão #82)
+  tokenAnuncios      String?       @unique
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?
   empresa            Empresa?      @relation(fields: [empresaId], references: [id])
@@ -152,6 +163,8 @@ model Plano {
   /// Limites de treinamento da IA (decisão #77). Vazio = ilimitado.
   limiteMateriais   Int?
   limitePaginasMes  Int?
+  /// Leads de anúncios incluídos neste plano (decisão #90)
+  leadsAnuncios     Boolean @default(false)
   selo            String   @default("")
   frase           String   @default("")
   condicoes       String   @default("")
@@ -593,4 +606,47 @@ model MaterialIA {
   lidoEm     DateTime?
 
   @@index([fichaId])
+}
+
+/// Aviso esperando o resumo de 10 minutos (decisão #94).
+model AvisoPendente {
+  id         String   @id @default(cuid())
+  /// Quem recebe (usuário, Admin da Empresa ou Super Admin)
+  usuarioId  String
+  texto      String
+  criadoEm   DateTime @default(now())
+
+  @@index([usuarioId])
+}
+
+enum StatusAnuncio {
+  RECEBIDO
+  AGUARDANDO_WHATSAPP
+  ATENDIDO
+  SEM_TELEFONE
+  SEM_RECURSO
+  ERRO
+}
+
+/// Lead recebido pelo endereço de anúncios (Google Ads, Facebook/Instagram via Make/Zapier — decisões #82, #84 e #94).
+model LeadAnuncio {
+  id          String        @id @default(cuid())
+  /// Dono do endereço que recebeu
+  usuarioId   String
+  origem      String        @default("outro")
+  nome        String        @default("")
+  telefone    String        @default("")
+  email       String        @default("")
+  /// Assunto e respostas do formulário, em texto (vai para a IA)
+  assunto     String        @default("")
+  dados       Json?
+  status      StatusAnuncio @default(RECEBIDO)
+  /// Lead criado ou encontrado (pode ser de outro usuário da empresa — quem cadastrou primeiro)
+  leadId      String?
+  erro        String?
+  recebidoEm  DateTime      @default(now())
+  atendidoEm  DateTime?
+
+  @@index([usuarioId, recebidoEm])
+  @@index([status])
 }

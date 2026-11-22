@@ -133,3 +133,14 @@ export async function definirTreinoIA(empresaId: string, form: FormData): Promis
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: treinamento da IA ${treinarIA ? "ligado" : "desligado"}.` };
 }
+
+/** Leads de anúncios da conta (decisão #94): o Super Admin liga/desliga. Empresas e individuais. */
+export async function alternarLeadsAnuncios(empresaId: string): Promise<R> {
+  await exigirSuperAdmin();
+  const e = await prisma.empresa.findUnique({ where: { id: empresaId } });
+  if (!e) return { ok: false, mensagem: "Conta não encontrada." };
+  await prisma.empresa.update({ where: { id: empresaId }, data: { leadsAnuncios: !e.leadsAnuncios } });
+  revalidatePath("/empresas");
+  revalidatePath("/usuarios-individuais");
+  return { ok: true, mensagem: `${e.nome}: leads de anúncios ${e.leadsAnuncios ? "desligado" : "ligado"}.` };
+}

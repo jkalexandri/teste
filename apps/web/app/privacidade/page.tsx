@@ -40,7 +40,7 @@ export default async function PrivacidadePage() {
           <li><b>Conta:</b> nome, e-mail, WhatsApp, empresa, plano, datas de acesso e de vencimento.</li>
           <li><b>Acesso e segurança:</b> senha (guardada apenas de forma cifrada, sem possibilidade de leitura), registros de entrada, tentativas de acesso e endereço IP.</li>
           <li><b>Pagamentos:</b> dados do pedido e da confirmação do PIX (não guardamos dados bancários ou de cartão).</li>
-          <li><b>Leads:</b> nome, telefone, status, qualificação e as mensagens trocadas pelo WhatsApp conectado pelo cliente.</li>
+          <li><b>Leads:</b> nome, telefone, status, qualificação, as mensagens trocadas pelo WhatsApp conectado pelo cliente e os dados dos formulários de anúncios (Google Ads, Facebook/Instagram) que o cliente conecta à plataforma.</li>
           <li><b>Conteúdo de treinamento da IA:</b> textos, links, imagens e PDFs que o cliente envia sobre a própria empresa.</li>
           <li><b>Arquivos de campanha:</b> imagens, PDFs, vídeos e áudios anexados pelo cliente.</li>
           <li><b>Conexão do WhatsApp:</b> credenciais da sessão, guardadas cifradas, para manter o WhatsApp do cliente conectado.</li>

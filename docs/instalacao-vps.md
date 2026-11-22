@@ -216,6 +216,14 @@ Para atualizar, use os comandos de "Atualizar o serviço" abaixo (há migração
 - Os avisos ao usuário (IA não soube responder, áudio recebido, limite de 30 respostas por dia) saem pelo **Número da plataforma**.
 - As mensagens com mais de 365 dias são apagadas sozinhas, uma vez por dia.
 
+## Etapa 10b — Avisos e leads de anúncios
+
+O endereço de leads de anúncios fica no **site** (`filaproleads.com.br/api/anuncios/...`); o serviço 24/7 cadastra o lead
+e a IA escreve a primeira mensagem. Use os comandos de "Atualizar o serviço" abaixo (há migração nova). Não há variável nova.
+
+- Os avisos (Quente, anúncio, lead respondeu) saem pelo **Número da plataforma**: ele precisa estar conectado.
+- Leads de anúncio que chegam com o WhatsApp do usuário desconectado são atendidos quando ele reconectar.
+
 ## Atualizar o serviço (novas versões)
 
 ```bash

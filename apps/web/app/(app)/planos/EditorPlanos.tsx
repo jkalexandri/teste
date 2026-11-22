@@ -149,6 +149,10 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                 placeholder="Máximo de páginas"
                 dica="Cada página de site/PDF, imagem ou 3.000 letras de texto conta 1."
               />
+              <label className="flex items-start gap-2 cursor-pointer sm:col-span-2">
+                <input type="checkbox" name="leadsAnuncios" id="f-leadsAnuncios" defaultChecked={!!editando.leadsAnuncios} className="w-4 h-4 mt-0.5 accent-emerald-600" />
+                <span><b className="text-[13px]">Leads de anúncios incluído</b><span className="help block">Google Ads e Facebook/Instagram entram sozinhos e a IA atende (recurso pago).</span></span>
+              </label>
               {editando.gratis && (
                 <>
                   <Campo nome="testeDias" rotulo="Teste grátis: dias" valor={editando.testeDias ?? ""} tipo="number" />

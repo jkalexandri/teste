@@ -37,6 +37,7 @@ export default async function IndividuaisPage() {
           codigo: u.codigo ?? "",
           leads: u.empresa?._count.leads ?? 0,
           limiteLeads: u.empresa?.limiteLeads ?? null,
+          leadsAnuncios: u.empresa?.leadsAnuncios ?? false,
           treino: treinoDaConta(u.empresa ?? { treinarIA: true, limiteMateriais: null, limitePaginasMes: null, ficha: null }),
           empresaId: u.empresaId!,
           nome: u.nome,

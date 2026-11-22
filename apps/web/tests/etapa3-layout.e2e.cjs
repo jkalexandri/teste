@@ -22,7 +22,7 @@ const OUT = process.argv[2];
   // Usuário individual
   let [c, p] = await entrar('usuario@disparopro.com.br', 'User@12345678', 'individual');
   ok('Usuário entra no dashboard', p.url().endsWith('/dashboard'));
-  ok('Menu do Usuário', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Campanhas','Leads','Conversas IA','Arquivos','Empresa | IA','WhatsApp']), (await menu(p)).join(', '));
+  ok('Menu do Usuário', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Campanhas','Leads','Conversas IA','Arquivos','Empresa | IA','WhatsApp','Avisos','Leads de anúncios']), (await menu(p)).join(', '));
   ok('Grupos do Usuário (ocultos os vazios)', JSON.stringify(await grupos(p)) === JSON.stringify(['PRINCIPAL','VENDAS','CONFIGURAÇÕES']), (await grupos(p)).join(', '));
   await p.screenshot({ path: OUT + '/dash-usuario.png' });
   await p.goto(BASE + '/usuarios'); await p.waitForTimeout(500);
@@ -35,7 +35,7 @@ const OUT = process.argv[2];
 
   // Admin da empresa
   [c, p] = await entrar('admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'empresarial');
-  ok('Menu do Admin', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Todos os disparos','Leads','Conversas IA','Usuários','Empresas','Empresa | IA','Configurações','Logs']), (await menu(p)).join(', '));
+  ok('Menu do Admin', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Todos os disparos','Leads','Conversas IA','Usuários','Empresas','Empresa | IA','Configurações','Avisos','Logs']), (await menu(p)).join(', '));
   const linhas = await p.locator('table tbody tr').allInnerTexts();
   ok('Disparos por usuários sem o Administrador', linhas.length >= 1 && linhas.some(l => l.includes('Ana Souza')) && !linhas.some(l => l.includes('admin-empresa@')), linhas.length + ' linhas');
   ok('Dashboard sem linha TOTAL no resumo', (await p.locator('tfoot').count()) === 0);
@@ -47,7 +47,7 @@ const OUT = process.argv[2];
   // Super Admin
   [c, p] = await entrar('superadmin@disparopro.com.br', 'Super@12345678', 'individual');
   const m = await menu(p);
-  ok('Menu do Super Admin', m.length === 23 && m.includes('Conversas IA') && m.includes('Empresa | IA') && m.includes('Dados legais') && m.includes('Inteligência Artificial') && m.includes('Despesas com IA') && m.includes('Regras de envio') && m.includes('Arquivos') && m.includes('Meu WhatsApp') && m.includes('Número da plataforma') && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
+  ok('Menu do Super Admin', m.length === 25 && m.includes('Avisos') && m.includes('Leads de anúncios') && m.includes('Conversas IA') && m.includes('Empresa | IA') && m.includes('Dados legais') && m.includes('Inteligência Artificial') && m.includes('Despesas com IA') && m.includes('Regras de envio') && m.includes('Arquivos') && m.includes('Meu WhatsApp') && m.includes('Número da plataforma') && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);

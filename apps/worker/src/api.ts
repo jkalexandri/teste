@@ -30,7 +30,10 @@ export const MAX_ARQUIVO = 16 * 1024 * 1024;
 export type Aprender = { processar(materialId: string): Promise<void>; agendarFicha(fichaId: string, esperaMs?: number): void };
 
 /** Conversas IA (etapa 10): mensagem escrita pelo usuário na tela. */
-export type Atender = { enviarManual(leadId: string, usuarioId: string, texto: string, arquivoId?: string | null): Promise<{ ok: boolean; mensagem: string }> };
+export type Atender = {
+  enviarManual(leadId: string, usuarioId: string, texto: string, arquivoId?: string | null): Promise<{ ok: boolean; mensagem: string }>;
+  atenderAnuncio(id: string): Promise<void>;
+};
 
 export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
@@ -113,6 +116,13 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (texto.length > 4000) return res.code(400).send({ ok: false, mensagem: "Texto muito longo." });
     const r = await atender.enviarManual(req.params.id, usuarioId, texto, arquivoId);
     return res.code(r.ok ? 200 : 409).send(r);
+  });
+
+  // ===== Leads de anúncios (etapa 10b): a IA começa o atendimento =====
+  app.post<{ Params: { id: string } }>("/anuncios/:id/atender", async (req, res) => {
+    if (!atender) return res.code(503).send({ ok: false, mensagem: "Conversas indisponíveis." });
+    void atender.atenderAnuncio(req.params.id).catch((e) => logger.error({ e }, "falha ao atender lead de anúncio"));
+    return { ok: true, mensagem: "Atendendo o lead." };
   });
 
   return app;
