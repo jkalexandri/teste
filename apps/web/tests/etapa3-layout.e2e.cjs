@@ -73,7 +73,7 @@ const OUT = process.argv[2];
   // Celular
   [c, p] = await entrar('usuario@disparopro.com.br', 'User@12345678', 'individual', { width: 390, height: 844 });
   await p.screenshot({ path: OUT + '/dash-celular.png' });
-  ok('Menu em pílulas no celular', await p.locator('main').count() === 1 && (await p.locator('a.rounded-full').count()) === 7);
+  ok('Menu em pílulas no celular', await p.locator('main').count() === 1 && (await p.locator('a.rounded-full').count()) === 9);
   await c.close();
 
   console.log(res.join('\n')); await b.close();
