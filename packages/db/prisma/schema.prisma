@@ -789,3 +789,49 @@ model Manutencao {
   desde  DateTime?
   motivo String?
 }
+
+/// Chat para interessados (decisão #104): quem ainda não é cliente conversa pela tela de Planos.
+/// A IA responde primeiro; o Super Admin assume no Atendimento (aba Interessados). Guardado 180 dias.
+model Interessado {
+  id                String   @id @default(cuid())
+  /// Hash do código guardado no aparelho do visitante (cookie de 30 dias)
+  tokenHash         String   @unique
+  nome              String
+  /// Só números, com DDI (ex.: 5511999998888)
+  whatsapp          String
+  email             String?
+  aceitouEm         DateTime
+  ip                String?
+  iaPausada         Boolean  @default(false)
+  iaPausaMotivo     String?
+  temperatura       String?
+  naoLidasSuporte   Int      @default(0)
+  naoLidasVisitante Int      @default(0)
+  /// Último sinal do visitante com o chat aberto (online = últimos 2 minutos)
+  vistoEm           DateTime?
+  ultimoAvisoEm     DateTime?
+  ultimaMensagemEm  DateTime @default(now())
+  criadoEm          DateTime @default(now())
+  mensagens         InteressadoMensagem[]
+
+  @@index([ultimaMensagemEm])
+  @@index([email])
+  @@index([whatsapp])
+}
+
+model InteressadoMensagem {
+  id            String      @id @default(cuid())
+  interessadoId String
+  interessado   Interessado @relation(fields: [interessadoId], references: [id], onDelete: Cascade)
+  /// VISITANTE, IA ou SUPORTE
+  autor         String
+  autorId       String?
+  texto         String      @default("")
+  /// texto, imagem ou documento (anexo só do Super Admin, guardado no serviço 24/7 como "int-<id>")
+  tipo          String      @default("texto")
+  arquivoNome   String?
+  arquivoTipo   String?
+  criadoEm      DateTime    @default(now())
+
+  @@index([interessadoId, criadoEm])
+}

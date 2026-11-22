@@ -42,7 +42,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       where: { status: { in: [StatusPedido.AGUARDANDO] }, expiraEm: { gt: new Date() } },
     });
     // Suporte: conversas com mensagens novas (decisão #102)
-    contadores["/atendimento"] = await prisma.suporteConversa.count({ where: { naoLidasSuporte: { gt: 0 } } });
+    // e interessados com mensagens novas (decisão #104)
+    contadores["/atendimento"] = (await prisma.suporteConversa.count({ where: { naoLidasSuporte: { gt: 0 } } })) + (await prisma.interessado.count({ where: { naoLidasSuporte: { gt: 0 } } }));
   }
 
   return (

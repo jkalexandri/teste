@@ -121,6 +121,26 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
   Limpeza diária: mensagens com mais de 365 dias.
 - Mensagens aos usuários: `Comunicado` + `ComunicadoDestino` (um por destinatário; `lidoEm` ao clicar OK).
 
+## Modo manutenção (decisão #103)
+
+- Tabela `Manutencao` (linha "geral"). `deploy/manutencao.sh ligar|desligar|estado|avisar N`.
+- `atualizar.sh`: liga antes do backup, monta o site em `.next-novo` (o site atual continua no ar mostrando a tela de atualização),
+  troca as pastas, reinicia, confere e desliga. Em erro, fica ligada (trap). Restaura `next-env.d.ts` depois do build.
+- Site: `middleware.ts` (runtime Node.js) recusa com 503 ações e rotas da API de quem não é Super Admin (exceto `/api/manutencao`,
+  `/api/presenca`, login/sair e `/api/anuncios/`). O layout não renderiza a página do cliente; `Presenca.tsx` mostra `TelaManutencao`.
+- Serviço 24/7: `src/manutencao.ts` (cache 5 s) — o motor não envia, as respostas da IA são reagendadas e os leads de anúncios ficam
+  `RECEBIDO` até a varredura.
+- Caddy: `handle_errors` 502/503/504 mostra `deploy/pagina-manutencao/index.html` nos segundos do reinício.
+
+## Chat para interessados (decisão #104)
+
+- `Interessado` + `InteressadoMensagem`; código do aparelho em cookie httpOnly de 30 dias (`lib/interessados.ts`).
+- Rotas públicas: `/api/interessados` (GET/POST) e `/api/interessados/mensagens` (limites em memória por conversa e por IP);
+  Super Admin: `/api/interessados/<id>`, `/<id>/ia`, `/arquivo/<id>`.
+- IA: `apps/worker/src/interessados.ts` (`responderConversa` com `visitanteSite`, ficha do Super Admin + planos visíveis).
+- Compra confirmada (Pedidos ou teste grátis): `ligarInteressadoAoCliente` copia a conversa para o suporte do cliente.
+- Limpeza diária: interessados com mais de 180 dias.
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

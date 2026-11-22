@@ -64,6 +64,8 @@ export async function responderConversa(
     ficha: string; comoQualificar: string; resumo: string; recentes: MensagemConversa[]; nomeLead: string; imagem?: { tipo: string; base64: string };
     /** Lead de anúncio (decisão #84): a IA escreve a PRIMEIRA mensagem sobre o assunto do formulário */
     formularioAnuncio?: string;
+    /** Chat do site (decisão #104): quem conversa é um visitante interessado em comprar o FilaPro Leads */
+    visitanteSite?: boolean;
   },
   quem: QuemUsa,
 ) {
@@ -73,6 +75,9 @@ export async function responderConversa(
     d.nomeLead ? `Nome do lead: ${d.nomeLead}` : "",
     d.resumo ? `Resumo da conversa até aqui:\n${d.resumo}` : "",
     d.recentes.length ? `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linha).join("\n")}` : "",
+    d.visitanteSite
+      ? "Canal: chat da tela de Planos do site (não é WhatsApp). Quem escreve é um visitante interessado em contratar. Ajude-o a escolher o plano certo com base na ficha e nos planos informados; para comprar, ele clica em Comprar no cartão do plano e paga por PIX. Não peça dados de pagamento no chat."
+      : "",
     d.formularioAnuncio
       ? `Este lead acabou de preencher um formulário de anúncio pedindo contato. Dados do formulário:\n${d.formularioAnuncio}\n\nEscreva a PRIMEIRA mensagem da Empresa: cumprimente pelo nome, apresente-se em nome da empresa, fale do assunto do formulário e termine com uma pergunta.`
       : "Escreva a próxima resposta da Empresa.",

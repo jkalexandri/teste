@@ -35,7 +35,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -123,6 +123,13 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (!atender) return res.code(503).send({ ok: false, mensagem: "Conversas indisponíveis." });
     void atender.atenderAnuncio(req.params.id).catch((e) => logger.error({ e }, "falha ao atender lead de anúncio"));
     return { ok: true, mensagem: "Atendendo o lead." };
+  });
+
+  // ===== Chat para interessados (decisão #104): a IA responde o visitante =====
+  app.post<{ Params: { id: string } }>("/interessados/:id/responder", async (req, res) => {
+    if (!interessados) return res.code(503).send({ ok: false, mensagem: "Chat indisponível." });
+    interessados.agendar(req.params.id);
+    return { ok: true, mensagem: "A IA vai responder." };
   });
 
   // ===== Notificações no celular (decisão #99): teste a partir da tela Avisos =====

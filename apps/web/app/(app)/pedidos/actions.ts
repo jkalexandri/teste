@@ -2,6 +2,7 @@
 
 // Ações do Super Admin sobre os pedidos (decisão #33: confirmação manual do PIX).
 import { revalidatePath } from "next/cache";
+import { ligarInteressadoAoCliente } from "@/lib/interessados";
 import { prisma, Modulo, StatusPedido, MOTIVO_SEM_SALDO } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas } from "@/lib/contas";
@@ -82,6 +83,8 @@ export async function confirmarPagamento(id: string): Promise<R> {
     return c;
   });
 
+  // Era um interessado do chat (decisão #104): a conversa vira o suporte do novo cliente
+  await ligarInteressadoAoCliente(conta.usuario).catch(() => undefined);
   const enviado = await enviarEmailBoasVindas(pedido.nome, pedido.email, conta.senhaTemporaria, pedido.planoNome, pedido.modulo);
   revalidatePath("/pedidos");
   return {

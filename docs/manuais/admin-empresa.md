@@ -106,6 +106,11 @@ Filtre por usuário, tipo e período.
   sozinho. Você **não vê** as conversas dos seus usuários com o suporte (cada um vê só a própria).
 - **Mensagens no centro da tela:** avisos do FilaPro Leads; leia e clique em **OK**.
 
+## Sistema em atualização
+
+Durante uma atualização aparece a tela **"Sistema em atualização"** (alguns minutos) para você e para os usuários. As campanhas
+param e continuam depois, sem perder nem repetir envios.
+
 ## Plano e renovação
 
 - O menu **Empresas** mostra o pacote, o vencimento e os usuários da empresa.

@@ -8,6 +8,7 @@ import { X } from "@/components/icons";
 import { linkContato, type PlanoPublico } from "@/lib/planos";
 import CartaoPlano from "./CartaoPlano";
 import Checkout from "./Checkout";
+import ChatInteressado from "./ChatInteressado";
 
 type Dados = { planos: PlanoPublico[]; contatoPersonalizado: string };
 
@@ -35,6 +36,8 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
   const [dados, setDados] = useState<Dados | null>(null);
   const [aviso, setAviso] = useState("");
   const [escolhido, setEscolhido] = useState<PlanoPublico | null>(null);
+  // Chat para interessados (decisão #104)
+  const [chat, setChat] = useState(false);
 
   useEffect(() => {
     fetch("/api/planos")
@@ -76,9 +79,12 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
       <div className="w-full max-w-[1320px] my-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-[24px] font-extrabold text-white">Planos</h2>
-          <button onClick={onFechar} className="login-ghost-btn !p-2" aria-label="Fechar planos">
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setChat(true)} className="login-ghost-btn !py-2 !px-3 text-[12px] font-bold" data-testid="fale-conosco">💬 Fale conosco</button>
+            <button onClick={onFechar} className="login-ghost-btn !p-2" aria-label="Fechar planos">
+              <X size={16} />
+            </button>
+          </div>
         </div>
         {aviso && (
           <div className="mb-3 rounded-xl p-2.5 text-[12px] font-semibold text-emerald-300" style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.30)" }}>
@@ -95,6 +101,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
           <GradePlanos planos={dados.planos} onEscolher={escolher} />
         )}
       </div>
+      {chat && <ChatInteressado onFechar={() => setChat(false)} />}
     </div>
   );
 }

@@ -56,6 +56,22 @@ também no menu.
   Número da plataforma) e no celular.
 - Histórico de 365 dias. O Admin da Empresa não vê as conversas dos usuários com o suporte.
 
+### Aba Interessados (quem ainda não é cliente)
+
+Na tela de **Planos** (botão Planos do login) há o botão **💬 Fale conosco**. O visitante informa nome, WhatsApp (e e-mail, se
+quiser), aceita a Política de Privacidade e conversa — só por texto.
+
+![Interessados](prints/s-atendimento-interessados.png)
+
+- **A IA responde primeiro**, como vendedora do FilaPro Leads, usando o **seu Empresa | IA** e os **planos visíveis**, e marca o
+  interessado como Quente, Morno ou Frio.
+- Se a IA não souber responder, ela **pausa** e você recebe aviso no WhatsApp e no celular.
+- **Assumir conversa** (ou escrever uma mensagem) faz a IA parar; **Devolver para a IA** faz ela voltar. Você pode enviar imagem ou PDF.
+- Se o visitante não estiver com o chat aberto, a sua resposta vai **também pelo WhatsApp** dele (pelo Número da plataforma).
+- A conversa continua no mesmo aparelho do visitante por 30 dias. Se ele comprar (mesmo e-mail ou WhatsApp), a conversa vira o
+  **suporte do novo cliente** (aba Clientes). Quem não compra fica guardado 180 dias.
+- Proteção contra robôs: limite de mensagens por minuto.
+
 ## Mensagens aos usuários
 
 Avisos que aparecem **em popup no centro da tela** do usuário e só fecham com **OK**. Quem estiver fora do sistema vê no próximo acesso.
@@ -212,11 +228,22 @@ A versão atual aparece no rodapé do menu e na tela de login (em teste). Todos 
 
 | O que | Como |
 |---|---|
-| Atualizar o sistema | Na VPS: `bash /opt/filapro/app/deploy/atualizar.sh` (faz backup antes e mostra a versão nova) |
+| Atualizar o sistema | Na VPS: `bash /opt/filapro/app/deploy/atualizar.sh` (faz backup, liga o **modo manutenção**, atualiza, libera e mostra a versão nova) |
+| Avisar os usuários antes | `bash /opt/filapro/app/deploy/atualizar.sh --aviso 10` (mensagem em popup e espera 10 minutos) |
+| Modo manutenção à mão | `bash /opt/filapro/app/deploy/manutencao.sh ligar` / `desligar` / `estado` — ou **Liberar o sistema** na faixa laranja do sistema |
 | Voltar para a versão anterior | `bash /opt/filapro/app/deploy/voltar-versao.sh` |
 | Backup do banco | Automático todo dia às 03:30 (Brasília), guardado por 14 dias em `/opt/filapro/backups` |
 | Ver se está tudo no ar | `pm2 status` e https://api.filaproleads.com.br/saude |
 | Mudar de servidor | Siga o Manual do Desenvolvedor, seção *Mudar de servidor* |
+
+## Modo manutenção (atualizações)
+
+Durante a atualização os clientes veem **"Sistema em atualização"** e o servidor não aceita nenhuma ação; campanhas, respostas da IA e
+leads de anúncios ficam em espera e continuam depois. **Você continua entrando** (no login, clique em "Sou Super Admin — entrar para
+conferir") e vê uma faixa laranja com **Liberar o sistema**. Se a atualização der erro, o sistema **fica em manutenção** até você
+voltar a versão (`voltar-versao.sh`) ou liberar.
+
+![Faixa de manutenção](prints/s-manutencao.png)
 
 ## Perguntas frequentes
 

@@ -2,6 +2,17 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.28.0 — modo manutenção e chat para interessados (22/11/2026)
+
+### Para todos
+- **Sistema em atualização:** durante as atualizações aparece uma tela de aviso e nada pode ser alterado; campanhas, respostas da IA
+  e leads de anúncios continuam depois, sem perder nada.
+
+### Super Admin
+- **Atualização com modo manutenção automático**, aviso prévio opcional aos usuários e faixa **Liberar o sistema**.
+- **Fale conosco** na tela de Planos: a IA atende quem ainda não é cliente; você acompanha e assume em **Atendimento → Interessados**.
+  Quem compra passa a ter a conversa no suporte.
+
 ## v1.27.0 — suporte em tempo real e disparos por quantidade (22/11/2026)
 
 ### Para todos

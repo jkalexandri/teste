@@ -228,6 +228,12 @@ O botão **💬 Suporte**, no canto de baixo da tela, abre um chat com o suporte
 Às vezes aparece uma **mensagem no centro da tela** (manutenção, novidades, avisos importantes). Leia e clique em **OK** para fechar —
 ela não aparece de novo. Se você estava fora do sistema, ela aparece no próximo acesso.
 
+## Sistema em atualização
+
+Quando o FilaPro Leads recebe uma versão nova, aparece a tela **"Sistema em atualização"** por alguns minutos. Nesse tempo nada pode
+ser alterado, mas nada se perde: **as campanhas param e continuam de onde pararam**, as respostas da IA saem logo depois e o texto
+que você estava escrevendo no Suporte fica guardado. A tela some sozinha quando termina.
+
 ## Perguntas frequentes
 
 **A IA respondeu algo errado. O que faço?**

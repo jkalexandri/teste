@@ -82,6 +82,8 @@ export class Atendente {
     const r = await prisma.mensagem.deleteMany({ where: { criadoEm: { lt: limite } } }).catch(() => ({ count: 0 }));
     // Histórico do suporte também fica 365 dias (decisão #102)
     await prisma.suporteMensagem.deleteMany({ where: { criadoEm: { lt: limite } } }).catch(() => undefined);
+    // Interessados que não compraram ficam 180 dias (decisão #104)
+    await prisma.interessado.deleteMany({ where: { ultimaMensagemEm: { lt: new Date(this.agora().getTime() - 180 * 86400_000) } } }).catch(() => undefined);
     // Logs ficam 90 dias (decisão #99)
     await prisma.log.deleteMany({ where: { criadoEm: { lt: new Date(this.agora().getTime() - 90 * 86400_000) } } }).catch(() => undefined);
     if (r.count) this.log.info({ apagadas: r.count }, "mensagens com mais de 365 dias apagadas");

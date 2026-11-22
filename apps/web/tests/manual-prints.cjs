@@ -113,6 +113,19 @@ const EMP = 'teste-empresa-exemplo';
   sql(`insert into "Comunicado"(id,titulo,texto,publico,"autorId","criadoEm") values ('man-com','Novidade: suporte em tempo real','Agora você fala com o suporte pelo botão Suporte, no canto da tela.','Todos os clientes','${SA}',now())`);
   sql(`insert into "ComunicadoDestino"(id,"comunicadoId","usuarioId","lidoEm") values ('man-cd1','man-com','${ANA}',now())`);
   await foto(p, 's-comunicados', '/comunicados', async (p) => { await p.locator('[data-testid=comunicado] summary').first().click(); });
+  // Interessados (decisão #104)
+  sql(`delete from "Interessado" where id='man-int'`);
+  sql(`insert into "Interessado"(id,"tokenHash",nome,whatsapp,email,"aceitouEm",temperatura,"ultimaMensagemEm") values ('man-int','man-int','Rafael Moreira','5511977776666','rafael@exemplo.com.br',now(),'QUENTE',now())`);
+  sql(`insert into "InteressadoMensagem"(id,"interessadoId",autor,texto,"criadoEm") values
+    ('man-i1','man-int','VISITANTE','Olá! Tenho uma corretora com 3 vendedores. Qual plano vocês indicam?',now()-interval '5 minutes'),
+    ('man-i2','man-int','IA','Olá, Rafael! Para uma equipe de 3 vendedores o plano Básico atende bem: 3 usuários, Antibloqueio e a IA atendendo quem responde. Quer que eu explique como funciona o teste?',now()-interval '4 minutes')`);
+  await foto(p, 's-atendimento-interessados', '/atendimento?aba=interessados&interessado=man-int');
+  // Modo manutenção (decisão #103): faixa do Super Admin
+  sql(`insert into "Manutencao"(id,ligada,desde) values ('geral',true,now()) on conflict (id) do update set ligada=true, desde=now()`);
+  await espera(3500);
+  await foto(p, 's-manutencao', '/dashboard');
+  sql(`update "Manutencao" set ligada=false, desde=null where id='geral'`);
+  sql(`delete from "Interessado" where id='man-int'`);
   await c.close();
   await b.close();
 

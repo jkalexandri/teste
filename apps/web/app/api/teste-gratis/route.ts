@@ -1,6 +1,7 @@
 // POST /api/teste-gratis — plano Free: conta criada na hora (decisão #34).
 // 1 teste por e-mail; vale X dias ou Y disparos (configurados no plano Free).
 import { NextResponse } from "next/server";
+import { ligarInteressadoAoCliente } from "@/lib/interessados";
 import { prisma, Modulo } from "@filapro/db";
 import { criarConta, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
 
@@ -41,6 +42,8 @@ export async function POST(req: Request) {
       tx,
     );
   });
+  // Era um interessado do chat (decisão #104): a conversa vira o suporte do novo cliente
+  await ligarInteressadoAoCliente(conta.usuario).catch(() => undefined);
   await enviarEmailBoasVindas(dados.nome, dados.email, conta.senhaTemporaria, plano.nome, Modulo.INDIVIDUAL);
   return NextResponse.json({ ok: true });
 }
