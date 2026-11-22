@@ -46,7 +46,7 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 6b — instalação na VPS (pm2 + HTTPS em api.filaproleads.com.br) e teste real do QR Code. Ligar o site ao serviço (WORKER_URL/WORKER_TOKEN na Vercel) fica para a publicação (etapa 12).
 - [x] Etapa 7 — leads (manual, colar e planilha .xlsx/.csv), códigos legíveis, limites e permissões por perfil
 - [x] Etapa 8a — tela de Campanhas (Nova em 4 passos, rascunho, agendar/iniciar, pausar/retomar/cancelar, duplicar), anexos na VPS, Arquivos, janela de envio e regras globais
-- [x] Etapa 8b — envio de verdade no serviço 24/7 (fila, antibloqueio, respostas e SAIR) — falta o teste real na VPS
+- [x] Etapa 8b — envio de verdade no serviço 24/7 (fila, antibloqueio, respostas e SAIR) — testado de verdade na VPS (envio, "digitando…", resposta SAIR)
 - [ ] Etapa 8c — painéis (Todos os disparos, Disparos por usuários, dashboards, saúde do número)
 
 ## Banco de dados (desenvolvimento)
