@@ -78,7 +78,7 @@ export async function buscarLeads(q: string) {
  * Iniciar ou agendar (aba Prévia|envio). Cria a fila (um envio por lead) — o serviço 24/7
  * envia respeitando o Antibloqueio (etapa 8b). Depois disso a tela "Nova" é limpa.
  */
-export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | null): Promise<R> {
+export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | null, avisarSempre = false): Promise<R> {
   const u = await atorCampanhas();
   const dados = limparDados(d);
   dados.arquivoId = await arquivoValido(u.id, dados.arquivoId);
@@ -116,6 +116,9 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
       agendadaPara: quando,
       iniciadaEm: quando ? null : new Date(),
       totalLeads: unicos.length,
+      // Resposta à pergunta feita ao iniciar/agendar (decisão #71)
+      avisarSempre: !!avisarSempre,
+      ultimoAviso: null,
     };
     const c = campanhaId
       ? await tx.campanha.update({ where: { id: campanhaId }, data: comum })

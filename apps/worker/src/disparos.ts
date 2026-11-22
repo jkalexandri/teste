@@ -280,7 +280,10 @@ export class MotorDisparos {
     if (!this.opcoes.notificar) return;
     const c = await prisma.campanha.findUnique({ where: { id: campanhaId }, include: { usuario: true } });
     if (!c) return;
-    const chave = `${tipo}|${agoraSP(this.agora()).data}`;
+    // Padrão: 1 aviso por dia de cada tipo. "Avisar sempre" (escolhido ao iniciar/agendar — decisão #71):
+    // cada problema gera um aviso; o limite diário continua 1 por dia (só acontece uma vez por dia).
+    const dia = agoraSP(this.agora()).data;
+    const chave = c.avisarSempre && tipo !== "limite-dia" ? `${tipo}|${dia}|${this.agora().getTime()}` : `${tipo}|${dia}`;
     if (c.ultimoAviso === chave) return;
     await prisma.campanha.update({ where: { id: campanhaId }, data: { ultimoAviso: chave } });
     let para = c.usuario.whatsapp ?? "";

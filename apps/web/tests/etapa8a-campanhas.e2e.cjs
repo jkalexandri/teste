@@ -96,7 +96,10 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   ok('Agendar antes de Iniciar (prompt seção 8)', botoes.findIndex((t) => t.includes('Agendar envio')) < botoes.findIndex((t) => t.includes('Iniciar disparo')));
   await p.screenshot({ path: OUT + '/campanha-previa.png', fullPage: true });
   await p.click('button:has-text("Iniciar disparo")');
+  ok('Ao iniciar, pergunta sobre os avisos (#71)', (await p.locator('[aria-label="Avisos da campanha"]').count()) === 1);
+  await p.click('button:has-text("Sim, avisar sempre")');
   ok('Iniciar: campanha em andamento com a fila criada', await ate(() => camp(`assunto='Campanha Teste 8a'`) === 'EM_ANDAMENTO|3'));
+  ok('Escolha "avisar sempre" gravada na campanha', sql(`select "avisarSempre" from "Campanha" where assunto='Campanha Teste 8a'`) === 't');
   ok('Fila com 3 envios pendentes (sem o inativo e sem quem saiu há < 45 dias)', sql(`select count(*) from "Envio" e join "Campanha" c on c.id=e."campanhaId" where c.assunto='Campanha Teste 8a' and e.status='PENDENTE'`) === '3');
   await espera(800);
   ok('Formulário limpo depois de iniciar', (await p.inputValue('#assunto')) === '');
@@ -134,6 +137,8 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   const amanha = new Date(Date.now() + 86400000 + 3 * 3600000); // horário de Brasília (UTC-3) de amanhã
   const v = amanha.toISOString().slice(0, 10) + 'T10:00';
   await p.fill('#agendar-em', v); await p.click('button:has-text("Confirmar agendamento")');
+  ok('Ao agendar, também pergunta sobre os avisos (#71)', (await p.locator('[aria-label="Avisos da campanha"]').count()) === 1);
+  await p.click('button:has-text("Não, no máximo 1 aviso por dia")');
   ok('Agendar cria campanha AGENDADA para a data escolhida', await ate(() => sql(`select status||'|'||to_char(("agendadaPara" at time zone 'UTC') at time zone 'America/Sao_Paulo','HH24:MI') from "Campanha" where assunto='Agendada 8a'`) === 'AGENDADA|10:00'));
   await p.goto(BASE + '/campanhas?aba=em-andamento'); await espera(800);
   ok('Agendada aparece em Em andamento', (await p.locator('tr:has-text("Agendada 8a") >> text=Agendada para').count()) === 1);
@@ -143,7 +148,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   await p.goto(BASE + '/campanhas?aba=nova'); await espera(800);
   ok('Aviso de WhatsApp desconectado', (await p.locator('text=Seu WhatsApp não está conectado').count()) === 1);
   await p.fill('#assunto', 'Sem WhatsApp'); await p.fill('#msg', 'Olá');
-  await passo(p, 'Prévia|envio'); await p.click('button:has-text("Iniciar disparo")'); await espera(1200);
+  await passo(p, 'Prévia|envio'); await p.click('button:has-text("Iniciar disparo")'); await p.click('button:has-text("Não, no máximo 1 aviso por dia")'); await espera(1200);
   ok('Não inicia sem WhatsApp conectado', (await p.locator('[data-testid=aviso-campanha]').innerText()).includes('Conecte o seu WhatsApp'));
   await p.click('aside nav >> text=Arquivos'); await p.waitForURL('**/arquivos'); await espera(500);
   ok('Arquivos lista o anexo e onde foi usado', (await p.locator('tr:has-text("oferta.png") >> text=Campanha Teste 8a').count()) === 1);

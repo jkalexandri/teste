@@ -267,3 +267,24 @@ test("randomização usa as variações; pausa/cancelamento na tela valem na hor
   assert.equal((await motor.passo(USU)).acao, "nada");
   assert.equal(wa.enviados.length, 1);
 });
+
+test("avisos: padrão 1 por dia de cada tipo; com 'avisar sempre', cada problema avisa (decisão #71)", async () => {
+  const ls = [];
+  for (let i = 1; i <= 12; i++) ls.push(await lead(i));
+  // Padrão: duas pausas por falhas no mesmo dia → 1 aviso
+  const c1 = await campanha(ls.slice(0, 10));
+  wa.falhar = true;
+  for (let i = 0; i < 5; i++) await motor.passo(USU);
+  await prisma.campanha.update({ where: { id: c1.id }, data: { status: StatusCampanha.EM_ANDAMENTO } });
+  for (let i = 0; i < 5; i++) await motor.passo(USU);
+  assert.equal((await status(c1.id)).status, StatusCampanha.PAUSADA);
+  assert.equal(avisos.length, 1);
+  // "Avisar sempre": cada pausa gera aviso
+  await prisma.campanha.delete({ where: { id: c1.id } });
+  const c2 = await campanha(ls, { avisarSempre: true });
+  for (let i = 0; i < 5; i++) await motor.passo(USU);
+  agora = new Date(agora.getTime() + 60_000);
+  await prisma.campanha.update({ where: { id: c2.id }, data: { status: StatusCampanha.EM_ANDAMENTO } });
+  for (let i = 0; i < 5; i++) await motor.passo(USU);
+  assert.equal(avisos.length, 3);
+});

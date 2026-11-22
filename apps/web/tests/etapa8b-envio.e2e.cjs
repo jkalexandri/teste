@@ -29,7 +29,7 @@ const ate = async (fn, max = 40) => { for (let i = 0; i < max; i++) { if (fn()) 
   await p.fill('#email', 'ana@empresaexemplo.com.br'); await p.fill('#senha', 'User@12345678'); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard');
   await p.goto(BASE + '/campanhas?aba=nova'); await espera(800);
   await p.fill('#assunto', 'Motor 8b'); await p.fill('#msg', 'Olá {nome}');
-  await p.click('[aria-label="Passos da nova campanha"] >> text="Prévia|envio"'); await p.click('button:has-text("Iniciar disparo")');
+  await p.click('[aria-label="Passos da nova campanha"] >> text="Prévia|envio"'); await p.click('button:has-text("Iniciar disparo")'); await p.click('button:has-text("Não, no máximo 1 aviso por dia")');
   ok('Campanha iniciada pelo site', await ate(() => sql(`select status from "Campanha" where assunto='Motor 8b'`) !== '', 10));
   ok('O motor do serviço 24/7 pega a campanha e pausa porque o WhatsApp não está conectado nele', await ate(() => sql(`select status from "Campanha" where assunto='Motor 8b'`) === 'PAUSADA'));
   await p.goto(BASE + '/campanhas?aba=pausada'); await espera(800);

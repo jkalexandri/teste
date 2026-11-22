@@ -380,6 +380,8 @@ model Campanha {
   motivo             String?
   /// Último aviso automático enviado ao usuário pelo WhatsApp da plataforma ("tipo|AAAA-MM-DD"), para não repetir (decisão #70)
   ultimoAviso        String?
+  /// true = o usuário quer ser avisado SEMPRE que houver problema; false = padrão, no máximo 1 aviso por dia de cada tipo (decisão #71)
+  avisarSempre       Boolean          @default(false)
   totalLeads         Int              @default(0)
   criadoEm           DateTime         @default(now())
   atualizadoEm       DateTime         @updatedAt

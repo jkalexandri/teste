@@ -101,9 +101,9 @@ export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAt
           arquivo={arquivo}
           pendente={pendente}
           voltar={() => setPasso(0)}
-          enviar={(agendar) =>
+          enviar={(agendar, avisarSempre) =>
             iniciar(async () => {
-              const r = await iniciarCampanha(dados(), agendar);
+              const r = await iniciarCampanha(dados(), agendar, avisarSempre);
               toast(r.mensagem, r.ok ? "ok" : "erro");
               setAviso(r.mensagem);
               if (r.ok) limpar(); // Após Iniciar ou Agendar, a tela é limpa (prompt seção 8)
@@ -471,8 +471,10 @@ function PassoAntibloqueio({ d, set, janela }: { d: Dados; set: Setter; janela: 
 }
 
 // ===================== Passo 4: Prévia|envio =====================
-function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arquivo: ArquivoInfo | null; pendente: boolean; voltar: () => void; enviar: (agendar: string | null) => void }) {
+function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arquivo: ArquivoInfo | null; pendente: boolean; voltar: () => void; enviar: (agendar: string | null, avisarSempre: boolean) => void }) {
   const [versao, setVersao] = useState(0);
+  // Pergunta dos avisos ao iniciar/agendar (decisão #71): guarda o que estava sendo feito
+  const [perguntar, setPerguntar] = useState<{ agendar: string | null } | null>(null);
   const [agendando, setAgendando] = useState(false);
   const [quando, setQuando] = useState("");
   const textos = [d.mensagem, ...d.variacoes];
@@ -536,7 +538,7 @@ function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arqui
               <input id="agendar-em" type="datetime-local" className="input" value={quando} onChange={(e) => setQuando(e.target.value)} />
               <p className="help mt-0.5">Se cair fora da janela de envio, começa no próximo horário permitido.</p>
               <div className="flex gap-2 mt-2">
-                <button className="btn-primary" disabled={pendente || !quando} onClick={() => enviar(new Date(`${quando}:00-03:00`).toISOString())}>Confirmar agendamento</button>
+                <button className="btn-primary" disabled={pendente || !quando} onClick={() => setPerguntar({ agendar: new Date(`${quando}:00-03:00`).toISOString() })}>Confirmar agendamento</button>
                 <button className="btn-ghost" onClick={() => setAgendando(false)}>Cancelar</button>
               </div>
             </div>
@@ -546,11 +548,32 @@ function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arqui
             <button className="btn-ghost" onClick={voltar}>← Revisar mensagem</button>
             {/* Agendar e Iniciar, nessa ordem (prompt seção 8) */}
             <button className="btn-ghost" disabled={pendente} onClick={() => setAgendando(true)}>Agendar envio</button>
-            <button className="btn-primary" disabled={pendente} onClick={() => enviar(null)}><Play size={14} /> Iniciar disparo</button>
+            <button className="btn-primary" disabled={pendente} onClick={() => setPerguntar({ agendar: null })}><Play size={14} /> Iniciar disparo</button>
           </div>
           <p className="help">Após Iniciar ou Agendar, o formulário é limpo e já fica livre para uma nova campanha.</p>
         </div>
       </div>
+
+      {perguntar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3" style={{ background: "rgba(10,20,15,.55)" }} role="dialog" aria-modal="true" aria-label="Avisos da campanha">
+          <div className="card w-full max-w-[460px] p-4">
+            <h2 className="font-display font-extrabold text-[16px]">Avisos desta campanha</h2>
+            <p className="text-[13px] mt-1.5 leading-relaxed">
+              Se acontecer algum problema (WhatsApp desconectado, falhas, limite do dia), você recebe um aviso no seu WhatsApp.
+              <b> Quer ser avisado sempre que houver problema?</b>
+            </p>
+            <div className="flex flex-col gap-2 mt-3">
+              <button className="btn-primary justify-center" disabled={pendente} onClick={() => { const a = perguntar.agendar; setPerguntar(null); enviar(a, true); }}>
+                Sim, avisar sempre
+              </button>
+              <button className="btn-ghost justify-center" disabled={pendente} onClick={() => { const a = perguntar.agendar; setPerguntar(null); enviar(a, false); }}>
+                Não, no máximo 1 aviso por dia (padrão)
+              </button>
+              <button className="text-[12px] underline" style={{ color: "var(--muted)" }} onClick={() => setPerguntar(null)}>Voltar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
