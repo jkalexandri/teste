@@ -15,3 +15,18 @@ export function checkPassword(pw: string): PasswordRule[] {
 export function isPasswordValid(pw: string): boolean {
   return checkPassword(pw).every((r) => r.ok);
 }
+
+/**
+ * Gera uma senha forte (decisão #98): 16 caracteres, com maiúscula, minúscula, número e especial,
+ * sem letras que se confundem (O/0, l/1/I). Usa o gerador seguro do navegador/servidor.
+ */
+export function gerarSenhaForte(tamanho = 16): string {
+  const grupos = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnpqrstuvwxyz", "23456789", "!@#$%&*?-_+="];
+  const todos = grupos.join("");
+  const sorteio = (n: number) => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0]! % n; };
+  // Um de cada grupo + o resto de qualquer grupo; depois embaralha
+  const letras = grupos.map((g) => g[sorteio(g.length)]!);
+  while (letras.length < tamanho) letras.push(todos[sorteio(todos.length)]!);
+  for (let i = letras.length - 1; i > 0; i--) { const j = sorteio(i + 1); [letras[i], letras[j]] = [letras[j]!, letras[i]!]; }
+  return letras.join("");
+}

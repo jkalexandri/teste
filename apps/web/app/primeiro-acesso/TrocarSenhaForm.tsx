@@ -3,13 +3,26 @@
 // Tela "Troque sua senha temporária" — reproduzida da prévia.
 import { useMemo, useState } from "react";
 import { CircleCheck, CircleDashed, Eye, EyeOff, Lock, TriangleAlert } from "@/components/icons";
-import { checkPassword } from "@/lib/password-policy";
+import { checkPassword, gerarSenhaForte } from "@/lib/password-policy";
 
 export default function TrocarSenhaForm({ nome, email }: { nome: string; email: string }) {
   const [senha, setSenha] = useState("");
   const [ver, setVer] = useState(false);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // "Gerar senha forte" (decisão #98): preenche, mostra e permite copiar
+  const [gerada, setGerada] = useState(false);
+  const [copiada, setCopiada] = useState(false);
+  function gerar() {
+    setSenha(gerarSenhaForte());
+    setVer(true);
+    setGerada(true);
+    setCopiada(false);
+    setErro("");
+  }
+  async function copiar() {
+    try { await navigator.clipboard.writeText(senha); setCopiada(true); } catch { setCopiada(false); }
+  }
   const regras = useMemo(() => checkPassword(senha), [senha]);
 
   async function salvar() {
@@ -57,7 +70,7 @@ export default function TrocarSenhaForm({ nome, email }: { nome: string; email: 
               className="input pr-10"
               type={ver ? "text" : "password"}
               value={senha}
-              onChange={(e) => setSenha(e.target.value)}
+              onChange={(e) => { setSenha(e.target.value); setGerada(false); }}
               placeholder="Mínimo de 12 caracteres"
               autoComplete="new-password"
             />
@@ -71,6 +84,17 @@ export default function TrocarSenhaForm({ nome, email }: { nome: string; email: 
               {ver ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <button type="button" className="btn-ghost !py-1.5 !text-[12px]" onClick={gerar} data-testid="gerar-senha">Gerar senha forte</button>
+            {gerada && (
+              <button type="button" className="btn-ghost !py-1.5 !text-[12px]" onClick={copiar} data-testid="copiar-senha">{copiada ? "Copiada!" : "Copiar senha"}</button>
+            )}
+          </div>
+          {gerada && (
+            <p className="text-[12px] mt-1.5 font-semibold" style={{ color: "#8a5a00" }} data-testid="aviso-senha-gerada">
+              Guarde esta senha antes de salvar (por exemplo, no gerenciador de senhas do celular ou do navegador).
+            </p>
+          )}
           <div className="rounded-xl p-3 mt-3" style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}>
             <p className="text-[12px] font-bold mb-2">Sua senha deve ter:</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
