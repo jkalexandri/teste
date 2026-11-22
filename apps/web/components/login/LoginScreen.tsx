@@ -188,9 +188,9 @@ export default function LoginScreen() {
       style: { background: "rgba(37,211,102,.14)", color: "#25D366", boxShadow: "0 0 18px rgba(37,211,102,.18)" },
     },
     {
-      title: "IA que Qualifica e Contorna Objeções",
+      title: "IA que Atende, Contorna Objeções e Qualifica",
       desc: "Conversas com contexto do seu negócio.",
-      label: "Expandir IA que Qualifica e Contorna Objeções",
+      label: "Expandir IA que Atende, Contorna Objeções e Qualifica",
       cyan: true,
       icon: <Sparkles size={19.67} />,
       style: { background: "rgba(45,212,255,.13)", color: "#2dd4ff", boxShadow: "0 0 18px rgba(45,212,255,.16)" },

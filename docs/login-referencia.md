@@ -50,10 +50,10 @@ Tokens do app (resto das telas): ver seção 9.
    | Ícone (lucide) | Cor ícone / fundo | Título (13pt, bold) | Descrição (12.25pt, slate-400) |
    |---|---|---|---|
    | `ShieldCheck` | `#25D366` / `rgba(37,211,102,.14)` | **Antibloqueio Inteligente** | Cadência, blocos e pausas que protegem sua conta. |
-   | `Sparkles` (classe `--cyan`) | `#2dd4ff` / `rgba(45,212,255,.13)` | **IA que Qualifica e Contorna Objeções** ⚠️ | Conversas com contexto do seu negócio. |
+   | `Sparkles` (classe `--cyan`) | `#2dd4ff` / `rgba(45,212,255,.13)` | **IA que Atende, Contorna Objeções e Qualifica** ⚠️ | Conversas com contexto do seu negócio. |
    | `Zap` | `#7dffb8` / `rgba(37,211,102,.14)` | **Online na Nuvem 24/7** | Seus envios seguem a cadência definida, sem parar. |
    - Caixa do ícone: `29pt × 29pt`, `rounded-lg`, ícone `size 19.67`.
-   - ⚠️ O prompt diz "IA Qualifica e Trata Objeções"; o código diz "IA que Qualifica e Contorna Objeções".
+   - ⚠️ O prompt diz "IA Qualifica e Trata Objeções"; a prévia dizia "IA que Qualifica e Contorna Objeções". Trocado a pedido do dono do projeto (decisão #73) para "IA que Atende, Contorna Objeções e Qualifica".
 6. **Pílula de status**: bolinha verde pulsando + `Sistema Online • Fila Ativa • 99.9% Uptime` (10px, bold).
 
 ### Lado direito
@@ -151,7 +151,7 @@ Tokens do app (resto das telas): ver seção 9.
 ## 8. Confirmado pelo print da tela (referência visual)
 O print enviado pelo dono do projeto bate com o código. Valem **o print e o código**:
 - Selo `IA • AUTOMAÇÃO • WHATSAPP` fica **abaixo** da marca.
-- Bloco 2: **"IA que Qualifica e Contorna Objeções"**.
+- Bloco 2: **"IA que Atende, Contorna Objeções e Qualifica"** (decisão #73).
 - Login com fundo **escuro** (circuitos verde/ciano), mesmo com o tema claro como padrão do app; botão "Tema escuro" no canto superior direito.
 - Em telas mais baixas, a pílula de status e os rodapés do card ficam ocultos (regras da seção 6) — como no print.
 
