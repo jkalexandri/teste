@@ -85,6 +85,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },
   // Decisão #74: o Super Admin tem o próprio Empresa | IA
   { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9 },
+  // Decisão #97: logos da marca para baixar
+  { href: "/logos", label: "Logos", icone: "pasta", grupo: "Configurações", etapa: 11 },
   // Decisão #88: dados do responsável na Política de Privacidade e nos Termos
   { href: "/dados-legais", label: "Dados legais", icone: "logs", grupo: "Configurações", etapa: 9 },
   // Decisão #51: WhatsApp da plataforma (avisos do sistema).
