@@ -116,6 +116,7 @@ Cada sessão de WhatsApp conectada usa memória contínua; com muitos clientes, 
 | 82 | **Leads de anúncios:** (a) **endereço de recebimento** próprio e secreto por usuário (Google Ads direto; Facebook/Instagram via Make/Zapier) e (b) **integração direta com o Facebook** (exige app e aprovação da Meta — depois do (a)). |
 | 83 | **CANCELAR** também marca "Pediu para sair" (junto com SAIR, PARAR e STOP — decisão #57), quando a mensagem for só a palavra. |
 | 84 | **Lead de anúncio (Google Ads, Facebook/Instagram Lead Ads):** ao chegar, entra na lista de leads do usuário e **a IA já inicia o atendimento** pelo WhatsApp do usuário: responde **na hora, a qualquer momento** (sem esperar a janela); a **primeira mensagem é escrita pela IA sobre o assunto do lead** (dados do formulário + ficha da empresa); essas mensagens **não contam nos limites do antibloqueio**; se o WhatsApp estiver desconectado, o lead fica aguardando, o usuário é avisado e a IA atende quando reconectar. |
+| 85 | **App no celular: PWA** (instalar pelo navegador, "Adicionar à tela inicial"), com ícone, tela cheia e **notificações no celular** — Android e iPhone, sem loja e sem custo. Entra na **etapa 12** (publicação). Play Store (TWA) fica para depois, avaliando o risco de recusa pelas regras do Google. |
 
 ## Fase 2 — IMPORTANTE, implementar depois do MVP
 - **Teste grátis:** 7 dias ou 20 disparos, o que acontecer primeiro (regras completas em `especificacao-api-whatsapp.md`).
