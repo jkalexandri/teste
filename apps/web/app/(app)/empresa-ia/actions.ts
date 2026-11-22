@@ -50,6 +50,8 @@ export async function salvarCampos(form: FormData): Promise<R> {
     telefone: txt(form.get("telefone"), 40),
     whatsapp: txt(form.get("whatsapp"), 40),
     atividade: txt(form.get("atividade"), 2000),
+    // Orientação opcional para a IA qualificar os leads (decisão #92)
+    comoQualificar: txt(form.get("comoQualificar"), 2000),
   };
   if (!dados.nome) return { ok: false, mensagem: "Informe o nome da empresa." };
   await prisma.fichaEmpresa.update({ where: { id: a.ficha.id }, data: dados });

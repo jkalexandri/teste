@@ -49,6 +49,8 @@ export class MotorDisparos {
       ignorarJanela?: boolean;
       /** Envia um aviso pelo WhatsApp da plataforma (decisão #70). */
       notificar?: (para: string, texto: string) => Promise<unknown>;
+      /** Mensagem de campanha enviada: guarda no histórico da conversa (etapa 10). */
+      aoEnviar?: (leadId: string | null, conteudo: Conteudo, arquivoId: string | null) => Promise<unknown>;
     },
   ) {}
 
@@ -209,6 +211,7 @@ export class MotorDisparos {
       return this.falha(usuarioId, c.id, envio.id, e);
     }
     await prisma.envio.update({ where: { id: envio.id }, data: { status: StatusEnvio.ENVIADO, enviadoEm: this.agora(), versao: escolhida.i, motivo: null } });
+    await this.opcoes.aoEnviar?.(envio.leadId, { texto, anexo }, c.arquivo?.id ?? null).catch((e) => this.log.warn({ e }, "histórico da conversa não gravado"));
     if (await this.conferirSemWhatsapp(c.id)) return { acao: "enviou", esperaMs: 0 };
 
     // 10) Ritmo: intervalo sorteado; pausa maior a cada bloco de tamanho variável (±10%)

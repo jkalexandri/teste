@@ -11,8 +11,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const s = await obterSessao();
   if (!s || s.precisaTrocar) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
-  const a = await prisma.arquivo.findUnique({ where: { id } });
-  if (!a || (a.usuarioId !== s.usuario.id && s.usuario.cargo !== Cargo.SUPERADMIN)) return NextResponse.json({ erro: "Não encontrado." }, { status: 404 });
+  const a = await prisma.arquivo.findUnique({ where: { id }, include: { usuario: { select: { empresaId: true } } } });
+  // Dono, Super Admin, ou Admin da mesma empresa (vê as conversas dos usuários — decisão #92)
+  const adminDaEmpresa = s.usuario.cargo === Cargo.ADMIN_EMPRESA && !!s.usuario.empresaId && a?.usuario.empresaId === s.usuario.empresaId;
+  if (!a || (a.usuarioId !== s.usuario.id && s.usuario.cargo !== Cargo.SUPERADMIN && !adminDaEmpresa)) return NextResponse.json({ erro: "Não encontrado." }, { status: 404 });
   const r = await lerArquivoDoWorker(id);
   if (!r?.body) return NextResponse.json({ erro: "Arquivo indisponível no momento." }, { status: 503 });
   return new Response(r.body, {

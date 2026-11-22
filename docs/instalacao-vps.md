@@ -208,6 +208,14 @@ A leitura dos materiais do Empresa | IA roda no serviço 24/7. Para atualizar, u
 - Por segurança, o leitor de sites **não acessa endereços internos** (127.0.0.1, 10.x, 192.168.x etc.).
 - A IA usada é a chave salva no menu **Inteligência Artificial** (a chave nunca fica na VPS em texto puro).
 
+## Etapa 10 — Conversas IA
+
+A IA responde os leads pelo serviço 24/7, a qualquer hora (20 a 60 s depois da mensagem, com "digitando…").
+Para atualizar, use os comandos de "Atualizar o serviço" abaixo (há migração nova do banco). Não há variável nova.
+
+- Os avisos ao usuário (IA não soube responder, áudio recebido, limite de 30 respostas por dia) saem pelo **Número da plataforma**.
+- As mensagens com mais de 365 dias são apagadas sozinhas, uma vez por dia.
+
 ## Atualizar o serviço (novas versões)
 
 ```bash

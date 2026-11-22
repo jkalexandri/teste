@@ -8,7 +8,7 @@ import { X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
 import { adicionarLink, adicionarTexto, enviarMaterialArquivo, esquecerMaterial, estadoEmpresaIA, lerDeNovo, salvarCampos } from "./actions";
 
-type Campos = { nome: string; endereco: string; telefone: string; whatsapp: string; atividade: string };
+type Campos = { nome: string; endereco: string; telefone: string; whatsapp: string; atividade: string; comoQualificar: string };
 type Material = {
   id: string; tipo: "LINK" | "TEXTO" | "IMAGEM" | "PDF"; origem: string; status: "LENDO" | "PRONTO" | "ERRO";
   resumo: string; paginas: number; erro: string | null; criadoEm: string; lidoEm: string | null;
@@ -104,6 +104,12 @@ export default function TelaEmpresaIA(p: {
               <label className="label" htmlFor="ei-atividade">Atividade da empresa</label>
               <textarea id="ei-atividade" name="atividade" className="input min-h-[90px]" defaultValue={p.campos.atividade} maxLength={2000}
                 placeholder="Ex.: imobiliária em Campinas, venda e aluguel de apartamentos e casas…" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="ei-qualificar">Como qualificar os leads (opcional)</label>
+              <textarea id="ei-qualificar" name="comoQualificar" className="input min-h-[70px]" defaultValue={p.campos.comoQualificar} maxLength={2000}
+                placeholder="Ex.: pergunte o bairro, o valor que pretende investir e quando quer se mudar." />
+              <p className="help mt-0.5">Vazio = a IA usa o critério geral (interesse, prazo e orçamento).</p>
             </div>
           </fieldset>
           {p.podeEditar && (

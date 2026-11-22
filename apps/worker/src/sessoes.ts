@@ -2,7 +2,7 @@
 // Mantém cada conexão viva, guarda o estado no banco (as telas leem de lá)
 // e reconecta sozinho em caso de queda.
 import { readFile } from "node:fs/promises";
-import makeWASocket, { Browsers, extractMessageContent, fetchLatestBaileysVersion, isLidUser, makeCacheableSignalKeyStore, type AnyMessageContent, type WASocket } from "@whiskeysockets/baileys";
+import makeWASocket, { Browsers, downloadMediaMessage, extractMessageContent, fetchLatestBaileysVersion, isLidUser, makeCacheableSignalKeyStore, type AnyMessageContent, type WASocket } from "@whiskeysockets/baileys";
 import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
@@ -15,11 +15,14 @@ export const SESSAO_PLATAFORMA = "plataforma";
 
 type Conexao = { sock: WASocket; tentativas: number; encerrando: boolean; qrGerado: boolean };
 
+/** Mensagem recebida, com o tipo e (para imagens) como baixar a imagem — Conversas IA. */
+export type MensagemRecebida = { texto: string; tipo: string; baixarImagem?: () => Promise<{ tipo: string; base64: string } | null> };
+
 export class GerenciadorSessoes implements Remetente {
   private conexoes = new Map<string, Conexao>();
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
-  aoReceber: ((sessaoId: string, telefone: string, texto: string) => Promise<void>) | null = null;
+  aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
 
   constructor(private chave: Buffer, private log: Logger) {}
 
@@ -85,8 +88,18 @@ export class GerenciadorSessoes implements Remetente {
         // Abre os "envelopes" do WhatsApp (mensagem temporária, visualização única, editada…) antes de ler o texto
         const m = extractMessageContent(msg.message);
         const texto = m?.conversation ?? m?.extendedTextMessage?.text ?? m?.imageMessage?.caption ?? m?.videoMessage?.caption ?? m?.buttonsResponseMessage?.selectedDisplayText ?? m?.listResponseMessage?.title ?? "";
-        this.log.info({ id, tipos: Object.keys(msg.message ?? {}), temTexto: !!texto }, "mensagem recebida de contato");
-        await this.aoReceber(id, telefone, texto).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
+        // Tipo da mensagem (Conversas IA — decisão #92): imagem a IA lê; áudio ela pede para escrever
+        const tipo = m?.imageMessage ? "imagem" : m?.audioMessage ? "audio" : m?.videoMessage ? "video" : m?.documentMessage ? "documento"
+          : m?.conversation || m?.extendedTextMessage || m?.buttonsResponseMessage || m?.listResponseMessage ? "texto" : "outro";
+        const tamanho = Number(m?.imageMessage?.fileLength ?? 0);
+        const baixarImagem = tipo === "imagem" && tamanho <= 5 * 1024 * 1024
+          ? async () => {
+              const buf = await downloadMediaMessage(msg, "buffer", {}, { reuploadRequest: sock.updateMediaMessage, logger: this.log as never });
+              return { tipo: m?.imageMessage?.mimetype?.split(";")[0] || "image/jpeg", base64: buf.toString("base64") };
+            }
+          : undefined;
+        this.log.info({ id, tipo, temTexto: !!texto }, "mensagem recebida de contato");
+        await this.aoReceber(id, telefone, texto, { texto, tipo, baixarImagem }).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
       }
     });
 

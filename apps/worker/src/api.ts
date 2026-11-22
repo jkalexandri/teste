@@ -29,7 +29,10 @@ export const MAX_ARQUIVO = 16 * 1024 * 1024;
 /** Empresa | IA (etapa 9b): o que a API precisa do processamento de materiais. */
 export type Aprender = { processar(materialId: string): Promise<void>; agendarFicha(fichaId: string, esperaMs?: number): void };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender) {
+/** Conversas IA (etapa 10): mensagem escrita pelo usuário na tela. */
+export type Atender = { enviarManual(leadId: string, usuarioId: string, texto: string, arquivoId?: string | null): Promise<{ ok: boolean; mensagem: string }> };
+
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -98,6 +101,18 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (!aprender) return res.code(503).send({ ok: false, mensagem: "Aprendizado indisponível." });
     aprender.agendarFicha(req.params.id, 1_000);
     return { ok: true, mensagem: "Atualizando a ficha…" };
+  });
+
+  // ===== Conversas IA (etapa 10): o usuário escreve para o lead =====
+  app.post<{ Params: { id: string }; Body: { usuarioId?: string; texto?: string; arquivoId?: string | null } | null }>("/conversas/:id/enviar", async (req, res) => {
+    if (!atender) return res.code(503).send({ ok: false, mensagem: "Conversas indisponíveis." });
+    const usuarioId = String(req.body?.usuarioId ?? "");
+    const texto = String(req.body?.texto ?? "").trim();
+    const arquivoId = req.body?.arquivoId ? String(req.body.arquivoId) : null;
+    if (!ID_VALIDO.test(usuarioId) || (arquivoId && !ID_VALIDO.test(arquivoId))) return res.code(400).send({ ok: false, mensagem: "Pedido inválido." });
+    if (texto.length > 4000) return res.code(400).send({ ok: false, mensagem: "Texto muito longo." });
+    const r = await atender.enviarManual(req.params.id, usuarioId, texto, arquivoId);
+    return res.code(r.ok ? 200 : 409).send(r);
   });
 
   return app;

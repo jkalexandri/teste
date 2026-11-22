@@ -46,6 +46,8 @@ const ADMIN_EMPRESA: ItemMenu[] = [
   { href: "/todos-os-disparos", label: "Todos os disparos", icone: "envio", grupo: "Vendas", etapa: 8 },
   // Decisão #56: o Admin da Empresa vê e cuida dos leads de todos os usuários da empresa.
   { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7 },
+  // Decisão #92: o Admin vê as conversas de todos da empresa (só leitura)
+  { href: "/conversas", label: "Conversas IA", icone: "bot", grupo: "Vendas", etapa: 10 },
   { href: "/usuarios", label: "Usuários", icone: "usuarios", grupo: "Administrativo", etapa: 5 },
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/empresa-ia", label: "Empresa | IA", icone: "empresa", grupo: "Configurações", etapa: 9 },
@@ -61,6 +63,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/disparos-por-usuarios", label: "Disparos por usuários", icone: "usuarios", grupo: "Vendas", etapa: 8 },
   { href: "/campanhas", label: "Campanhas", icone: "play", grupo: "Vendas", etapa: 8 },
   { href: "/leads", label: "Leads", icone: "usuarios", grupo: "Vendas", etapa: 7 },
+  // Decisão #92: o Super Admin vê todas as conversas e responde as dele
+  { href: "/conversas", label: "Conversas IA", icone: "bot", grupo: "Vendas", etapa: 10 },
   { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8 },
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/usuarios-individuais", label: "Usuários Individuais", icone: "usuarios", grupo: "Administrativo", etapa: 4 },

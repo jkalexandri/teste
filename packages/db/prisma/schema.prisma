@@ -83,6 +83,8 @@ model Usuario {
   permissoes         String[]      @default(["leads", "campanhas", "conversas", "arquivos", "empresa-ia"])
   /// Limite de leads do usuário, definido pelo Admin da Empresa (decisão #58). Vazio = ilimitado.
   limiteLeads        Int?
+  /// Conversas IA (decisão #92): a IA responde sozinha os leads deste usuário (liga/desliga geral)
+  iaConversas        Boolean       @default(true)
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?
   empresa            Empresa?      @relation(fields: [empresaId], references: [id])
@@ -306,6 +308,15 @@ model Lead {
   qualificacao        String?
   qualificacaoMotivo  String?
   qualificacaoEm      DateTime?
+  /// Conversas IA (etapa 10 — decisão #92): IA pausada nesta conversa ("Assumir conversa", não soube responder, limite do dia)
+  iaPausada           Boolean    @default(false)
+  iaPausaMotivo       String?
+  /// Resumo da conversa feito pela IA (economia — decisão #75) e até quando ele cobre
+  resumoConversa      String     @default("")
+  resumidoAte         DateTime?
+  ultimaMensagemEm    DateTime?
+  naoLidas            Int        @default(0)
+  mensagens           Mensagem[]
   /// Dono do lead
   usuarioId           String
   usuario             Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -323,6 +334,32 @@ model Lead {
   @@unique([usuarioId, telefone])
   @@index([usuarioId])
   @@index([empresaId])
+  @@index([usuarioId, ultimaMensagemEm])
+}
+
+enum AutorMensagem {
+  LEAD
+  IA
+  USUARIO
+  CAMPANHA
+}
+
+/// Mensagem de uma conversa (etapa 10 — decisão #92). Guardada por até 365 dias.
+model Mensagem {
+  id          String        @id @default(cuid())
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  autor       AutorMensagem
+  texto       String        @default("")
+  /// texto, imagem, audio, video, documento ou outro
+  tipo        String        @default("texto")
+  /// Anexo enviado pelo usuário/campanha (id do Arquivo) ou nome do arquivo recebido
+  arquivoId   String?
+  arquivoNome String?
+  criadoEm    DateTime      @default(now())
+
+  @@index([leadId, criadoEm])
+  @@index([criadoEm])
 }
 
 /// Regras globais de envio, controladas pelo Super Admin (decisão #65). Registro único (id = "config").
@@ -517,6 +554,8 @@ model FichaEmpresa {
   /// Consumo do mês (páginas lidas) para o limite do plano
   mesRef        String       @default("")
   paginasMes    Int          @default(0)
+  /// "Como qualificar" (decisão #92): orientação opcional para a IA qualificar os leads; vazio = critério geral
+  comoQualificar String       @default("")
   /// Materiais enviados no período atual do plano (decisão #91): "Esquecer" não devolve; zera na renovação
   materiaisPeriodo Int        @default(0)
   atualizadoEm  DateTime     @updatedAt

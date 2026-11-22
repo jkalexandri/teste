@@ -145,3 +145,4 @@ export async function montarFicha(campos: { nome: string; endereco: string; tele
   const r = await chamarIA("aprender", { sistema: SISTEMA_FICHA, mensagens: [{ papel: "usuario", texto: dados.slice(0, 80_000) }], maxTokens: MAX_TOKENS_FICHA }, quem);
   return r.texto;
 }
+export * from "./conversa";

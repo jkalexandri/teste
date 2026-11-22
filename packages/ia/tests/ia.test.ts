@@ -131,3 +131,15 @@ test("falha da IA é registrada com custo zero; teste de configuração não sal
 });
 
 after(() => prisma.$disconnect());
+
+test("Conversas IA: lê o JSON da resposta e corrige valores inválidos", async () => {
+  const { lerJsonConversa } = await import("../src/conversa");
+  const r = lerJsonConversa('ok {"resposta":"Oi!","temperatura":"quente","status":"QUALIFICADO","naoSei":false,"motivo":"quer agendar"} fim');
+  assert.deepEqual(r, { resposta: "Oi!", temperatura: "QUENTE", status: "QUALIFICADO", naoSei: false, motivo: "quer agendar" });
+  const r2 = lerJsonConversa('{"resposta":"Vou confirmar","temperatura":"X","status":"VENDA","naoSei":true}');
+  assert.equal(r2?.temperatura, "MORNO");
+  assert.equal(r2?.status, "EM_CONVERSA");
+  assert.equal(r2?.naoSei, true);
+  assert.equal(lerJsonConversa('{"resposta":""}'), null);
+  assert.equal(lerJsonConversa("sem json"), null);
+});

@@ -50,6 +50,7 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 8c — painéis (Todos os disparos, Disparos por usuários, dashboards com números reais, saúde do número)
 - [x] Etapa 9a — IA trocável pelo Super Admin (Claude e padrão compatível), despesas com IA (gráfico e ranking) e "Atualizar prévia" gerando principal + variações
 - [x] Etapa 9b — Empresa | IA (ficha, materiais, Esquecer, Ler de novo, limites e liga/desliga de treinamento) e chave única da Anthropic
+- [x] Etapa 10 — Conversas IA (IA responde, qualifica Quente/Morno/Frio e trata objeções; Assumir conversa; histórico de 365 dias)
 
 ## Banco de dados (desenvolvimento)
 ```bash

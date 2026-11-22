@@ -26,7 +26,7 @@ export default async function EmpresaIAPage() {
         podeEditar={a.podeEditar}
         treinarIA={a.treinarIA}
         servicoConfigurado={workerConfigurado()}
-        campos={{ nome: f.nome, endereco: f.endereco, telefone: f.telefone, whatsapp: f.whatsapp, atividade: f.atividade }}
+        campos={{ nome: f.nome, endereco: f.endereco, telefone: f.telefone, whatsapp: f.whatsapp, atividade: f.atividade, comoQualificar: f.comoQualificar }}
         resumo={f.resumo}
         resumoEm={f.resumoEm?.toISOString() ?? null}
         montando={f.montando}
