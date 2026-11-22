@@ -90,6 +90,14 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   ok('Sem trocar a senha não acessa o dashboard', p.url().endsWith('/primeiro-acesso'));
   await p.fill('#new-pw', 'fraca'); await p.click('text=Salvar nova senha e entrar'); await p.waitForTimeout(500);
   ok('Senha nova fraca é recusada', await p.locator('text=precisa cumprir todos os requisitos').count() === 1);
+  // Decisão #98: "Gerar senha forte"
+  await p.click('[data-testid=gerar-senha]'); await p.waitForTimeout(300);
+  const gerada1 = await p.inputValue('#new-pw');
+  ok('"Gerar senha forte" cria senha de 16 caracteres que cumpre as regras', gerada1.length === 16 && /[A-Z]/.test(gerada1) && /[a-z]/.test(gerada1) && /[0-9]/.test(gerada1) && /[^A-Za-z0-9]/.test(gerada1) && (await p.getAttribute('#new-pw', 'type')) === 'text');
+  ok('Mostra "Copiar senha" e o aviso para guardar', (await p.locator('[data-testid=copiar-senha]').count()) === 1 && (await p.locator('[data-testid=aviso-senha-gerada]').count()) === 1);
+  await p.click('[data-testid=gerar-senha]'); await p.waitForTimeout(200);
+  ok('Cada clique gera uma senha diferente', (await p.inputValue('#new-pw')) !== gerada1);
+  await p.screenshot({ path: (process.argv[2] || '/tmp/claude-0') + '/senha-forte.png' });
   await p.fill('#new-pw', 'NovaSenha@2026x'); await p.click('text=Salvar nova senha e entrar');
   await p.waitForURL('**/dashboard', { timeout: 5000 }).catch(() => {});
   ok('Senha nova forte entra no dashboard', p.url().endsWith('/dashboard'));
