@@ -3,7 +3,7 @@
 import pino from "pino";
 import { prisma } from "@filapro/db";
 import { config } from "./config.js";
-import { GerenciadorSessoes } from "./sessoes.js";
+import { GerenciadorSessoes, SESSAO_PLATAFORMA } from "./sessoes.js";
 import { criarApi } from "./api.js";
 import { MotorDisparos } from "./disparos.js";
 
@@ -11,7 +11,11 @@ const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
 const api = criarApi(sessoes, config.token, log, config.pastaArquivos);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
-const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), { pastaArquivos: config.pastaArquivos });
+const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
+  pastaArquivos: config.pastaArquivos,
+  // Avisos automáticos ao usuário saem pelo número da plataforma (decisões #51 e #70)
+  notificar: (para, texto) => sessoes.enviarTexto(SESSAO_PLATAFORMA, para, texto),
+});
 sessoes.aoReceber = (sessaoId, telefone, texto) => motor.registrarResposta(sessaoId, telefone, texto);
 
 async function iniciar() {

@@ -378,6 +378,8 @@ model Campanha {
   concluidaEm        DateTime?
   canceladaEm        DateTime?
   motivo             String?
+  /// Último aviso automático enviado ao usuário pelo WhatsApp da plataforma ("tipo|AAAA-MM-DD"), para não repetir (decisão #70)
+  ultimoAviso        String?
   totalLeads         Int              @default(0)
   criadoEm           DateTime         @default(now())
   atualizadoEm       DateTime         @updatedAt

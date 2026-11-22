@@ -168,12 +168,7 @@ function PassoMensagem({ d, set, arquivo, setArquivo, arquivos }: { d: Dados; se
         <textarea id="msg" className="input min-h-[90px]" value={d.mensagem} onChange={(e) => set("mensagem", e.target.value)} placeholder="{saudacao} {nome}, tudo bem? ..." />
         <p className="help mt-0.5">{"{nome}"} vira o primeiro nome de cada lead. {"{saudacao}"} alterna entre “Oi”, “Olá” e “Bom dia/Boa tarde/Boa noite”.</p>
       </div>
-      {[0, 1, 2].map((i) => (
-        <div key={i}>
-          <label className="label" htmlFor={`var${i}`}>Variação {i + 1}</label>
-          <textarea id={`var${i}`} className="input min-h-[60px]" value={d.variacoes[i]} onChange={(e) => set("variacoes", d.variacoes.map((v, j) => (j === i ? e.target.value : v)))} placeholder="Outra forma de dizer a mesma coisa (opcional)" />
-        </div>
-      ))}
+      {/* Variações 1, 2 e 3 não aparecem aqui (decisão #70): virão da IA na etapa 9. */}
       {link && (
         <p className="text-[12px] rounded-lg p-2.5 flex gap-1.5" style={{ background: "#fff7e0", color: "#8a5a00" }} data-testid="aviso-link">
           <TriangleAlert size={14} className="shrink-0" /> A mensagem tem link. Link na primeira mensagem para quem não conhece você aumenta as denúncias e o risco de bloqueio. Prefira enviar o link depois que o lead responder.
@@ -495,15 +490,20 @@ function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arqui
       </div>
       <div className="grid lg:grid-cols-[1fr_1fr] gap-3">
         <div>
-          <span className="label">Ver prévia de</span>
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Prévia da mensagem">
-            {["Principal", "Var 1", "Var 2", "Var 3"].map((r, i) => (
-              <button key={r} role="tab" aria-selected={versao === i} disabled={!textos[i]} onClick={() => setVersao(i)} className="px-2.5 py-1 rounded-full text-[11px] font-bold border"
-                style={versao === i ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--border)", opacity: textos[i] ? 1 : 0.4 }}>
-                {r}
-              </button>
-            ))}
-          </div>
+          {/* Botões das variações só aparecem quando houver variações (geradas pela IA — etapa 9) */}
+          {textos.slice(1).some((t) => t.trim()) && (
+            <>
+              <span className="label">Ver prévia de</span>
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Prévia da mensagem">
+                {["Principal", "Var 1", "Var 2", "Var 3"].map((r, i) => textos[i]?.trim() ? (
+                  <button key={r} role="tab" aria-selected={versao === i} onClick={() => setVersao(i)} className="px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                    style={versao === i ? { background: "var(--primary)", color: "#fff", borderColor: "var(--primary)" } : { borderColor: "var(--border)" }}>
+                    {r}
+                  </button>
+                ) : null)}
+              </div>
+            </>
+          )}
           {/* Simulação do WhatsApp */}
           <div className="rounded-xl overflow-hidden mt-2" style={{ border: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: "#008069", color: "#fff" }}>

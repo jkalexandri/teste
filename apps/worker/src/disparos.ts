@@ -47,6 +47,8 @@ export class MotorDisparos {
       sorteio?: () => number;
       /** Só no script de teste real (fora do horário comercial): ignora a janela de envio. */
       ignorarJanela?: boolean;
+      /** Envia um aviso pelo WhatsApp da plataforma (decisão #70). */
+      notificar?: (para: string, texto: string) => Promise<unknown>;
     },
   ) {}
 
@@ -114,6 +116,7 @@ export class MotorDisparos {
     // 1) WhatsApp conectado? Se não, pausa e volta sozinha quando reconectar.
     if (!this.remetente.conectado(usuarioId)) {
       await prisma.campanha.updateMany({ where: { id: { in: ids } }, data: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_DESCONECTADO } });
+      await this.avisar(c.id, "desconectado", `⏸️ FilaPro Leads: a campanha "${c.assunto}" foi pausada porque o seu WhatsApp desconectou. Ela volta sozinha quando ele reconectar. Se não voltar, abra o FilaPro Leads → WhatsApp e leia o QR Code.`);
       return { acao: "nada", esperaMs: 0, motivo: "desconectado" };
     }
 
@@ -141,6 +144,8 @@ export class MotorDisparos {
     ]);
     if (hoje >= limiteDia) {
       await prisma.campanha.updateMany({ where: { id: { in: ids } }, data: { motivo: `${MOTIVO_LIMITE_DIA} (${limiteDia}/dia)` } });
+      // Não pausa (decisão #70): continua sozinha no próximo dia de envio; só avisa.
+      await this.avisar(c.id, "limite-dia", `ℹ️ FilaPro Leads: o seu número atingiu o limite de ${limiteDia} envios de hoje (proteção contra bloqueio). A campanha "${c.assunto}" continua sozinha no próximo dia de envio.`);
       return { acao: "aguardar", esperaMs: 10 * 60_000, motivo: "limite diário" };
     }
     if (ultimaHora >= m.porHora) return { acao: "aguardar", esperaMs: 60_000, motivo: "limite por hora" };
@@ -261,9 +266,29 @@ export class MotorDisparos {
     return { acao: "falhou", esperaMs: 10_000, motivo: msg };
   }
 
-  private pausar(campanhaId: string, motivo: string) {
+  private async pausar(campanhaId: string, motivo: string) {
     this.log.warn({ campanhaId, motivo }, "campanha pausada automaticamente");
-    return prisma.campanha.update({ where: { id: campanhaId }, data: { status: StatusCampanha.PAUSADA, motivo } });
+    const c = await prisma.campanha.update({ where: { id: campanhaId }, data: { status: StatusCampanha.PAUSADA, motivo } });
+    await this.avisar(campanhaId, "pausa", `⏸️ FilaPro Leads: a campanha "${c.assunto}" foi pausada. ${motivo.replace(/^Pausada automaticamente:\s*/, "")}`);
+  }
+
+  /**
+   * Aviso ao usuário pelo WhatsApp da plataforma (decisão #70), no máximo uma vez por dia
+   * para cada tipo de aviso e campanha. Destino: WhatsApp do usuário; no Super Admin, o número de avisos.
+   */
+  private async avisar(campanhaId: string, tipo: string, texto: string) {
+    if (!this.opcoes.notificar) return;
+    const c = await prisma.campanha.findUnique({ where: { id: campanhaId }, include: { usuario: true } });
+    if (!c) return;
+    const chave = `${tipo}|${agoraSP(this.agora()).data}`;
+    if (c.ultimoAviso === chave) return;
+    await prisma.campanha.update({ where: { id: campanhaId }, data: { ultimoAviso: chave } });
+    let para = c.usuario.whatsapp ?? "";
+    if (c.usuario.cargo === Cargo.SUPERADMIN) para = (await prisma.configVenda.findUnique({ where: { id: "config" } }))?.numeroAvisos || para;
+    const dig = para.replace(/\D/g, "");
+    const numero = dig.length === 10 || dig.length === 11 ? "55" + dig : dig;
+    if (!/^\d{12,15}$/.test(numero)) return;
+    await this.opcoes.notificar(numero, texto).catch((e) => this.log.warn({ e, campanhaId }, "aviso pelo WhatsApp não enviado"));
   }
 
   /**

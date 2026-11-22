@@ -51,7 +51,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   ok('Passos Mensagem, Leads, Antibloqueio, Prévia|envio', (await p.locator('[aria-label="Passos da nova campanha"] [role=tab]').allInnerTexts()).join(',') === 'Mensagem,Leads,Antibloqueio,Prévia|envio');
   await p.fill('#assunto', 'Campanha Teste 8a');
   await p.fill('#msg', '{saudacao} {nome}, tudo bem? Veja www.exemplo.com.br');
-  await p.fill('#var0', 'Oi {nome}! Posso te mostrar uma novidade?');
+  ok('Aba Mensagem sem os campos de Variação 1, 2 e 3 (#70)', (await p.locator('text=Variação 1').count()) === 0);
   ok('Aviso de link na mensagem (#64)', (await p.locator('[data-testid=aviso-link]').count()) === 1);
   ok('"Atualizar prévia" aguarda a IA (etapa 9 — #68)', await p.locator('button:has-text("Atualizar prévia")').isDisabled());
   await p.setInputFiles('input[aria-label="Escolher arquivo para anexar"]', ARQ('oferta.png'));
@@ -90,6 +90,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   const bolha = await p.locator('[data-testid=bolha-previa]').innerText();
   ok('Prévia com nome de exemplo e descadastro', /(Oi|Olá|Bom dia|Boa tarde|Boa noite) Maria, tudo bem\?/.test(bolha) && bolha.includes('responda SAIR'), bolha.replace(/\s+/g, ' ').slice(0, 90));
   ok('Imagem anexada aparece na prévia', await p.locator('[data-testid=bolha-previa] img').evaluate((i) => i.complete && i.naturalWidth > 0));
+  ok('Prévia sem os botões Var 1, 2, 3 quando não há variações (#70)', (await p.locator('[aria-label="Prévia da mensagem"]').count()) === 0);
   ok('Sem botão Salvar rascunho na Prévia|envio', (await p.locator('button:has-text("Salvar rascunho")').count()) === 0);
   const botoes = await p.locator('button').allInnerTexts();
   ok('Agendar antes de Iniciar (prompt seção 8)', botoes.findIndex((t) => t.includes('Agendar envio')) < botoes.findIndex((t) => t.includes('Iniciar disparo')));

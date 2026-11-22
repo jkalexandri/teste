@@ -26,6 +26,7 @@ class Falso implements Remetente {
 
 let wa: Falso;
 let motor: MotorDisparos;
+let avisos: { para: string; texto: string }[] = [];
 const log = pino({ level: "silent" });
 
 async function lead(n: number, extra: Record<string, unknown> = {}) {
@@ -54,7 +55,7 @@ const status = (id: string) => prisma.campanha.findUniqueOrThrow({ where: { id }
 before(async () => {
   await prisma.empresa.deleteMany({ where: { id: EMP } }).catch(() => undefined);
   await prisma.empresa.create({ data: { id: EMP, codigo: "TME", nome: "Empresa Motor", modulo: Modulo.EMPRESARIAL, pacote: "Teste", limiteUsuarios: 5, expiraEm: new Date("2030-01-01") } });
-  await prisma.usuario.create({ data: { id: USU, codigo: "TMU", nome: "Usuário Motor", email: "motor@teste.local", cargo: Cargo.USUARIO, empresaId: EMP } });
+  await prisma.usuario.create({ data: { id: USU, codigo: "TMU", nome: "Usuário Motor", email: "motor@teste.local", whatsapp: "(11) 97777-1234", cargo: Cargo.USUARIO, empresaId: EMP } });
   await prisma.configEnvio.deleteMany();
 });
 beforeEach(async () => {
@@ -65,7 +66,8 @@ beforeEach(async () => {
   await prisma.whatsappSessao.create({ data: { id: USU, usuarioId: USU, status: "CONECTADO", primeiraConexaoEm: new Date("2026-09-01") } });
   await prisma.empresa.update({ where: { id: EMP }, data: { limiteDisparos: null, janelaInicio: 480, janelaFim: 1200 } });
   wa = new Falso();
-  motor = new MotorDisparos(wa, log, { pastaArquivos: "/tmp", dormir: async () => {}, agora: () => agora, sorteio: () => 0.5 });
+  avisos = [];
+  motor = new MotorDisparos(wa, log, { pastaArquivos: "/tmp", dormir: async () => {}, agora: () => agora, sorteio: () => 0.5, notificar: async (para, texto) => { avisos.push({ para, texto }); } });
 });
 after(async () => {
   await prisma.campanha.deleteMany({ where: { usuarioId: USU } });
@@ -141,6 +143,7 @@ test("WhatsApp desconectado pausa a campanha, e ela volta sozinha ao reconectar"
   await motor.passo(USU);
   assert.equal((await status(c.id)).status, StatusCampanha.PAUSADA);
   assert.equal((await status(c.id)).motivo, MOTIVO_DESCONECTADO);
+  assert.match(avisos[0]?.texto ?? "", /WhatsApp desconectou/);
   wa.conectadoAgora = true;
   await motor.ciclo();
   await new Promise((r) => setTimeout(r, 300));
@@ -165,7 +168,19 @@ test("aquecimento: número novo envia no máximo 20 por dia", async () => {
   const r = await rodar(100);
   assert.equal(wa.enviados.length, 20);
   assert.equal(r.at(-1)!.motivo, "limite diário");
-  assert.match((await status(c.id)).motivo ?? "", /Limite diário/);
+  // Não pausa (decisão #70): continua em andamento e avisa pelo WhatsApp da plataforma, uma vez só
+  const s = await status(c.id);
+  assert.equal(s.status, StatusCampanha.EM_ANDAMENTO);
+  assert.match(s.motivo ?? "", /Limite diário/);
+  await motor.passo(USU);
+  assert.equal(avisos.length, 1);
+  assert.equal(avisos[0]!.para, "5511977771234");
+  assert.match(avisos[0]!.texto, /limite de 20 envios de hoje/);
+  // No dia seguinte (terça) volta a enviar sozinha
+  agora = new Date("2026-11-24T14:00:00Z");
+  await prisma.whatsappSessao.update({ where: { id: USU }, data: { primeiraConexaoEm: new Date("2026-11-23T10:00:00Z") } });
+  await rodar();
+  assert.equal(wa.enviados.length, 22);
 });
 
 test("5 falhas seguidas pausam a campanha", async () => {
@@ -177,6 +192,8 @@ test("5 falhas seguidas pausam a campanha", async () => {
   const s = await status(c.id);
   assert.equal(s.status, StatusCampanha.PAUSADA);
   assert.match(s.motivo ?? "", /5 falhas seguidas/);
+  assert.equal(avisos.length, 1);
+  assert.match(avisos[0]!.texto, /foi pausada\. 5 falhas seguidas/);
 });
 
 test("mais de 30% sem WhatsApp pausa a campanha", async () => {
