@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ícone animado</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@800&family=Plus+Jakarta+Sans:wght@600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#1b1f24;font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#cfd6de}
+.icone{width:260px;height:260px;border-radius:58px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.feixe{stroke-dasharray:70 520;animation:corre 4.2s linear infinite}
+.feixe.b{animation-delay:-2.1s}
+@keyframes corre{from{stroke-dashoffset:590}to{stroke-dashoffset:0}}
+.no{animation:pisca 4.2s ease-in-out infinite}
+@keyframes pisca{0%,70%,100%{opacity:.25}80%{opacity:1}}
+p{font-size:14px;max-width:420px;text-align:center;line-height:1.5}
+</style></head><body>
+<div class="icone">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="260" height="260">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#25D366"/><stop offset="1" stop-color="#2dd4ff"/></linearGradient>
+    <radialGradient id="bg" cx=".3" cy=".25" r="1"><stop offset="0" stop-color="#0d2a26"/><stop offset="1" stop-color="#050d18"/></radialGradient>
+    <filter id="brilho" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g stroke="#25D366" stroke-opacity=".22" stroke-width="5" fill="none">
+    <path d="M0 140 H120 L170 90 H260"/><circle cx="270" cy="90" r="9"/>
+    <path d="M512 380 H400 L350 430 H260"/><circle cx="250" cy="430" r="9"/>
+    <path d="M40 512 V440 L80 400"/><path d="M470 0 V70 L430 110"/>
+  </g>
+  <g filter="url(#brilho)" fill="none" stroke-width="7" stroke-linecap="round">
+    <path class="feixe" d="M0 140 H120 L170 90 H260" stroke="#7dffb5"/>
+    <path class="feixe b" d="M512 380 H400 L350 430 H260" stroke="#a8f0ff"/>
+  </g>
+  <circle class="no" cx="270" cy="90" r="9" fill="#7dffb5" filter="url(#brilho)"/>
+  <circle class="no" cx="250" cy="430" r="9" fill="#a8f0ff" filter="url(#brilho)" style="animation-delay:-2.1s"/>
+  <text x="256" y="318" text-anchor="middle" font-family="Sora, Arial, sans-serif" font-weight="800" font-size="210" letter-spacing="-8" fill="url(#g)">FP</text>
+</svg>
+</div>
+<p>Versão <b>animada</b>: luzes passando pelos circuitos a cada 4,2 s (o mesmo tempo dos feixes da tela de login). Aparece na tela de abertura do app.</p>
+</body></html>
