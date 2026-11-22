@@ -13,6 +13,7 @@ import PopupPlanos from "@/components/planos/PopupPlanos";
 import { checkPassword } from "@/lib/password-policy";
 import { useTheme } from "@/lib/theme";
 import { IS_PRODUCTION } from "@/lib/env";
+import { VERSAO_CURTA } from "@/lib/versao";
 
 type Modulo = "individual" | "empresarial";
 
@@ -474,7 +475,7 @@ export default function LoginScreen() {
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-300"
                         style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.35)" }}
                       >
-                        v1.25
+                        {VERSAO_CURTA}
                       </span>
                     </div>
                   </>

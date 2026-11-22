@@ -235,3 +235,9 @@ export const Plus = makeIcon("plus", [
   ["path", { d: "M5 12h14" }],
   ["path", { d: "M12 5v14" }],
 ]);
+
+export const CircleHelp = makeIcon("circle-help", [
+  ["circle", { cx: "12", cy: "12", r: "10" }],
+  ["path", { d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" }],
+  ["path", { d: "M12 17h.01" }],
+]);

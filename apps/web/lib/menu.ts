@@ -5,7 +5,7 @@ export type CargoMenu = "SUPERADMIN" | "ADMIN_EMPRESA" | "USUARIO";
 
 export type IconeMenu =
   | "dashboard" | "envio" | "usuarios" | "bot" | "pasta" | "empresa"
-  | "play" | "config" | "logs" | "whatsapp" | "planos" | "pagamento";
+  | "play" | "config" | "logs" | "whatsapp" | "planos" | "pagamento" | "ajuda";
 
 export type ItemMenu = {
   href: string;
@@ -42,6 +42,8 @@ const USUARIO: ItemMenu[] = [
   // Decisões #81, #82 e #94: avisos e leads de anúncios
   { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
   { href: "/leads-anuncios", label: "Leads de anúncios", icone: "play", grupo: "Configurações", etapa: 10, permissao: "leads" },
+  // Decisão #101: manual do próprio perfil
+  { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 
 const ADMIN_EMPRESA: ItemMenu[] = [
@@ -58,6 +60,7 @@ const ADMIN_EMPRESA: ItemMenu[] = [
   // Decisão #81: o Admin recebe os avisos de todos os usuários da empresa
   { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
+  { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 
 const SUPERADMIN: ItemMenu[] = [
@@ -102,6 +105,7 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/inteligencia-artificial", label: "Inteligência Artificial", icone: "bot", grupo: "Configurações", etapa: 9 },
   // Decisão #99: o Super Admin vê os logs de todas as contas
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
+  { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

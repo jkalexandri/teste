@@ -166,7 +166,16 @@ Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh`
 bash /opt/filapro/app/deploy/atualizar.sh
 ```
 
-Baixa a versão nova, aplica as mudanças do banco, monta o site e reinicia tudo, sem desconectar o WhatsApp.
+Faz **backup do banco antes**, baixa a versão nova, aplica as mudanças do banco, monta o site e reinicia tudo, sem desconectar
+o WhatsApp. No final mostra **"Atualizado para a versão vX.Y.Z"**.
+
+Se algo der errado, volte para a versão anterior (pergunta se deve restaurar também o banco de antes da atualização):
+
+```bash
+bash /opt/filapro/app/deploy/voltar-versao.sh
+```
+
+Para **mudar de servidor**, veja o Manual do Desenvolvedor (menu Ajuda), seção *Mudar de servidor*.
 
 ## Restaurar um backup (só em emergência)
 

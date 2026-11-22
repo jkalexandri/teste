@@ -59,7 +59,7 @@ const senhaDe = (email) => {
   await entrar(p2, `carla${suf}@ex.com`, senhaDe(`carla${suf}@ex.com`));
   await p2.fill('#new-pw', 'CarlaSenha@2026'); await p2.click('text=Salvar nova senha e entrar'); await p2.waitForURL('**/dashboard');
   const menu = (await p2.locator('aside nav a').allInnerTexts()).map(s => s.trim());
-  ok('Menu respeita as permissões (só Leads + fixos)', JSON.stringify(menu) === JSON.stringify(['Dashboard', 'Leads', 'WhatsApp', 'Avisos', 'Leads de anúncios']), menu.join(', '));
+  ok('Menu respeita as permissões (só Leads + fixos)', JSON.stringify(menu) === JSON.stringify(['Dashboard', 'Leads', 'WhatsApp', 'Avisos', 'Leads de anúncios', 'Ajuda']), menu.join(', '));
   ok('Sem permissão de campanhas: sem botão "Criar campanha"', (await p2.locator('text=Criar campanha').count()) === 0);
   await p2.goto(BASE + '/campanhas'); await p2.waitForTimeout(600);
   ok('Tela sem permissão volta ao dashboard', p2.url().endsWith('/dashboard'));

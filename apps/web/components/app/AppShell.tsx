@@ -8,10 +8,11 @@ import { usePathname } from "next/navigation";
 import { Fragment, type ReactNode } from "react";
 import {
   Bot, Building2, ChartColumn, ChevronRight, Clock3, FolderOpen, MessageCircle,
-  Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, Tag, TriangleAlert, Users, Wallet,
+  Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, Tag, TriangleAlert, Users, Wallet, CircleHelp,
 } from "@/components/icons";
 import { useTheme } from "@/lib/theme";
 import type { CargoMenu, IconeMenu, ItemMenu } from "@/lib/menu";
+import { VERSAO_CURTA, VERSAO_DATA } from "@/lib/versao";
 import AvisoExpiracao from "./AvisoExpiracao";
 import { ToastProvider } from "./Toast";
 
@@ -28,6 +29,7 @@ const ICONES: Record<IconeMenu, (p: { size?: number }) => ReactNode> = {
   whatsapp: (p) => <MessageCircle {...p} />,
   planos: (p) => <Tag {...p} />,
   pagamento: (p) => <Wallet {...p} />,
+  ajuda: (p) => <CircleHelp {...p} />,
 };
 
 const PERFIL: Record<CargoMenu, string> = {
@@ -140,6 +142,10 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
             <button onClick={sair} className="btn-ghost mt-2 w-full justify-center">
               <Repeat size={14} /> Sair
             </button>
+            {/* Versão do sistema (decisão #100) */}
+            <a href="/ajuda" className="mt-2 text-center text-[10px]" style={{ color: "var(--muted-2, var(--muted))" }} data-testid="versao-menu">
+              FilaPro Leads {VERSAO_CURTA}{VERSAO_DATA ? ` • ${VERSAO_DATA}` : ""}
+            </a>
           </aside>
 
           <div className="flex-1 min-w-0 flex flex-col">

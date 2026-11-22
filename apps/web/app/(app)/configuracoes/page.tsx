@@ -15,7 +15,7 @@ export default async function ConfiguracoesPage() {
   const g = await prisma.configEnvio.upsert({ where: { id: "config" }, update: {}, create: { id: "config" } });
   return (
     <section className="flex-1 flex flex-col">
-      <Cabecalho rotulo="Admin • Configurações" titulo="Configurações" descricao={`Regras de ${e.nome}. As demais configurações chegam na etapa 12.`} />
+      <Cabecalho rotulo="Admin • Configurações" titulo="Configurações" descricao={`Regras de envio da ${e.nome}: horário em que os usuários podem disparar campanhas.`} />
       <div className="card p-4 mt-3 max-w-[640px]">
         <h2 className="font-display font-bold text-[14px]">Janela de envio</h2>
         <p className="text-[12px] mt-0.5 mb-2" style={{ color: "var(--muted)" }}>Horário em que as campanhas de todos os usuários da empresa podem enviar.</p>

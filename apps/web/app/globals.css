@@ -239,3 +239,28 @@ td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical
 .abertura-app[data-saindo] { opacity: 0; }
 .abertura-app .abertura-nome { font-family: Sora, sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
 @media (prefers-reduced-motion: reduce) { .icone-animado .ia-feixe, .icone-animado .ia-no { animation: none; } }
+
+/* Manuais (decisão #101) */
+.manual { font-size: 14px; line-height: 1.65; }
+.manual h1 { font-family: Sora, sans-serif; font-weight: 800; font-size: 24px; margin: 0 0 8px; }
+.manual h2 { font-family: Sora, sans-serif; font-weight: 800; font-size: 19px; margin: 26px 0 8px; padding-top: 10px; border-top: 1px solid var(--border); scroll-margin-top: 70px; }
+.manual h3 { font-weight: 800; font-size: 15px; margin: 18px 0 6px; scroll-margin-top: 70px; }
+.manual p { margin: 6px 0; }
+.manual ul, .manual ol { margin: 6px 0 6px 22px; }
+.manual ul { list-style: disc; } .manual ol { list-style: decimal; }
+.manual li { margin: 3px 0; }
+.manual code { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--surface-3); padding: 1px 5px; border-radius: 5px; }
+.manual pre { background: #0b1220; color: #e6edf3; padding: 10px 12px; border-radius: 10px; overflow-x: auto; font-size: 12px; margin: 8px 0; }
+.manual pre code { background: none; padding: 0; color: inherit; }
+.manual table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.manual th, .manual td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+.manual th { background: var(--surface-3); }
+.manual blockquote { border-left: 4px solid var(--primary); background: var(--primary-soft); padding: 8px 12px; border-radius: 0 10px 10px 0; margin: 10px 0; }
+.manual figure { margin: 12px 0; }
+.manual figure img { max-width: 100%; border: 1px solid var(--border); border-radius: 10px; }
+.manual figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.impressao .manual { font-size: 11px; }
+.impressao .manual h2 { break-after: avoid; }
+.impressao .manual figure { break-inside: avoid; }
+.impressao .manual figure img { max-height: 120mm; width: auto; }
+.impressao .manual pre { background: #f3f5f4; color: #13221a; white-space: pre-wrap; }
