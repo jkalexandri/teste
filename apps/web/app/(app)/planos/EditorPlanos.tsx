@@ -139,7 +139,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                 id="f-limiteMateriais"
                 rotulo="IA: máximo de materiais"
                 placeholder="Máximo de materiais"
-                dica="Materiais guardados no Empresa | IA da conta."
+                dica="Materiais enviados por período do plano (Esquecer não devolve; zera na renovação)."
               />
               <CampoLimite
                 valor={editando.limitePaginasMes ?? null}

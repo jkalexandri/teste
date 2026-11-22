@@ -136,7 +136,7 @@ export default function TelaEmpresaIA(p: {
         <div className="flex flex-wrap justify-between items-center gap-2">
           <div>
             <h2 className="font-display font-extrabold text-[16px]">Materiais</h2>
-            <p className="help">Materiais: {limiteTxt(p.uso.materiais, p.uso.limiteMateriais)} • Páginas lidas neste mês: {limiteTxt(p.uso.paginasMes, p.uso.limitePaginasMes)}</p>
+            <p className="help">Materiais enviados no período do plano: {limiteTxt(p.uso.materiais, p.uso.limiteMateriais)} • Páginas lidas neste mês: {limiteTxt(p.uso.paginasMes, p.uso.limitePaginasMes)}</p>
           </div>
           {podeTreinar && (
             <div className="flex flex-wrap gap-1.5">

@@ -126,6 +126,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   // Esquecer
   await p.locator('tr:has-text("folder.png") >> button:has-text("Esquecer")').click();
   ok('"Esquecer" apaga o material', await ate(() => sql(`select count(*) from "MaterialIA" where origem='folder.png'`) === '0'));
+  ok('"Esquecer" não devolve a vaga (#91)', sql(`select "materiaisPeriodo" from "FichaEmpresa" where "empresaId"='${EMP}'`) === '4');
   await c.close();
 
   // ===== 3. Usuário da empresa: só vê (#74) =====
@@ -154,7 +155,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   await p.goto(BASE + '/empresas'); await espera(600);
   const cartao = p.locator('article.card', { has: p.locator('b:has-text("Empresa Exemplo")') }).first();
   await cartao.locator('button:has-text("IA: treino")').click(); await p.waitForSelector('[role=dialog][aria-label="Treinamento da IA"]');
-  ok('Popup mostra o uso da conta', (await p.locator('[role=dialog] >> text=/3 \\/ ilimitado materiais/').count()) === 1, await p.locator('[role=dialog] p.help').innerText());
+  ok('Popup mostra o uso da conta', (await p.locator('[role=dialog] >> text=/4 \\/ ilimitado materiais no período do plano/').count()) === 1, await p.locator('[role=dialog] p.help').innerText());
   await p.locator('[role=dialog] input[name=treinarIA]').uncheck();
   await p.locator('[role=dialog] label:has-text("Ilimitado")').first().click(); await p.fill('[role=dialog] input[name=limiteMateriais]', '2');
   await p.click('[role=dialog] >> button:has-text("Salvar")');
@@ -172,6 +173,14 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   await p.reload(); await espera(600);
   await adicionar(p, 'Texto'); await p.fill('#mat-texto', 'Atendemos de segunda a sábado, das 8h às 18h.'); await p.click('[role=dialog] >> button:has-text("Ensinar a IA")'); await espera(1200);
   ok('Limite de materiais do plano bloqueia material novo', sql(`select count(*) from "MaterialIA" where "fichaId"='${ficha(EMP)}'`) === '3' && (await p.locator('text=/Limite de 2 materiais/').count()) >= 1);
+  await c.close();
+  // Super Admin libera: zera o período (#91)
+  [c, p] = await novo();
+  await entrar(p, 'superadmin@disparopro.com.br', 'Super@12345678');
+  await p.goto(BASE + '/empresas'); await espera(600);
+  await p.locator('article.card', { has: p.locator('b:has-text("Empresa Exemplo")') }).first().locator('button:has-text("IA: treino")').click();
+  await p.locator('[role=dialog] input[name=zerarMes]').check(); await p.click('[role=dialog] >> button:has-text("Salvar")');
+  ok('"Liberar agora" zera materiais do período e páginas do mês', await ate(() => sql(`select "materiaisPeriodo"||'|'||"paginasMes" from "FichaEmpresa" where "empresaId"='${EMP}'`) === '0|0'));
   await c.close();
   sql(`update "Empresa" set "limiteMateriais"=null where id='${EMP}'`);
 

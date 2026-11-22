@@ -53,6 +53,8 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
   const e = await tx.empresa.findUnique({ where: { id: pedido.empresaId } });
   if (!e) throw new Error("Conta da renovação não encontrada.");
   const plano = await tx.plano.findUnique({ where: { id: pedido.planoId } });
+  // Novo período do plano: o contador de materiais da IA zera (decisão #91)
+  await tx.fichaEmpresa.updateMany({ where: { empresaId: e.id }, data: { materiaisPeriodo: 0 } });
   return tx.empresa.update({
     where: { id: e.id },
     data: {

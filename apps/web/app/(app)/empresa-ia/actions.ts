@@ -20,15 +20,20 @@ async function quemTreina() {
 
 /** Confere os limites do plano antes de aceitar um material novo (decisão #77). */
 async function conferirLimites(a: Awaited<ReturnType<typeof atorEmpresaIA>>) {
-  if (a.limiteMateriais != null) {
-    const total = await prisma.materialIA.count({ where: { fichaId: a.ficha.id } });
-    if (total >= a.limiteMateriais) return `Limite de ${a.limiteMateriais} materiais do plano atingido. Use “Esquecer” em algum material ou fale com o suporte.`;
+  // Materiais enviados no período do plano (decisão #91): "Esquecer" não devolve a vaga; zera na renovação
+  if (a.limiteMateriais != null && a.ficha.materiaisPeriodo >= a.limiteMateriais) {
+    return `Limite de ${a.limiteMateriais} materiais do plano atingido neste período. Libera na renovação do plano ou com o suporte.`;
   }
   if (a.limitePaginasMes != null) {
     const usadas = a.ficha.mesRef === mesAtual() ? a.ficha.paginasMes : 0;
     if (usadas >= a.limitePaginasMes) return `Limite de ${a.limitePaginasMes} páginas por mês atingido. Libera no mês que vem ou com o suporte.`;
   }
   return null;
+}
+
+/** Conta o material novo no período do plano (decisão #91). */
+async function contarMaterial(fichaId: string) {
+  await prisma.fichaEmpresa.update({ where: { id: fichaId }, data: { materiaisPeriodo: { increment: 1 } } });
 }
 
 function atualizar() {
@@ -78,6 +83,7 @@ export async function adicionarLink(form: FormData): Promise<R> {
   const limite = await conferirLimites(a);
   if (limite) return { ok: false, mensagem: limite };
   const m = await prisma.materialIA.create({ data: { fichaId: a.ficha.id, tipo: TipoMaterial.LINK, origem: url } });
+  await contarMaterial(a.ficha.id);
   const r = await processar(m.id);
   atualizar();
   return r;
@@ -93,6 +99,7 @@ export async function adicionarTexto(form: FormData): Promise<R> {
   const limite = await conferirLimites(a);
   if (limite) return { ok: false, mensagem: limite };
   const m = await prisma.materialIA.create({ data: { fichaId: a.ficha.id, tipo: TipoMaterial.TEXTO, origem: titulo, conteudo: texto } });
+  await contarMaterial(a.ficha.id);
   const r = await processar(m.id);
   atualizar();
   return r;
@@ -124,6 +131,7 @@ export async function enviarMaterialArquivo(form: FormData): Promise<R> {
     await prisma.materialIA.delete({ where: { id: m.id } });
     return { ok: false, mensagem: g.mensagem };
   }
+  await contarMaterial(a.ficha.id);
   const r = await processar(m.id);
   atualizar();
   return r;

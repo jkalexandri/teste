@@ -517,6 +517,8 @@ model FichaEmpresa {
   /// Consumo do mês (páginas lidas) para o limite do plano
   mesRef        String       @default("")
   paginasMes    Int          @default(0)
+  /// Materiais enviados no período atual do plano (decisão #91): "Esquecer" não devolve; zera na renovação
+  materiaisPeriodo Int        @default(0)
   atualizadoEm  DateTime     @updatedAt
   materiais     MaterialIA[]
 }

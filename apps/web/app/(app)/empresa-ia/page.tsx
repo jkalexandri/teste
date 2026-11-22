@@ -31,7 +31,7 @@ export default async function EmpresaIAPage() {
         resumoEm={f.resumoEm?.toISOString() ?? null}
         montando={f.montando}
         uso={{
-          materiais: materiais.length,
+          materiais: f.materiaisPeriodo,
           limiteMateriais: a.limiteMateriais,
           paginasMes: f.mesRef === mesAtual() ? f.paginasMes : 0,
           limitePaginasMes: a.limitePaginasMes,

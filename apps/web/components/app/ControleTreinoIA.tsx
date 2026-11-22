@@ -42,7 +42,7 @@ export default function ControleTreinoIA({ empresaId, nome, t }: { empresaId: st
               <button type="button" className="btn-ghost !p-1.5" onClick={() => setAberto(false)} aria-label="Fechar"><X size={14} /></button>
             </div>
             <p className="help mt-1">
-              Uso: {t.materiais.toLocaleString("pt-BR")} / {lim(t.limiteMateriais)} materiais • {t.paginasMes.toLocaleString("pt-BR")} / {lim(t.limitePaginasMes)} páginas neste mês
+              Uso: {t.materiais.toLocaleString("pt-BR")} / {lim(t.limiteMateriais)} materiais no período do plano • {t.paginasMes.toLocaleString("pt-BR")} / {lim(t.limitePaginasMes)} páginas neste mês
             </p>
             <fieldset disabled={pendente} className="grid gap-3 mt-3">
               <label className="flex items-center gap-2 text-[13px] font-bold cursor-pointer">
@@ -53,7 +53,7 @@ export default function ControleTreinoIA({ empresaId, nome, t }: { empresaId: st
               <CampoLimite valor={t.limitePaginasMes} campo="limitePaginasMes" id={`tp-${empresaId}`} rotulo="Páginas lidas por mês" placeholder="Máximo de páginas" />
               <label className="flex items-center gap-2 text-[12px] cursor-pointer">
                 <input type="checkbox" name="zerarMes" className="w-4 h-4 accent-emerald-600" />
-                Liberar agora: zerar as páginas já lidas neste mês
+                Liberar agora: zerar as páginas do mês e os materiais do período
               </label>
             </fieldset>
             <div className="flex justify-end gap-2 mt-3">
