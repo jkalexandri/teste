@@ -7,6 +7,7 @@ import { prisma, StatusCampanha, StatusEnvio, StatusWhatsapp, regraAnexo, type P
 import { atorCampanhas, disparosRestantes, limparDados, resolverLeads, type DadosCampanha } from "@/lib/campanhas";
 import { apagarArquivoDoWorker, guardarArquivoNoWorker } from "@/lib/worker";
 import { formatarTelefone } from "@/lib/telefone";
+import { ErroIA, gerarMensagens } from "@filapro/ia";
 
 type R = { ok: boolean; mensagem: string; id?: string };
 
@@ -220,4 +221,21 @@ export async function excluirArquivo(id: string): Promise<R> {
   await apagarArquivoDoWorker(id);
   revalidatePath("/arquivos");
   return { ok: true, mensagem: "Arquivo excluído." };
+}
+
+// ===== IA (etapa 9a — decisões #70, #75 e #77) =====
+
+/** "Atualizar prévia": a IA escreve a mensagem principal (editável) e 3 variações (usadas no envio, sem aparecer). */
+export async function gerarPrevia(referencia: string): Promise<R & { principal?: string; variacoes?: string[] }> {
+  const u = await atorCampanhas();
+  const ref = String(referencia ?? "").trim().slice(0, 4000);
+  if (ref.length < 10) return { ok: false, mensagem: "Escreva a Mensagem de Referência (pelo menos uma frase)." };
+  // Ficha da empresa: completa na etapa 9b (Empresa | IA). Por enquanto, só o nome da conta.
+  const ficha = u.empresa ? `Empresa: ${u.empresa.nome}` : "";
+  try {
+    const r = await gerarMensagens(ref, ficha, { empresaId: u.empresaId, usuarioId: u.id });
+    return { ok: true, mensagem: "Mensagem gerada.", principal: r.principal, variacoes: r.variacoes };
+  } catch (e) {
+    return { ok: false, mensagem: e instanceof ErroIA ? e.message : "Não foi possível gerar agora. Tente de novo." };
+  }
 }

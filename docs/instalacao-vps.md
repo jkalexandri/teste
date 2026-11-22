@@ -163,6 +163,7 @@ Variáveis do projeto na Vercel:
 |---|---|
 | `WORKER_URL` | `https://api.filaproleads.com.br` |
 | `WORKER_TOKEN` | o mesmo da VPS |
+| `CHAVE_CRIPTO` | o mesmo da VPS (criptografa as chaves da IA) |
 
 Depois: Super Admin → **Número da plataforma** → Conectar WhatsApp → ler o QR → salvar o seu WhatsApp
 para os avisos → **Enviar mensagem de teste**.

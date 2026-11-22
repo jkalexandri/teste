@@ -12,7 +12,7 @@ import { MODOS, TEXTO_DESCADASTRO_PADRAO, ANEXOS, montarMensagem, saudacao, temL
 import { LISTA_STATUS, STATUS_LEAD } from "@/lib/leads-status";
 import { salvarColados } from "../leads/actions";
 import FormJanela from "@/components/envio/FormJanela";
-import { buscarLeads, enviarArquivo, iniciarCampanha, previaLeads, salvarRascunho } from "./actions";
+import { buscarLeads, enviarArquivo, gerarPrevia, iniciarCampanha, previaLeads, salvarRascunho } from "./actions";
 
 type ArquivoInfo = { id: string; nome: string; tipo: string; tamanho: number };
 export type Rascunho = {
@@ -142,6 +142,9 @@ function PassoMensagem({ d, set, arquivo, setArquivo, arquivos }: { d: Dados; se
   const toast = useToast();
   const [enviando, iniciar] = useTransition();
   const link = temLink([d.mensagem, ...d.variacoes].join(" "));
+  const [gerando, iniciarGeracao] = useTransition();
+  const [erroIA, setErroIA] = useState("");
+  const qtdVariacoes = d.variacoes.filter((v) => v.trim()).length;
   return (
     <div className="card p-4 sm:p-6 flex flex-col gap-4">
       <div className="pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -157,10 +160,26 @@ function PassoMensagem({ d, set, arquivo, setArquivo, arquivos }: { d: Dados; se
         <textarea id="referencia" className="input min-h-[70px]" value={d.referencia} onChange={(e) => set("referencia", e.target.value)} placeholder="Digite aqui a mensagem de referência que a IA vai usar como base..." />
         <div className="flex flex-wrap items-center gap-2 mt-1">
           <p className="help">Texto base para a IA gerar a Mensagem Principal. Use {"{nome}"} para personalizar.</p>
-          <button type="button" className="btn-ghost !py-1 !px-2 !text-[11px]" disabled title="A IA chega na etapa 9">
-            <Sparkles size={12} /> Atualizar prévia
+          {/* IA (etapa 9a): principal + 3 variações numa chamada; as variações não aparecem (decisões #70 e #77) */}
+          <button
+            type="button"
+            className="btn-ghost !py-1 !px-2 !text-[11px]"
+            disabled={gerando || !d.referencia.trim()}
+            onClick={() =>
+              iniciarGeracao(async () => {
+                setErroIA("");
+                const r = await gerarPrevia(d.referencia);
+                if (!r.ok || !r.principal) { setErroIA(r.mensagem); toast(r.mensagem, "erro"); return; }
+                set("mensagem", r.principal);
+                set("variacoes", [0, 1, 2].map((i) => r.variacoes?.[i] ?? ""));
+                toast("Mensagem gerada pela IA. Revise e edite se quiser.");
+              })
+            }
+          >
+            <Sparkles size={12} /> {gerando ? "Gerando…" : "Atualizar prévia"}
           </button>
-          <span className="text-[11px]" style={{ color: "var(--muted)" }}>A geração pela IA chega na etapa 9. Por enquanto, escreva abaixo.</span>
+          {qtdVariacoes > 0 && <span className="chip" data-testid="variacoes-geradas" style={{ background: "var(--primary-soft)", color: "#087a44" }}>{qtdVariacoes} variações prontas para o envio</span>}
+          {erroIA && <span className="text-[11px] font-semibold text-[#b42318]">{erroIA}</span>}
         </div>
       </div>
       <div>

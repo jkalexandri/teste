@@ -48,6 +48,8 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 8a — tela de Campanhas (Nova em 4 passos, rascunho, agendar/iniciar, pausar/retomar/cancelar, duplicar), anexos na VPS, Arquivos, janela de envio e regras globais
 - [x] Etapa 8b — envio de verdade no serviço 24/7 (fila, antibloqueio, respostas e SAIR) — testado de verdade na VPS (envio, "digitando…", resposta SAIR)
 - [x] Etapa 8c — painéis (Todos os disparos, Disparos por usuários, dashboards com números reais, saúde do número)
+- [x] Etapa 9a — IA trocável pelo Super Admin (Claude e padrão compatível), despesas com IA (gráfico e ranking) e "Atualizar prévia" gerando principal + variações
+- [ ] Etapa 9b — Empresa | IA (ficha, materiais, Esquecer, Ler de novo, limites e liga/desliga de treinamento)
 
 ## Banco de dados (desenvolvimento)
 ```bash

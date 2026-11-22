@@ -64,6 +64,7 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/arquivos", label: "Arquivos", icone: "pasta", grupo: "Vendas", etapa: 8 },
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/usuarios-individuais", label: "Usuários Individuais", icone: "usuarios", grupo: "Administrativo", etapa: 4 },
+  { href: "/despesas-ia", label: "Despesas com IA", icone: "dashboard", grupo: "Administrativo", etapa: 9 },
   { href: "/relatorios/empresarial", label: "Relatório Empresarial", icone: "empresa", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/individual", label: "Relatório Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/leads-empresarial", label: "Leads Empresarial", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
@@ -77,6 +78,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/whatsapp", label: "Meu WhatsApp", icone: "whatsapp", grupo: "Configurações", etapa: 6 },
   // Decisão #65: faixa global de horário, feriados e a janela do Super Admin.
   { href: "/regras-envio", label: "Regras de envio", icone: "config", grupo: "Configurações", etapa: 8 },
+  // Decisões #72 e #77: IA trocável e despesas com IA
+  { href: "/inteligencia-artificial", label: "Inteligência Artificial", icone: "bot", grupo: "Configurações", etapa: 9 },
 ];
 
 export function menuDoCargo(cargo: CargoMenu, permissoes?: string[]): ItemMenu[] {

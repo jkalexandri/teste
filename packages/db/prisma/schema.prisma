@@ -140,6 +140,8 @@ model Plano {
   testeDisparos   Int?
   /// Limite de leads do plano (decisão #58). Vazio = ilimitado.
   limiteLeads     Int?
+  /// Limite mensal de gasto com IA por conta, em dólar (decisão #74, uso futuro). Vazio = ilimitado.
+  limiteIAUsd     Float?
   selo            String   @default("")
   frase           String   @default("")
   condicoes       String   @default("")
@@ -165,6 +167,8 @@ model ConfigVenda {
   contatoPersonalizado  String   @default("")
   /// WhatsApp do Super Admin que recebe os avisos de novo pedido (decisão #38).
   numeroAvisos          String   @default("")
+  /// Cotação do dólar informada pelo Super Admin, para mostrar as despesas com IA em reais (decisão #77)
+  cotacaoDolar          Float?
   atualizadoEm          DateTime @updatedAt
 }
 
@@ -432,4 +436,42 @@ model Arquivo {
   campanhas  Campanha[]
 
   @@index([usuarioId])
+}
+
+/// Configuração da IA para cada tarefa (decisões #72 e #75). Trocável pelo Super Admin sem mexer no código.
+/// tarefa: "gerar_mensagens" | "aprender" | "qualificar" | "conversar"
+model ConfigIA {
+  tarefa        String   @id
+  /// "anthropic" (Claude) | "compativel" (padrão compatível) | "simulado" (só testes)
+  provedor      String   @default("anthropic")
+  modelo        String   @default("claude-haiku-5-5")
+  /// Endereço do provedor no "padrão compatível" (ex.: https://api.openai.com/v1)
+  urlBase       String   @default("")
+  /// Chave de acesso, criptografada (AES-256-GCM)
+  chave         String?
+  /// Preço em dólar por 1 milhão de tokens (para calcular o custo)
+  precoEntrada  Float    @default(0.1)
+  precoSaida    Float    @default(0.5)
+  atualizadoEm  DateTime @updatedAt
+}
+
+/// Cada chamada à IA, com tokens e custo (tela de despesas — decisão #77).
+model UsoIA {
+  id            String   @id @default(cuid())
+  criadoEm      DateTime @default(now())
+  tarefa        String
+  provedor      String
+  modelo        String
+  empresaId     String?
+  usuarioId     String?
+  entrada       Int      @default(0)
+  saida         Int      @default(0)
+  cacheLeitura  Int      @default(0)
+  cacheEscrita  Int      @default(0)
+  custoUsd      Float    @default(0)
+  ok            Boolean  @default(true)
+  erro          String?
+
+  @@index([criadoEm])
+  @@index([empresaId, criadoEm])
 }

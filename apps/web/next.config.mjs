@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   // Pacote compartilhado do banco (TypeScript) dentro do monorepo.
-  transpilePackages: ["@filapro/db"],
+  transpilePackages: ["@filapro/db", "@filapro/ia"],
   // Importação de leads por arquivo (até 10 MB) e confirmação de listas grandes (etapa 7).
   experimental: { serverActions: { bodySizeLimit: "12mb" } },
 };
