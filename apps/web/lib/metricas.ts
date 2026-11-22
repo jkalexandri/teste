@@ -83,7 +83,8 @@ export const LIMITES_SAUDE = {
   respostaBaixa: 5,
 };
 
-export async function saudeDoNumero(usuarioId: string): Promise<Saude> {
+/** Saúde dos números do usuário; com `sessaoId`, só daquele número (vários WhatsApps — decisão #79). */
+export async function saudeDoNumero(usuarioId: string, sessaoId?: string): Promise<Saude> {
   const desde = new Date(Date.now() - 7 * 86_400_000);
   const [r] = await prisma.$queryRaw<{ enviados: bigint; falhas: bigint; semwa: bigint; respostas: bigint; sairam: bigint }[]>`
     SELECT
@@ -95,7 +96,8 @@ export async function saudeDoNumero(usuarioId: string): Promise<Saude> {
     FROM "Envio" e
     JOIN "Campanha" c ON c.id = e."campanhaId"
     LEFT JOIN "Lead" l ON l.id = e."leadId"
-    WHERE c."usuarioId" = ${usuarioId} AND e."criadoEm" >= ${desde} AND e.status <> 'PENDENTE'`;
+    WHERE c."usuarioId" = ${usuarioId} AND e."criadoEm" >= ${desde} AND e.status <> 'PENDENTE'
+      AND (${sessaoId ?? null}::text IS NULL OR e."sessaoId" = ${sessaoId ?? null})`;
   const enviados = Number(r?.enviados ?? 0), falhas = Number(r?.falhas ?? 0), semwa = Number(r?.semwa ?? 0);
   const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
   const s: Saude = {

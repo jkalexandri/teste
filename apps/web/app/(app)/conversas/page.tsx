@@ -4,6 +4,7 @@ import { prisma, Cargo, type Prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import { atorConversas } from "@/lib/conversas";
 import { formatarTelefone } from "@/lib/telefone";
+import { numerosParaCampanha } from "@/lib/campanhas";
 import { LISTA_STATUS } from "@/lib/leads-status";
 import TelaConversas from "./TelaConversas";
 
@@ -45,6 +46,9 @@ export default async function ConversasPage({ searchParams }: { searchParams: Pr
     ? await prisma.arquivo.findMany({ where: { usuarioId: a.u.id }, orderBy: { criadoEm: "desc" }, select: { id: true, nome: true, tipo: true } })
     : [];
   const verDono = a.u.cargo !== Cargo.USUARIO;
+  // Vários WhatsApps (decisão #95, item 7): mostra por qual número é a conversa
+  const numeros = aberto ? await numerosParaCampanha(aberto.usuarioId) : [];
+  const numeroDaConversa = numeros.length > 1 ? numeros.find((n) => n.id === (aberto?.sessaoId ?? aberto?.usuarioId))?.rotulo ?? null : null;
 
   return (
     <section className="flex-1 flex flex-col min-h-0">
@@ -67,7 +71,7 @@ export default async function ConversasPage({ searchParams }: { searchParams: Pr
         aberto={aberto ? {
           id: aberto.id, nome: aberto.nome, telefone: formatarTelefone(aberto.telefone), codigo: aberto.codigo, status: aberto.status,
           temperatura: aberto.qualificacao, motivo: aberto.qualificacaoMotivo, iaPausada: aberto.iaPausada, iaPausaMotivo: aberto.iaPausaMotivo,
-          dono: aberto.usuario.nome, podeResponder: a.podeResponder(aberto), naoLidas: aberto.naoLidas,
+          dono: aberto.usuario.nome, podeResponder: a.podeResponder(aberto), naoLidas: aberto.naoLidas, numero: numeroDaConversa,
         } : null}
         mensagens={mensagens.map((m) => ({ id: m.id, autor: m.autor, texto: m.texto, tipo: m.tipo, arquivoId: m.arquivoId, arquivoNome: m.arquivoNome, criadoEm: m.criadoEm.toISOString() }))}
         arquivos={arquivos}

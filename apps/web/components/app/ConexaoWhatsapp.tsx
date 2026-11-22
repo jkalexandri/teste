@@ -28,7 +28,7 @@ function formatar(n: string | null) {
   return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : `+${n}`;
 }
 
-export default function ConexaoWhatsapp({ alvo, inicial }: { alvo: "proprio" | "plataforma"; inicial: Estado }) {
+export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { alvo: string; inicial: Estado; titulo?: string; semAjuda?: boolean }) {
   const toast = useToast();
   const [estado, setEstado] = useState<Estado>(inicial);
   const [enviando, setEnviando] = useState(false);
@@ -59,11 +59,11 @@ export default function ConexaoWhatsapp({ alvo, inicial }: { alvo: "proprio" | "
   const emAndamento = estado.status === "CONECTANDO" || estado.status === "AGUARDANDO_QR";
 
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-3 mt-3">
+    <div className={semAjuda ? "grid gap-3 mt-3" : "grid lg:grid-cols-[1fr_320px] gap-3 mt-3"}>
       <div className="card p-4">
         <div className="flex flex-wrap items-center gap-2">
           <MessageCircle size={18} style={{ color: "var(--primary)" }} />
-          <h2 className="font-display font-bold text-[14px]">{alvo === "plataforma" ? "Número da plataforma" : "Meu WhatsApp"}</h2>
+          <h2 className="font-display font-bold text-[14px]">{titulo ?? (alvo === "plataforma" ? "Número da plataforma" : "Meu WhatsApp")}</h2>
           <span className="chip" data-testid="status-whatsapp" style={chip.estilo}>{chip.texto}</span>
         </div>
 
@@ -121,7 +121,8 @@ export default function ConexaoWhatsapp({ alvo, inicial }: { alvo: "proprio" | "
         </div>
       </div>
 
-      <div className="card p-4 self-start">
+      {/* Com vários números, a ajuda aparece só no primeiro (etapa 10c) */}
+      {!semAjuda && <div className="card p-4 self-start">
         <h3 className="font-display font-bold text-[13px]">Como funciona</h3>
         <ul className="text-[12px] leading-relaxed mt-1.5 space-y-1.5" style={{ color: "var(--muted)" }}>
           {alvo === "plataforma" ? (
@@ -138,7 +139,7 @@ export default function ConexaoWhatsapp({ alvo, inicial }: { alvo: "proprio" | "
           <li>Mantenha o celular com internet de vez em quando — se ficar muitos dias desligado, o WhatsApp desconecta.</li>
           <li>Se desconectar pelo celular, volte aqui e leia o QR Code de novo.</li>
         </ul>
-      </div>
+      </div>}
     </div>
   );
 }

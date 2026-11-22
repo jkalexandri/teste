@@ -69,6 +69,8 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       // Trocou de plano: passa a valer o limite de leads do novo plano (decisão #58).
       // Trocou de plano: também os limites de treinamento da IA (decisão #77).
       ...(plano && plano.id !== e.planoId ? { limiteLeads: plano.limiteLeads, limiteMateriais: plano.limiteMateriais, limitePaginasMes: plano.limitePaginasMes } : {}),
+      // WhatsApps extras: os da renovação (o cliente pode diminuir — decisões #80 e #95)
+      ...(e.modulo === Modulo.INDIVIDUAL ? { whatsappsExtras: pedido.whatsappsExtras } : {}),
       // Leads de anúncios: copiado do plano a cada renovação (decisão #94)
       ...(plano ? { leadsAnuncios: plano.leadsAnuncios } : {}),
       // Novo ciclo: zera os avisos e o link.

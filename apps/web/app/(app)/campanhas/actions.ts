@@ -4,7 +4,7 @@
 // aqui a campanha é montada, salva como rascunho, agendada ou iniciada (fila criada no banco).
 import { revalidatePath } from "next/cache";
 import { prisma, StatusCampanha, StatusEnvio, StatusWhatsapp, regraAnexo, type Prisma } from "@filapro/db";
-import { atorCampanhas, disparosRestantes, limparDados, resolverLeads, type DadosCampanha } from "@/lib/campanhas";
+import { atorCampanhas, disparosRestantes, limparDados, numerosParaCampanha, resolverLeads, validarSessoes, type DadosCampanha } from "@/lib/campanhas";
 import { apagarArquivoDoWorker, guardarArquivoNoWorker } from "@/lib/worker";
 import { formatarTelefone } from "@/lib/telefone";
 import { ErroIA, gerarMensagens } from "@filapro/ia";
@@ -29,6 +29,7 @@ export async function salvarRascunho(d: DadosCampanha): Promise<R> {
   const u = await atorCampanhas();
   const dados = limparDados(d);
   dados.arquivoId = await arquivoValido(u.id, dados.arquivoId);
+  dados.sessoes = await validarSessoes(u.id, dados.sessoes);
   if (d.id) {
     const x = await minhaCampanha(d.id);
     if (!x || x.c.status !== StatusCampanha.RASCUNHO) return { ok: false, mensagem: "Rascunho não encontrado." };
@@ -84,6 +85,7 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
   const u = await atorCampanhas();
   const dados = limparDados(d);
   dados.arquivoId = await arquivoValido(u.id, dados.arquivoId);
+  dados.sessoes = await validarSessoes(u.id, dados.sessoes);
   if (!dados.assunto) return { ok: false, mensagem: "Informe o assunto da campanha (aba Mensagem)." };
   if (!dados.mensagem.trim()) return { ok: false, mensagem: "Escreva a mensagem principal (aba Mensagem)." };
 
@@ -92,8 +94,9 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
     quando = new Date(agendarPara);
     if (Number.isNaN(quando.getTime()) || quando.getTime() < Date.now() + 60_000) return { ok: false, mensagem: "Escolha uma data e hora no futuro para agendar." };
   } else {
-    const wa = await prisma.whatsappSessao.findUnique({ where: { id: u.id } });
-    if (wa?.status !== StatusWhatsapp.CONECTADO) return { ok: false, mensagem: "Conecte o seu WhatsApp (menu WhatsApp) antes de iniciar." };
+    // Pelo menos um dos números escolhidos conectado (decisão #79)
+    const nums = await numerosParaCampanha(u.id);
+    if (!nums.some((n) => n.conectado && dados.sessoes.includes(n.id))) return { ok: false, mensagem: "Conecte o seu WhatsApp (menu WhatsApp) antes de iniciar." };
   }
 
   const { enviar } = await resolverLeads(u.id, dados);
@@ -156,8 +159,9 @@ export async function pausarCampanha(id: string): Promise<R> {
 export async function retomarCampanha(id: string): Promise<R> {
   const x = await minhaCampanha(id);
   if (!x || x.c.status !== StatusCampanha.PAUSADA) return { ok: false, mensagem: "Campanha não está pausada." };
-  const wa = await prisma.whatsappSessao.findUnique({ where: { id: x.u.id } });
-  if (wa?.status !== StatusWhatsapp.CONECTADO) return { ok: false, mensagem: "Conecte o seu WhatsApp antes de retomar." };
+  const nums = await numerosParaCampanha(x.u.id);
+  const daCampanha = x.c.sessoes.length ? x.c.sessoes : [x.u.id];
+  if (!nums.some((n) => n.conectado && daCampanha.includes(n.id))) return { ok: false, mensagem: "Conecte o seu WhatsApp antes de retomar." };
   await prisma.campanha.update({ where: { id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null, iniciadaEm: x.c.iniciadaEm ?? new Date() } });
   revalidatePath("/campanhas");
   return { ok: true, mensagem: "Campanha retomada." };
@@ -185,7 +189,7 @@ export async function duplicarCampanha(id: string): Promise<R> {
       usuarioId: c.usuarioId, empresaId: c.empresaId, assunto: `${c.assunto} (cópia)`, referencia: c.referencia, mensagem: c.mensagem, variacoes: c.variacoes,
       modo: c.modo, bloqueio24h: c.bloqueio24h, descadastro: c.descadastro, textoDescadastro: c.textoDescadastro, incluirDataHora: c.incluirDataHora,
       eliminarDuplicados: c.eliminarDuplicados, randomizar: c.randomizar, selecaoTodos: c.selecaoTodos, selecaoStatus: c.selecaoStatus,
-      leadsEscolhidos: c.leadsEscolhidos, arquivoId: c.arquivoId,
+      leadsEscolhidos: c.leadsEscolhidos, arquivoId: c.arquivoId, sessoes: c.sessoes,
     },
   });
   revalidatePath("/campanhas");

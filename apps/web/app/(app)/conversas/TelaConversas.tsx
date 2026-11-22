@@ -16,6 +16,8 @@ type Item = {
 type Aberto = {
   id: string; nome: string; telefone: string; codigo: string; status: StatusLeadId; temperatura: string | null; motivo: string | null;
   iaPausada: boolean; iaPausaMotivo: string | null; dono: string; podeResponder: boolean; naoLidas: number;
+  /** Número da conversa, quando o usuário tem mais de um (etapa 10c) */
+  numero: string | null;
 };
 type Msg = { id: string; autor: Autor; texto: string; tipo: string; arquivoId: string | null; arquivoNome: string | null; criadoEm: string };
 
@@ -144,6 +146,7 @@ export default function TelaConversas(p: {
                 <b className="text-[14px]">{a.nome || a.telefone}</b>
                 <p className="text-[11px]" style={{ color: "var(--muted)" }}>
                   {a.telefone} • <span style={{ fontFamily: "monospace" }}>{a.codigo}</span>{!a.podeResponder && ` • Usuário: ${a.dono}`}
+                  {a.numero && <span data-testid="numero-conversa"> • pelo {a.numero}</span>}
                   {a.motivo && ` • ${a.motivo}`}
                 </p>
               </div>

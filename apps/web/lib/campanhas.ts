@@ -33,6 +33,8 @@ export type DadosCampanha = {
   leadsEscolhidos: string[];
   manterQuemSaiu: string[];
   arquivoId: string | null;
+  /** Números que enviam (rodízio — decisão #79); vazio = o principal */
+  sessoes: string[];
 };
 
 const MODOS_OK = ["CONSERVADOR", "EQUILIBRADO", "RAPIDO"];
@@ -59,6 +61,7 @@ export function limparDados(d: DadosCampanha): Omit<DadosCampanha, "id"> {
     leadsEscolhidos: lista(d.leadsEscolhidos),
     manterQuemSaiu: lista(d.manterQuemSaiu),
     arquivoId: d.arquivoId ? String(d.arquivoId) : null,
+    sessoes: lista(d.sessoes, 10),
   };
 }
 
@@ -108,3 +111,21 @@ export async function janelaDe(u: { cargo: Cargo; empresa: { janelaInicio: numbe
 
 /** Campanhas que ainda podem ser editadas no formulário "Nova". */
 export const EDITAVEIS: StatusCampanha[] = [StatusCampanha.RASCUNHO];
+
+/** Números de WhatsApp do usuário que podem enviar (não bloqueados), com o principal primeiro (etapa 10c). */
+export async function numerosParaCampanha(usuarioId: string) {
+  const ss = await prisma.whatsappSessao.findMany({ where: { usuarioId, bloqueada: false }, orderBy: { ordem: "asc" } });
+  const principal = ss.find((s) => s.id === usuarioId);
+  const extras = ss.filter((s) => s.id !== usuarioId);
+  return [
+    { id: usuarioId, rotulo: principal?.apelido ? `WhatsApp principal — ${principal.apelido}` : "WhatsApp principal", conectado: principal?.status === "CONECTADO" },
+    ...extras.map((s, i) => ({ id: s.id, rotulo: s.apelido ? `WhatsApp ${i + 2} — ${s.apelido}` : `WhatsApp ${i + 2}`, conectado: s.status === "CONECTADO" })),
+  ];
+}
+
+/** Só os números do próprio usuário (e não bloqueados) entram na campanha. */
+export async function validarSessoes(usuarioId: string, sessoes: string[]) {
+  const validos = new Set((await numerosParaCampanha(usuarioId)).map((n) => n.id));
+  const r = sessoes.filter((s) => validos.has(s));
+  return r.length ? r : [usuarioId];
+}

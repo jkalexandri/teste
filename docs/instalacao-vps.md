@@ -224,6 +224,13 @@ e a IA escreve a primeira mensagem. Use os comandos de "Atualizar o serviço" ab
 - Os avisos (Quente, anúncio, lead respondeu) saem pelo **Número da plataforma**: ele precisa estar conectado.
 - Leads de anúncio que chegam com o WhatsApp do usuário desconectado são atendidos quando ele reconectar.
 
+## Etapa 10c — Vários WhatsApps
+
+Cada número extra é uma sessão a mais no serviço 24/7 (o principal continua com o id do usuário).
+Use os comandos de "Atualizar o serviço" abaixo (há migração nova). Os envios já feitos ficam marcados no número principal.
+
+- Cada número conectado usa um pouco mais de memória na VPS: acompanhe com `pm2 monit` se houver muitos números.
+
 ## Atualizar o serviço (novas versões)
 
 ```bash

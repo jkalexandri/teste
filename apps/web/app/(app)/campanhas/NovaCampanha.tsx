@@ -19,20 +19,25 @@ export type Rascunho = {
   id: string; assunto: string; referencia: string; mensagem: string; variacoes: string[]; modo: Modo; bloqueio24h: boolean;
   descadastro: boolean; textoDescadastro: string; incluirDataHora: boolean; eliminarDuplicados: boolean; randomizar: boolean;
   selecaoTodos: boolean; selecaoStatus: string[]; leadsEscolhidos: string[]; manterQuemSaiu: string[]; arquivoId: string | null; arquivo: ArquivoInfo | null;
+  /** Números que enviam (rodízio — decisão #79). Vazio = todos os números do usuário */
+  sessoes: string[];
 };
+/** Número de WhatsApp do usuário (etapa 10c) */
+export type NumeroInfo = { id: string; rotulo: string; conectado: boolean };
 
 const VAZIO: Omit<Rascunho, "id" | "arquivo"> = {
   assunto: "", referencia: "", mensagem: "", variacoes: ["", "", ""], modo: "CONSERVADOR", bloqueio24h: true,
   descadastro: true, textoDescadastro: "", incluirDataHora: false, eliminarDuplicados: true, randomizar: true,
-  selecaoTodos: true, selecaoStatus: [], leadsEscolhidos: [], manterQuemSaiu: [], arquivoId: null,
+  selecaoTodos: true, selecaoStatus: [], leadsEscolhidos: [], manterQuemSaiu: [], arquivoId: null, sessoes: [],
 };
 const PASSOS = ["Mensagem", "Leads", "Antibloqueio", "Prévia|envio"];
 const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
 
 export type JanelaInfo = { texto: string; inicio: string; fim: string; faixa: string; podeAlterar: boolean };
 
-export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAtivos, arquivos, janela, restantesTeste }: {
+export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAtivos, arquivos, janela, restantesTeste, numeros = [] }: {
   rascunho: Rascunho | null; whatsappConectado: boolean; totalLeadsAtivos: number; arquivos: ArquivoInfo[]; janela: JanelaInfo; restantesTeste: number | null;
+  numeros?: NumeroInfo[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -44,7 +49,8 @@ export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAt
   const [aviso, setAviso] = useState("");
   const set = <K extends keyof typeof d>(k: K, v: (typeof d)[K]) => setD((x) => ({ ...x, [k]: v }));
 
-  const dados = () => ({ ...d, id, arquivoId: arquivo?.id ?? null });
+  // Sem escolha: todos os números do usuário (decisão #79)
+  const dados = () => ({ ...d, id, arquivoId: arquivo?.id ?? null, sessoes: d.sessoes.length ? d.sessoes : numeros.map((n) => n.id) });
 
   function salvar(origem: string) {
     iniciar(async () => {
@@ -94,7 +100,7 @@ export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAt
 
       {passo === 0 && <PassoMensagem d={d} set={set} arquivo={arquivo} setArquivo={setArquivo} arquivos={arquivos} />}
       {passo === 1 && <PassoLeads d={d} set={set} totalLeadsAtivos={totalLeadsAtivos} restantesTeste={restantesTeste} />}
-      {passo === 2 && <PassoAntibloqueio d={d} set={set} janela={janela} />}
+      {passo === 2 && <PassoAntibloqueio d={d} set={set} janela={janela} numeros={numeros} />}
       {passo === 3 && (
         <PassoPrevia
           d={d}
@@ -369,13 +375,34 @@ function PassoLeads({ d, set, totalLeadsAtivos, restantesTeste }: { d: Dados; se
 }
 
 // ===================== Passo 3: Antibloqueio =====================
-function PassoAntibloqueio({ d, set, janela }: { d: Dados; set: Setter; janela: JanelaInfo }) {
+function PassoAntibloqueio({ d, set, janela, numeros }: { d: Dados; set: Setter; janela: JanelaInfo; numeros: NumeroInfo[] }) {
   const [editando, setEditando] = useState(false);
   const [editJanela, setEditJanela] = useState(false);
   const [texto, setTexto] = useState(d.textoDescadastro || TEXTO_DESCADASTRO_PADRAO);
   const m = MODOS[d.modo];
   return (
     <div className="flex flex-col gap-3">
+      {/* Vários WhatsApps (decisão #79): por quais números enviar; com mais de um, os envios alternam */}
+      {numeros.length > 1 && (
+        <div className="card p-4 sm:p-5" data-testid="numeros-campanha">
+          <h2 className="font-display font-bold text-[15px]">Enviar pelos números</h2>
+          <p className="text-[12px]" style={{ color: "var(--muted)" }}>Com mais de um, os envios alternam entre eles. Cada número tem os próprios limites e aquecimento.</p>
+          <div className="flex flex-col gap-1.5 mt-2">
+            {numeros.map((n) => {
+              const marcados = d.sessoes.length ? d.sessoes : numeros.map((x) => x.id);
+              const marcado = marcados.includes(n.id);
+              return (
+                <label key={n.id} className="flex items-center gap-2 cursor-pointer text-[13px] font-bold">
+                  <input type="checkbox" className="w-5 h-5 accent-emerald-600" checked={marcado} disabled={marcado && marcados.length === 1}
+                    onChange={(e) => set("sessoes", e.target.checked ? [...marcados, n.id] : marcados.filter((x) => x !== n.id))} />
+                  {n.rotulo}
+                  <span className="text-[11px] font-normal" style={{ color: n.conectado ? "#087a44" : "#b42318" }}>{n.conectado ? "conectado" : "desconectado"}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Bloco 1: Bloqueio 24h */}
       <div className="card p-4 sm:p-5">
         <h2 className="font-display font-bold text-[15px]">Bloqueio de 24h</h2>

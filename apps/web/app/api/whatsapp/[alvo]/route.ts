@@ -7,7 +7,7 @@ import { lerEstado, sessaoDoAlvo, type AlvoWhatsapp } from "@/lib/whatsapp";
 export const dynamic = "force-dynamic";
 
 function alvoValido(a: string): a is AlvoWhatsapp {
-  return a === "proprio" || a === "plataforma";
+  return /^[A-Za-z0-9_-]{1,64}$/.test(a);
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ alvo: string }> }) {

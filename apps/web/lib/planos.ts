@@ -20,6 +20,9 @@ export type PlanoPublico = {
   limitePaginasMes?: number | null;
   /** Leads de anúncios incluídos (decisão #90) */
   leadsAnuncios?: boolean;
+  /** WhatsApp extra (Individual — decisões #79 e #80): máximo de números e preço de cada extra (centavos) */
+  maxWhatsapps?: number;
+  precoWhatsappExtra?: number | null;
   selo: string;
   frase: string;
   condicoes: string;

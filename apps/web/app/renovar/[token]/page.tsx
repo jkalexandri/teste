@@ -1,6 +1,6 @@
 // Página do link de renovação enviado por e-mail (decisões #42 e #43).
 // Pública: o token do link identifica a conta. O cliente pode trocar de plano.
-import { prisma } from "@filapro/db";
+import { prisma, Cargo, Modulo } from "@filapro/db";
 import RenovarCliente from "./RenovarCliente";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +8,13 @@ export const dynamic = "force-dynamic";
 export default async function RenovarPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const empresa = await prisma.empresa.findUnique({ where: { tokenRenovacao: token } });
+  // WhatsApps extras da conta Individual (decisões #80 e #95): o link já vem com eles e o cliente pode diminuir
+  const dono = empresa?.modulo === Modulo.INDIVIDUAL ? await prisma.usuario.findFirst({ where: { empresaId: empresa.id, cargo: Cargo.USUARIO } }) : null;
+  const extras = dono
+    ? (await prisma.whatsappSessao.findMany({ where: { usuarioId: dono.id, bloqueada: false, id: { not: dono.id } }, orderBy: { ordem: "asc" } }))
+        .slice(0, empresa!.whatsappsExtras)
+        .map((s, i) => ({ id: s.id, rotulo: s.apelido || (s.numero ? `+${s.numero}` : `WhatsApp ${i + 2}`) }))
+    : [];
   const planos = empresa
     ? await prisma.plano.findMany({
         where: { visivel: true, gratis: false, personalizado: false, modulo: empresa.modulo, precoAtual: { not: null } },
@@ -34,6 +41,8 @@ export default async function RenovarPage({ params }: { params: Promise<{ token:
               pacote: empresa.pacote,
               planoId: empresa.planoId,
               expiraEm: empresa.expiraEm.toISOString(),
+              extras: empresa.modulo === Modulo.INDIVIDUAL ? empresa.whatsappsExtras : 0,
+              numerosExtras: extras,
             }}
             planos={planos.map(({ criadoEm, atualizadoEm, ...p }) => p)}
           />

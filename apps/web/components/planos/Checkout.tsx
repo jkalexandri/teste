@@ -27,6 +27,9 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
   const [enviando, setEnviando] = useState(false);
   const [pix, setPix] = useState<Pix | null>(null);
   const [freeOk, setFreeOk] = useState(false);
+  // WhatsApps extras (Individual pago — decisão #95: campo só neste passo do pagamento)
+  const maxExtras = !plano.gratis && plano.modulo === "INDIVIDUAL" && plano.precoWhatsappExtra != null ? Math.max(0, (plano.maxWhatsapps ?? 1) - 1) : 0;
+  const [extras, setExtras] = useState(0);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -36,7 +39,7 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome }),
+      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome, extras }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -90,6 +93,23 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
             <label className="login-label" htmlFor="ck-whats">WhatsApp</label>
             <input id="ck-whats" className="login-input sem-icone" value={whatsapp} onChange={(e) => setWhatsapp(mascaraFone(e.target.value))} placeholder="(11) 90000-0000" inputMode="tel" />
           </div>
+          {maxExtras > 0 && (
+            <div>
+              <label className="login-label" htmlFor="ck-extras">WhatsApps extras (além do seu número)</label>
+              <select id="ck-extras" className="login-input sem-icone" value={extras} onChange={(e) => setExtras(Number(e.target.value))}>
+                {Array.from({ length: maxExtras + 1 }, (_, i) => (
+                  <option key={i} value={i} style={{ color: "#0b1220" }}>
+                    {i === 0 ? "Nenhum" : `${i} extra${i > 1 ? "s" : ""} (+ ${formatarReais(i * (plano.precoWhatsappExtra ?? 0))})`}
+                  </option>
+                ))}
+              </select>
+              {extras > 0 && plano.precoAtual != null && (
+                <p className="text-[12px] text-slate-300 mt-1" data-testid="total-extras">
+                  Total: <b className="text-white">{formatarReais(plano.precoAtual + extras * (plano.precoWhatsappExtra ?? 0))}</b>/{plano.periodo}
+                </p>
+              )}
+            </div>
+          )}
           {empresarial && <p className="text-[11px] text-slate-400">Quem compra um plano de empresa se torna o Administrador da empresa. Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
           {!empresarial && !plano.gratis && <p className="text-[11px] text-slate-400">Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
           {erro && (

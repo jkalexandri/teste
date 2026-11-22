@@ -35,6 +35,8 @@ export type NovaConta = {
   limiteDisparos?: number | null;
   /** Limite de leads da conta (decisão #58). Vazio = ilimitado. */
   limiteLeads?: number | null;
+  /** WhatsApps extras comprados junto com o plano (Individual — decisão #95) */
+  whatsappsExtras?: number;
   usuario: { nome: string; email: string; whatsapp?: string | null };
 };
 
@@ -63,6 +65,7 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       limitePaginasMes: plano?.limitePaginasMes ?? null,
       // Leads de anúncios vem do plano (decisões #90 e #94)
       leadsAnuncios: plano?.leadsAnuncios ?? false,
+      whatsappsExtras: dados.modulo === Modulo.INDIVIDUAL ? dados.whatsappsExtras ?? 0 : 0,
     },
   });
   const usuario = await tx.usuario.create({

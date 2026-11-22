@@ -40,6 +40,11 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   if (limiteMateriais === "erro") return { ok: false, mensagem: "Informe o máximo de materiais da IA ou marque “Ilimitado”." };
   const limitePaginasMes = lerLimite(form, "limitePaginasMes");
   if (limitePaginasMes === "erro") return { ok: false, mensagem: "Informe o máximo de páginas por mês da IA ou marque “Ilimitado”." };
+  // WhatsApp extra (só Individual pago — decisões #79 e #80)
+  const comExtra = atual.modulo === "INDIVIDUAL" && !atual.gratis;
+  const maxWhatsapps = comExtra ? Math.min(10, Math.max(1, inteiro(form.get("maxWhatsapps")) || 1)) : 1;
+  const precoWhatsappExtra = comExtra ? lerReais(texto(form.get("precoWhatsappExtra"))) : null;
+  if (maxWhatsapps > 1 && precoWhatsappExtra == null) return { ok: false, mensagem: "Informe o preço do WhatsApp extra (ou deixe 1 WhatsApp por usuário)." };
   const recursos = texto(form.get("recursos"), 5000).split("\n").map((r) => r.trim()).filter(Boolean);
 
   await prisma.plano.update({
@@ -56,6 +61,8 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       limitePaginasMes,
       // Leads de anúncios incluídos no plano (decisão #90)
       leadsAnuncios: form.get("leadsAnuncios") === "on",
+      maxWhatsapps,
+      precoWhatsappExtra,
       testeDias: atual.gratis ? inteiro(form.get("testeDias")) : null,
       testeDisparos: atual.gratis ? inteiro(form.get("testeDisparos")) : null,
       selo: texto(form.get("selo"), 60),

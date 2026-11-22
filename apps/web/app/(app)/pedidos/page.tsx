@@ -25,7 +25,8 @@ export default async function PedidosPage() {
           codigo: p.codigo,
           renovacao: p.renovacao,
           status: p.status,
-          planoNome: p.planoNome,
+          // WhatsApp extra (etapa 10c): mostra junto do nome do plano
+          planoNome: p.somenteExtras ? `WhatsApp extra (${p.whatsappsExtras}) — ${p.planoNome}` : p.whatsappsExtras ? `${p.planoNome} + ${p.whatsappsExtras} WhatsApp extra${p.whatsappsExtras > 1 ? "s" : ""}` : p.planoNome,
           modulo: p.modulo,
           usuarios: p.usuarios,
           valor: p.valor,

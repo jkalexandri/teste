@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma, Cargo, Modulo, StatusCampanha, StatusWhatsapp, minParaHora } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
-import { disparosRestantes, janelaDe } from "@/lib/campanhas";
+import { disparosRestantes, janelaDe, numerosParaCampanha } from "@/lib/campanhas";
 import NovaCampanha, { type Rascunho } from "./NovaCampanha";
 import ListaCampanhas, { type CampanhaLinha } from "./ListaCampanhas";
 import AbasCampanhas from "./AbasCampanhas";
@@ -59,12 +59,12 @@ export default async function CampanhasPage({ searchParams }: { searchParams: Pr
         id: c.id, assunto: c.assunto, referencia: c.referencia, mensagem: c.mensagem, variacoes: c.variacoes, modo: c.modo, bloqueio24h: c.bloqueio24h,
         descadastro: c.descadastro, textoDescadastro: c.textoDescadastro, incluirDataHora: c.incluirDataHora, eliminarDuplicados: c.eliminarDuplicados,
         randomizar: c.randomizar, selecaoTodos: c.selecaoTodos, selecaoStatus: c.selecaoStatus, leadsEscolhidos: c.leadsEscolhidos, manterQuemSaiu: c.manterQuemSaiu,
-        arquivoId: c.arquivoId, arquivo: c.arquivo ? { id: c.arquivo.id, nome: c.arquivo.nome, tipo: c.arquivo.tipo, tamanho: c.arquivo.tamanho } : null,
+        arquivoId: c.arquivoId, sessoes: c.sessoes, arquivo: c.arquivo ? { id: c.arquivo.id, nome: c.arquivo.nome, tipo: c.arquivo.tipo, tamanho: c.arquivo.tamanho } : null,
       };
     }
   }
-  const [wa, totalLeads, arquivos, { janela, global }, restantes] = await Promise.all([
-    prisma.whatsappSessao.findUnique({ where: { id: u.id } }),
+  const [numeros, totalLeads, arquivos, { janela, global }, restantes] = await Promise.all([
+    numerosParaCampanha(u.id),
     prisma.lead.count({ where: { usuarioId: u.id, ativo: true } }),
     prisma.arquivo.findMany({ where: { usuarioId: u.id }, orderBy: { criadoEm: "desc" }, take: 50 }),
     janelaDe(u),
@@ -78,7 +78,8 @@ export default async function CampanhasPage({ searchParams }: { searchParams: Pr
       <NovaCampanha
         key={rascunho?.id ?? "nova"}
         rascunho={rascunho}
-        whatsappConectado={wa?.status === StatusWhatsapp.CONECTADO}
+        whatsappConectado={numeros.some((n) => n.conectado)}
+        numeros={numeros}
         totalLeadsAtivos={totalLeads}
         arquivos={arquivos.map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo, tamanho: a.tamanho }))}
         janela={{

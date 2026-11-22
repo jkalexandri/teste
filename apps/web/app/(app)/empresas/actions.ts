@@ -144,3 +144,18 @@ export async function alternarLeadsAnuncios(empresaId: string): Promise<R> {
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: leads de anúncios ${e.leadsAnuncios ? "desligado" : "ligado"}.` };
 }
+
+/** WhatsApps extras dados pelo Super Admin sem pedido (Individual — decisão #95, item 5). */
+export async function definirExtras(empresaId: string, quantidade: number): Promise<R> {
+  await exigirSuperAdmin();
+  const e = await prisma.empresa.findUnique({ where: { id: empresaId } });
+  if (!e || e.modulo !== Modulo.INDIVIDUAL) return { ok: false, mensagem: "Só contas do plano Individual têm WhatsApp extra." };
+  const n = Math.floor(Number(quantidade));
+  if (!Number.isFinite(n) || n < 0 || n > 9) return { ok: false, mensagem: "Informe de 0 a 9 extras." };
+  await prisma.empresa.update({ where: { id: empresaId }, data: { whatsappsExtras: n } });
+  // Diminuiu: saem os mais recentes; aumentou: os números aparecem na tela WhatsApp do usuário
+  const { sincronizarExtrasDaConta } = await import("@/lib/whatsapp-extra");
+  await sincronizarExtrasDaConta(empresaId);
+  revalidatePath("/usuarios-individuais");
+  return { ok: true, mensagem: `${e.nome}: ${1 + n} WhatsApp${n ? "s" : ""} (${n} extra${n === 1 ? "" : "s"}).` };
+}

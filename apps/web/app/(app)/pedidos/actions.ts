@@ -6,6 +6,7 @@ import { prisma, Modulo, StatusPedido } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas } from "@/lib/contas";
 import { aplicarRenovacao, enviarEmailRenovacaoConfirmada } from "@/lib/renovacao";
+import { sincronizarExtrasDaConta } from "@/lib/whatsapp-extra";
 
 type R = { ok: boolean; mensagem: string };
 
@@ -18,6 +19,21 @@ export async function confirmarPagamento(id: string): Promise<R> {
   if (pedido.status === StatusPedido.PAGO) return { ok: false, mensagem: "Este pedido já foi confirmado." };
   if (pedido.status === StatusPedido.CANCELADO) return { ok: false, mensagem: "Pedido cancelado não pode ser confirmado." };
 
+  // WhatsApp extra comprado no meio do período (decisões #80 e #95): soma os números na conta
+  if (pedido.somenteExtras && pedido.empresaId) {
+    const empresa = await prisma.$transaction(async (tx) => {
+      const marcado = await tx.pedido.updateMany({
+        where: { id, status: { in: [StatusPedido.AGUARDANDO, StatusPedido.EXPIRADO] } },
+        data: { status: StatusPedido.PAGO, confirmadoEm: new Date(), confirmadoPor: sessao.usuario.email },
+      });
+      if (marcado.count === 0) throw new Error("Pedido já processado.");
+      return tx.empresa.update({ where: { id: pedido.empresaId! }, data: { whatsappsExtras: { increment: pedido.whatsappsExtras } } });
+    });
+    await sincronizarExtrasDaConta(empresa.id);
+    revalidatePath("/pedidos");
+    return { ok: true, mensagem: `WhatsApp extra liberado para ${empresa.nome} (${1 + empresa.whatsappsExtras} números).` };
+  }
+
   // Renovação (decisões #43 e #44): troca o plano, se mudou, e soma o prazo.
   if (pedido.renovacao) {
     const empresa = await prisma.$transaction(async (tx) => {
@@ -28,6 +44,8 @@ export async function confirmarPagamento(id: string): Promise<R> {
       if (marcado.count === 0) throw new Error("Pedido já processado.");
       return aplicarRenovacao(pedido, tx);
     });
+    // Extras da renovação: os que o cliente escolheu manter ficam; os outros saem (decisão #95, item 3)
+    await sincronizarExtrasDaConta(empresa.id, pedido.manterSessoes);
     await enviarEmailRenovacaoConfirmada(pedido.nome, pedido.email, empresa, pedido.valor);
     revalidatePath("/pedidos");
     return { ok: true, mensagem: `Renovação confirmada: ${empresa.nome} até ${empresa.expiraEm.toLocaleDateString("pt-BR")}.` };
@@ -53,6 +71,7 @@ export async function confirmarPagamento(id: string): Promise<R> {
         limiteUsuarios: empresarial ? pedido.usuarios ?? 1 : 1,
         prazoDias: pedido.prazoDias,
         limiteLeads: (await tx.plano.findUnique({ where: { id: pedido.planoId } }))?.limiteLeads ?? null,
+        whatsappsExtras: pedido.whatsappsExtras,
         usuario: { nome: pedido.nome, email: pedido.email, whatsapp: pedido.whatsapp },
       },
       tx,

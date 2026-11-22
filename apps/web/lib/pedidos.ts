@@ -19,9 +19,21 @@ export async function criarPedidoPix(opts: {
   plano: Plano;
   comprador: { nome: string; email: string; whatsapp: string; empresaNome?: string | null };
   renovarEmpresaId?: string | null;
+  /** WhatsApps extras (Individual — decisões #80 e #95): somados ao valor do plano */
+  extras?: number;
+  /** Renovação com menos extras: números que o cliente quer manter */
+  manterSessoes?: string[];
+  /** Compra só de extras no meio do período: valor proporcional já calculado, conta existente */
+  somenteExtras?: { empresaId: string; valor: number };
 }): Promise<{ erro: string } | RespostaPix> {
   const { plano } = opts;
   if (plano.precoAtual == null) return { erro: "Plano indisponível." };
+  const extras = Math.max(0, Math.floor(opts.extras ?? 0));
+  if (extras && (plano.modulo !== "INDIVIDUAL" || plano.gratis || plano.precoWhatsappExtra == null || 1 + extras > plano.maxWhatsapps)) {
+    return { erro: `Este plano permite no máximo ${plano.maxWhatsapps} WhatsApp${plano.maxWhatsapps > 1 ? "s" : ""}.` };
+  }
+  const valor = opts.somenteExtras ? opts.somenteExtras.valor : plano.precoAtual + extras * (plano.precoWhatsappExtra ?? 0);
+  if (valor <= 0) return { erro: "Valor inválido." };
   const config = await prisma.configVenda.findUnique({ where: { id: "config" } });
   if (!config?.chavePix || !config.nomeRecebedor || !config.cidadeRecebedor) {
     return { erro: "Pagamento indisponível no momento. Tente mais tarde." };
@@ -31,20 +43,23 @@ export async function criarPedidoPix(opts: {
     chave: config.chavePix,
     nome: config.nomeRecebedor,
     cidade: config.cidadeRecebedor,
-    valorCentavos: plano.precoAtual,
+    valorCentavos: valor,
     identificador: codigo,
   });
   const pedido = await prisma.pedido.create({
     data: {
       codigo,
       renovacao: !!opts.renovarEmpresaId,
-      empresaId: opts.renovarEmpresaId ?? null,
+      empresaId: opts.renovarEmpresaId ?? opts.somenteExtras?.empresaId ?? null,
+      whatsappsExtras: extras,
+      somenteExtras: !!opts.somenteExtras,
+      manterSessoes: opts.manterSessoes ?? [],
       planoId: plano.id,
       planoNome: plano.nome,
       modulo: plano.modulo,
       usuarios: plano.usuarios,
       prazoDias: plano.prazoDias,
-      valor: plano.precoAtual,
+      valor,
       nome: opts.comprador.nome,
       email: opts.comprador.email.toLowerCase(),
       whatsapp: opts.comprador.whatsapp,
@@ -56,7 +71,7 @@ export async function criarPedidoPix(opts: {
   // TODO etapa 6: avisar o Super Admin pelo WhatsApp (decisão #38).
   return {
     codigo: pedido.codigo,
-    plano: plano.nome,
+    plano: opts.somenteExtras ? `${extras} WhatsApp extra${extras > 1 ? "s" : ""} (${plano.nome})` : extras ? `${plano.nome} + ${extras} WhatsApp extra${extras > 1 ? "s" : ""}` : plano.nome,
     valor: pedido.valor,
     copiaECola: pix,
     qrCode: await QRCode.toDataURL(pix, { margin: 1, width: 240 }),

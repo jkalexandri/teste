@@ -9,7 +9,8 @@ import { obterSessao } from "@/lib/auth/session";
 import { motivoSemAcesso } from "@/lib/auth/acesso";
 
 export const SESSAO_PLATAFORMA = "plataforma";
-export type AlvoWhatsapp = "proprio" | "plataforma";
+/** "proprio" = número principal; "plataforma" = número da plataforma; outro = id de um número extra do usuário (etapa 10c). */
+export type AlvoWhatsapp = string;
 
 /** QR do WhatsApp vale ~20 s; depois disso não mostramos mais o antigo. */
 const QR_VALIDO_MS = 60_000;
@@ -28,7 +29,12 @@ export async function sessaoDoAlvo(alvo: AlvoWhatsapp): Promise<{ sessaoId: stri
   if (!s || s.precisaTrocar || motivoSemAcesso(s)) return null;
   if (alvo === "plataforma") return s.usuario.cargo === Cargo.SUPERADMIN ? { sessaoId: SESSAO_PLATAFORMA } : null;
   // Usuário e Super Admin (decisão #62) conectam o próprio WhatsApp; o Admin da Empresa não.
-  return s.usuario.cargo === Cargo.USUARIO || s.usuario.cargo === Cargo.SUPERADMIN ? { sessaoId: s.usuario.id, usuarioId: s.usuario.id } : null;
+  if (s.usuario.cargo !== Cargo.USUARIO && s.usuario.cargo !== Cargo.SUPERADMIN) return null;
+  if (alvo === "proprio") return { sessaoId: s.usuario.id, usuarioId: s.usuario.id };
+  // Número extra (etapa 10c): precisa ser do usuário e não estar bloqueado (decisão #95, item 9)
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(alvo)) return null;
+  const extra = await prisma.whatsappSessao.findUnique({ where: { id: alvo } });
+  return extra && extra.usuarioId === s.usuario.id && !extra.bloqueada ? { sessaoId: extra.id, usuarioId: s.usuario.id } : null;
 }
 
 export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
