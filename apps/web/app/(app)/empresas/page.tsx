@@ -5,6 +5,7 @@ import { prisma, Cargo, Modulo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoEmpresas, { type EmpresaLinha } from "./GestaoEmpresas";
+import { INCLUIR_FICHA, treinoDaConta } from "@/lib/treino-ia";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function EmpresasPage() {
     include: {
       usuarios: { select: { id: true, codigo: true, nome: true, email: true, cargo: true, status: true }, orderBy: { nome: "asc" } },
       _count: { select: { leads: true } },
+      ...INCLUIR_FICHA,
     },
     orderBy: { nome: "asc" },
   });
@@ -34,6 +36,7 @@ export default async function EmpresasPage() {
     codigo: e.codigo ?? "",
     leads: e._count.leads,
     limiteLeads: e.limiteLeads,
+    treino: treinoDaConta(e),
     nome: e.nome,
     pacote: e.pacote,
     planoId: e.planoId,

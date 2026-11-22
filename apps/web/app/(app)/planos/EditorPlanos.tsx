@@ -133,6 +133,22 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                 valor={editando.limiteLeads}
                 dica={editando.modulo === "EMPRESARIAL" ? "Limite da empresa (soma de todos os usuários). Pode ser ajustado em cada empresa." : "Máximo de leads da conta."}
               />
+              <CampoLimite
+                valor={editando.limiteMateriais ?? null}
+                campo="limiteMateriais"
+                id="f-limiteMateriais"
+                rotulo="IA: máximo de materiais"
+                placeholder="Máximo de materiais"
+                dica="Materiais guardados no Empresa | IA da conta."
+              />
+              <CampoLimite
+                valor={editando.limitePaginasMes ?? null}
+                campo="limitePaginasMes"
+                id="f-limitePaginasMes"
+                rotulo="IA: páginas lidas por mês"
+                placeholder="Máximo de páginas"
+                dica="Cada página de site/PDF, imagem ou 3.000 letras de texto conta 1."
+              />
               {editando.gratis && (
                 <>
                   <Campo nome="testeDias" rotulo="Teste grátis: dias" valor={editando.testeDias ?? ""} tipo="number" />

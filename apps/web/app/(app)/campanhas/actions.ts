@@ -8,6 +8,7 @@ import { atorCampanhas, disparosRestantes, limparDados, resolverLeads, type Dado
 import { apagarArquivoDoWorker, guardarArquivoNoWorker } from "@/lib/worker";
 import { formatarTelefone } from "@/lib/telefone";
 import { ErroIA, gerarMensagens } from "@filapro/ia";
+import { fichaParaIA } from "@/lib/empresa-ia";
 
 type R = { ok: boolean; mensagem: string; id?: string };
 
@@ -230,8 +231,8 @@ export async function gerarPrevia(referencia: string): Promise<R & { principal?:
   const u = await atorCampanhas();
   const ref = String(referencia ?? "").trim().slice(0, 4000);
   if (ref.length < 10) return { ok: false, mensagem: "Escreva a Mensagem de Referência (pelo menos uma frase)." };
-  // Ficha da empresa: completa na etapa 9b (Empresa | IA). Por enquanto, só o nome da conta.
-  const ficha = u.empresa ? `Empresa: ${u.empresa.nome}` : "";
+  // Ficha da empresa montada no Empresa | IA (etapa 9b)
+  const ficha = await fichaParaIA(u);
   try {
     const r = await gerarMensagens(ref, ficha, { empresaId: u.empresaId, usuarioId: u.id });
     return { ok: true, mensagem: "Mensagem gerada.", principal: r.principal, variacoes: r.variacoes };

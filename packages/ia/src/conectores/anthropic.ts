@@ -14,7 +14,15 @@ export const conectorAnthropic: Conector = {
     const system: Anthropic.TextBlockParam[] = [{ type: "text", text: p.sistema }];
     if (p.contexto) system.push({ type: "text", text: p.contexto });
     system[system.length - 1]!.cache_control = { type: "ephemeral" };
-    const messages: Anthropic.MessageParam[] = p.mensagens.map((m) => ({ role: m.papel === "usuario" ? "user" : "assistant", content: m.texto }));
+    const messages: Anthropic.MessageParam[] = p.mensagens.map((m) => ({
+      role: m.papel === "usuario" ? "user" : "assistant",
+      content: m.imagens?.length
+        ? [
+            ...m.imagens.map((i) => ({ type: "image" as const, source: { type: "base64" as const, media_type: i.tipo as "image/png" | "image/jpeg", data: i.base64 } })),
+            { type: "text" as const, text: m.texto },
+          ]
+        : m.texto,
+    }));
     const base = { model: cfg.modelo, max_tokens: p.maxTokens, system, messages, output_config: { effort: "low" as const } };
     try {
       const r = COM_FALLBACK.has(cfg.modelo)

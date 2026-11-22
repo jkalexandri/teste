@@ -14,7 +14,11 @@ export const conectorSimulado: Conector = {
             "Olá {nome}, tudo certo? Posso te mostrar uma oportunidade em poucos minutos?",
           ],
         })
-      : `Resposta simulada para: ${ultimo.slice(0, 80)}`;
+      : /FICHA DA EMPRESA/.test(p.sistema)
+        ? `Ficha simulada: ${ultimo.replace(/\s+/g, " ").slice(0, 300)}`
+        : /RESUMO DO MATERIAL/.test(p.sistema)
+          ? `Resumo simulado: ${p.mensagens.at(-1)?.imagens?.length ? "imagem com texto e produtos" : ultimo.replace(/\s+/g, " ").slice(0, 200)}`
+          : `Resposta simulada para: ${ultimo.slice(0, 80)}`;
     return { texto, modelo: "simulado", uso: { entrada: Math.ceil((p.sistema.length + ultimo.length) / 4), saida: Math.ceil(texto.length / 4), cacheLeitura: 0, cacheEscrita: 0 } };
   },
 };

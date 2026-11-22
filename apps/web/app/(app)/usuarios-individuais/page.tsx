@@ -2,6 +2,7 @@
 import { prisma, Cargo, Modulo } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoIndividuais from "./GestaoIndividuais";
+import { INCLUIR_FICHA, treinoDaConta } from "@/lib/treino-ia";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function IndividuaisPage() {
   const [usuarios, planos] = await Promise.all([
     prisma.usuario.findMany({
       where: { cargo: Cargo.USUARIO, empresa: { modulo: Modulo.INDIVIDUAL } },
-      include: { empresa: { include: { _count: { select: { leads: true } } } } },
+      include: { empresa: { include: { _count: { select: { leads: true } }, ...INCLUIR_FICHA } } },
       orderBy: { nome: "asc" },
     }),
     prisma.plano.findMany({ where: { modulo: Modulo.INDIVIDUAL }, orderBy: { ordem: "asc" } }),
@@ -36,6 +37,7 @@ export default async function IndividuaisPage() {
           codigo: u.codigo ?? "",
           leads: u.empresa?._count.leads ?? 0,
           limiteLeads: u.empresa?.limiteLeads ?? null,
+          treino: treinoDaConta(u.empresa ?? { treinarIA: true, limiteMateriais: null, limitePaginasMes: null, ficha: null }),
           empresaId: u.empresaId!,
           nome: u.nome,
           email: u.email,

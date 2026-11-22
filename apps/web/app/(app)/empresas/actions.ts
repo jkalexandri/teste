@@ -115,3 +115,21 @@ export async function definirLimiteLeads(empresaId: string, form: FormData): Pro
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: limite de leads ${limite == null ? "ilimitado" : `de ${limite.toLocaleString("pt-BR")}`}.` };
 }
+
+/** Treinamento da IA da conta (decisão #77): liga/desliga, limites e liberação das páginas do mês. Empresas e individuais. */
+export async function definirTreinoIA(empresaId: string, form: FormData): Promise<R> {
+  await exigirSuperAdmin();
+  const e = await prisma.empresa.findUnique({ where: { id: empresaId } });
+  if (!e) return { ok: false, mensagem: "Conta não encontrada." };
+  const limiteMateriais = lerLimite(form, "limiteMateriais");
+  if (limiteMateriais === "erro") return { ok: false, mensagem: "Informe o máximo de materiais ou marque “Ilimitado”." };
+  const limitePaginasMes = lerLimite(form, "limitePaginasMes");
+  if (limitePaginasMes === "erro") return { ok: false, mensagem: "Informe o máximo de páginas por mês ou marque “Ilimitado”." };
+  const treinarIA = form.get("treinarIA") === "on";
+  await prisma.empresa.update({ where: { id: empresaId }, data: { treinarIA, limiteMateriais, limitePaginasMes } });
+  // "Liberar": zera as páginas já lidas neste mês (decisão #77 — liberação pelo Super Admin)
+  if (form.get("zerarMes") === "on") await prisma.fichaEmpresa.updateMany({ where: { empresaId }, data: { paginasMes: 0 } });
+  revalidatePath("/empresas");
+  revalidatePath("/usuarios-individuais");
+  return { ok: true, mensagem: `${e.nome}: treinamento da IA ${treinarIA ? "ligado" : "desligado"}.` };
+}

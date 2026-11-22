@@ -6,11 +6,12 @@ import { useToast } from "@/components/app/Toast";
 import { Plus, X } from "@/components/icons";
 import { definirLimiteLeads, prorrogarEmpresa } from "../empresas/actions";
 import CampoLimite from "@/components/app/CampoLimite";
+import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 import { alternarBloqueio, criarIndividual, reenviarAcesso } from "./actions";
 
 type Linha = {
   id: string; codigo: string; leads: number; limiteLeads: number | null; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
-  expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean;
+  expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean; treino: TreinoIA;
 };
 type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number };
 
@@ -120,6 +121,7 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                       <div className="flex gap-1 flex-wrap">
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(u.empresaId))}>Prorrogar</button>
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => setLimitando(u)}>Limite de leads</button>
+                        <ControleTreinoIA empresaId={u.empresaId} nome={u.nome} t={u.treino} />
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Bloquear" : "Desbloquear"} ${u.nome}?`) && agir(() => alternarBloqueio(u.id))}>
                           {u.ativo ? "Bloquear" : "Desbloquear"}
                         </button>

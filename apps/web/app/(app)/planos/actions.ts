@@ -35,6 +35,11 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   const prazoDias = inteiro(form.get("prazoDias")) || 31;
   const limiteLeads = lerLimite(form);
   if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads ou marque “Ilimitado”." };
+  // Limites de treinamento da IA (decisão #77)
+  const limiteMateriais = lerLimite(form, "limiteMateriais");
+  if (limiteMateriais === "erro") return { ok: false, mensagem: "Informe o máximo de materiais da IA ou marque “Ilimitado”." };
+  const limitePaginasMes = lerLimite(form, "limitePaginasMes");
+  if (limitePaginasMes === "erro") return { ok: false, mensagem: "Informe o máximo de páginas por mês da IA ou marque “Ilimitado”." };
   const recursos = texto(form.get("recursos"), 5000).split("\n").map((r) => r.trim()).filter(Boolean);
 
   await prisma.plano.update({
@@ -47,6 +52,8 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       periodo: texto(form.get("periodo"), 20) || "mês",
       prazoDias,
       limiteLeads,
+      limiteMateriais,
+      limitePaginasMes,
       testeDias: atual.gratis ? inteiro(form.get("testeDias")) : null,
       testeDisparos: atual.gratis ? inteiro(form.get("testeDisparos")) : null,
       selo: texto(form.get("selo"), 60),

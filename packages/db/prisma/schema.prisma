@@ -48,6 +48,10 @@ model Empresa {
   limiteDisparos  Int?
   /// Limite de leads da conta (decisão #58). Vazio = ilimitado.
   limiteLeads     Int?
+  /// Treinamento da IA (decisão #77): liga/desliga e limites da conta (copiados do plano; o Super Admin pode ajustar)
+  treinarIA         Boolean @default(true)
+  limiteMateriais   Int?
+  limitePaginasMes  Int?
   /// Janela de envio da conta (decisões #6 e #65), em minutos do dia (480 = 8h). Segunda a sábado.
   janelaInicio    Int      @default(480)
   janelaFim       Int      @default(1200)
@@ -61,6 +65,7 @@ model Empresa {
   pedidos         Pedido[]
   leads           Lead[]
   campanhas       Campanha[]
+  ficha           FichaEmpresa?
 
   @@index([modulo])
 }
@@ -142,6 +147,9 @@ model Plano {
   limiteLeads     Int?
   /// Limite mensal de gasto com IA por conta, em dólar (decisão #74, uso futuro). Vazio = ilimitado.
   limiteIAUsd     Float?
+  /// Limites de treinamento da IA (decisão #77). Vazio = ilimitado.
+  limiteMateriais   Int?
+  limitePaginasMes  Int?
   selo            String   @default("")
   frase           String   @default("")
   condicoes       String   @default("")
@@ -488,4 +496,60 @@ model ConfigLegal {
   encarregadoEmail  String   @default("")
   foro              String   @default("")
   atualizadoEm      DateTime @updatedAt
+}
+
+/// Empresa | IA (etapa 9b — decisões #74 e #77): o que a IA sabe sobre a empresa.
+/// Uma por conta (empresa ou individual); o Super Admin tem a dele (superAdminId).
+model FichaEmpresa {
+  id            String       @id @default(cuid())
+  empresaId     String?      @unique
+  empresa       Empresa?     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  superAdminId  String?      @unique
+  nome          String       @default("")
+  endereco      String       @default("")
+  telefone      String       @default("")
+  whatsapp      String       @default("")
+  atividade     String       @default("")
+  /// Resumo compacto que a IA monta a partir dos campos e materiais (tamanho máximo fixo)
+  resumo        String       @default("")
+  resumoEm      DateTime?
+  montando      Boolean      @default(false)
+  /// Consumo do mês (páginas lidas) para o limite do plano
+  mesRef        String       @default("")
+  paginasMes    Int          @default(0)
+  atualizadoEm  DateTime     @updatedAt
+  materiais     MaterialIA[]
+}
+
+enum TipoMaterial {
+  LINK
+  TEXTO
+  IMAGEM
+  PDF
+}
+
+enum StatusMaterial {
+  LENDO
+  PRONTO
+  ERRO
+}
+
+/// Material ensinado à IA. "Esquecer" apaga o material e refaz a ficha.
+model MaterialIA {
+  id         String         @id @default(cuid())
+  fichaId    String
+  ficha      FichaEmpresa   @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+  tipo       TipoMaterial
+  /// Endereço (link) ou nome do arquivo
+  origem     String
+  status     StatusMaterial @default(LENDO)
+  /// Texto lido (cortado num tamanho máximo) e resumo feito pela IA
+  conteudo   String         @default("")
+  resumo     String         @default("")
+  paginas    Int            @default(0)
+  erro       String?
+  criadoEm   DateTime       @default(now())
+  lidoEm     DateTime?
+
+  @@index([fichaId])
 }

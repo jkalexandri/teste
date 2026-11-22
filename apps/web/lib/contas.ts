@@ -45,6 +45,8 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
   // Códigos (decisão #63): empresa "E…" + Admin "EU…"; individual: conta e usuário com o mesmo número.
   const codigoConta = await proximoCodigo(tx, empresarial ? "empresa" : "individual");
   const codigoUsuario = empresarial ? await proximoCodigo(tx, "usuario_empresa") : codigoConta;
+  // Limites de treinamento da IA vêm do plano (decisão #77); o Super Admin pode ajustar depois
+  const plano = dados.planoId ? await tx.plano.findUnique({ where: { id: dados.planoId }, select: { limiteMateriais: true, limitePaginasMes: true } }) : null;
   const empresa = await tx.empresa.create({
     data: {
       codigo: codigoConta,
@@ -57,6 +59,8 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       expiraEm: fimDoPrazo(dados.prazoDias),
       limiteDisparos: dados.limiteDisparos ?? null,
       limiteLeads: dados.limiteLeads ?? null,
+      limiteMateriais: plano?.limiteMateriais ?? null,
+      limitePaginasMes: plano?.limitePaginasMes ?? null,
     },
   });
   const usuario = await tx.usuario.create({

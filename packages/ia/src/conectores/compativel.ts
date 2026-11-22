@@ -16,7 +16,12 @@ export const conectorCompativel: Conector = {
           max_tokens: p.maxTokens,
           messages: [
             { role: "system", content: p.contexto ? `${p.sistema}\n\n${p.contexto}` : p.sistema },
-            ...p.mensagens.map((m) => ({ role: m.papel === "usuario" ? "user" : "assistant", content: m.texto })),
+            ...p.mensagens.map((m) => ({
+              role: m.papel === "usuario" ? "user" : "assistant",
+              content: m.imagens?.length
+                ? [...m.imagens.map((i) => ({ type: "image_url", image_url: { url: `data:${i.tipo};base64,${i.base64}` } })), { type: "text", text: m.texto }]
+                : m.texto,
+            })),
           ],
         }),
         signal: AbortSignal.timeout(60_000),

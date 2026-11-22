@@ -6,10 +6,11 @@ import { useToast } from "@/components/app/Toast";
 import { Building2, Plus, X } from "@/components/icons";
 import { alterarPacote, alternarEmpresaAtiva, criarEmpresa, definirLimiteLeads, prorrogarEmpresa } from "./actions";
 import CampoLimite from "@/components/app/CampoLimite";
+import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 
 export type EmpresaLinha = {
   id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean;
-  expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null;
+  expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null; treino: TreinoIA;
   usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
 };
 type PlanoOpcao = { id: string; nome: string; usuarios: number | null; personalizado: boolean; prazoDias: number };
@@ -142,6 +143,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                       Alterar pacote
                     </button>
                     <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => setLimitando(limitando === e.id ? null : e.id)}>Limite de leads</button>
+                    <ControleTreinoIA empresaId={e.id} nome={e.nome} t={e.treino} />
                     <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(e.id))}>Prorrogar</button>
                     <button
                       className="btn-ghost !py-1.5"

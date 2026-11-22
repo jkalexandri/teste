@@ -15,7 +15,7 @@ export type PedidoIA = {
   sistema: string;
   /** Conhecimento fixo (ficha da empresa): vai em cache para custar ~10% nas próximas chamadas. */
   contexto?: string;
-  mensagens: { papel: "usuario" | "assistente"; texto: string }[];
+  mensagens: { papel: "usuario" | "assistente"; texto: string; imagens?: { tipo: string; base64: string }[] }[];
   /** Limite de tamanho da resposta (custo — decisão #75). */
   maxTokens: number;
 };

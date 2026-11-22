@@ -26,7 +26,10 @@ function tokenConfere(recebido: string | undefined, esperado: string) {
 /** Maior anexo aceito (vídeo/áudio até 16 MB — decisão #68). */
 export const MAX_ARQUIVO = 16 * 1024 * 1024;
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos") {
+/** Empresa | IA (etapa 9b): o que a API precisa do processamento de materiais. */
+export type Aprender = { processar(materialId: string): Promise<void>; agendarFicha(fichaId: string, esperaMs?: number): void };
+
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -83,6 +86,18 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
   app.delete<{ Params: { id: string } }>("/arquivos/:id", async (req) => {
     await rm(join(pastaArquivos, req.params.id), { force: true });
     return { ok: true, mensagem: "Arquivo apagado." };
+  });
+
+  // ===== Empresa | IA (etapa 9b): leitura de materiais e montagem da ficha, em segundo plano =====
+  app.post<{ Params: { id: string } }>("/ia/materiais/:id/processar", async (req, res) => {
+    if (!aprender) return res.code(503).send({ ok: false, mensagem: "Aprendizado indisponível." });
+    void aprender.processar(req.params.id).catch((e) => logger.error({ e }, "falha ao processar material"));
+    return { ok: true, mensagem: "Lendo o material…" };
+  });
+  app.post<{ Params: { id: string } }>("/ia/fichas/:id/montar", async (req, res) => {
+    if (!aprender) return res.code(503).send({ ok: false, mensagem: "Aprendizado indisponível." });
+    aprender.agendarFicha(req.params.id, 1_000);
+    return { ok: true, mensagem: "Atualizando a ficha…" };
   });
 
   return app;

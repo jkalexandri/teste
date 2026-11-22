@@ -199,6 +199,15 @@ na VPS e rode `pnpm teste-campanha 55DDDNUMERO /caminho/foto.jpg`.
 3. No celular que recebeu, responda **SAIR** → deve aparecer `✅ Resposta "SAIR" recebida`.
 4. O script desconecta e apaga tudo o que criou.
 
+## Etapa 9b — Empresa | IA (leitura de sites, PDFs e imagens na VPS)
+
+A leitura dos materiais do Empresa | IA roda no serviço 24/7. Para atualizar, use os comandos de
+"Atualizar o serviço" abaixo (o `pnpm install` instala o leitor de PDF). Não há variável nova.
+
+- Os PDFs e imagens ficam na mesma pasta dos anexos (`PASTA_ARQUIVOS`), com nome `mat-<id>`.
+- Por segurança, o leitor de sites **não acessa endereços internos** (127.0.0.1, 10.x, 192.168.x etc.).
+- A IA usada é a chave salva no menu **Inteligência Artificial** (a chave nunca fica na VPS em texto puro).
+
 ## Atualizar o serviço (novas versões)
 
 ```bash

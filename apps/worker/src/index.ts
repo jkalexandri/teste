@@ -6,10 +6,13 @@ import { config } from "./config.js";
 import { GerenciadorSessoes, SESSAO_PLATAFORMA } from "./sessoes.js";
 import { criarApi } from "./api.js";
 import { MotorDisparos } from "./disparos.js";
+import { Aprendizado } from "./aprender.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
-const api = criarApi(sessoes, config.token, log, config.pastaArquivos);
+// Empresa | IA (etapa 9b): lê sites, PDFs e imagens e monta a ficha da empresa
+const aprendizado = new Aprendizado(log.child({ modulo: "aprender" }), config.pastaArquivos);
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,

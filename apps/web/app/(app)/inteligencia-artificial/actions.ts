@@ -4,7 +4,7 @@
 // de cada tarefa; botão Testar; cotação do dólar para a tela de despesas.
 import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
-import { criptografar, ErroIA, TAREFAS, testarConfig, type Tarefa } from "@filapro/ia";
+import { CHAVE_GLOBAL, criptografar, ErroIA, PADRAO, TAREFAS, testarConfig, type Tarefa } from "@filapro/ia";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { IS_PRODUCTION } from "@/lib/env";
 
@@ -66,4 +66,36 @@ export async function salvarCotacao(form: FormData): Promise<R> {
   revalidatePath("/despesas-ia");
   revalidatePath("/inteligencia-artificial");
   return { ok: true, mensagem: v ? `Cotação salva: R$ ${v.toFixed(2).replace(".", ",")}` : "Cotação removida (valores só em dólar)." };
+}
+
+/** Chave única da Anthropic (decisão #78): vale para todas as tarefas do Claude que não têm chave própria. */
+export async function salvarChaveGlobal(form: FormData): Promise<R> {
+  await exigirSuperAdmin();
+  const remover = form.get("removerChave") === "on";
+  const nova = String(form.get("chave") ?? "").trim();
+  if (!remover && !nova) return { ok: false, mensagem: "Cole a chave da Anthropic." };
+  if (nova && !nova.startsWith("sk-ant-")) return { ok: false, mensagem: "A chave da Anthropic começa com “sk-ant-”." };
+  const chave = remover ? null : criptografar(nova);
+  await prisma.configIA.upsert({
+    where: { tarefa: CHAVE_GLOBAL },
+    update: { chave },
+    create: { tarefa: CHAVE_GLOBAL, provedor: "anthropic", modelo: PADRAO.modelo, urlBase: "", precoEntrada: PADRAO.entrada, precoSaida: PADRAO.saida, chave },
+  });
+  revalidatePath("/inteligencia-artificial");
+  return { ok: true, mensagem: remover ? "Chave única removida." : "Chave única salva para todas as tarefas do Claude." };
+}
+
+/** Testa a chave única com o modelo padrão (antes ou depois de salvar). */
+export async function testarChaveGlobal(form: FormData): Promise<R> {
+  await exigirSuperAdmin();
+  const atual = await prisma.configIA.findUnique({ where: { tarefa: CHAVE_GLOBAL } });
+  const nova = String(form.get("chave") ?? "").trim();
+  const chave = nova || atual?.chave || null;
+  if (!chave) return { ok: false, mensagem: "Cole a chave para testar." };
+  try {
+    const r = await testarConfig("gerar_mensagens", { tarefa: "gerar_mensagens", provedor: "anthropic", modelo: PADRAO.modelo, urlBase: "", chave, precoEntrada: PADRAO.entrada, precoSaida: PADRAO.saida });
+    return { ok: true, mensagem: `Funcionou ✓ Resposta: “${r.texto.slice(0, 120)}”` };
+  } catch (e) {
+    return { ok: false, mensagem: e instanceof ErroIA ? e.message : "Falha no teste." };
+  }
 }

@@ -15,6 +15,9 @@ export type PlanoPublico = {
   testeDisparos: number | null;
   /** Limite de leads (decisão #58). Vazio = ilimitado. */
   limiteLeads: number | null;
+  /** Limites de treinamento da IA (decisão #77). Vazio = ilimitado. */
+  limiteMateriais?: number | null;
+  limitePaginasMes?: number | null;
   selo: string;
   frase: string;
   condicoes: string;
