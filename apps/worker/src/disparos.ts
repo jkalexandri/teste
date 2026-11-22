@@ -9,6 +9,7 @@ import { prisma, Cargo, StatusCampanha, StatusEnvio, StatusLead } from "@filapro
 // Regras puras compartilhadas com o site (import direto do arquivo: funciona igual em ESM e CJS)
 import { numeroDeAvisos } from "./avisos.js";
 import { enviarPush } from "./push.js";
+import { emManutencao } from "./manutencao.js";
 import { MOTIVO_SEM_SALDO, saldoDisparos } from "@filapro/db/src/saldo.ts";
 import { MODOS, MAX_SEM_RESPOSTA_30D, PALAVRAS_SAIR, agoraSP, dentroDaJanela, limiteAquecimento, montarMensagem, saudacao } from "@filapro/db/src/envio.ts";
 
@@ -79,6 +80,8 @@ export class MotorDisparos {
 
   /** Um ciclo: ativa agendadas, retoma as pausadas por desconexão e garante um corredor por remetente. */
   async ciclo() {
+    // Atualização em andamento (decisão #103): nada sai; as campanhas continuam de onde pararam depois
+    if (await emManutencao()) return;
     const agora = this.agora();
     await prisma.campanha.updateMany({
       where: { status: StatusCampanha.AGENDADA, agendadaPara: { lte: agora } },
@@ -99,6 +102,7 @@ export class MotorDisparos {
     this.correndo.add(usuarioId);
     try {
       for (;;) {
+        if (await emManutencao()) break;
         const r = await this.passo(usuarioId);
         if (r.acao === "nada") break;
         await this.dormir(r.esperaMs);

@@ -8,6 +8,8 @@ const dataMontagem = new Date().toLocaleDateString("pt-BR", { timeZone: "America
 const nextConfig = {
   env: { NEXT_PUBLIC_VERSAO: raiz.version, NEXT_PUBLIC_VERSAO_DATA: dataMontagem },
   reactStrictMode: true,
+  // Atualização (decisão #103): o deploy monta em ".next-novo" e troca no fim, sem derrubar o site atual
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Pacote compartilhado do banco (TypeScript) dentro do monorepo.
   transpilePackages: ["@filapro/db", "@filapro/ia"],
   // Importação de leads (até 10 MB — etapa 7) e PDF do Empresa | IA (até 20 MB — etapa 9b).

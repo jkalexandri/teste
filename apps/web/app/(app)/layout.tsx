@@ -11,6 +11,8 @@ import { menuDoCargo, rotaPermitida } from "@/lib/menu";
 import AppShell from "@/components/app/AppShell";
 import Presenca from "@/components/app/Presenca";
 import { Suspense } from "react";
+import { emManutencao } from "@/lib/manutencao";
+import FaixaManutencao from "@/components/app/FaixaManutencao";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // Permissões só se aplicam ao Usuário (decisão #47).
   const permissoes = u.cargo === Cargo.USUARIO ? u.permissoes : undefined;
   if (!rotaPermitida(u.cargo, caminho, permissoes)) redirect("/dashboard");
+
+  // Atualização em andamento (decisão #103): o cliente vê só a tela de atualização (a página nem é carregada);
+  // o Super Admin continua usando e vê uma faixa para desligar a manutenção se precisar.
+  const manutencao = await emManutencao();
+  const bloqueado = manutencao && u.cargo !== Cargo.SUPERADMIN;
 
   // Contador de pedidos aguardando confirmação (Super Admin).
   const contadores: Record<string, number> = {};
@@ -50,9 +57,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         contadores,
       }}
     >
-      {children}
+      {manutencao && !bloqueado && <FaixaManutencao />}
+      {bloqueado ? null : children}
       {/* Online, mensagens do Super Admin e Suporte (decisão #102) */}
-      <Suspense fallback={null}><Presenca cliente={u.cargo !== Cargo.SUPERADMIN} /></Suspense>
+      <Suspense fallback={null}><Presenca cliente={u.cargo !== Cargo.SUPERADMIN} manutencaoInicial={bloqueado} /></Suspense>
     </AppShell>
   );
 }

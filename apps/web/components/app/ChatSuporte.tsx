@@ -11,7 +11,11 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: "
   const toast = useToast();
   const base = modo === "cliente" ? "/api/suporte" : `/api/suporte/${usuarioId}`;
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [texto, setTexto] = useState("");
+  // Rascunho guardado no navegador: não se perde se a página recarregar (ex.: fim da atualização — decisão #103)
+  const chaveRascunho = `filapro-rascunho-${modo}-${usuarioId ?? "eu"}`;
+  const [texto, setTextoEstado] = useState("");
+  const setTexto = (v: string) => { setTextoEstado(v); try { if (v) sessionStorage.setItem(chaveRascunho, v); else sessionStorage.removeItem(chaveRascunho); } catch { /* sem armazenamento */ } };
+  useEffect(() => { try { const r = sessionStorage.getItem(chaveRascunho); if (r) setTextoEstado(r); } catch { /* sem armazenamento */ } }, [chaveRascunho]);
   const [enviando, setEnviando] = useState(false);
   const arquivoRef = useRef<HTMLInputElement>(null);
   const fim = useRef<HTMLDivElement>(null);

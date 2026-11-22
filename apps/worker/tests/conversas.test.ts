@@ -6,6 +6,7 @@ import pino from "pino";
 import { prisma, AutorMensagem, Cargo, Modulo, StatusLead } from "@filapro/db";
 import { Atendente, MAX_IA_DIA, MOTIVO_ASSUMIDA, MOTIVO_LIMITE, MOTIVO_NAO_SEI, TEXTO_AUDIO } from "../src/conversas.js";
 import type { Conteudo, Remetente } from "../src/disparos.js";
+import { limparCacheManutencao } from "../src/manutencao.js";
 
 const EMP = "teste-conv-emp", USU = "teste-conv-usu", TEL = "5511990001111";
 
@@ -88,6 +89,24 @@ test("várias mensagens seguidas recebem uma resposta só", async () => {
   await at.receber(USU, USU, TEL, { texto: "tudo bem?", tipo: "texto" });
   await at.receber(USU, USU, TEL, { texto: "queria informação", tipo: "texto" });
   await espera(500); await aguardar();
+  assert.equal(wa.enviados.length, 1);
+});
+
+test("modo manutenção: a resposta da IA fica guardada e sai depois (decisão #103)", async () => {
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 100 });
+  await novoLead();
+  await prisma.manutencao.upsert({ where: { id: "geral" }, create: { id: "geral", ligada: true }, update: { ligada: true } });
+  limparCacheManutencao();
+  try {
+    await at.receber(USU, USU, TEL, { texto: "Oi, quanto custa?", tipo: "texto" });
+    await espera(400);
+    assert.equal(wa.enviados.length, 0);
+    assert.equal(at.pendentes(), 1);
+  } finally {
+    await prisma.manutencao.update({ where: { id: "geral" }, data: { ligada: false } });
+    limparCacheManutencao();
+  }
+  await espera(300); await aguardar();
   assert.equal(wa.enviados.length, 1);
 });
 

@@ -4,6 +4,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import pino from "pino";
 import { prisma, StatusCampanha, StatusEnvio, StatusLead, Modulo, Cargo } from "@filapro/db";
+import { limparCacheManutencao } from "../src/manutencao.js";
 import { MotorDisparos, MOTIVO_DESCONECTADO, MOTIVO_JANELA, type Conteudo, type Remetente } from "../src/disparos.js";
 
 const EMP = "teste-motor-emp", USU = "teste-motor-usu";
@@ -158,6 +159,24 @@ test("campanha agendada começa sozinha na hora marcada", async () => {
   await motor.ciclo();
   await new Promise((r) => setTimeout(r, 300));
   assert.equal(wa.enviados.length, 1);
+});
+
+test("modo manutenção: nada sai durante a atualização e a campanha continua depois (decisão #103)", async () => {
+  const c = await campanha([await lead(1), await lead(2)]);
+  await prisma.manutencao.upsert({ where: { id: "geral" }, create: { id: "geral", ligada: true }, update: { ligada: true } });
+  limparCacheManutencao();
+  try {
+    await motor.ciclo();
+    await new Promise((r) => setTimeout(r, 300));
+    assert.equal(wa.enviados.length, 0);
+    assert.equal((await status(c.id)).status, StatusCampanha.EM_ANDAMENTO);
+  } finally {
+    await prisma.manutencao.update({ where: { id: "geral" }, data: { ligada: false } });
+    limparCacheManutencao();
+  }
+  await motor.ciclo();
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(wa.enviados.length, 2);
 });
 
 test("aquecimento: número novo envia no máximo 20 por dia", async () => {

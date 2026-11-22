@@ -780,3 +780,12 @@ model ComunicadoDestino {
   @@unique([comunicadoId, usuarioId])
   @@index([usuarioId, lidoEm])
 }
+
+/// Modo manutenção (decisão #103): ligado pelo deploy/atualizar.sh durante as atualizações.
+/// Uma linha só (id "geral"), lida pelo site e pelo serviço 24/7.
+model Manutencao {
+  id     String    @id @default("geral")
+  ligada Boolean   @default(false)
+  desde  DateTime?
+  motivo String?
+}

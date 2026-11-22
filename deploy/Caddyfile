@@ -7,6 +7,15 @@ filaproleads.com.br {
 		max_size 25MB
 	}
 	reverse_proxy 127.0.0.1:3000
+	# Nos segundos em que o site reinicia (atualização — decisão #103): página "Sistema em atualização"
+	handle_errors {
+		@fora expression `{err.status_code} in [502, 503, 504]`
+		handle @fora {
+			root * /opt/filapro/app/deploy/pagina-manutencao
+			rewrite * /index.html
+			file_server
+		}
+	}
 }
 
 # www vai para o endereço principal

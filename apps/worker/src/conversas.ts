@@ -8,6 +8,7 @@ import { PALAVRAS_SAIR } from "@filapro/db/src/envio.ts";
 import { reservarCodigos } from "@filapro/db/src/codigos.ts";
 import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
 import { escolherNumero } from "./numeros.js";
+import { emManutencao } from "./manutencao.js";
 import { enviarPush, urlDoAviso } from "./push.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
@@ -130,7 +131,11 @@ export class Atendente {
     clearTimeout(this.timers.get(leadId));
     this.timers.set(leadId, setTimeout(() => {
       this.timers.delete(leadId);
-      void acao().catch((e) => this.log.error({ e, leadId }, "falha ao responder lead"));
+      void (async () => {
+        // Atualização em andamento (decisão #103): a resposta fica guardada e sai depois
+        if (await emManutencao()) { this.agendar(leadId, acao); return; }
+        await acao();
+      })().catch((e) => this.log.error({ e, leadId }, "falha ao responder lead"));
     }, this.espera()));
   }
 
@@ -279,6 +284,8 @@ export class Atendente {
   /** Lead que chegou pelo endereço de anúncios: cadastra (ou encontra) e a IA escreve a primeira mensagem. */
   async atenderAnuncio(id: string) {
     if (this.emAtendimento.has(id)) return;
+    // Atualização em andamento (decisão #103): o lead fica guardado e a varredura atende depois
+    if (await emManutencao()) return;
     this.emAtendimento.add(id);
     try {
       await this.atenderAnuncioAgora(id);

@@ -3,14 +3,18 @@
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
+import { emManutencao } from "@/lib/manutencao";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+  // Atualização em andamento (decisão #103): o cliente só fica sabendo (nada é gravado)
+  const manutencao = await emManutencao();
   const s = await obterSessao();
   if (!s || s.precisaTrocar) return NextResponse.json({ ok: false }, { status: 401 });
   const c = (await req.json().catch(() => ({}))) as { tela?: string; app?: boolean };
   const u = s.usuario;
+  if (manutencao && u.cargo !== Cargo.SUPERADMIN) return NextResponse.json({ ok: true, manutencao: true, comunicado: null, suporte: { naoLidas: 0, chamado: false } });
   const agora = new Date();
   const ua = req.headers.get("user-agent") ?? "";
   const aparelho = c.app ? "App no celular" : /Mobi|Android|iPhone|iPad/i.test(ua) ? "Navegador do celular" : "Computador";
@@ -32,5 +36,5 @@ export async function POST(req: Request) {
     const conv = await prisma.suporteConversa.findUnique({ where: { usuarioId: u.id } });
     if (conv) suporte = { naoLidas: conv.naoLidasCliente, chamado: !!conv.chamadoEm };
   }
-  return NextResponse.json({ ok: true, comunicado, suporte });
+  return NextResponse.json({ ok: true, manutencao, comunicado, suporte });
 }

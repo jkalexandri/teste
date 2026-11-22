@@ -5,21 +5,27 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import ChatSuporte from "./ChatSuporte";
+import TelaManutencao from "./TelaManutencao";
 
 type Comunicado = { id: string; titulo: string; texto: string; link: string | null };
 
-export default function Presenca({ cliente }: { cliente: boolean }) {
+export default function Presenca({ cliente, manutencaoInicial = false }: { cliente: boolean; manutencaoInicial?: boolean }) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const [comunicado, setComunicado] = useState<Comunicado | null>(null);
   const [suporte, setSuporte] = useState({ naoLidas: 0, chamado: false });
   const [aberto, setAberto] = useState(false);
+  // Atualização em andamento (decisão #103): só para clientes; o Super Admin continua usando
+  const [manutencao, setManutencao] = useState(manutencaoInicial);
 
   const sinal = useCallback(async () => {
     const app = window.matchMedia("(display-mode: standalone)").matches;
-    const r = await fetch("/api/presenca", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tela: window.location.pathname, app }) })
-      .then((x) => x.json()).catch(() => null);
+    const resp = await fetch("/api/presenca", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tela: window.location.pathname, app }) }).catch(() => null);
+    // 503 = servidor em atualização (resposta do site ou do Caddy enquanto reinicia)
+    if (resp && [502, 503, 504].includes(resp.status) && cliente) { setManutencao(true); return; }
+    const r = resp ? await resp.json().catch(() => null) : null;
     if (!r?.ok) return;
+    if (r.manutencao && cliente) { setManutencao(true); return; }
     setComunicado((atual) => atual ?? r.comunicado);
     setSuporte(r.suporte);
     if (cliente && r.suporte.chamado) setAberto(true);
@@ -44,6 +50,7 @@ export default function Presenca({ cliente }: { cliente: boolean }) {
 
   return (
     <>
+      {manutencao && <TelaManutencao />}
       {comunicado && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" style={{ background: "rgba(10,20,15,.6)" }} role="alertdialog" aria-modal="true" aria-label="Mensagem do FilaPro Leads" data-testid="popup-comunicado">
           <div className="card w-full max-w-[460px] p-5 text-center">
