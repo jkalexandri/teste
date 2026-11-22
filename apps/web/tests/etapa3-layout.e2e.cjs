@@ -51,7 +51,7 @@ const OUT = process.argv[2];
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);
-  ok('Super Admin abre relatório', (await p.locator('main').innerText()).includes('etapa 11'));
+  ok('Super Admin abre relatório', (await p.locator('main').innerText()).includes('Relatório Empresarial') && (await p.locator('#rel-conta').count()) === 1);
   await c.close();
 
   // Aviso de expiração (≤ 10 dias)
