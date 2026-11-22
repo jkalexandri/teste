@@ -78,6 +78,8 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/relatorios/individual", label: "Relatório Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/leads-empresarial", label: "Leads Empresarial", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/lead-individual", label: "Lead Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
+  // Decisão #96: relatório de campanhas por conta e período
+  { href: "/relatorios/campanhas", label: "Relatório de campanhas", icone: "envio", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   // Decisão #27: Super Admin configura os planos e a forma de pagamento.
   { href: "/planos", label: "Planos", icone: "planos", grupo: "Configurações", etapa: 4 },
   { href: "/pagamento", label: "Pagamento", icone: "pagamento", grupo: "Configurações", etapa: 4 },

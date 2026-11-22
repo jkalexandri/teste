@@ -53,6 +53,7 @@ Em `production` os botões de acesso demo do login ficam ocultos.
 - [x] Etapa 10 — Conversas IA (IA responde, qualifica Quente/Morno/Frio e trata objeções; Assumir conversa; histórico de 365 dias)
 - [x] Etapa 10b — Avisos do usuário (Quente, anúncio, respondeu, com resumo a cada 10 min) e Leads de anúncios (endereço secreto para Google Ads e Make/Zapier; recurso pago do plano)
 - [x] Etapa 10c — Vários WhatsApps no Individual (rodízio, limites e saúde por número, compra do extra por PIX proporcional, renovação escolhendo os números)
+- [x] Etapa 11 — Relatórios do Super Admin (Empresarial, Individual, Leads Empresarial, Lead Individual, Campanhas) com Baixar Excel e Imprimir
 
 ## Banco de dados (desenvolvimento)
 ```bash
