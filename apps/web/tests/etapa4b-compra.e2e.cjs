@@ -20,6 +20,10 @@ const ultimaSenha = (email) => {
   const abrirPlano = async (p, nome) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
     await p.click('button:has-text("Planos")'); await p.waitForTimeout(800);
+    // Abas Individual | Empresarial (decisão #113): abre a aba do plano, se ele não estiver na atual
+    if (!(await p.locator(`[aria-label="Planos"] article:has-text("${nome}")`).count()) && (await p.locator('[data-testid=aba-modulo-EMPRESARIAL]').count())) {
+      await p.click('[data-testid=aba-modulo-EMPRESARIAL]'); await p.waitForTimeout(300);
+    }
     await p.click(`[aria-label="Planos"] article:has-text("${nome}") >> button`); await p.waitForTimeout(300);
   };
 

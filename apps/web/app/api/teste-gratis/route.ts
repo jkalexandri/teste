@@ -39,7 +39,8 @@ export async function POST(req: Request) {
         planoId: plano.id,
         limiteUsuarios: 1,
         prazoDias: plano.testeDias ?? 7,
-        limiteDisparos: plano.testeDisparos ?? 20,
+        // Free por dias (aba Mensal) não tem limite de disparos; Free por disparos tem (decisão #113)
+        limiteDisparos: plano.testeDisparos ?? null,
         limiteLeads: plano.limiteLeads,
         usuario: { nome: dados.nome, email: dados.email, whatsapp: dados.whatsapp },
       },

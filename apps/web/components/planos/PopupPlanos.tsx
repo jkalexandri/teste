@@ -5,7 +5,7 @@
 // número de colunas se ajustam à quantidade de planos.
 import { useEffect, useState } from "react";
 import { X } from "@/components/icons";
-import { ABAS_PLANOS, abasDoPlano, linkContato, type AbaPlanos, type PlanoPublico } from "@/lib/planos";
+import { ABAS_PLANOS, MODULOS_PLANOS, abasDoPlano, linkContato, type AbaPlanos, type ModuloPlano, type PlanoPublico } from "@/lib/planos";
 import CartaoPlano from "./CartaoPlano";
 import Checkout from "./Checkout";
 import ChatInteressado from "./ChatInteressado";
@@ -45,31 +45,48 @@ export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; on
   );
 }
 
-/** Planos em duas abas largas: Sem limite / Por quantidade de disparos (decisão #111).
- *  Se só uma das abas tem planos próprios, mostra só a grade, sem abas. */
+/** Botão de aba larga (decisões #111 e #113) */
+function Aba({ ativa, onClick, titulo, frase, testid, grande }: { ativa: boolean; onClick: () => void; titulo: string; frase: string; testid: string; grande?: boolean }) {
+  return (
+    <button type="button" role="tab" aria-selected={ativa} data-testid={testid} onClick={onClick}
+      className={`rounded-2xl text-left transition ${grande ? "px-3 py-3 sm:px-5 sm:py-4" : "px-3 py-2 sm:px-4 sm:py-2.5"}`}
+      style={ativa
+        ? { background: "linear-gradient(135deg, rgba(37,211,102,.28), rgba(45,212,255,.18))", border: "1px solid rgba(37,211,102,.7)", boxShadow: "0 0 28px rgba(37,211,102,.25)", color: "#eaf6ff" }
+        : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", color: "#9fb3c8" }}>
+      <span className={`block font-display font-extrabold leading-tight ${grande ? "text-[15px] sm:text-[19px]" : "text-[13px] sm:text-[15px]"}`}>{titulo}</span>
+      <span className={`block mt-0.5 ${grande ? "text-[11px] sm:text-[13px]" : "text-[10.5px] sm:text-[12px]"}`} style={{ color: ativa ? "#bfe8d0" : "#7f93a8" }}>{frase}</span>
+    </button>
+  );
+}
+
+/** Planos em abas (decisão #113): Individual | Empresarial e, em cada um, Mensal | Por disparo.
+ *  Uma aba só aparece se tiver planos; se só houver um tipo, mostra direto a grade. */
 export function PlanosComAbas({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
+  const modulos = MODULOS_PLANOS.filter((m) => planos.some((p) => p.modulo === m.id));
+  const [modulo, setModulo] = useState<ModuloPlano>(modulos[0]?.id ?? "INDIVIDUAL");
   const [aba, setAba] = useState<AbaPlanos>("ilimitado");
-  const proprios = (a: AbaPlanos) => planos.filter((p) => !p.gratis && !p.personalizado && abasDoPlano(p).includes(a)).length;
-  const comAbas = proprios("ilimitado") > 0 && proprios("quantidade") > 0;
-  if (!comAbas) return <GradePlanos planos={planos} onEscolher={onEscolher} />;
-  const daAba = planos.filter((p) => abasDoPlano(p).includes(aba));
+  const doModulo = planos.filter((p) => p.modulo === modulo);
+  // Tipos com planos próprios (o Free sozinho não cria aba)
+  const tipos = ABAS_PLANOS.filter((a) => doModulo.some((p) => !p.gratis && !p.personalizado && abasDoPlano(p).includes(a.id)));
+  const abaAtual = tipos.some((t) => t.id === aba) ? aba : tipos[0]?.id ?? "ilimitado";
+  const daAba = tipos.length > 1 ? doModulo.filter((p) => abasDoPlano(p).includes(abaAtual)) : doModulo;
+  const nomeModulo = MODULOS_PLANOS.find((m) => m.id === modulo)?.titulo ?? "";
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 max-w-[900px] mx-auto" role="tablist" aria-label="Tipo de plano">
-        {ABAS_PLANOS.map((a) => {
-          const ativa = a.id === aba;
-          return (
-            <button key={a.id} type="button" role="tab" aria-selected={ativa} data-testid={`aba-planos-${a.id}`} onClick={() => setAba(a.id)}
-              className="rounded-2xl px-3 py-3 sm:px-5 sm:py-4 text-left transition"
-              style={ativa
-                ? { background: "linear-gradient(135deg, rgba(37,211,102,.28), rgba(45,212,255,.18))", border: "1px solid rgba(37,211,102,.7)", boxShadow: "0 0 28px rgba(37,211,102,.25)", color: "#eaf6ff" }
-                : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", color: "#9fb3c8" }}>
-              <span className="block font-display font-extrabold text-[14px] sm:text-[18px] leading-tight">{a.icone} {a.titulo}</span>
-              <span className="block text-[11px] sm:text-[13px] mt-0.5" style={{ color: ativa ? "#bfe8d0" : "#7f93a8" }}>{a.frase}</span>
-            </button>
-          );
-        })}
-      </div>
+      {modulos.length > 1 && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2.5 max-w-[900px] mx-auto" role="tablist" aria-label="Tipo de conta">
+          {modulos.map((m) => (
+            <Aba key={m.id} grande ativa={m.id === modulo} onClick={() => { setModulo(m.id); setAba("ilimitado"); }} titulo={`${m.icone} ${m.titulo}`} frase={m.frase} testid={`aba-modulo-${m.id}`} />
+          ))}
+        </div>
+      )}
+      {tipos.length > 1 && (
+        <div className="grid grid-cols-2 gap-2 mb-4 max-w-[640px] mx-auto" role="tablist" aria-label="Forma de cobrança">
+          {tipos.map((a) => (
+            <Aba key={a.id} ativa={a.id === abaAtual} onClick={() => setAba(a.id)} titulo={`${a.icone} ${nomeModulo} • ${a.titulo}`} frase={a.frase} testid={`aba-planos-${a.id}`} />
+          ))}
+        </div>
+      )}
       <GradePlanos planos={daAba} onEscolher={onEscolher} />
     </>
   );

@@ -38,15 +38,23 @@ export type PlanoPublico = {
   ordem: number;
 };
 
-// ===== Abas do popup Planos (decisão #111) =====
+// ===== Abas do popup Planos (decisões #111 e #113) =====
+// 1º nível: Individual | Empresarial. 2º nível: Mensal (sem limite de disparos) | Por disparo (por quantidade).
 export type AbaPlanos = "ilimitado" | "quantidade";
-export const ABAS_PLANOS: { id: AbaPlanos; titulo: string; frase: string; icone: string }[] = [
-  { id: "ilimitado", titulo: "Sem limite de disparos", frase: "Envie quanto quiser no período", icone: "🚀" },
-  { id: "quantidade", titulo: "Por quantidade de disparos", frase: "Pague pelo volume que usar", icone: "📦" },
+export type ModuloPlano = "INDIVIDUAL" | "EMPRESARIAL";
+export const MODULOS_PLANOS: { id: ModuloPlano; titulo: string; frase: string; icone: string }[] = [
+  { id: "INDIVIDUAL", titulo: "Individual", frase: "Para quem vende sozinho", icone: "👤" },
+  { id: "EMPRESARIAL", titulo: "Empresarial", frase: "Para equipes de vendas", icone: "🏢" },
 ];
-/** Free e Personalizado aparecem nas duas abas; com "disparos por período" → Por quantidade; sem → Sem limite. */
-export function abasDoPlano(p: Pick<PlanoPublico, "gratis" | "personalizado" | "disparosPorPeriodo">): AbaPlanos[] {
-  if (p.gratis || p.personalizado) return ["ilimitado", "quantidade"];
+export const ABAS_PLANOS: { id: AbaPlanos; titulo: string; frase: string; icone: string }[] = [
+  { id: "ilimitado", titulo: "Mensal", frase: "Sem limite de disparos no período", icone: "🚀" },
+  { id: "quantidade", titulo: "Por disparo", frase: "Pague pelo volume que usar", icone: "📦" },
+];
+/** Aba do plano: com "disparos por período" → Por disparo; sem → Mensal.
+ *  Free (decisão #113, item C): teste por dias (sem limite de disparos) → Mensal; teste por disparos → Por disparo. */
+export function abasDoPlano(p: Pick<PlanoPublico, "gratis" | "personalizado" | "disparosPorPeriodo"> & { testeDisparos?: number | null }): AbaPlanos[] {
+  if (p.gratis) return p.testeDisparos ? ["quantidade"] : ["ilimitado"];
+  if (p.personalizado) return ["ilimitado"];
   return p.disparosPorPeriodo ? ["quantidade"] : ["ilimitado"];
 }
 /** Plano pago precisa de preço maior que zero para aparecer e ser vendido (decisão #111). */

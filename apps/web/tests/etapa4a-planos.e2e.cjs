@@ -18,14 +18,14 @@ const OUT = process.argv[2];
   ok('Menu do Super Admin tem Planos e Pagamento', (await p.locator('aside nav').innerText()).includes('Planos') && (await p.locator('aside nav').innerText()).includes('Pagamento'));
   await p.click('aside nav >> text=Planos'); await p.waitForURL('**/planos');
   ok('Tela Planos lista 7 planos', await p.locator('table tbody tr').count() === 7);
-  ok('Padrão começa em destaque', (await p.locator('tr:has-text("Padrão")').innerText()).includes('Em destaque'));
+  ok('Padrão começa em destaque', (await p.locator('tr[data-plano="Padrão"]').innerText()).includes('Em destaque'));
   // tentar exibir sem preço
-  await p.click('tr:has-text("Básico") >> text=Oculto'); await p.waitForTimeout(800);
+  await p.click('tr[data-plano="Básico"] >> text=Oculto'); await p.waitForTimeout(800);
   ok('Plano sem preço aparece como Em breve', (await p.locator('text=aparece como “Em breve”').count()) >= 1);
-  await p.click('tr:has-text("Básico") >> text=Aparece'); await p.waitForTimeout(800);
+  await p.click('tr[data-plano="Básico"] >> text=Aparece'); await p.waitForTimeout(800);
 
   const editar = async (nome, campos) => {
-    await p.click(`tr:has-text("${nome}") >> text=Editar`);
+    await p.click(`tr[data-plano="${nome}"] >> text=Editar`);
     for (const [k, v] of Object.entries(campos)) await p.fill(`#f-${k}`, v);
     await p.click('text=Salvar plano'); await p.waitForTimeout(1000);
   };
@@ -33,8 +33,12 @@ const OUT = process.argv[2];
   await editar('Individual', { precoAntigo: '49,90', precoAtual: '29,90', selo: '40% de desconto', frase: 'Para quem trabalha sozinho.', condicoes: 'Cobrança mensal. Cancele quando quiser.', recursos: '1 usuário\nAntibloqueio\nIA' });
   await editar('Padrão', { precoAntigo: '299,90', precoAtual: '199,90', selo: 'Mais vendido', frase: 'Para equipes de vendas.', condicoes: 'Cobrança mensal.', ofertaTexto: 'Oferta de lançamento: 1º mês com 30% off', recursos: '10 usuários\nAntibloqueio\nIA qualifica leads' });
   await editar('Básico', { precoAtual: '99,90', frase: 'Para pequenas equipes.', recursos: '3 usuários' });
-  for (const n of ['Free', 'Individual', 'Básico', 'Padrão']) { await p.click(`tr:has-text("${n}") >> text=Oculto`); await p.waitForTimeout(700); }
-  ok('Prévia mostra 4 planos', await p.locator('.login-future article').count() === 4, String(await p.locator('.login-future article').count()));
+  for (const n of ['Free', 'Individual', 'Básico', 'Padrão']) { await p.click(`tr[data-plano="${n}"] >> text=Oculto`); await p.waitForTimeout(700); }
+  // Prévia em abas (decisão #113): Individual (Free + Individual) e Empresarial (Básico + Padrão)
+  const ind = await p.locator('.login-future article').count();
+  await p.click('.login-future [data-testid=aba-modulo-EMPRESARIAL]'); await p.waitForTimeout(400);
+  const emp = await p.locator('.login-future article').count();
+  ok('Prévia mostra os 4 planos (2 Individual + 2 Empresarial)', ind === 2 && emp === 2, `${ind}+${emp}`);
   await p.screenshot({ path: OUT + '/admin-planos.png', fullPage: true });
   // pagamento
   await p.click('aside nav >> text=Pagamento'); await p.waitForURL('**/pagamento');
@@ -51,7 +55,11 @@ const OUT = process.argv[2];
   ok('Botão de tema só com ícone', (await q.locator('[aria-label="Usar tema escuro"]').innerText()).trim() === '');
   await q.screenshot({ path: OUT + '/login-botao-planos.png' });
   await q.click('button:has-text("Planos")'); await q.waitForTimeout(1200);
-  ok('Popup mostra os 4 planos visíveis', await q.locator('[aria-label="Planos"] article').count() === 4);
+  // Abas Individual | Empresarial (decisão #113): 2 planos em cada
+  const nInd = await q.locator('[aria-label="Planos"] article').count();
+  await q.click('[data-testid=aba-modulo-EMPRESARIAL]'); await q.waitForTimeout(300);
+  const nEmp = await q.locator('[aria-label="Planos"] article').count();
+  ok('Popup mostra os 4 planos visíveis (2 Individual + 2 Empresarial)', nInd === 2 && nEmp === 2, `${nInd}+${nEmp}`);
   await q.setViewportSize({ width: 1440, height: 900 }); await q.waitForTimeout(500);
   await q.screenshot({ path: OUT + '/popup-planos.png' });
   await q.click('article:has-text("Padrão") >> text=Escolher plano'); await q.waitForTimeout(500);

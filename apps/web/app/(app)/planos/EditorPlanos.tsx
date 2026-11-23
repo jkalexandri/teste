@@ -10,7 +10,8 @@ import { useToast } from "@/components/app/Toast";
 import CampoLimite from "@/components/app/CampoLimite";
 import { alternarVisivel, definirDestaque, duplicarPlano, excluirPlano, moverPlano, novoPlano, salvarPlano } from "./actions";
 
-const NOME_ABA = { ilimitado: "Sem limite", quantidade: "Por quantidade" } as const;
+const NOME_ABA = { ilimitado: "Mensal", quantidade: "Por disparo" } as const;
+const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" } as const;
 
 const reais = (c: number | null) => (c == null ? "" : (c / 100).toFixed(2).replace(".", ","));
 
@@ -62,7 +63,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
             </thead>
             <tbody>
               {planos.map((p, i) => (
-                <tr key={p.id}>
+                <tr key={p.id} data-plano={p.nome}>
                   <td>
                     <div className="flex gap-1">
                       <button className="btn-ghost !px-2 !py-1" disabled={pendente || i === 0} onClick={() => executar(() => moverPlano(p.id, -1))} aria-label={`Subir ${p.nome}`}>↑</button>
@@ -70,7 +71,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                     </div>
                   </td>
                   <td className="font-bold">{p.nome}{p.gratis && <span className="chip ml-1" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>Teste grátis</span>}</td>
-                  <td className="text-[12px]" data-testid="aba-do-plano">{abasDoPlano(p).length > 1 ? "As duas" : NOME_ABA[abasDoPlano(p)[0]!]}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo}</span> : null}</td>
+                  <td className="text-[12px]" data-testid="aba-do-plano">{NOME_MODULO[p.modulo]} • {abasDoPlano(p).length > 1 ? "Mensal e Por disparo" : NOME_ABA[abasDoPlano(p)[0]!]}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo}</span> : null}</td>
                   <td>{p.personalizado ? "Sob medida" : p.usuarios}</td>
                   <td>{p.gratis ? "Grátis" : p.personalizado && p.precoAtual == null ? "Sob consulta" : semPrecoDeVenda(p) ? <span style={{ color: "#b45309" }} data-testid="preco-em-breve">Em breve — defina o preço</span> : `${formatarReais(p.precoAtual!)}/${p.periodo}`}</td>
                   <td>
@@ -197,7 +198,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
               {editando.gratis && (
                 <>
                   <Campo nome="testeDias" rotulo="Teste grátis: dias" valor={editando.testeDias ?? ""} tipo="number" />
-                  <Campo nome="testeDisparos" rotulo="Teste grátis: disparos" valor={editando.testeDisparos ?? ""} tipo="number" />
+                  <Campo nome="testeDisparos" rotulo="Teste grátis: disparos" valor={editando.testeDisparos ?? ""} tipo="number" dica="Vazio = teste por dias, sem limite de disparos (aba Mensal). Preenchido = teste por disparos (aba Por disparo)." />
                 </>
               )}
               <Campo nome="selo" rotulo="Selo (canto do cartão)" valor={editando.selo} dica="Ex.: 80% de desconto" />

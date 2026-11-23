@@ -30,12 +30,13 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await p.fill('#f-precoAtual', '0'); await p.fill('#f-disparosPorPeriodo', '3000'); await p.fill('#f-pacoteDisparos', '500'); await p.fill('#f-precoPacoteDisparos', '0');
     await p.check('#f-limiteLeads-ilimitado').catch(() => undefined);
     await p.click('button:has-text("Salvar plano")'); await espera(1200);
-    ok('Plano com disparos vai para a aba Por quantidade', (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=aba-do-plano]').innerText()).includes('Por quantidade'));
+    ok('Plano com disparos vai para a aba Por disparo', (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=aba-do-plano]').innerText()).includes('Por disparo'));
     await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('button:has-text("Oculto")').click(); await espera(1000);
     ok('Preço zero fica visível como Em breve', sql(`select visivel from "Plano" where id='${QID}'`) === 't' && (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=preco-em-breve]').count()) === 1);
     // Visitante vê "Em breve" e não consegue comprar
     const vb = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
     await vb.goto(BASE + '/login', { waitUntil: 'networkidle' }); await vb.click('button:has-text("Planos")'); await espera(1000);
+    if (await vb.locator('[data-testid=aba-modulo-EMPRESARIAL]').count()) await vb.click('[data-testid=aba-modulo-EMPRESARIAL]');
     await vb.click('[data-testid=aba-planos-quantidade]').catch(() => undefined); await espera(400);
     const cartao = vb.locator('article:has-text("T17 Quantidade")');
     ok('Visitante vê "Em breve" e o botão desativado', (await cartao.locator('[data-testid=plano-em-breve]').isDisabled()) && (await cartao.innerText()).includes('Em breve') && !(await cartao.innerText()).includes('R$ 0,00'));
@@ -65,7 +66,10 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     // Popup do visitante: duas abas largas
     const v = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
     await v.goto(BASE + '/login', { waitUntil: 'networkidle' }); await v.click('button:has-text("Planos")'); await espera(1200);
-    ok('Popup mostra as duas abas', (await v.locator('[data-testid^=aba-planos-]').count()) === 2);
+    // 1º nível: Individual | Empresarial (decisão #113) — o plano do teste é Empresarial
+    if (await v.locator('[data-testid=aba-modulo-EMPRESARIAL]').count()) await v.click('[data-testid=aba-modulo-EMPRESARIAL]');
+    await espera(400);
+    ok('Popup mostra as duas abas (Mensal e Por disparo)', (await v.locator('[data-testid^=aba-planos-]').count()) === 2);
     ok('Abre na aba Sem limite', (await v.locator('[data-testid=aba-planos-ilimitado]').getAttribute('aria-selected')) === 'true' && (await v.locator('article:has-text("T17 Quantidade")').count()) === 0);
     await v.click('[data-testid=aba-planos-quantidade]'); await espera(500);
     ok('Aba Por quantidade mostra o plano com disparos', (await v.locator('article:has-text("T17 Quantidade") [data-testid=disparos-plano]').innerText()).includes('3.000 disparos/mês'));
