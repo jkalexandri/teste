@@ -23,7 +23,7 @@ const sugestao: Sugestao[] = [
   // ===== Aba "Sem limite de disparos" (Free e Personalizado aparecem nas duas abas) =====
   // Dois testes grátis (decisão #113, item C): por dias (Mensal) e por disparos (Por disparo). Um teste por e-mail.
   { slug: "free", nome: "Free", modulo: Modulo.INDIVIDUAL, usuarios: 1, gratis: true, limiteLeads: 100, limiteMateriais: 3, limitePaginasMes: 20, leadsAnuncios: false,
-    testeDias: 7, testeDisparos: null, selo: "Teste grátis", frase: "Use à vontade por 7 dias, sem pagar nada.", condicoes: "7 dias, até 100 leads (os leads não podem ser apagados para subir outros). Sem cartão.",
+    testeDias: 7, testeDisparos: null, selo: "Teste grátis", frase: "Use à vontade por 7 dias, sem pagar nada.", condicoes: "7 dias, até 100 leads. Sem cartão.",
     recursos: ["1 usuário e 1 WhatsApp", "Disparos sem limite por 7 dias", "Até 100 leads", ...BASE.slice(0, 3)], textoBotao: "Testar grátis", ordem: 0 },
   { slug: "free-disparos", nome: "Free", modulo: Modulo.INDIVIDUAL, usuarios: 1, gratis: true, limiteLeads: 100, limiteMateriais: 3, limitePaginasMes: 20, leadsAnuncios: false,
     testeDias: 30, testeDisparos: 50, selo: "Teste grátis", frase: "Teste com 50 disparos, sem pagar nada.", condicoes: "50 disparos em até 30 dias, até 100 leads. Sem cartão.",
