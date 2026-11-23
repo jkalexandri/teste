@@ -4,7 +4,9 @@ import "server-only";
 import { prisma } from "@filapro/db";
 import { emManutencao } from "@/lib/manutencao";
 
-export type StatusPublico = { cor: "verde" | "amarelo" | "vermelho"; sistema: string; fila: string; uptime: string | null };
+type Cor = "verde" | "amarelo" | "vermelho";
+/** cor = estado geral; corFila = situação do motor de envios (bolinha própria — decisão #110) */
+export type StatusPublico = { cor: Cor; sistema: string; fila: string; corFila: Cor; uptime: string | null };
 let cache: { em: number; v: StatusPublico } | null = null;
 
 async function saudeDoServico(): Promise<{ ok: boolean; disparos: boolean }> {
@@ -38,10 +40,10 @@ export async function statusPublico(): Promise<StatusPublico> {
   if (cache && Date.now() - cache.em < 30_000) return cache.v;
   const [manut, saude, up] = await Promise.all([emManutencao(), saudeDoServico(), uptime().catch(() => null)]);
   const v: StatusPublico = manut
-    ? { cor: "amarelo", sistema: "Em atualização", fila: "Em manutenção", uptime: up }
+    ? { cor: "amarelo", sistema: "Em atualização", fila: "Em manutenção", corFila: "amarelo", uptime: up }
     : !saude.ok
-      ? { cor: "vermelho", sistema: "Instabilidade", fila: "Fila parada", uptime: up }
-      : { cor: "verde", sistema: "Sistema Online", fila: saude.disparos ? "Fila Ativa" : "Fila pausada", uptime: up };
+      ? { cor: "vermelho", sistema: "Instabilidade", fila: "Fila parada", corFila: "vermelho", uptime: up }
+      : { cor: "verde", sistema: "Sistema Online", fila: saude.disparos ? "Fila Ativa" : "Fila pausada", corFila: saude.disparos ? "verde" : "amarelo", uptime: up };
   cache = { em: Date.now(), v };
   return v;
 }

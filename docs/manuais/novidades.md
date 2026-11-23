@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.31.1 — bolinha da fila (23/11/2026)
+
+- No login, a fila de envios ganhou a própria bolinha: verde (ativa), amarela (pausada ou em manutenção) ou vermelha (parada).
+
 ## v1.31.0 — status real no login (23/11/2026)
 
 - A pílula do login mostra o **estado real**: verde "Sistema Online", amarelo "Em atualização", vermelho "Instabilidade";

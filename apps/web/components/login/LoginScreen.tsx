@@ -82,11 +82,11 @@ function useBenefitAutoPulse(hovered: number | null, active: number | null) {
 // Cores da pílula de status do login (decisão #109)
 const COR_STATUS = { verde: "#25D366", amarelo: "#facc15", vermelho: "#ef4444" } as const;
 const PULSO_STATUS = { verde: "37,211,102", amarelo: "250,204,21", vermelho: "239,68,68" } as const;
-type StatusLogin = { cor: keyof typeof COR_STATUS; sistema: string; fila: string; uptime: string | null };
+type StatusLogin = { cor: keyof typeof COR_STATUS; sistema: string; fila: string; corFila: keyof typeof COR_STATUS; uptime: string | null };
 
 export default function LoginScreen() {
   // Pílula de status: estado real do sistema (decisão #109), atualizado a cada minuto
-  const [status, setStatus] = useState<StatusLogin>({ cor: "verde", sistema: "Sistema Online", fila: "Fila Ativa", uptime: null });
+  const [status, setStatus] = useState<StatusLogin>({ cor: "verde", sistema: "Sistema Online", fila: "Fila Ativa", corFila: "verde", uptime: null });
   useEffect(() => {
     let vivo = true;
     const ver = () => fetch("/api/status", { cache: "no-store" }).then((r) => r.json()).then((j: StatusLogin) => { if (vivo && j?.cor) setStatus(j); }).catch(() => undefined);
@@ -302,7 +302,11 @@ export default function LoginScreen() {
             <span className="login-pulse w-2 h-2 rounded-full shrink-0" style={{ background: COR_STATUS[status.cor], ["--pulso" as string]: PULSO_STATUS[status.cor] } as CSSProperties} aria-hidden="true" data-testid="status-cor" data-cor={status.cor} />
             <span data-testid="status-sistema">{status.sistema}</span>
             <span className="text-slate-500">•</span>
-            <span data-testid="status-fila">{status.fila}</span>
+            {/* Bolinha própria da fila (decisão #110): verde ativa, amarelo pausada/manutenção, vermelho parada */}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="login-pulse w-2 h-2 rounded-full shrink-0" style={{ background: COR_STATUS[status.corFila ?? status.cor], ["--pulso" as string]: PULSO_STATUS[status.corFila ?? status.cor] } as CSSProperties} aria-hidden="true" data-testid="status-cor-fila" data-cor={status.corFila ?? status.cor} />
+              <span data-testid="status-fila">{status.fila}</span>
+            </span>
             {status.uptime && (
               <>
                 <span className="text-slate-500">•</span>

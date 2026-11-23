@@ -290,7 +290,7 @@ A pílula embaixo dos destaques do login mostra o estado real, para qualquer vis
 
 - **Verde — Sistema Online:** site e serviço 24/7 respondendo. **Amarelo — Em atualização:** modo manutenção ligado.
   **Vermelho — Instabilidade:** o serviço 24/7 não responde (veja `pm2 list` na VPS).
-- **Fila Ativa / Fila parada / Em manutenção:** situação do motor de envios.
+- **Fila (com a própria bolinha):** 🟢 Fila Ativa; 🟡 Fila pausada ou Em manutenção; 🔴 Fila parada.
 - **Uptime:** porcentagem dos últimos 30 dias em que o serviço 24/7 esteve no ar (medida a cada minuto; aparece depois de 1 hora).
 
 Também dá para consultar sem abrir o site: **https://filaproleads.com.br/api/status**.

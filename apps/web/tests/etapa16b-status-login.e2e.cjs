@@ -17,7 +17,7 @@ const ligarWorker = async () => { spawn('bash', ['-c', WORKER], { detached: true
   const ver = async (nome) => {
     const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await espera(1500);
-    const r = { cor: await p.locator('[data-testid=status-cor]').getAttribute('data-cor'), sistema: await p.locator('[data-testid=status-sistema]').innerText(), fila: await p.locator('[data-testid=status-fila]').innerText(), uptime: (await p.locator('[data-testid=status-uptime]').count()) ? await p.locator('[data-testid=status-uptime]').innerText() : null };
+    const r = { cor: await p.locator('[data-testid=status-cor]').getAttribute('data-cor'), corFila: await p.locator('[data-testid=status-cor-fila]').getAttribute('data-cor'), sistema: await p.locator('[data-testid=status-sistema]').innerText(), fila: await p.locator('[data-testid=status-fila]').innerText(), uptime: (await p.locator('[data-testid=status-uptime]').count()) ? await p.locator('[data-testid=status-uptime]').innerText() : null };
     if (nome) await p.locator('.login-status-pill').screenshot({ path: `${OUT}/${nome}.png` });
     await p.close();
     return r;
@@ -29,7 +29,7 @@ const ligarWorker = async () => { spawn('bash', ['-c', WORKER], { detached: true
     await espera(31000); // cache do status (30 s)
     let s = await ver('status-verde');
     ok('Verde: Sistema Online', s.cor === 'verde' && s.sistema === 'Sistema Online', JSON.stringify(s));
-    ok('Fila reflete o motor (desligado nos testes → Fila pausada)', s.fila === 'Fila pausada', s.fila);
+    ok('Fila reflete o motor (desligado nos testes → Fila pausada, bolinha amarela)', s.fila === 'Fila pausada' && s.corFila === 'amarelo', `${s.fila} ${s.corFila}`);
     // Conta feita direto no banco: minutos registrados ÷ minutos desde a primeira hora medida
     const esperado = Number(sql(`select least(100, sum(minutos) * 100.0 / (extract(epoch from (now() - min(hora))) / 60)) from "Disponibilidade"`));
     const up = parseFloat(String(s.uptime));
@@ -40,19 +40,19 @@ const ligarWorker = async () => { spawn('bash', ['-c', WORKER], { detached: true
     sql(`insert into "Manutencao"(id,ligada,desde) values ('geral',true,now()) on conflict (id) do update set ligada=true, desde=now()`);
     await espera(31000);
     s = await ver('status-amarelo');
-    ok('Amarelo: Em atualização', s.cor === 'amarelo' && s.sistema === 'Em atualização' && s.fila === 'Em manutenção', JSON.stringify(s));
+    ok('Amarelo: Em atualização', s.cor === 'amarelo' && s.sistema === 'Em atualização' && s.fila === 'Em manutenção' && s.corFila === 'amarelo', JSON.stringify(s));
     sql(`update "Manutencao" set ligada=false, desde=null where id='geral'`);
     // Vermelho: serviço 24/7 fora do ar
     execSync(`pkill -f "src/[i]ndex.ts" || true`);
     await espera(31000);
     s = await ver('status-vermelho');
-    ok('Vermelho: Instabilidade (serviço 24/7 sem responder)', s.cor === 'vermelho' && s.sistema === 'Instabilidade' && s.fila === 'Fila parada', JSON.stringify(s));
+    ok('Vermelho: Instabilidade (serviço 24/7 sem responder)', s.cor === 'vermelho' && s.sistema === 'Instabilidade' && s.fila === 'Fila parada' && s.corFila === 'vermelho', JSON.stringify(s));
     await ligarWorker();
     await espera(31000);
     s = await ver();
     ok('Volta ao verde quando o serviço volta', s.cor === 'verde', JSON.stringify(s));
     const st = await fetch(BASE + '/api/status').then((r) => r.json());
-    ok('Rota pública não expõe dados de clientes', Object.keys(st).sort().join(',') === 'cor,fila,sistema,uptime');
+    ok('Rota pública não expõe dados de clientes', Object.keys(st).sort().join(',') === 'cor,corFila,fila,sistema,uptime');
   } catch (e) {
     ok('Erro inesperado', false, String(e.message).split('\n')[0]);
   } finally {
