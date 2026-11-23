@@ -65,7 +65,8 @@ beforeEach(async () => {
   await prisma.lead.deleteMany({ where: { usuarioId: USU } });
   await prisma.whatsappSessao.deleteMany({ where: { id: USU } });
   await prisma.whatsappSessao.create({ data: { id: USU, usuarioId: USU, status: "CONECTADO", primeiraConexaoEm: new Date("2026-09-01") } });
-  await prisma.empresa.update({ where: { id: EMP }, data: { limiteDisparos: null, janelaInicio: 480, janelaFim: 1200 } });
+  // Início do período antes do relógio do teste (senão os envios do relógio fixo ficam "fora" do período e o saldo não conta)
+  await prisma.empresa.update({ where: { id: EMP }, data: { limiteDisparos: null, janelaInicio: 480, janelaFim: 1200, inicioPeriodo: new Date(agora.getTime() - 86400_000) } });
   wa = new Falso();
   avisos = [];
   motor = new MotorDisparos(wa, log, { pastaArquivos: "/tmp", dormir: async () => {}, agora: () => agora, sorteio: () => 0.5, notificar: async (para, texto) => { avisos.push({ para, texto }); } });

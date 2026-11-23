@@ -18,6 +18,9 @@ pkill -f "src/[i]ndex.ts"; sleep 2
 conta etapa6-whatsapp; restaura
 DISPAROS= ligar_worker
 conta etapa8b-envio
+# O teste do status do login espera o motor de envios desligado
+pkill -f "src/[i]ndex.ts"; sleep 2
+(cd apps/worker && set -a && . ./.env && set +a && DISPAROS=desligado PASTA_ARQUIVOS=/var/tmp/filapro-arquivos nohup npx tsx src/index.ts > /tmp/worker-teste.log 2>&1 &); sleep 7
 conta etapa16b-status-login
 pkill -f "src/[i]ndex.ts"; sleep 1
 (cd apps/worker && set -a && . ./.env && set +a && echo "worker-unit: $(npx tsx --test --test-concurrency=1 tests/*.test.ts 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' ')")
