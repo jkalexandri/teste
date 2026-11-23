@@ -35,7 +35,10 @@ const ligarWorker = async () => { spawn('bash', ['-c', WORKER], { detached: true
     const up = parseFloat(String(s.uptime));
     ok('Uptime medido de verdade (minutos no ar ÷ minutos do período)', Math.abs(up - esperado) < 0.5 && up < 99, `${s.uptime} x ${esperado.toFixed(1)}%`);
     // Serviço registra a disponibilidade a cada minuto
-    ok('Serviço 24/7 registra o minuto atual', Number(sql(`select count(*) from "Disponibilidade" where hora >= date_trunc('hour', now())`)) === 1);
+    // O serviço grava uma vez por minuto: espera até 70 s pelo registro da hora atual
+    let registrou = false;
+    for (let i = 0; i < 70 && !registrou; i++) { registrou = Number(sql(`select count(*) from "Disponibilidade" where hora >= date_trunc('hour', now())`)) === 1; if (!registrou) await espera(1000); }
+    ok('Serviço 24/7 registra o minuto atual', registrou);
     // Amarelo: em atualização
     sql(`insert into "Manutencao"(id,ligada,desde) values ('geral',true,now()) on conflict (id) do update set ligada=true, desde=now()`);
     await espera(31000);
