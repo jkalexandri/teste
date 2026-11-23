@@ -121,7 +121,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   [c, p] = await novo();
   await entrar(p, 'superadmin@disparopro.com.br', 'Super@12345678');
   await p.goto(BASE + '/pedidos'); await espera(800);
-  await p.locator('tr', { has: p.locator('text=Individual — 2 números de WhatsApp') }).first().locator('text=Confirmar pagamento').click();
+  await p.locator('tr', { has: p.locator('text=1 WhatsApp extra') }).first().locator('text=Confirmar pagamento').click();
   ok('Renovação confirmada: "Vendas 2" bloqueado, o escolhido continua', await ate(() => sql(`select bloqueada from "WhatsappSessao" where id='${extra1}'`) === 't' && sql(`select count(*) from "WhatsappSessao" where "usuarioId"='${USU}' and id <> '${USU}' and not bloqueada`) === '1'));
   await c.close();
   [c, p] = await novo();

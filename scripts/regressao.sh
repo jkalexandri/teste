@@ -12,7 +12,7 @@ conta() { o=$(timeout 600 node apps/web/tests/$1.e2e.cjs "$PRINTS" 2>&1); echo "
 # O teste login-regras troca a senha da conta de demonstração "usuario@…": volta a senha padrão
 restaura() { $Q "update \"Usuario\" u set \"senhaHash\"=a.\"senhaHash\", \"bloqueadoAte\"=null, \"tentativasFalhas\"=0, \"senhaTempHash\"=null from \"Usuario\" a where a.email='ana@empresaexemplo.com.br' and u.email='usuario@disparopro.com.br'" >/dev/null; }
 for t in etapa3-layout login-regras; do conta $t; restaura; done
-for t in etapa4a-planos etapa4b-compra etapa4c-empresas etapa4d-renovacao etapa5-usuarios etapa7-leads etapa8a-campanhas etapa8c-paineis etapa9a-ia etapa9b-empresa-ia etapa10-conversas etapa10b-avisos-anuncios etapa10c-whatsapp-extra etapa11-relatorios etapa12-logs-app etapa12b-ajuda etapa13-online-suporte etapa14-manutencao etapa14b-interessados etapa15-seguranca etapa16-financeiro etapa17-planos-abas etapa17b-instalar-app legal; do conta $t; restaura; done
+for t in etapa4a-planos etapa4b-compra etapa4c-empresas etapa4d-renovacao etapa5-usuarios etapa7-leads etapa8a-campanhas etapa8c-paineis etapa9a-ia etapa9b-empresa-ia etapa10-conversas etapa10b-avisos-anuncios etapa10c-whatsapp-extra etapa11-relatorios etapa12-logs-app etapa12b-ajuda etapa13-online-suporte etapa14-manutencao etapa14b-interessados etapa15-seguranca etapa16-financeiro etapa17-planos-abas etapa17b-instalar-app etapa18-preco-quantidade legal; do conta $t; restaura; done
 # A etapa 6 precisa da porta 4000 livre; a 8b precisa do motor de envios ligado
 pkill -f "src/[i]ndex.ts"; sleep 2
 conta etapa6-whatsapp; restaura

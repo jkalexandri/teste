@@ -123,4 +123,9 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   sql(`update "Plano" set "precoAtual"=${preco}, "maxPacotes"=${maxP}, "disparosPorPeriodo"=${disp}, "limiteLeads"=${leads}, visivel=${vis === 'true' || vis === 't'} where id='${PLANO}'`);
   console.log(res.join('\n'));
   console.log(`\n${res.filter((r) => r.startsWith('PASSOU')).length}/${res.length} passaram`);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+  console.error(e);
+  // Restaura o plano Padrão do seed se o teste parar no meio
+  try { sql(`update "Plano" set "maxPacotes"=1, "disparosPorPeriodo"=null, "limiteLeads"=null where nome='Padrão' and modulo='EMPRESARIAL'`); } catch {}
+  process.exit(1);
+});
