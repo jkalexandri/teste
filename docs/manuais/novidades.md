@@ -22,6 +22,9 @@ Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 - **Empresas → Alterar pacote** escolhe também a quantidade de pacotes.
 - **Meu WhatsApp:** até 10 números, sem pagamento.
 
+### Tela de login
+- Assinatura "by Jackson Alexandrino" abaixo do cartão de acesso.
+
 ## v1.33.3 — correção do app instalado (23/11/2026)
 
 - O app instalado no celular abria em "localhost" (endereço interno da VPS) quando a pessoa ainda não tinha entrado.

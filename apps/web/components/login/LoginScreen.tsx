@@ -343,6 +343,7 @@ export default function LoginScreen() {
 
           <div className="w-full max-w-[420px] min-h-0 overflow-hidden">
             {!recuperando ? (
+              <>
               <div className="login-glass login-card rounded-[18px] p-3 sm:p-3.5">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full" style={{ background: "#25D366", boxShadow: "0 0 12px #25D366" }} />
@@ -518,6 +519,9 @@ export default function LoginScreen() {
                   </div>
                 )}
               </div>
+              {/* Assinatura abaixo do cartão, em itálico cinza claro (autorizado pelo dono — decisão #114) */}
+              <p className="mt-2 pl-6 text-[11px] italic font-semibold text-slate-400" data-testid="assinatura-login">by Jackson Alexandrino</p>
+              </>
             ) : (
               /* ===== Recuperar senha ===== */
               <div
