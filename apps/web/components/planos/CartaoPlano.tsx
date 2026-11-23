@@ -21,7 +21,7 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
 
   return (
     <article
-      className="relative flex flex-col rounded-[24px] p-5 text-[#eaf6ff] min-w-0"
+      className="cartao-plano relative flex flex-col rounded-[24px] p-5 text-[#eaf6ff] min-w-0"
       style={
         d
           ? {
@@ -48,11 +48,11 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         )}
       </div>
 
-      <h3 className="font-display text-[20px] font-extrabold leading-tight mt-1 flex items-center gap-1.5">
+      <h3 data-parte="titulo" className="font-display text-[20px] font-extrabold leading-tight mt-1 flex items-center gap-1.5">
         {d && <Sparkles size={18} style={{ color: "#7dffb8" }} />}
         {plano.nome}
       </h3>
-      {plano.frase && <p className="text-[13px] leading-snug mt-1.5 text-slate-300 min-h-[36px]">{plano.frase}</p>}
+      {plano.frase && <p data-parte="frase" className="text-[13px] leading-snug mt-1.5 text-slate-300 min-h-[36px]">{plano.frase}</p>}
 
       {/* Preço */}
       <div className="mt-4 h-[20px] leading-[20px]">
@@ -61,13 +61,13 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         )}
       </div>
       <div className="flex items-baseline gap-1 h-[38px]">
-        <span className="font-display text-[32px] font-extrabold leading-none">{preco}</span>
+        <span data-parte="preco" className="font-display text-[32px] font-extrabold leading-none">{preco}</span>
         {mostraPeriodo && <span className="text-[14px] text-slate-300">/{plano.periodo}</span>}
       </div>
 
       {/* Disparos do plano (decisão #111): quantidade por período ou sem limite */}
       {!plano.gratis && !plano.personalizado && (
-        <p className="mt-2 text-[12.5px] font-bold rounded-lg px-2.5 py-1.5" data-testid="disparos-plano"
+        <p data-parte="disparos" className="mt-2 text-[12.5px] font-bold rounded-lg px-2.5 py-1.5" data-testid="disparos-plano"
           style={{ background: "rgba(45,212,255,.08)", color: "#9fefff", border: "1px solid rgba(45,212,255,.25)" }}>
           {plano.disparosPorPeriodo
             ? <>{plano.disparosPorPeriodo.toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")}{plano.precoPacoteDisparos ? ` por ${formatarReais(plano.precoPacoteDisparos)}` : ""}</span> : null}</>
@@ -80,13 +80,14 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         onClick={() => { if (!emBreve) onEscolher?.(plano); }}
         disabled={emBreve}
         data-testid={emBreve ? "plano-em-breve" : undefined}
+        data-parte="botao"
         className={emBreve ? "mt-5 w-full rounded-xl py-3 text-[15px] font-bold cursor-not-allowed" : d ? "login-cta mt-5 !py-3 !text-[15px]" : "mt-5 w-full rounded-xl py-3 text-[15px] font-bold"}
         style={emBreve ? { border: "1px solid rgba(255,255,255,.18)", color: "#9fb3c8", background: "rgba(255,255,255,.05)" } : d ? undefined : { border: "1px solid #2dd4ff", color: "#7fe7ff", background: "rgba(45,212,255,.06)" }}
       >
         {emBreve ? "Em breve" : plano.textoBotao || "Escolher plano"}
       </button>
 
-      {plano.condicoes && <p className="text-[11.5px] leading-relaxed mt-4 text-slate-400 whitespace-pre-line">{plano.condicoes}</p>}
+      {plano.condicoes && <p data-parte="condicoes" className="text-[11.5px] leading-relaxed mt-4 text-slate-400 whitespace-pre-line">{plano.condicoes}</p>}
 
       {(plano.ofertaTexto || plano.recursos.length > 0) && <div className="h-px w-full my-4" style={{ background: "rgba(255,255,255,.12)" }} />}
 
@@ -102,7 +103,7 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
       {plano.recursos.length > 0 && (
         <ul className="mt-4 space-y-2">
           {plano.recursos.map((r, i) => (
-            <li key={i} className="flex gap-2 text-[13px] leading-snug">
+            <li key={i} data-parte="recurso" className="flex gap-2 text-[13px] leading-snug">
               <Check size={16} className="shrink-0 mt-0.5" style={{ color: "#25D366" }} />
               <span>{r}</span>
             </li>

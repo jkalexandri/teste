@@ -17,8 +17,9 @@ type Dados = { planos: PlanoPublico[]; contatoPersonalizado: string };
 export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
   const n = Math.max(1, planos.length);
   if (n > 4) {
+    // Telas largas: todos na mesma linha, em versão compacta; telas estreitas: quebra em linhas (globals.css → .grade-muitos)
     return (
-      <div className="flex flex-wrap justify-center gap-4 mx-auto max-w-[1320px]" data-testid="grade-planos">
+      <div className="grade-muitos flex flex-wrap justify-center gap-4 mx-auto max-w-[1320px]" style={{ ["--n" as string]: n } as React.CSSProperties} data-testid="grade-planos">
         {planos.map((p) => (
           <div key={p.id} className="w-full sm:w-[300px] flex">
             <div className="flex-1 min-w-0 flex flex-col [&>article]:flex-1"><CartaoPlano plano={p} onEscolher={onEscolher} /></div>

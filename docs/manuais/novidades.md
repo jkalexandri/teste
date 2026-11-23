@@ -2,9 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
-## v1.33.1 — ajuste nos Planos (23/11/2026)
+## v1.33.2 — ajuste nos Planos (23/11/2026)
 
-- Com mais de 4 planos, os cartões quebram em linhas (sem cortar nenhum); no celular, um embaixo do outro.
+- Todos os planos cabem na mesma linha em telas de computador (cartões mais compactos quando há mais de 4); em telas
+  estreitas eles quebram em linhas e, no celular, ficam um embaixo do outro. Nenhum cartão fica cortado.
 
 ## v1.33.0 — instalar o app pelo login (23/11/2026)
 
