@@ -250,7 +250,7 @@ export default function LoginScreen() {
             Envios com ritmo, contexto e proteção sua operação de WhatsApp pronta para escalar sem perder o controle.
           </p>
 
-          <div className="hidden lg:grid gap-0.5 mt-1 max-w-[502px]" style={{ marginLeft: ML }}>
+          <div className="hidden lg:grid gap-2 mt-1 max-w-[502px]" style={{ marginLeft: ML }}>
             {benefits.map((b, i) => {
               const auto = autoScales[i] !== null;
               return (

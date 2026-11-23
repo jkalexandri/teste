@@ -2,9 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
-## v1.30.1 — ajuste no login (23/11/2026)
+## v1.30.1 — ajustes no login (23/11/2026)
 
 - O número da versão aparece no login do site publicado, também em telas mais baixas.
+- Mais espaço entre os três destaques (Antibloqueio, IA e Online 24/7).
 
 ## v1.30.0 — gestão financeira (23/11/2026)
 
