@@ -480,6 +480,17 @@ export default function LoginScreen() {
                     </div>
                   </>
                 )}
+                {/* Site publicado: só o selo da versão, no mesmo lugar (autorizado pelo dono — decisão #100) */}
+                {!DEMO_ACCOUNTS && (
+                  <div className="login-compact-hide mt-1.5 flex items-center justify-end text-[10px]" data-testid="versao-login">
+                    <span
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-300"
+                      style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.35)" }}
+                    >
+                      {VERSAO_CURTA}
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               /* ===== Recuperar senha ===== */
