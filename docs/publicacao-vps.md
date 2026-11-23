@@ -58,8 +58,9 @@ Deve mostrar uma linha **Swap: 2.0Gi**.
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
-corepack enable && corepack prepare pnpm@10.28.0 --activate
-npm install -g pm2
+# pnpm pelo npm (o "corepack enable" falha no Ubuntu 26.04 por causa de um atalho do yarn)
+rm -f /usr/bin/pnpm /usr/bin/pnpx
+npm install -g pnpm@10.28.0 pm2
 node -v && pnpm -v && pm2 -v
 ```
 
@@ -85,6 +86,11 @@ Deve mostrar **Status: active** com OpenSSH, 80 e 443.
 ---
 
 ## Parte 3 — Código e banco
+
+> **VPS que já tinha o serviço 24/7 instalado** (pasta `/opt/filapro/app` e `filapro-worker` no `pm2 list`): em vez do `git clone`,
+> rode `cd /opt/filapro/app && git status --short && git pull && pnpm install`; **reaproveite** o `WORKER_TOKEN` e a `CHAVE_CRIPTO`
+> do `apps/worker/.env` (`grep -E '^(WORKER_TOKEN|CHAVE_CRIPTO)=' apps/worker/.env`) e, no 5.2, rode antes `pm2 delete filapro-worker`.
+> **Não rode `apt autoremove`** (ele pode apagar o Node).
 
 ### 3.1 Baixar o sistema
 
@@ -162,6 +168,13 @@ CHAVE_CRIPTO="A MESMA do apps/worker/.env"
 VAPID_PUBLIC_KEY="VAPID_PUBLIC_KEY"
 ```
 
+> **Chaves das notificações sem erro de cópia** (pede as duas e grava nos dois arquivos; não aparecem na tela):
+> ```bash
+> read -rsp "VAPID_PUBLIC_KEY (comprida, começa com B): " PUB; echo; read -rsp "VAPID_PRIVATE_KEY (curta): " PRIV; echo; W=/opt/filapro/app/apps/worker/.env; S=/opt/filapro/app/apps/web/.env.production; sed -i '/^VAPID_/d' "$W" "$S"; sed -i -e '$a\' "$W" "$S"; printf 'VAPID_PUBLIC_KEY="%s"\nVAPID_PRIVATE_KEY="%s"\n' "$PUB" "$PRIV" >> "$W"; printf 'VAPID_PUBLIC_KEY="%s"\n' "$PUB" >> "$S"; unset PUB PRIV
+> ```
+> Se o banco recusar a senha ("Authentication failed"), cadastre no banco a senha que está no arquivo:
+> `P=$(grep '^DATABASE_URL=' /opt/filapro/app/apps/web/.env.production | sed -E 's#.*://filaproleads:([^@]*)@.*#\1#'); sudo -u postgres psql -c "ALTER USER filaproleads WITH PASSWORD '$P';"; unset P`
+
 ### 4.3 Proteger os dois arquivos
 
 ```bash
@@ -217,10 +230,12 @@ O último comando pode imprimir uma linha começando com `sudo env PATH=…`: co
 ### 5.5 HTTPS
 
 ```bash
-cp /opt/filapro/app/deploy/Caddyfile /etc/caddy/Caddyfile
+cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.antes 2>/dev/null; cp /opt/filapro/app/deploy/Caddyfile /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile   # deve terminar com "Valid configuration"
 systemctl reload caddy
 ```
 
+O certificado HTTPS leva até 1–2 minutos na primeira vez (`journalctl -u caddy -n 20` mostra "certificate obtained successfully").
 Abra **https://filaproleads.com.br**: deve aparecer a tela de login (sem os botões "Entrar como…", com o selo da versão).
 Confira também **https://api.filaproleads.com.br/saude** → `{"ok":true}`.
 (Se o HTTPS não abrir, o DNS da Parte 1 ainda está propagando: espere e rode `systemctl reload caddy` de novo.)
