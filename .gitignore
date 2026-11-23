@@ -2,6 +2,7 @@ node_modules/
 .next/
 .next-novo/
 .next-antigo/
+.next-previa/
 out/
 dist/
 .env

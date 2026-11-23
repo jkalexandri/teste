@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.34.3 — login fixo no celular (23/11/2026)
+
+- A tela de login não rola mais nem "pula" no celular (navegador e app instalado). O visual continua o mesmo.
+- No app instalado, as telas internas continuam rolando normalmente, sem o efeito elástico nem o "puxar para atualizar".
+
 ## v1.34.2 — ligar o Asaas (23/11/2026)
 
 - Super Admin → **Pagamento → Asaas**: ambiente (Testes ou Produção), chave de API guardada criptografada (só é salva se o Asaas

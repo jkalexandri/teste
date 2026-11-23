@@ -54,6 +54,14 @@ html, body {
 }
 
 button, input, textarea, select { font: inherit }
+
+/* Tela de login fixa, sem rolar (pedido do dono): a página inteira fica do tamanho da tela e não "pula".
+   Não muda nada do visual do login — só trava a rolagem da página por trás dele. */
+html:has(.login-shell), body:has(.login-shell) { height: 100%; overflow: hidden; overscroll-behavior: none }
+/* iPhone: o "elástico" do toque só para com a página presa no lugar */
+body:has(.login-shell) { position: fixed; inset: 0; width: 100% }
+/* App instalado no celular: sem o efeito elástico e sem "puxar para atualizar"; as telas internas continuam rolando normalmente */
+@media (display-mode: standalone) { html, body { overscroll-behavior: none } }
 a { color: inherit }
 
 .font-display { font-family: 'Sora', 'Plus Jakarta Sans', system-ui, sans-serif }
