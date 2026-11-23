@@ -2,12 +2,14 @@
 
 // Tela WhatsApp (etapa 10c — decisões #79, #80 e #95): apelido dos números e compra do WhatsApp extra por PIX.
 import { revalidatePath } from "next/cache";
+import { MAX_NUMEROS_INDIVIDUAL, precoDaPosicao } from "@/lib/planos";
 import { prisma, StatusPedido } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { criarPedidoPix, type RespostaPix } from "@/lib/pedidos";
 import { avisarNovoPedido } from "@/lib/avisos-whatsapp";
-import { podeTerExtras, valorProporcional } from "@/lib/whatsapp-extra";
+import { MAX_NUMEROS_SUPERADMIN, numerosDoUsuario, podeTerExtras, sincronizarExtras, valorProporcional } from "@/lib/whatsapp-extra";
+import { Cargo } from "@filapro/db";
 
 type R = { ok: boolean; mensagem: string };
 
@@ -32,14 +34,17 @@ export async function infoExtra() {
   const u = await ator();
   if (!podeTerExtras(u) || !u.empresa?.planoId) return null;
   const plano = await prisma.plano.findUnique({ where: { id: u.empresa.planoId } });
-  if (!plano || plano.gratis || plano.precoWhatsappExtra == null || plano.precoWhatsappExtra <= 0 || plano.maxWhatsapps <= 1) return null;
+  const maximo = Math.min(MAX_NUMEROS_INDIVIDUAL, plano?.maxWhatsapps ?? 1);
+  if (!plano || plano.gratis || !plano.precoAtual || plano.precoAtual <= 0 || maximo <= 1) return null;
   const total = 1 + u.empresa.whatsappsExtras;
+  // Preço do próximo número = plano com o desconto da posição dele (2º, 3º, 4º — decisão #113), proporcional aos dias
+  const precoPeriodo = precoDaPosicao(plano.precoAtual, plano.descontos, total + 1);
   return {
-    podeComprar: total < plano.maxWhatsapps,
-    maximo: plano.maxWhatsapps,
+    podeComprar: total < maximo,
+    maximo,
     total,
-    precoPeriodo: plano.precoWhatsappExtra,
-    valorAgora: valorProporcional(plano.precoWhatsappExtra, u.empresa.expiraEm, u.empresa.prazoDias),
+    precoPeriodo,
+    valorAgora: valorProporcional(precoPeriodo, u.empresa.expiraEm, u.empresa.prazoDias),
     vence: u.empresa.expiraEm.toISOString(),
   };
 }
@@ -57,10 +62,25 @@ export async function comprarExtra(): Promise<{ ok: false; mensagem: string } | 
   const r = await criarPedidoPix({
     plano,
     comprador: { nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "" },
-    extras: 1,
+    quantidade: 1,
     somenteExtras: { empresaId: u.empresa.id, valor: info.valorAgora },
   });
   if ("erro" in r) return { ok: false, mensagem: r.erro };
   await avisarNovoPedido({ codigo: r.codigo, planoNome: r.plano, valor: r.valor, renovacao: false, nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "" }).catch(() => undefined);
   return { ok: true, ...r };
+}
+
+/** Super Admin adiciona (+1) ou remove (−1, o mais recente) um número próprio. */
+export async function alterarNumerosSuperAdmin(delta: 1 | -1): Promise<R> {
+  const u = await ator();
+  if (u.cargo !== Cargo.SUPERADMIN) return { ok: false, mensagem: "Somente o Super Admin." };
+  const { extras } = await numerosDoUsuario(u.id);
+  const ativos = extras.filter((x) => !x.bloqueada).length;
+  const novo = ativos + (delta > 0 ? 1 : -1);
+  if (novo < 0) return { ok: false, mensagem: "Você só tem o número principal." };
+  if (novo + 1 > MAX_NUMEROS_SUPERADMIN) return { ok: false, mensagem: `Máximo de ${MAX_NUMEROS_SUPERADMIN} números.` };
+  // Reaproveita a mesma regra dos extras: cria/desbloqueia ou bloqueia o mais recente (conversas ficam guardadas)
+  await sincronizarExtras(u.id, novo);
+  revalidatePath("/whatsapp");
+  return { ok: true, mensagem: delta > 0 ? "Número adicionado: leia o QR Code para conectar." : "Último número removido." };
 }

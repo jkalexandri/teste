@@ -1,7 +1,7 @@
 // Renovação de pacotes (decisões #36, #40, #42–#44).
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { prisma, Cargo, Modulo, type Empresa, type Pedido, type Prisma } from "@filapro/db";
+import { prisma, Cargo, Modulo, StatusUsuario, type Empresa, type Pedido, type Prisma } from "@filapro/db";
 import { enviarEmail } from "@/lib/email";
 import { novoVencimento } from "@/lib/contas";
 import { formatarReais } from "@/lib/planos";
@@ -55,7 +55,10 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
   const plano = await tx.plano.findUnique({ where: { id: pedido.planoId } });
   // Novo período do plano: o contador de materiais da IA zera (decisão #91)
   await tx.fichaEmpresa.updateMany({ where: { empresaId: e.id }, data: { materiaisPeriodo: 0 } });
-  return tx.empresa.update({
+  // Pacotes de usuários (decisão #113): disparos e leads acompanham a quantidade de pacotes
+  const pacotes = e.modulo === Modulo.EMPRESARIAL ? Math.max(1, pedido.pacotes) : 1;
+  const mudouLimites = !!plano && (plano.id !== e.planoId || pacotes !== e.pacotes);
+  const atualizada = await tx.empresa.update({
     where: { id: e.id },
     data: {
       pacote: pedido.planoNome,
@@ -65,13 +68,15 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       prazoDias: pedido.prazoDias,
       expiraEm: novoVencimento(e.expiraEm, pedido.prazoDias),
       // Plano pago não tem limite de disparos do teste grátis.
-      limiteDisparos: plano?.gratis ? e.limiteDisparos : plano?.disparosPorPeriodo ?? null,
+      limiteDisparos: plano?.gratis ? e.limiteDisparos : plano?.disparosPorPeriodo != null ? plano.disparosPorPeriodo * pacotes : null,
+      pacotes,
       // Novo período de disparos: o saldo e os pacotes extras não passam para o período seguinte (decisão #102)
       inicioPeriodo: new Date(),
       disparosExtras: 0,
       // Trocou de plano: passa a valer o limite de leads do novo plano (decisão #58).
       // Trocou de plano: também os limites de treinamento da IA (decisão #77).
-      ...(plano && plano.id !== e.planoId ? { limiteLeads: plano.limiteLeads, limiteMateriais: plano.limiteMateriais, limitePaginasMes: plano.limitePaginasMes } : {}),
+      // Mudou o plano ou a quantidade de pacotes: leads = plano × pacotes (decisão #113)
+      ...(mudouLimites ? { limiteLeads: plano!.limiteLeads == null ? null : plano!.limiteLeads * pacotes, limiteMateriais: plano!.limiteMateriais, limitePaginasMes: plano!.limitePaginasMes } : {}),
       // WhatsApps extras: os da renovação (o cliente pode diminuir — decisões #80 e #95)
       ...(e.modulo === Modulo.INDIVIDUAL ? { whatsappsExtras: pedido.whatsappsExtras } : {}),
       // Leads de anúncios: copiado do plano a cada renovação (decisão #94)
@@ -82,6 +87,13 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       avisoRenovacao3Em: null,
     },
   });
+  // Diminuiu os usuários (decisão #113): os mais recentes a mais ficam desativados; o Admin escolhe quais reativar
+  if (e.modulo === Modulo.EMPRESARIAL) {
+    const ativos = await tx.usuario.findMany({ where: { empresaId: e.id, cargo: Cargo.USUARIO, status: StatusUsuario.ATIVO }, orderBy: { criadoEm: "asc" }, select: { id: true } });
+    const sobra = ativos.slice(atualizada.limiteUsuarios).map((u) => u.id);
+    if (sobra.length) await tx.usuario.updateMany({ where: { id: { in: sobra } }, data: { status: StatusUsuario.BLOQUEADO } });
+  }
+  return atualizada;
 }
 
 export async function enviarEmailRenovacaoConfirmada(nome: string, email: string, empresa: Empresa, valor: number) {

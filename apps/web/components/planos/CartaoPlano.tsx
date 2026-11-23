@@ -4,16 +4,21 @@
 // (docs/referencias/modelo-popup-planos.png) com as cores do FilaPro Leads.
 // Todo o conteúdo vem do Super Admin (decisão #27).
 import { Check, Gift, Sparkles } from "@/components/icons";
-import { formatarReais, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
+import { useState } from "react";
+import { formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
 
-export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico; onEscolher?: (p: PlanoPublico) => void }) {
+export default function CartaoPlano({ plano, onEscolher, quantidadeInicial = 1 }: { plano: PlanoPublico; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number }) {
   const d = plano.destaque;
+  // Quantidade de números (Individual) ou pacotes de usuários (Empresarial) — decisão #113
+  const maxQ = maxQuantidade(plano);
+  const [qtd, setQtd] = useState(Math.min(Math.max(1, quantidadeInicial), maxQ));
+  const fator = plano.modulo === "EMPRESARIAL" ? qtd : 1;
   // Plano pago ainda sem preço: aparece como "Em breve", sem compra (decisão #111)
   const emBreve = semPrecoDeVenda(plano);
   const preco = emBreve ? "Em breve" : plano.gratis
     ? "Grátis"
     : plano.precoAtual != null
-      ? formatarReais(plano.precoAtual)
+      ? formatarReais(precoComQuantidade(plano.precoAtual, plano.descontos, qtd))
       : plano.personalizado
         ? "Sob consulta"
         : "—";
@@ -56,7 +61,8 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
 
       {/* Preço */}
       <div className="mt-4 h-[20px] leading-[20px]">
-        {plano.precoAntigo != null && !plano.gratis && !emBreve && (
+        {/* Preço antigo riscado só vale para 1 (é o preço de um plano, não da quantidade) */}
+        {plano.precoAntigo != null && !plano.gratis && !emBreve && qtd === 1 && (
           <span className="text-[13px] leading-[20px] text-slate-400 line-through">{formatarReais(plano.precoAntigo)}</span>
         )}
       </div>
@@ -65,19 +71,36 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         {mostraPeriodo && <span className="text-[14px] text-slate-300">/{plano.periodo}</span>}
       </div>
 
+      {/* Seletor de quantidade (decisão #113): números de WhatsApp ou usuários; o preço muda na hora */}
+      {maxQ > 1 && (
+        <div className="mt-2" data-testid="seletor-quantidade">
+          <p className="text-[11px] font-bold text-slate-300 mb-1">{plano.modulo === "INDIVIDUAL" ? "Números de WhatsApp" : "Usuários"}</p>
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: maxQ }, (_, i) => i + 1).map((n) => (
+              <button key={n} type="button" onClick={() => setQtd(n)} aria-pressed={qtd === n} data-testid={`qtd-${n}`}
+                className="rounded-lg px-2 py-1 text-[12px] font-extrabold min-w-[34px]"
+                style={qtd === n ? { background: "#25D366", color: "#04120a" } : { background: "rgba(255,255,255,.06)", color: "#cfe8dc", border: "1px solid rgba(255,255,255,.14)" }}>
+                {plano.modulo === "INDIVIDUAL" ? n : (plano.usuarios ?? 1) * n}
+              </button>
+            ))}
+          </div>
+          {!emBreve && qtd > 1 && <p className="text-[10.5px] text-slate-400 mt-1" data-testid="rotulo-quantidade">{rotuloQuantidade(plano, qtd)}</p>}
+        </div>
+      )}
+
       {/* Disparos do plano (decisão #111): quantidade por período ou sem limite */}
       {!plano.gratis && !plano.personalizado && (
         <p data-parte="disparos" className="mt-2 text-[12.5px] font-bold rounded-lg px-2.5 py-1.5" data-testid="disparos-plano"
           style={{ background: "rgba(45,212,255,.08)", color: "#9fefff", border: "1px solid rgba(45,212,255,.25)" }}>
           {plano.disparosPorPeriodo
-            ? <>{plano.disparosPorPeriodo.toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")}{plano.precoPacoteDisparos ? ` por ${formatarReais(plano.precoPacoteDisparos)}` : ""}</span> : null}</>
+            ? <>{(plano.disparosPorPeriodo * fator).toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")}{plano.precoPacoteDisparos ? ` por ${formatarReais(plano.precoPacoteDisparos)}` : ""}</span> : null}</>
             : <>Disparos sem limite no período</>}
         </p>
       )}
 
       <button
         type="button"
-        onClick={() => { if (!emBreve) onEscolher?.(plano); }}
+        onClick={() => { if (!emBreve) onEscolher?.(plano, qtd); }}
         disabled={emBreve}
         data-testid={emBreve ? "plano-em-breve" : undefined}
         data-parte="botao"

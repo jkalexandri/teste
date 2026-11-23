@@ -42,6 +42,7 @@ export default async function EmpresasPage() {
     pacote: e.pacote,
     planoId: e.planoId,
     limite: e.limiteUsuarios,
+    pacotes: e.pacotes,
     ativa: e.ativa,
     expiraEm: e.expiraEm.toISOString(),
     dias: dias(e.expiraEm),
@@ -52,7 +53,7 @@ export default async function EmpresasPage() {
 
   const planos = souSuper
     ? (await prisma.plano.findMany({ where: { modulo: Modulo.EMPRESARIAL }, orderBy: { ordem: "asc" } })).map((p) => ({
-        id: p.id, nome: p.nome, usuarios: p.usuarios, personalizado: p.personalizado, prazoDias: p.prazoDias,
+        id: p.id, nome: p.nome, usuarios: p.usuarios, personalizado: p.personalizado, prazoDias: p.prazoDias, maxPacotes: p.maxPacotes,
       }))
     : [];
 

@@ -53,7 +53,10 @@ Mantenha o celular com internet de vez em quando. Se ficar muitos dias desligado
 
 Se o seu plano permitir, a tela WhatsApp mostra um cartão para cada número e o botão **Adicionar mais um WhatsApp**:
 
-- O valor do número extra é **proporcional aos dias que faltam** para o plano vencer; o pagamento é por PIX.
+- O plano permite até **4 números** (o principal + 3). Cada número a mais custa o valor do plano com desconto pela posição
+  (ex.: 2º −10%, 3º −15%, 4º −20%) — dá para escolher a quantidade já na compra, no cartão do plano.
+- Comprando no meio do período, o valor é **proporcional aos dias que faltam** para o plano vencer; o pagamento é por PIX.
+- Na renovação você escolhe de novo quantos números quer; se diminuir, escolhe quais continuam.
 - Depois que o pagamento é confirmado, o número novo aparece na tela para você ler o QR Code.
 - Cada número pode ter um **apelido** (ex.: "Vendas 2") e mostra a própria saúde.
 - Na campanha você escolhe por quais números enviar: os envios **alternam** entre eles, e cada número respeita os próprios limites.

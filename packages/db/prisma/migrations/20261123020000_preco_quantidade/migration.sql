@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "Empresa" ADD COLUMN     "pacotes" INTEGER NOT NULL DEFAULT 1;
+
+-- AlterTable
+ALTER TABLE "Pedido" ADD COLUMN     "pacotes" INTEGER NOT NULL DEFAULT 1;
+
+-- AlterTable
+ALTER TABLE "Plano" ADD COLUMN     "descontos" DOUBLE PRECISION[] DEFAULT ARRAY[10, 15, 20, 25]::DOUBLE PRECISION[],
+ADD COLUMN     "maxPacotes" INTEGER NOT NULL DEFAULT 1;
+

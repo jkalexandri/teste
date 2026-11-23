@@ -42,7 +42,7 @@ const emailsPara = (email, trecho) => fs.readFileSync('/var/tmp/web.log', 'utf8'
   const nomes = await p.locator('article h3').allInnerTexts();
   ok('Só planos do mesmo módulo (empresariais)', nomes.length >= 1 && !nomes.some(n => /Individual|Free/.test(n)), nomes.join(', '));
   await p.screenshot({ path: OUT + '/renovar.png' });
-  await p.click('article:has-text("Básico") >> button'); await p.waitForTimeout(1500);
+  await p.click('article:has-text("Básico") >> [data-parte=botao]'); await p.waitForTimeout(1500);
   ok('PIX de renovação gerado', (await p.locator('text=seu acesso será renovado').count()) === 1);
   const expAntes = sql(`select "expiraEm"::date from "Empresa" where id='${EMP}'`);
   // Super Admin confirma

@@ -40,9 +40,9 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
     await p.locator(`button:has-text("Editar")`).nth(1).click();
   });
   await p.waitForSelector('[role=dialog]');
-  ok('Plano Individual tem máximo de WhatsApps e preço do extra', (await p.locator('#f-maxWhatsapps').count()) === 1 && (await p.locator('#f-precoWhatsappExtra').count()) === 1);
-  await p.fill('#f-maxWhatsapps', '3'); await p.fill('#f-precoWhatsappExtra', '31,00'); await p.click('button:has-text("Salvar plano")');
-  ok('Máximo 3 e extra de R$ 31,00 salvos', await ate(() => sql(`select "maxWhatsapps"||'|'||"precoWhatsappExtra" from "Plano" where id='${PLANO}'`) === '3|3100'));
+  ok('Plano Individual tem máximo de números e descontos por posição (#113)', (await p.locator('#f-max').count()) === 1 && (await p.locator('#f-desconto2').count()) === 1 && (await p.locator('#f-precoWhatsappExtra').count()) === 0);
+  await p.fill('#f-max', '3'); await p.click('button:has-text("Salvar plano")');
+  ok('Máximo 3 números salvo, descontos 10/15/20/25', await ate(() => sql(`select "maxWhatsapps"||'|'||array_to_string(descontos,',') from "Plano" where id='${PLANO}'`) === '3|10,15,20,25'));
   await c.close();
 
   // ===== 2. Usuário compra um extra (proporcional) =====
@@ -50,10 +50,10 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   await entrar(p, 'usuario@disparopro.com.br', 'User@12345678');
   await p.goto(BASE + '/whatsapp'); await espera(800);
   ok('Começa com 1 número', (await p.locator('[data-testid=numero]').count()) === 1);
-  ok('Mostra "Adicionar mais um WhatsApp" com valor proporcional (R$ 31 × 15/31 = R$ 15,00)', (await p.locator('[data-testid=comprar-extra]').innerText()).includes('15,00'), (await p.locator('[data-testid=comprar-extra]').innerText()).replace(/\s+/g, ' ').slice(0, 160));
+  ok('Mostra "Adicionar mais um WhatsApp" com valor proporcional (2º número = R$ 29,90 − 10% = R$ 26,91 × 15/31 = R$ 13,02)', (await p.locator('[data-testid=comprar-extra]').innerText()).includes('13,02'), (await p.locator('[data-testid=comprar-extra]').innerText()).replace(/\s+/g, ' ').slice(0, 160));
   await p.click('button:has-text("Adicionar mais um WhatsApp")');
   ok('PIX do extra gerado', await ate(async () => (await p.locator('[data-testid=pix-extra]').count()) === 1));
-  ok('Pedido de extra com o valor proporcional', sql(`select "somenteExtras"||'|'||"whatsappsExtras"||'|'||valor from "Pedido" where email='usuario@disparopro.com.br' order by "criadoEm" desc limit 1`) === 'true|1|1500');
+  ok('Pedido de extra com o valor proporcional', sql(`select "somenteExtras"||'|'||"whatsappsExtras"||'|'||valor from "Pedido" where email='usuario@disparopro.com.br' order by "criadoEm" desc limit 1`) === 'true|1|1302');
   await p.screenshot({ path: OUT + '/whatsapp-comprar.png', fullPage: true });
   await c.close();
 
@@ -103,23 +103,25 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   // ===== 5. Renovação com menos extras, escolhendo qual manter =====
   [c, p] = await novo();
   await p.goto(BASE + '/renovar/tok-10c-teste', { waitUntil: 'networkidle' }); await espera(500);
-  await p.locator('article:has-text("Individual") >> button').first().click(); await espera(500);
-  ok('Renovação: passo dos extras aparece com os 2 atuais', (await p.locator('[data-testid=passo-extras]').count()) === 1 && (await p.locator('#rn-extras option').count()) === 3);
-  await p.selectOption('#rn-extras', '1'); await espera(300);
+  // Cartão abre com a quantidade atual (3 números); escolhe 2 no seletor do cartão (decisão #113)
+  const cartao = p.locator('article:has-text("Individual")').first();
+  ok('Renovação: cartão abre com 3 números', (await cartao.locator('[data-testid=qtd-3]').getAttribute('aria-pressed')) === 'true');
+  await cartao.locator('[data-testid=qtd-2]').click(); await cartao.locator('[data-parte=botao]').click(); await espera(500);
+  ok('Renovação: passo dos extras aparece', (await p.locator('[data-testid=passo-extras]').count()) === 1);
   const caixas = p.locator('[data-testid=passo-extras] input[type=checkbox]');
   ok('Escolhe qual número manter', (await caixas.count()) === 2);
   // mantém o segundo (o mais novo), não o "Vendas 2"
   if (await caixas.nth(0).isChecked()) await caixas.nth(0).uncheck();
   await caixas.nth(1).check();
-  ok('Total com 1 extra: R$ 29,90 + R$ 31,00 = R$ 60,90', (await p.locator('[data-testid=passo-extras]').innerText()).includes('60,90'));
+  ok('Total com 2 números: R$ 29,90 + R$ 26,91 = R$ 56,81', (await p.locator('[data-testid=passo-extras]').innerText()).includes('56,81'));
   await p.click('button:has-text("Gerar PIX")');
-  ok('PIX de renovação gerado com 1 extra e o número escolhido', await ate(() => sql(`select "whatsappsExtras"||'|'||array_length("manterSessoes",1)||'|'||valor from "Pedido" where email='usuario@disparopro.com.br' and renovacao order by "criadoEm" desc limit 1`) === '1|1|6090'));
+  ok('PIX de renovação gerado com 1 extra e o número escolhido', await ate(() => sql(`select "whatsappsExtras"||'|'||array_length("manterSessoes",1)||'|'||valor from "Pedido" where email='usuario@disparopro.com.br' and renovacao order by "criadoEm" desc limit 1`) === '1|1|5681'));
   await p.screenshot({ path: OUT + '/renovar-extras.png', fullPage: true });
   await c.close();
   [c, p] = await novo();
   await entrar(p, 'superadmin@disparopro.com.br', 'Super@12345678');
   await p.goto(BASE + '/pedidos'); await espera(800);
-  await p.locator('tr', { has: p.locator('text=1 WhatsApp extra') }).first().locator('text=Confirmar pagamento').click();
+  await p.locator('tr', { has: p.locator('text=Individual — 2 números de WhatsApp') }).first().locator('text=Confirmar pagamento').click();
   ok('Renovação confirmada: "Vendas 2" bloqueado, o escolhido continua', await ate(() => sql(`select bloqueada from "WhatsappSessao" where id='${extra1}'`) === 't' && sql(`select count(*) from "WhatsappSessao" where "usuarioId"='${USU}' and id <> '${USU}' and not bloqueada`) === '1'));
   await c.close();
   [c, p] = await novo();
@@ -134,10 +136,14 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await espera(800);
   await p.screenshot({ path: OUT + '/login.png' });
   await p.click('button:has-text("Planos")'); await espera(800);
-  await p.click('[aria-label="Planos"] article:has-text("Individual") >> button'); await espera(400);
-  ok('Pagamento do plano Individual tem "WhatsApps extras"', (await p.locator('#ck-extras').count()) === 1 && (await p.locator('#ck-extras option').count()) === 3);
-  await p.selectOption('#ck-extras', '2');
-  ok('Total com 2 extras: R$ 29,90 + 2 × R$ 31,00 = R$ 91,90', (await p.locator('[data-testid=total-extras]').innerText()).includes('91,90'));
+  const cp = p.locator('[aria-label="Planos"] article:has-text("Individual")').first();
+  ok('Cartão Individual tem seletor de 1 a 3 números', (await cp.locator('[data-testid=seletor-quantidade] button').count()) === 3);
+  await cp.locator('[data-testid=qtd-2]').click();
+  ok('Preço no cartão muda na hora: 2 números = R$ 56,81', (await cp.locator('[data-parte=preco]').innerText()).includes('56,81'));
+  await cp.locator('[data-parte=botao]').click(); await espera(400);
+  ok('Pagamento abre com a quantidade do cartão (2)', (await p.locator('#ck-quantidade').inputValue()) === '2' && (await p.locator('#ck-quantidade option').count()) === 3);
+  await p.selectOption('#ck-quantidade', '3');
+  ok('Total com 3 números: R$ 29,90 + R$ 26,91 + R$ 25,42 = R$ 82,23', (await p.locator('[data-testid=total-extras]').innerText()).includes('82,23'));
   await p.screenshot({ path: OUT + '/checkout-extras.png' });
   await c.close();
   await b.close();

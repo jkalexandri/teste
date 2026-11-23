@@ -14,7 +14,7 @@ type Dados = { planos: PlanoPublico[]; contatoPersonalizado: string };
 
 /** Grade que se ajusta: até 4 cartões lado a lado; acima disso, quebra em linhas centralizadas (sem rolagem lateral escondida).
  *  No celular, um cartão embaixo do outro. */
-export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
+export function GradePlanos({ planos, onEscolher, quantidadeInicial }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number }) {
   const n = Math.max(1, planos.length);
   if (n > 4) {
     // Telas largas: todos na mesma linha, em versão compacta; telas estreitas: quebra em linhas (globals.css → .grade-muitos)
@@ -22,7 +22,7 @@ export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; on
       <div className="grade-muitos flex flex-wrap justify-center gap-4 mx-auto max-w-[1320px]" style={{ ["--n" as string]: n } as React.CSSProperties} data-testid="grade-planos">
         {planos.map((p) => (
           <div key={p.id} className="w-full sm:w-[300px] flex">
-            <div className="flex-1 min-w-0 flex flex-col [&>article]:flex-1"><CartaoPlano plano={p} onEscolher={onEscolher} /></div>
+            <div className="flex-1 min-w-0 flex flex-col [&>article]:flex-1"><CartaoPlano plano={p} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} /></div>
           </div>
         ))}
       </div>
@@ -38,7 +38,7 @@ export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; on
         }}
       >
         {planos.map((p) => (
-          <CartaoPlano key={p.id} plano={p} onEscolher={onEscolher} />
+          <CartaoPlano key={p.id} plano={p} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} />
         ))}
       </div>
     </div>
@@ -61,7 +61,7 @@ function Aba({ ativa, onClick, titulo, frase, testid, grande }: { ativa: boolean
 
 /** Planos em abas (decisão #113): Individual | Empresarial e, em cada um, Mensal | Por disparo.
  *  Uma aba só aparece se tiver planos; se só houver um tipo, mostra direto a grade. */
-export function PlanosComAbas({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
+export function PlanosComAbas({ planos, onEscolher, quantidadeInicial }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number }) {
   const modulos = MODULOS_PLANOS.filter((m) => planos.some((p) => p.modulo === m.id));
   const [modulo, setModulo] = useState<ModuloPlano>(modulos[0]?.id ?? "INDIVIDUAL");
   const [aba, setAba] = useState<AbaPlanos>("ilimitado");
@@ -87,7 +87,7 @@ export function PlanosComAbas({ planos, onEscolher }: { planos: PlanoPublico[]; 
           ))}
         </div>
       )}
-      <GradePlanos planos={daAba} onEscolher={onEscolher} />
+      <GradePlanos planos={daAba} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} />
     </>
   );
 }
@@ -96,6 +96,8 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
   const [dados, setDados] = useState<Dados | null>(null);
   const [aviso, setAviso] = useState("");
   const [escolhido, setEscolhido] = useState<PlanoPublico | null>(null);
+  // Quantidade escolhida no cartão (números de WhatsApp ou pacotes de usuários — decisão #113)
+  const [quantidade, setQuantidade] = useState(1);
   // Chat para interessados (decisão #104)
   const [chat, setChat] = useState(false);
 
@@ -113,7 +115,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
     return () => window.removeEventListener("keydown", f);
   }, [onFechar]);
 
-  function escolher(p: PlanoPublico) {
+  function escolher(p: PlanoPublico, qtd = 1) {
     if (p.personalizado) {
       const link = linkContato(dados?.contatoPersonalizado || "");
       if (link) {
@@ -124,6 +126,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
       return;
     }
     setAviso("");
+    setQuantidade(qtd);
     setEscolhido(p);
   }
 
@@ -156,7 +159,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
         ) : dados.planos.length === 0 ? (
           <div className="login-glass rounded-[18px] p-5 text-[13px] text-slate-300">Nenhum plano disponível no momento.</div>
         ) : escolhido ? (
-          <Checkout plano={escolhido} onVoltar={() => setEscolhido(null)} />
+          <Checkout plano={escolhido} quantidadeInicial={quantidade} onVoltar={() => setEscolhido(null)} />
         ) : (
           <PlanosComAbas planos={dados.planos} onEscolher={escolher} />
         )}

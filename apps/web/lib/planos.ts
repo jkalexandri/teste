@@ -23,6 +23,10 @@ export type PlanoPublico = {
   /** WhatsApp extra (Individual — decisões #79 e #80): máximo de números e preço de cada extra (centavos) */
   maxWhatsapps?: number;
   precoWhatsappExtra?: number | null;
+  /** Preço por quantidade (decisão #113): desconto (%) do 2º, 3º, 4º e 5º item */
+  descontos?: number[];
+  /** Empresarial: quantos pacotes de usuários a empresa pode escolher */
+  maxPacotes?: number;
   /** Plano por quantidade de envio (decisão #102) */
   disparosPorPeriodo?: number | null;
   pacoteDisparos?: number | null;
@@ -59,6 +63,41 @@ export function abasDoPlano(p: Pick<PlanoPublico, "gratis" | "personalizado" | "
 }
 /** Plano pago precisa de preço maior que zero para aparecer e ser vendido (decisão #111). */
 export const semPrecoDeVenda = (p: { gratis: boolean; personalizado: boolean; precoAtual: number | null }) => !p.gratis && !p.personalizado && (p.precoAtual == null || p.precoAtual <= 0);
+
+// ===== Preço por quantidade (decisão #113) =====
+// Individual: números de WhatsApp (até 4). Empresarial: pacotes de usuários (Padrão 10→50 etc.).
+export const MAX_NUMEROS_INDIVIDUAL = 4;
+export const DESCONTOS_PADRAO = [10, 15, 20, 25];
+
+/** Quantas unidades o cliente pode escolher no cartão (1 = sem seletor). */
+export function maxQuantidade(p: Pick<PlanoPublico, "gratis" | "modulo" | "maxWhatsapps" | "maxPacotes">) {
+  if (p.gratis) return 1;
+  return p.modulo === "INDIVIDUAL" ? Math.min(MAX_NUMEROS_INDIVIDUAL, Math.max(1, p.maxWhatsapps ?? 1)) : Math.max(1, Math.min(10, p.maxPacotes ?? 1));
+}
+
+/** Desconto (%) da posição (2 = segundo item). Depois do último informado, vale o último. */
+export function descontoDaPosicao(descontos: number[] | undefined, posicao: number) {
+  const d = descontos && descontos.length ? descontos : DESCONTOS_PADRAO;
+  return posicao < 2 ? 0 : d[Math.min(posicao - 2, d.length - 1)] ?? 0;
+}
+
+/** Preço do item na posição (1 = o próprio plano), em centavos. */
+export const precoDaPosicao = (preco: number, descontos: number[] | undefined, posicao: number) =>
+  Math.round((preco * (100 - descontoDaPosicao(descontos, posicao))) / 100);
+
+/** Preço total para "quantidade" itens: plano + cada item a mais com o desconto da posição (ex.: 100 + 90 + 85). */
+export function precoComQuantidade(preco: number, descontos: number[] | undefined, quantidade: number) {
+  let total = 0;
+  for (let i = 1; i <= Math.max(1, quantidade); i++) total += precoDaPosicao(preco, descontos, i);
+  return total;
+}
+
+/** Texto da quantidade escolhida: "2 números de WhatsApp" / "30 usuários". */
+export function rotuloQuantidade(p: Pick<PlanoPublico, "modulo" | "usuarios">, quantidade: number) {
+  if (p.modulo === "INDIVIDUAL") return `${quantidade} ${quantidade === 1 ? "número" : "números"} de WhatsApp`;
+  const u = (p.usuarios ?? 1) * quantidade;
+  return `${u} ${u === 1 ? "usuário" : "usuários"}`;
+}
 
 /** 2999 -> "R$ 29,99" */
 export function formatarReais(centavos: number) {

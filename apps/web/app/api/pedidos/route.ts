@@ -22,8 +22,9 @@ export async function POST(req: Request) {
     email: String(c.email || "").trim().toLowerCase().slice(0, 120),
     whatsapp: String(c.whatsapp || "").trim().slice(0, 30),
     empresaNome: String(c.empresaNome || "").trim().slice(0, 80),
-    // WhatsApps extras escolhidos no pagamento (Individual — decisão #95)
-    extras: Math.max(0, Math.min(10, Math.floor(Number(c.extras) || 0))),
+    // Quantidade (decisão #113): números de WhatsApp (Individual) ou pacotes de usuários (Empresarial).
+    // "extras" (versão anterior) continua aceito: extras + 1 números.
+    quantidade: Math.max(1, Math.min(10, Math.floor(Number(c.quantidade) || (Number(c.extras) || 0) + 1))),
   };
 
   const plano = await prisma.plano.findUnique({ where: { id: dados.planoId } });
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
       empresaNome: plano.modulo === Modulo.EMPRESARIAL ? dados.empresaNome || existente?.empresa?.nome : null,
     },
     renovarEmpresaId,
-    extras: dados.extras,
+    quantidade: dados.quantidade,
   });
   if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 503 });
   // Decisão #38: aviso pelo WhatsApp ao Super Admin, depois de responder ao cliente.

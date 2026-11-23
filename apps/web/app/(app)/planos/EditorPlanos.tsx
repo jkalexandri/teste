@@ -1,9 +1,9 @@
 "use client";
 
 // Editor de planos do Super Admin, com prévia ao vivo do popup.
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { abasDoPlano, formatarReais, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
+import { abasDoPlano, descontoDaPosicao, formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
 import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import { Eye, EyeOff, Pencil, Sparkles, X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
@@ -178,12 +178,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                 placeholder="Máximo de páginas"
                 dica="Cada página de site/PDF, imagem ou 3.000 letras de texto conta 1."
               />
-              {editando.modulo === "INDIVIDUAL" && !editando.gratis && (
-                <>
-                  <Campo nome="maxWhatsapps" rotulo="WhatsApps por usuário (máximo, com o principal)" valor={editando.maxWhatsapps ?? 1} tipo="number" dica="1 = sem número extra." />
-                  <Campo nome="precoWhatsappExtra" rotulo="Preço de cada WhatsApp extra — R$" valor={reais(editando.precoWhatsappExtra ?? null)} dica="Por período do plano. Comprado no meio do período, é proporcional." />
-                </>
-              )}
+              {!editando.gratis && <PrecoPorQuantidade plano={editando} />}
               {!editando.gratis && (
                 <>
                   <Campo nome="disparosPorPeriodo" rotulo="Disparos por período (vazio = sem limite)" valor={editando.disparosPorPeriodo ?? ""} tipo="number" dica="Plano por quantidade de envio: só mensagens de campanha contam." />
@@ -232,6 +227,52 @@ function Campo({ nome, rotulo, valor, tipo = "text", area, larga, linhas = 2, di
         <input id={`f-${nome}`} name={nome} className="input" type={tipo} min={tipo === "number" ? 0 : undefined} defaultValue={String(valor)} />
       )}
       {dica && <p className="help mt-0.5">{dica}</p>}
+    </div>
+  );
+}
+
+/** Preço por quantidade (decisão #113): máximo de números/pacotes, descontos por posição e a tabela de preços para conferir. */
+function PrecoPorQuantidade({ plano }: { plano: PlanoPublico }) {
+  const individual = plano.modulo === "INDIVIDUAL";
+  const [max, setMax] = useState(individual ? Math.min(4, plano.maxWhatsapps ?? 1) : plano.maxPacotes ?? 1);
+  const [desc, setDesc] = useState<string[]>(() => [2, 3, 4, 5].map((pos) => String(descontoDaPosicao(plano.descontos, pos)).replace(".", ",")));
+  const [preco, setPreco] = useState(plano.precoAtual ?? 0);
+  const descontos = desc.map((d) => Number(d.replace(",", ".")) || 0);
+  // Acompanha o "Preço atual" digitado no mesmo formulário
+  useEffect(() => {
+    const el = document.getElementById("f-precoAtual") as HTMLInputElement | null;
+    if (!el) return;
+    const ler = () => { const v = Number(el.value.replace(/\./g, "").replace(",", ".")); setPreco(Number.isFinite(v) ? Math.round(v * 100) : 0); };
+    el.addEventListener("input", ler);
+    return () => el.removeEventListener("input", ler);
+  }, []);
+  const exemplo = preco > 0 ? preco : 10000;
+  return (
+    <div className="sm:col-span-2 rounded-xl p-3" style={{ border: "1px solid var(--border)" }} data-testid="preco-quantidade">
+      <b className="text-[13px]">{individual ? "Números de WhatsApp (o cliente escolhe no cartão)" : "Pacotes de usuários (a empresa escolhe no cartão)"}</b>
+      <p className="help">{individual ? "Máximo de números, contando o principal (até 4)." : `Cada pacote tem ${plano.usuarios ?? 1} usuários. 1 = quantidade fixa (ex.: Básico). Disparos e leads multiplicam pelos pacotes.`}</p>
+      <div className="flex flex-wrap gap-2 mt-2 items-end">
+        <div>
+          <label className="label" htmlFor="f-max">{individual ? "Máximo de números" : "Máximo de pacotes"}</label>
+          <input id="f-max" name={individual ? "maxWhatsapps" : "maxPacotes"} type="number" min={1} max={individual ? 4 : 10} className="input !w-[110px]" value={max} onChange={(e) => setMax(Math.max(1, Number(e.target.value) || 1))} />
+        </div>
+        {[2, 3, 4, 5].map((pos, i) => (
+          <div key={pos}>
+            <label className="label" htmlFor={`f-desconto${pos}`}>Desconto do {pos}º (%)</label>
+            <input id={`f-desconto${pos}`} name={`desconto${pos}`} className="input !w-[90px]" inputMode="decimal" value={desc[i]} onChange={(e) => setDesc((d) => d.map((x, j) => (j === i ? e.target.value : x)))} />
+          </div>
+        ))}
+      </div>
+      {max > 1 && (
+        <div className="mt-2 text-[12px]" data-testid="tabela-precos-quantidade">
+          <p className="help">Conferência{preco > 0 ? "" : " (exemplo com o plano a R$ 100,00)"}:</p>
+          <ul className="grid sm:grid-cols-2 gap-x-4">
+            {Array.from({ length: Math.min(max, maxQuantidade({ ...plano, maxWhatsapps: max, maxPacotes: max })) }, (_, i) => i + 1).map((q) => (
+              <li key={q}>{rotuloQuantidade(plano, q)}: <b>{formatarReais(precoComQuantidade(exemplo, descontos, q))}</b>{q > 1 ? <span className="help"> (o {q}º com −{descontoDaPosicao(descontos, q).toLocaleString("pt-BR")}%)</span> : null}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

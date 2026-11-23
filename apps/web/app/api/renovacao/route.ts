@@ -27,15 +27,16 @@ export async function POST(req: Request) {
   });
   if (abertos >= 3) return NextResponse.json({ erro: "Já existem pedidos de renovação aguardando pagamento." }, { status: 429 });
 
-  // WhatsApps extras (Individual — decisões #80 e #95): na renovação só pode manter ou diminuir
-  const extras = Math.max(0, Math.floor(Number(c.extras) || 0));
-  if (extras > empresa.whatsappsExtras) return NextResponse.json({ erro: "Na renovação você pode manter ou diminuir os WhatsApps extras." }, { status: 400 });
+  // Quantidade (decisão #113): números de WhatsApp (Individual) ou pacotes de usuários (Empresarial); pode aumentar ou diminuir.
+  // Individual diminuindo: "manter" diz quais números extras continuam.
+  const quantidade = Math.max(1, Math.min(10, Math.floor(Number(c.quantidade) || (Number(c.extras) || 0) + 1)));
+  const extras = plano.modulo === "INDIVIDUAL" ? quantidade - 1 : 0;
   const manter = Array.isArray(c.manter) ? c.manter.map(String).filter((x: string) => /^[A-Za-z0-9_-]{1,64}$/.test(x)).slice(0, extras) : [];
   const r = await criarPedidoPix({
     plano,
     comprador: { nome: resp.nome, email: resp.email, whatsapp: resp.whatsapp || "", empresaNome: empresa.nome },
     renovarEmpresaId: empresa.id,
-    extras,
+    quantidade,
     manterSessoes: manter,
   });
   if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 503 });

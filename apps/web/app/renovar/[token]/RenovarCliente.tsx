@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TriangleAlert } from "@/components/icons";
-import { formatarReais, type PlanoPublico } from "@/lib/planos";
+import { formatarReais, precoComQuantidade, rotuloQuantidade, type PlanoPublico } from "@/lib/planos";
 import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import TelaPix, { type DadosPix } from "@/components/planos/TelaPix";
 
@@ -10,6 +10,8 @@ type Conta = {
   nome: string; pacote: string; planoId: string | null; expiraEm: string;
   /** WhatsApps extras atuais (Individual — decisões #80 e #95) */
   extras: number; numerosExtras: { id: string; rotulo: string }[];
+  /** Módulo e pacotes de usuários atuais (decisão #113) */
+  modulo: "INDIVIDUAL" | "EMPRESARIAL"; pacotes: number;
 };
 
 export default function RenovarCliente({ token, conta, planos }: { token: string; conta: Conta; planos: PlanoPublico[] }) {
@@ -23,27 +25,28 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   const venc = new Date(conta.expiraEm);
   const vencido = venc < new Date();
 
-  /** Máximo de extras na renovação: só pode manter ou diminuir, até o limite do plano escolhido. */
-  const maxExtras = (p: PlanoPublico) => (p.precoWhatsappExtra != null ? Math.min(conta.extras, Math.max(0, (p.maxWhatsapps ?? 1) - 1)) : 0);
+  // Quantidade atual da conta: números de WhatsApp (Individual) ou pacotes de usuários (Empresarial) — decisão #113
+  const quantidadeAtual = conta.modulo === "INDIVIDUAL" ? 1 + conta.extras : Math.max(1, conta.pacotes);
 
-  function escolher(p: PlanoPublico) {
-    if (conta.extras > 0) {
-      const max = maxExtras(p);
+  /** Escolheu plano e quantidade no cartão. Individual diminuindo números: escolhe quais extras ficam. */
+  function escolher(p: PlanoPublico, quantidade = 1) {
+    const extras = conta.modulo === "INDIVIDUAL" ? quantidade - 1 : 0;
+    if (conta.modulo === "INDIVIDUAL" && extras > 0 && extras < conta.numerosExtras.length) {
       setEscolhido(p);
-      setQtd(max);
-      setManter(conta.numerosExtras.slice(0, max).map((n) => n.id));
+      setQtd(quantidade);
+      setManter(conta.numerosExtras.slice(0, extras).map((n) => n.id));
       return;
     }
-    void gerar(p, 0, []);
+    void gerar(p, quantidade, conta.numerosExtras.slice(0, Math.max(0, extras)).map((n) => n.id));
   }
 
-  async function gerar(p: PlanoPublico, extras: number, manterIds: string[]) {
+  async function gerar(p: PlanoPublico, quantidade: number, manterIds: string[]) {
     setErro("");
     setEnviando(true);
     const r = await fetch("/api/renovacao", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, planoId: p.id, extras, manter: manterIds }),
+      body: JSON.stringify({ token, planoId: p.id, quantidade, manter: manterIds }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -74,33 +77,22 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
         {pix && <TelaPix pix={pix} />}
         {!pix && escolhido && (
           <div className="mt-3" data-testid="passo-extras">
-            <p className="text-[13px] font-bold text-white">Plano {escolhido.nome}: WhatsApps extras</p>
-            <label className="login-label mt-2" htmlFor="rn-extras">Quantos extras manter (você tem {conta.extras})</label>
-            <select id="rn-extras" className="login-input sem-icone" value={qtd}
-              onChange={(e) => { const n = Number(e.target.value); setQtd(n); setManter((m) => m.slice(0, n)); }}>
-              {Array.from({ length: maxExtras(escolhido) + 1 }, (_, i) => (
-                <option key={i} value={i} style={{ color: "#0b1220" }}>{i === 0 ? "Nenhum" : `${i} extra${i > 1 ? "s" : ""}`}</option>
-              ))}
-            </select>
-            {qtd < conta.numerosExtras.length && qtd > 0 && (
-              <div className="mt-2">
-                <p className="text-[12px] text-slate-300">Escolha {qtd === 1 ? "o número" : `os ${qtd} números`} que ficam (os outros ficam desconectados até comprar de novo):</p>
-                {conta.numerosExtras.map((n) => (
-                  <label key={n.id} className="flex items-center gap-2 text-[13px] text-slate-200 mt-1 cursor-pointer">
-                    <input type="checkbox" checked={manter.includes(n.id)} disabled={!manter.includes(n.id) && manter.length >= qtd}
-                      onChange={(e) => setManter((m) => (e.target.checked ? [...m, n.id] : m.filter((x) => x !== n.id)))} />
-                    {n.rotulo}
-                  </label>
-                ))}
-              </div>
-            )}
-            {qtd < conta.extras && <p className="text-[11px] text-slate-400 mt-1">O número principal sempre continua.</p>}
+            <p className="text-[13px] font-bold text-white">Plano {escolhido.nome}: {rotuloQuantidade(escolhido, qtd)}</p>
+            <p className="text-[12px] text-slate-300 mt-1">Você tem {conta.extras} {conta.extras === 1 ? "número extra" : "números extras"}. Escolha {qtd - 1 === 1 ? "o que fica" : `os ${qtd - 1} que ficam`} (os outros ficam desconectados até comprar de novo):</p>
+            {conta.numerosExtras.map((n) => (
+              <label key={n.id} className="flex items-center gap-2 text-[13px] text-slate-200 mt-1 cursor-pointer">
+                <input type="checkbox" checked={manter.includes(n.id)} disabled={!manter.includes(n.id) && manter.length >= qtd - 1}
+                  onChange={(e) => setManter((m) => (e.target.checked ? [...m, n.id] : m.filter((x) => x !== n.id)))} />
+                {n.rotulo}
+              </label>
+            ))}
+            <p className="text-[11px] text-slate-400 mt-1">O número principal sempre continua.</p>
             <p className="text-[13px] text-slate-200 mt-2">
-              Total: <b className="text-white">{formatarReais((escolhido.precoAtual ?? 0) + qtd * (escolhido.precoWhatsappExtra ?? 0))}</b>/{escolhido.periodo}
+              Total: <b className="text-white">{formatarReais(precoComQuantidade(escolhido.precoAtual ?? 0, escolhido.descontos, qtd))}</b>/{escolhido.periodo}
             </p>
             <div className="flex gap-2 mt-3">
               <button type="button" className="login-ghost-btn !px-3" onClick={() => setEscolhido(null)}>Voltar</button>
-              <button type="button" className="login-cta !py-2.5" disabled={enviando} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : "Gerar PIX"}</button>
+              <button type="button" className="login-cta !py-2.5" disabled={enviando || manter.length !== qtd - 1} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : "Gerar PIX"}</button>
             </div>
           </div>
         )}
@@ -112,6 +104,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
           ) : (
             <div style={{ opacity: enviando ? 0.6 : 1, pointerEvents: enviando ? "none" : undefined }}>
               <PlanosComAbas
+                quantidadeInicial={quantidadeAtual}
                 planos={planos.map((p) => ({ ...p, selo: p.id === conta.planoId ? "Seu plano atual" : p.selo, textoBotao: "Renovar com este plano" }))}
                 onEscolher={escolher}
               />

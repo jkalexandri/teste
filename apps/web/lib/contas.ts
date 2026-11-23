@@ -37,6 +37,8 @@ export type NovaConta = {
   limiteLeads?: number | null;
   /** WhatsApps extras comprados junto com o plano (Individual — decisão #95) */
   whatsappsExtras?: number;
+  /** Pacotes de usuários (Empresarial — decisão #113): disparos por período = plano × pacotes */
+  pacotes?: number;
   usuario: { nome: string; email: string; whatsapp?: string | null };
 };
 
@@ -60,7 +62,8 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       prazoDias: dados.prazoDias,
       expiraEm: fimDoPrazo(dados.prazoDias),
       // Teste grátis: o limite do teste; plano por quantidade: os disparos por período (decisão #102)
-      limiteDisparos: dados.limiteDisparos ?? plano?.disparosPorPeriodo ?? null,
+      limiteDisparos: dados.limiteDisparos ?? (plano?.disparosPorPeriodo != null ? plano.disparosPorPeriodo * Math.max(1, dados.pacotes ?? 1) : null),
+      pacotes: Math.max(1, dados.pacotes ?? 1),
       limiteLeads: dados.limiteLeads ?? null,
       limiteMateriais: plano?.limiteMateriais ?? null,
       limitePaginasMes: plano?.limitePaginasMes ?? null,

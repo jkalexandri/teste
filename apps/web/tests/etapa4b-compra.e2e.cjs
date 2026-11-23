@@ -24,7 +24,7 @@ const ultimaSenha = (email) => {
     if (!(await p.locator(`[aria-label="Planos"] article:has-text("${nome}")`).count()) && (await p.locator('[data-testid=aba-modulo-EMPRESARIAL]').count())) {
       await p.click('[data-testid=aba-modulo-EMPRESARIAL]'); await p.waitForTimeout(300);
     }
-    await p.click(`[aria-label="Planos"] article:has-text("${nome}") >> button`); await p.waitForTimeout(300);
+    await p.click(`[aria-label="Planos"] article:has-text("${nome}") >> [data-parte=botao]`); await p.waitForTimeout(300);
   };
 
   // 1. Compra plano Padrão (empresarial)

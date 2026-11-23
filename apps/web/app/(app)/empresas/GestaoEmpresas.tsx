@@ -9,11 +9,11 @@ import CampoLimite from "@/components/app/CampoLimite";
 import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 
 export type EmpresaLinha = {
-  id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean;
+  id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean; pacotes: number;
   expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null; treino: TreinoIA; leadsAnuncios: boolean;
   usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
 };
-type PlanoOpcao = { id: string; nome: string; usuarios: number | null; personalizado: boolean; prazoDias: number };
+type PlanoOpcao = { id: string; nome: string; usuarios: number | null; personalizado: boolean; prazoDias: number; maxPacotes: number };
 
 const data = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
 
@@ -175,6 +175,17 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                         {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}{p.usuarios ? ` — ${p.usuarios} usuários` : ""}</option>)}
                       </select>
                     </div>
+                    {/* Quantidade de pacotes de usuários (decisão #113): usuários, disparos e leads acompanham */}
+                    {planoTrocaSel && !planoTrocaSel.personalizado && planoTrocaSel.maxPacotes > 1 && (
+                      <div>
+                        <label className="label" htmlFor={`pac-${e.id}`}>Usuários</label>
+                        <select key={planoTrocaSel.id} id={`pac-${e.id}`} name="pacotes" className="input !w-auto" defaultValue={String(Math.min(e.pacotes, planoTrocaSel.maxPacotes))}>
+                          {Array.from({ length: planoTrocaSel.maxPacotes }, (_, i) => i + 1).map((q) => (
+                            <option key={q} value={q}>{(planoTrocaSel.usuarios ?? 1) * q} usuários{q > 1 ? ` (${q} pacotes)` : ""}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     {planoTrocaSel?.personalizado && (
                       <div>
                         <label className="label" htmlFor={`lim-${e.id}`}>Usuários</label>
@@ -183,7 +194,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                     )}
                     <button className="btn-primary" disabled={pendente}>Salvar pacote</button>
                     <button type="button" className="btn-ghost" onClick={() => setTrocando(null)}>Cancelar</button>
-                    <p className="help w-full">Ao diminuir, os usuários atuais continuam; novos só dentro do limite.</p>
+                    <p className="help w-full">Ao diminuir, os usuários atuais continuam; novos só dentro do limite. Disparos e leads do período acompanham a quantidade de pacotes.</p>
                   </form>
                 )}
 

@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { ChevronRight, CircleCheck, TriangleAlert } from "@/components/icons";
 import TelaPix, { type DadosPix } from "./TelaPix";
-import { formatarReais, type PlanoPublico } from "@/lib/planos";
+import { formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, type PlanoPublico } from "@/lib/planos";
 
 type Pix = DadosPix;
 
@@ -17,7 +17,7 @@ function mascaraFone(v: string) {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onVoltar: () => void }) {
+export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { plano: PlanoPublico; onVoltar: () => void; quantidadeInicial?: number }) {
   const empresarial = plano.modulo === "EMPRESARIAL";
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -27,9 +27,9 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
   const [enviando, setEnviando] = useState(false);
   const [pix, setPix] = useState<Pix | null>(null);
   const [freeOk, setFreeOk] = useState(false);
-  // WhatsApps extras (Individual pago — decisão #95: campo só neste passo do pagamento)
-  const maxExtras = !plano.gratis && plano.modulo === "INDIVIDUAL" && plano.precoWhatsappExtra != null ? Math.max(0, (plano.maxWhatsapps ?? 1) - 1) : 0;
-  const [extras, setExtras] = useState(0);
+  // Quantidade (decisão #113): números de WhatsApp (Individual) ou pacotes de usuários (Empresarial); vem do cartão e pode trocar aqui
+  const maxQ = maxQuantidade(plano);
+  const [quantidade, setQuantidade] = useState(Math.min(Math.max(1, quantidadeInicial), maxQ));
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +39,7 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome, extras }),
+      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome, quantidade }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -53,7 +53,7 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
 
   const resumo = plano.gratis
     ? `Teste grátis • ${plano.testeDias ?? 7} dias ou ${plano.testeDisparos ?? 20} disparos`
-    : `${plano.precoAtual != null ? formatarReais(plano.precoAtual) : ""}/${plano.periodo}${plano.usuarios ? ` • ${plano.usuarios} ${plano.usuarios === 1 ? "usuário" : "usuários"}` : ""}`;
+    : `${plano.precoAtual != null ? formatarReais(precoComQuantidade(plano.precoAtual, plano.descontos, quantidade)) : ""}/${plano.periodo} • ${rotuloQuantidade(plano, quantidade)}`;
 
   return (
     <div className="login-glass rounded-[24px] p-5 w-full max-w-[480px] mx-auto text-[#eaf6ff]">
@@ -93,21 +93,17 @@ export default function Checkout({ plano, onVoltar }: { plano: PlanoPublico; onV
             <label className="login-label" htmlFor="ck-whats">WhatsApp</label>
             <input id="ck-whats" className="login-input sem-icone" value={whatsapp} onChange={(e) => setWhatsapp(mascaraFone(e.target.value))} placeholder="(11) 90000-0000" inputMode="tel" />
           </div>
-          {maxExtras > 0 && (
+          {maxQ > 1 && (
             <div>
-              <label className="login-label" htmlFor="ck-extras">WhatsApps extras (além do seu número)</label>
-              <select id="ck-extras" className="login-input sem-icone" value={extras} onChange={(e) => setExtras(Number(e.target.value))}>
-                {Array.from({ length: maxExtras + 1 }, (_, i) => (
-                  <option key={i} value={i} style={{ color: "#0b1220" }}>
-                    {i === 0 ? "Nenhum" : `${i} extra${i > 1 ? "s" : ""} (+ ${formatarReais(i * (plano.precoWhatsappExtra ?? 0))})`}
-                  </option>
+              <label className="login-label" htmlFor="ck-quantidade">{plano.modulo === "INDIVIDUAL" ? "Números de WhatsApp" : "Usuários"}</label>
+              <select id="ck-quantidade" className="login-input sem-icone" value={quantidade} onChange={(e) => setQuantidade(Number(e.target.value))}>
+                {Array.from({ length: maxQ }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>{rotuloQuantidade(plano, n)} — {formatarReais(precoComQuantidade(plano.precoAtual ?? 0, plano.descontos, n))}/{plano.periodo}</option>
                 ))}
               </select>
-              {extras > 0 && plano.precoAtual != null && (
-                <p className="text-[12px] text-slate-300 mt-1" data-testid="total-extras">
-                  Total: <b className="text-white">{formatarReais(plano.precoAtual + extras * (plano.precoWhatsappExtra ?? 0))}</b>/{plano.periodo}
-                </p>
-              )}
+              <p className="text-[12px] text-slate-300 mt-1" data-testid="total-extras">
+                Total: <b className="text-white">{formatarReais(precoComQuantidade(plano.precoAtual ?? 0, plano.descontos, quantidade))}</b>/{plano.periodo}
+              </p>
             </div>
           )}
           {empresarial && <p className="text-[11px] text-slate-400">Quem compra um plano de empresa se torna o Administrador da empresa. Já é cliente? Use o seu e-mail de acesso para renovar.</p>}

@@ -2,6 +2,26 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.34.0 — planos Individual | Empresarial e preço por quantidade (23/11/2026)
+
+### Para quem visita
+- O botão **Planos** separa **Individual** e **Empresarial** e, em cada um, **Mensal** (sem limite de disparos) e **Por disparo**.
+- Dois testes grátis no Individual: **por dias** (Mensal) e **por disparos** (Por disparo); um teste por e-mail.
+- **Escolha a quantidade no cartão:** números de WhatsApp (Individual, até 4) ou usuários (Empresarial — ex.: Padrão 10 a 50).
+  Cada item a mais tem desconto pela posição (2º −10%, 3º −15%…) e o preço muda na hora; dá para trocar no pagamento.
+- O plano **Personalizado** saiu.
+
+### Para clientes
+- Renovação: escolha de novo a quantidade. Com menos números, você escolhe quais ficam; com menos usuários, os mais recentes ficam
+  bloqueados até o Admin escolher quem reativar.
+- Número extra no meio do período: preço com o desconto da posição, proporcional aos dias que faltam.
+- Nos planos com pacotes, disparos por mês e limite de leads acompanham a quantidade.
+
+### Para o Super Admin
+- Planos: **descontos por posição**, **máximo de números** (Individual) e **máximo de pacotes** (Empresarial), com tabela de preços ao vivo.
+- **Empresas → Alterar pacote** escolhe também a quantidade de pacotes.
+- **Meu WhatsApp:** até 10 números, sem pagamento.
+
 ## v1.33.3 — correção do app instalado (23/11/2026)
 
 - O app instalado no celular abria em "localhost" (endereço interno da VPS) quando a pessoa ainda não tinha entrado.

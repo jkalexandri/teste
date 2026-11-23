@@ -63,18 +63,27 @@ export async function alterarPacote(empresaId: string, form: FormData): Promise<
   await exigirSuperAdmin();
   const r = await limiteDoPlano(t(form, "planoId"), n(form, "limite"));
   if ("erro" in r) return { ok: false, mensagem: r.erro! };
+  // Quantidade de pacotes (decisão #113): usuários, disparos e leads do plano × pacotes
+  const pacotes = r.plano.personalizado ? 1 : Math.max(1, Math.min(Math.max(1, r.plano.maxPacotes), n(form, "pacotes") ?? 1));
+  const limite = r.plano.personalizado ? r.limite : r.limite * pacotes;
   const e = await prisma.empresa.update({
     where: { id: empresaId },
-    data: { pacote: r.plano.nome, planoId: r.plano.id, limiteUsuarios: r.limite },
+    data: {
+      pacote: r.plano.nome, planoId: r.plano.id, limiteUsuarios: limite, pacotes,
+      ...(r.plano.personalizado ? {} : {
+        limiteDisparos: r.plano.disparosPorPeriodo != null ? r.plano.disparosPorPeriodo * pacotes : null,
+        limiteLeads: r.plano.limiteLeads != null ? r.plano.limiteLeads * pacotes : null,
+      }),
+    },
   });
   const usuarios = await prisma.usuario.count({ where: { empresaId, cargo: Cargo.USUARIO } });
   revalidatePath("/empresas");
   return {
     ok: true,
     mensagem:
-      usuarios > r.limite
-        ? `${e.nome}: pacote ${r.plano.nome} (${r.limite} usuários). Os ${usuarios} usuários atuais continuam; novos ficam bloqueados até ficar dentro do limite.`
-        : `${e.nome}: pacote alterado para ${r.plano.nome} (${r.limite} usuários).`,
+      usuarios > limite
+        ? `${e.nome}: pacote ${r.plano.nome} (${limite} usuários). Os ${usuarios} usuários atuais continuam; novos ficam bloqueados até ficar dentro do limite.`
+        : `${e.nome}: pacote alterado para ${r.plano.nome} (${limite} usuários).`,
   };
 }
 

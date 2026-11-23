@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { lerLimite } from "@/lib/limite";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
-import { lerReais, abasDoPlano, semPrecoDeVenda } from "@/lib/planos";
+import { lerReais, abasDoPlano, semPrecoDeVenda, DESCONTOS_PADRAO, MAX_NUMEROS_INDIVIDUAL } from "@/lib/planos";
 import { Modulo } from "@filapro/db";
 
 export type RespostaAcao = { ok: boolean; mensagem: string };
@@ -38,11 +38,18 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   if (limiteMateriais === "erro") return { ok: false, mensagem: "Informe o máximo de materiais da IA ou marque “Ilimitado”." };
   const limitePaginasMes = lerLimite(form, "limitePaginasMes");
   if (limitePaginasMes === "erro") return { ok: false, mensagem: "Informe o máximo de páginas por mês da IA ou marque “Ilimitado”." };
-  // WhatsApp extra (só Individual pago — decisões #79 e #80)
+  // Preço por quantidade (decisão #113): Individual até 4 números; Empresarial em pacotes de usuários; descontos por posição
   const comExtra = atual.modulo === "INDIVIDUAL" && !atual.gratis;
-  const maxWhatsapps = comExtra ? Math.min(10, Math.max(1, inteiro(form.get("maxWhatsapps")) || 1)) : 1;
-  const precoWhatsappExtra = comExtra ? lerReais(texto(form.get("precoWhatsappExtra"))) : null;
-  if (maxWhatsapps > 1 && precoWhatsappExtra == null) return { ok: false, mensagem: "Informe o preço do WhatsApp extra (ou deixe 1 WhatsApp por usuário)." };
+  const maxWhatsapps = comExtra ? Math.min(MAX_NUMEROS_INDIVIDUAL, Math.max(1, inteiro(form.get("maxWhatsapps")) || 1)) : 1;
+  const maxPacotes = atual.modulo === "EMPRESARIAL" && !atual.gratis ? Math.min(10, Math.max(1, inteiro(form.get("maxPacotes")) || 1)) : 1;
+  const descontos: number[] = [];
+  for (const k of ["desconto2", "desconto3", "desconto4", "desconto5"]) {
+    const v = texto(form.get(k)).replace(",", ".");
+    if (v === "") break;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0 || n > 90) return { ok: false, mensagem: "Os descontos devem ficar entre 0% e 90%." };
+    descontos.push(n);
+  }
   // Plano por quantidade de envio (decisão #102)
   const disparosPorPeriodo = atual.gratis ? null : inteiro(form.get("disparosPorPeriodo")) || null;
   const pacoteDisparos = atual.gratis ? null : inteiro(form.get("pacoteDisparos")) || null;
@@ -65,7 +72,9 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       // Leads de anúncios incluídos no plano (decisão #90)
       leadsAnuncios: form.get("leadsAnuncios") === "on",
       maxWhatsapps,
-      precoWhatsappExtra,
+      precoWhatsappExtra: null,
+      maxPacotes,
+      descontos: descontos.length ? descontos : DESCONTOS_PADRAO,
       disparosPorPeriodo,
       pacoteDisparos,
       precoPacoteDisparos: pacoteDisparos ? precoPacoteDisparos : null,

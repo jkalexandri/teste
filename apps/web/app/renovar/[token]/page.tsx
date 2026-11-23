@@ -43,6 +43,8 @@ export default async function RenovarPage({ params }: { params: Promise<{ token:
               expiraEm: empresa.expiraEm.toISOString(),
               extras: empresa.modulo === Modulo.INDIVIDUAL ? empresa.whatsappsExtras : 0,
               numerosExtras: extras,
+              modulo: empresa.modulo,
+              pacotes: empresa.pacotes,
             }}
             planos={planos.map(({ criadoEm, atualizadoEm, ...p }) => p)}
           />

@@ -105,7 +105,7 @@ Toda compra feita no botão **Planos** da tela de login (ou renovação, ou What
 Para cada empresa: código, pacote, vencimento, usuários e leads. Ações:
 
 - **Nova empresa** (sem pedido): nome, plano, Admin da Empresa.
-- **Ver usuários**, **Alterar pacote** (quantidade de usuários), **Limite de leads** da empresa, **Prorrogar**, **Ativar/Inativar**.
+- **Ver usuários**, **Alterar pacote** (plano e quantidade de pacotes — ex.: Padrão 10 a 50 usuários; disparos e leads acompanham), **Limite de leads** da empresa, **Prorrogar**, **Ativar/Inativar**.
 - **IA: treino** — liga/desliga o treinamento da IA da conta, limites de materiais e de páginas por mês, e **Liberar agora**
   (zera o uso do mês/período).
 - **Anúncios** — liga/desliga o recurso pago "Leads de anúncios" para a conta.
@@ -149,15 +149,22 @@ Grupo **Financeiro** do menu, só para o Super Admin. Tudo em **regime de caixa*
 
 ![Planos](prints/s-planos.png)
 
-**Abas do popup (decisão #111):** o visitante vê duas abas — **Sem limite de disparos** (abre primeiro) e **Por quantidade de
-disparos**. A aba é automática: com **Disparos por período** preenchido o plano vai para *Por quantidade*; vazio, para *Sem limite*.
-**Free e Personalizado** aparecem nas duas. Cada aba tem o **seu destaque**. Se só uma das abas tiver planos visíveis, as abas não aparecem.
+**Abas do popup (decisões #111 e #113):** primeiro **Individual | Empresarial** e, em cada um, **Mensal** (sem limite de disparos) e
+**Por disparo**. A aba é automática: com **Disparos por período** preenchido o plano vai para *Por disparo*; vazio, para *Mensal*.
+O **Free** com *disparos do teste* vai para *Por disparo*; sem, para *Mensal* (teste por dias). Cada aba tem o **seu destaque**.
+
+**Preço por quantidade (decisão #113):** o cliente escolhe a quantidade no cartão e o preço muda na hora:
+valor do plano + cada item a mais com o desconto da posição (**Desconto do 2º, 3º, 4º e 5º**, ajustáveis em cada plano).
+O editor mostra a tabela de preços ao vivo.
+- **Individual:** **máximo de números** (até 4: o principal + 3).
+- **Empresarial:** **máximo de pacotes** (ex.: Padrão 10 usuários × até 5 = 50). Disparos por período e limite de leads multiplicam
+  pelos pacotes; materiais da IA e o pacote extra de disparos, não.
 
 - **+ Novo plano:** nome e módulo; nasce **oculto**. Depois, **Editar** para completar.
 - **Duplicar:** cópia oculta (bom para criar a versão "por quantidade" de um plano).
 - **Excluir:** só plano sem pedidos e sem contas usando; senão, use **Oculto**.
 - Plano pago com preço **R$ 0,00** (ou sem preço) aparece como **"Em breve"**: o visitante vê o plano, mas não consegue comprar.
-  Coloque o preço e ele passa a vender na hora. Pacote extra e WhatsApp extra com preço zero também não são vendidos.
+  Coloque o preço e ele passa a vender na hora. Pacote extra com preço zero também não é vendido.
 
 **Duas formas de vender:** só por **prazo** (sem limite de envios) ou por **prazo + quantidade de disparos por período**. Na segunda:
 
@@ -171,7 +178,7 @@ Os cartões do botão **Planos** da tela de login. Em cada plano:
 - nome, preços (antigo riscado e atual), período, prazo, usuários, selo, frase, condições, oferta, recursos e texto do botão;
 - **limite de leads**, **materiais da IA** e **páginas por mês** da IA;
 - **Leads de anúncios incluído** (recurso pago);
-- no plano Individual: **máximo de WhatsApps** e **preço do WhatsApp extra**;
+- **descontos por posição** e, no Individual, **máximo de números**; no Empresarial, **máximo de pacotes**;
 - **disparos por período** (em branco = vendido só por prazo, sem quantidade), **disparos por pacote extra** e **preço do pacote**;
 - no Free: dias e disparos do teste grátis;
 - **Visível** no login, **destaque** e ordem.
@@ -216,6 +223,7 @@ de sair, mas o restante do sistema continua.
 ## Disparos e campanhas
 
 - **Todos os disparos** e **Disparos por usuários:** acompanhe os envios de todas as contas.
+- **Meu WhatsApp:** até **10 números**, sem pagamento (**Adicionar mais um WhatsApp** / **Remover o último número**).
 - **Campanhas, Leads, Conversas IA, Arquivos, Empresa | IA, Meu WhatsApp, Avisos e Leads de anúncios:** as suas próprias, para enviar
   como um usuário (o Super Admin segue as mesmas regras do Antibloqueio). Em Leads e Conversas IA você também vê os das contas,
   agrupados, e responde só as suas.

@@ -7,6 +7,9 @@ import { chamarWorker } from "@/lib/worker";
 
 const DIA = 86_400_000;
 
+/** Super Admin: até 10 números próprios, sem pagamento (decisão #113). */
+export const MAX_NUMEROS_SUPERADMIN = 10;
+
 /** Só o usuário do plano Individual pode ter números extras (decisão #79). */
 export function podeTerExtras(u: Pick<Usuario, "cargo"> & { empresa: Pick<Empresa, "modulo"> | null }) {
   return u.cargo === Cargo.USUARIO && u.empresa?.modulo === Modulo.INDIVIDUAL;

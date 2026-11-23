@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { formatarReais } from "@/lib/planos";
-import { comprarExtra, salvarApelido } from "./actions";
+import { alterarNumerosSuperAdmin, comprarExtra, salvarApelido } from "./actions";
 
 export function Apelido({ sessaoId, inicial, saude }: { sessaoId: string; inicial: string; saude?: { rotulo: string; nivel: string; enviados7d: number } }) {
   const toast = useToast();
@@ -60,6 +60,26 @@ export function ComprarExtra({ info }: { info: Info }) {
       ) : (
         <p className="text-[12px] mt-2 font-bold">Você já usa o máximo de números do seu plano.</p>
       )}
+    </div>
+  );
+}
+
+/** Super Admin: adicionar/remover números próprios, sem pagamento (decisão #113). */
+export function NumerosSuperAdmin({ total, maximo }: { total: number; maximo: number }) {
+  const toast = useToast();
+  const router = useRouter();
+  const [pendente, iniciar] = useTransition();
+  const alterar = (d: 1 | -1) => iniciar(async () => { const r = await alterarNumerosSuperAdmin(d); toast(r.mensagem, r.ok ? "ok" : "erro"); router.refresh(); });
+  return (
+    <div className="card p-4 mt-3" data-testid="numeros-superadmin">
+      <h2 className="font-display font-extrabold text-[16px]">Mais números</h2>
+      <p className="text-[12px] mt-0.5" style={{ color: "var(--muted)" }}>
+        Você usa {total} de {maximo} WhatsApps, sem custo. Nas campanhas você escolhe por quais números enviar.
+      </p>
+      <div className="flex flex-wrap gap-2 mt-3">
+        <button className="btn-primary" disabled={pendente || total >= maximo} onClick={() => alterar(1)} data-testid="sa-adicionar-numero">Adicionar mais um WhatsApp</button>
+        {total > 1 && <button className="btn-ghost" disabled={pendente} onClick={() => { if (confirm("Remover o último número? Ele será desconectado; as conversas ficam guardadas.")) alterar(-1); }} data-testid="sa-remover-numero">Remover o último número</button>}
+      </div>
     </div>
   );
 }
