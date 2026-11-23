@@ -1,5 +1,6 @@
 "use client";
 
+import { ABAS_PLANOS, type AbaPlanos } from "@/lib/planos";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
@@ -13,7 +14,7 @@ type Linha = {
   id: string; codigo: string; leads: number; limiteLeads: number | null; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
   expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean; treino: TreinoIA; leadsAnuncios: boolean; whatsappsExtras: number;
 };
-type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number };
+type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number; aba: AbaPlanos; disparos: number | null };
 
 export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linha[]; planos: Plano[] }) {
   const router = useRouter();
@@ -21,7 +22,10 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
   const [pendente, iniciar] = useTransition();
   const [criando, setCriando] = useState(false);
   const [erro, setErro] = useState("");
-  const [planoId, setPlanoId] = useState(planos.find((p) => !p.gratis)?.id ?? planos[0]?.id ?? "");
+  // Tipo do cadastro (decisão #113): Mensal (sem limite de disparos / Free por dias) ou Por disparo
+  const [tipo, setTipo] = useState<AbaPlanos>("ilimitado");
+  const doTipo = planos.filter((p) => p.aba === tipo);
+  const [planoId, setPlanoId] = useState(doTipo.find((p) => !p.gratis)?.id ?? doTipo[0]?.id ?? "");
   const [busca, setBusca] = useState("");
   const [limitando, setLimitando] = useState<Linha | null>(null);
   const plano = planos.find((p) => p.id === planoId);
@@ -64,9 +68,25 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
               <div><label className="label" htmlFor="ind-email">E-mail (login)</label><input id="ind-email" name="email" type="email" className="input" /></div>
               <div><label className="label" htmlFor="ind-whats">WhatsApp</label><input id="ind-whats" name="whatsapp" className="input" placeholder="(11) 90000-0000" /></div>
               <div>
+                <label className="label" htmlFor="ind-tipo">Tipo</label>
+                <select id="ind-tipo" className="input" value={tipo} onChange={(e) => {
+                  const t = e.target.value as AbaPlanos;
+                  const lista = planos.filter((p) => p.aba === t);
+                  setTipo(t);
+                  setPlanoId(lista.find((p) => !p.gratis)?.id ?? lista[0]?.id ?? "");
+                }}>
+                  {ABAS_PLANOS.map((a) => <option key={a.id} value={a.id}>{a.titulo} — {a.id === "ilimitado" ? "por dias, sem limite de disparos" : "por quantidade de disparos"}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="label" htmlFor="ind-plano">Plano</label>
                 <select id="ind-plano" name="planoId" className="input" value={planoId} onChange={(e) => setPlanoId(e.target.value)}>
-                  {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                  {doTipo.length === 0 && <option value="">Nenhum plano deste tipo</option>}
+                  {doTipo.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}{p.gratis ? ` (teste ${p.disparos ? `de ${p.disparos.toLocaleString("pt-BR")} disparos` : `de ${p.prazoDias} dias`})` : p.disparos ? ` (${p.disparos.toLocaleString("pt-BR")} disparos por período)` : ""}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

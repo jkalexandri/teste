@@ -29,7 +29,8 @@ export async function criarIndividual(form: FormData): Promise<R> {
     planoId: plano.id,
     limiteUsuarios: 1,
     prazoDias,
-    limiteDisparos: plano.gratis ? plano.testeDisparos ?? 20 : null,
+    // Free por dias: sem limite; Free por disparo: os disparos do teste; pago: os disparos do plano (decisão #113)
+    limiteDisparos: plano.gratis ? plano.testeDisparos ?? null : plano.disparosPorPeriodo ?? null,
     limiteLeads: plano.limiteLeads,
     usuario: dados,
   });

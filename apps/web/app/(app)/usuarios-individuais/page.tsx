@@ -1,4 +1,5 @@
 // Super Admin → Usuários Individuais.
+import { abasDoPlano } from "@/lib/planos";
 import { prisma, Cargo, Modulo } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoIndividuais from "./GestaoIndividuais";
@@ -31,7 +32,12 @@ export default async function IndividuaisPage() {
         descricao="Cada usuário individual tem a própria conta e o próprio prazo. Separado do grupo “Empresas”."
       />
       <GestaoIndividuais
-        planos={planos.map((p) => ({ id: p.id, nome: p.nome, gratis: p.gratis, prazoDias: p.gratis ? p.testeDias ?? 7 : p.prazoDias }))}
+        planos={planos.map((p) => ({
+          id: p.id, nome: p.nome, gratis: p.gratis, prazoDias: p.gratis ? p.testeDias ?? 7 : p.prazoDias,
+          // Mensal ou Por disparo (decisão #113) e quantos disparos o plano dá no período
+          aba: abasDoPlano(p)[0] ?? "ilimitado",
+          disparos: p.gratis ? p.testeDisparos : p.disparosPorPeriodo,
+        }))}
         usuarios={usuarios.map((u) => ({
           id: u.id,
           codigo: u.codigo ?? "",

@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.34.1 — cadastro de usuário individual por tipo (23/11/2026)
+
+- Super Admin → **Usuários Individuais → Novo usuário individual**: novo campo **Tipo** (Mensal ou Por disparo); o campo Plano
+  mostra só os planos daquele tipo, com os dias ou disparos do teste no nome (ex.: "Free (teste de 50 disparos)").
+- Correção: o Free por dias era criado com limite de 20 disparos, e o plano pago por disparo ficava sem limite. Agora o limite
+  vem do plano escolhido.
+
 ## v1.34.0 — planos Individual | Empresarial e preço por quantidade (23/11/2026)
 
 ### Para quem visita
