@@ -66,7 +66,7 @@ a { color: inherit }
 .login-orb{position:absolute;border-radius:999px;filter:blur(70px);pointer-events:none;z-index:0}
 .login-particle{position:absolute;border-radius:999px;pointer-events:none;z-index:0;animation:loginFloat 7s ease-in-out infinite}
 @keyframes loginFloat{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-18px);opacity:.95}}
-@keyframes loginPulse{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}50%{box-shadow:0 0 0 7px rgba(37,211,102,0)}}
+@keyframes loginPulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--pulso,37,211,102),.55)}50%{box-shadow:0 0 0 7px rgba(var(--pulso,37,211,102),0)}}
 .login-pulse{animation:loginPulse 2s ease-in-out infinite}
 .login-glass{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
 .login-neon-text{background:linear-gradient(90deg,#fff 10%,#7dffb8 42%,#4dd8ff 78%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(37,211,102,.38))}

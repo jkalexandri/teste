@@ -284,6 +284,17 @@ bloqueadas na plataforma em 1 hora e entrada do Super Admin por um endereço de 
 **Proteções automáticas:** limite de tentativas por endereço de internet (login, Esqueci minha senha, compra, teste grátis, renovação,
 leads de anúncios e chat), o sistema não pode ser aberto dentro de outro site e o navegador só carrega arquivos do próprio sistema.
 
+## Status no login
+
+A pílula embaixo dos destaques do login mostra o estado real, para qualquer visitante:
+
+- **Verde — Sistema Online:** site e serviço 24/7 respondendo. **Amarelo — Em atualização:** modo manutenção ligado.
+  **Vermelho — Instabilidade:** o serviço 24/7 não responde (veja `pm2 list` na VPS).
+- **Fila Ativa / Fila parada / Em manutenção:** situação do motor de envios.
+- **Uptime:** porcentagem dos últimos 30 dias em que o serviço 24/7 esteve no ar (medida a cada minuto; aparece depois de 1 hora).
+
+Também dá para consultar sem abrir o site: **https://filaproleads.com.br/api/status**.
+
 ## Modo manutenção (atualizações)
 
 Durante a atualização os clientes veem **"Sistema em atualização"** e o servidor não aceita nenhuma ação; campanhas, respostas da IA e

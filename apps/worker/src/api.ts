@@ -41,7 +41,8 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
 
   // Verificação de saúde (sem token) — usada para saber se o serviço está no ar.
-  app.get("/saude", async () => ({ ok: true }));
+  // Também diz se o motor de envios está ligado (pílula "Fila Ativa" do login — decisão #109); não expõe dados
+  app.get("/saude", async () => ({ ok: true, disparos: process.env.DISPAROS !== "desligado" }));
 
   // Todas as outras rotas exigem o token
   app.addHook("onRequest", async (req, res) => {

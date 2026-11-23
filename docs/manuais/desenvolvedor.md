@@ -161,6 +161,11 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - `lib/relatorios-financeiros.ts`: os 7 relatórios (tela, impressão e Excel em `/api/financeiro/relatorios/<tipo>`).
 - Comprovantes no serviço 24/7 como `fin-<id>` (`/api/financeiro/comprovante/<id>`).
 
+## Status público do login (decisão #109)
+
+- Serviço 24/7: `src/disponibilidade.ts` soma 1 minuto por hora na tabela `Disponibilidade` (35 dias); `/saude` informa `disparos`.
+- Site: `lib/status-publico.ts` (cache 30 s) e `GET /api/status` → `{cor, sistema, fila, uptime}` (liberada na manutenção).
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

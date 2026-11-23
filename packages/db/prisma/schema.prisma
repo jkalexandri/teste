@@ -935,3 +935,10 @@ model DespesaFixa {
   criadoEm      DateTime            @default(now())
   lancamentos   Lancamento[]
 }
+
+/// Disponibilidade medida (decisão #109): o serviço 24/7 soma 1 a cada minuto que está no ar, por hora.
+/// Uptime = minutos registrados ÷ minutos do período (últimos 30 dias). Guardado 35 dias.
+model Disponibilidade {
+  hora    DateTime @id
+  minutos Int      @default(0)
+}

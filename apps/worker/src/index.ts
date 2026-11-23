@@ -12,6 +12,7 @@ import { Avisador } from "./avisos.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
 import { enviarPush } from "./push.js";
+import { Disponibilidade } from "./disponibilidade.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
@@ -31,6 +32,8 @@ const interessados = new AtendenteInteressados(log.child({ modulo: "interessados
     for (const s of sas) await enviarPush(s.id, texto, "/atendimento?aba=interessados").catch(() => undefined);
   },
 });
+// Uptime medido para a pílula de status do login (decisão #109)
+const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
 const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
@@ -57,6 +60,7 @@ async function iniciar() {
   await sessoes.iniciarTodas();
   atendente.iniciar();
   avisador.iniciar();
+  disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
 }
@@ -67,6 +71,7 @@ async function desligar(sinal: string) {
   motor.parar();
   atendente.parar();
   avisador.parar();
+  disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);
   await prisma.$disconnect().catch(() => undefined);

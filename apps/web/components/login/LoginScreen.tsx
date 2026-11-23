@@ -79,7 +79,21 @@ function useBenefitAutoPulse(hovered: number | null, active: number | null) {
   return scales;
 }
 
+// Cores da pílula de status do login (decisão #109)
+const COR_STATUS = { verde: "#25D366", amarelo: "#facc15", vermelho: "#ef4444" } as const;
+const PULSO_STATUS = { verde: "37,211,102", amarelo: "250,204,21", vermelho: "239,68,68" } as const;
+type StatusLogin = { cor: keyof typeof COR_STATUS; sistema: string; fila: string; uptime: string | null };
+
 export default function LoginScreen() {
+  // Pílula de status: estado real do sistema (decisão #109), atualizado a cada minuto
+  const [status, setStatus] = useState<StatusLogin>({ cor: "verde", sistema: "Sistema Online", fila: "Fila Ativa", uptime: null });
+  useEffect(() => {
+    let vivo = true;
+    const ver = () => fetch("/api/status", { cache: "no-store" }).then((r) => r.json()).then((j: StatusLogin) => { if (vivo && j?.cor) setStatus(j); }).catch(() => undefined);
+    void ver();
+    const t = setInterval(ver, 60_000);
+    return () => { vivo = false; clearInterval(t); };
+  }, []);
   const { theme, toggleTheme } = useTheme();
 
   // Blocos de benefício
@@ -284,12 +298,17 @@ export default function LoginScreen() {
             className="login-glass login-status-pill mt-1.5 rounded-full px-2.5 py-1 inline-flex self-start items-center gap-2 text-[10px] font-bold"
             style={{ marginLeft: ML }}
           >
-            <span className="login-pulse w-2 h-2 rounded-full shrink-0" style={{ background: "#25D366" }} aria-hidden="true" />
-            <span>Sistema Online</span>
+            {/* Status real (decisão #109): verde = no ar, amarelo = em atualização, vermelho = serviço 24/7 sem responder */}
+            <span className="login-pulse w-2 h-2 rounded-full shrink-0" style={{ background: COR_STATUS[status.cor], ["--pulso" as string]: PULSO_STATUS[status.cor] } as CSSProperties} aria-hidden="true" data-testid="status-cor" data-cor={status.cor} />
+            <span data-testid="status-sistema">{status.sistema}</span>
             <span className="text-slate-500">•</span>
-            <span>Fila Ativa</span>
-            <span className="text-slate-500">•</span>
-            <span>99.9% Uptime</span>
+            <span data-testid="status-fila">{status.fila}</span>
+            {status.uptime && (
+              <>
+                <span className="text-slate-500">•</span>
+                <span data-testid="status-uptime">{status.uptime} Uptime</span>
+              </>
+            )}
           </div>
         </aside>
 

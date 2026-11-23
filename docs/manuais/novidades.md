@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.31.0 — status real no login (23/11/2026)
+
+- A pílula do login mostra o **estado real**: verde "Sistema Online", amarelo "Em atualização", vermelho "Instabilidade";
+  "Fila Ativa" conforme o motor de envios; e o **uptime medido** dos últimos 30 dias.
+
 ## v1.30.1 — ajustes no login (23/11/2026)
 
 - O número da versão aparece no login do site publicado, também em telas mais baixas.
