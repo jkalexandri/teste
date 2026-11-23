@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.33.1 — ajuste nos Planos (23/11/2026)
+
+- Com mais de 4 planos, os cartões quebram em linhas (sem cortar nenhum); no celular, um embaixo do outro.
+
 ## v1.33.0 — instalar o app pelo login (23/11/2026)
 
 - No celular, o login mostra o botão **Instalar app** (ao lado de Planos): no Android abre a instalação do Chrome; no iPhone

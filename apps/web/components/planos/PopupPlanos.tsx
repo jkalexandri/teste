@@ -12,16 +12,28 @@ import ChatInteressado from "./ChatInteressado";
 
 type Dados = { planos: PlanoPublico[]; contatoPersonalizado: string };
 
-/** Grade que se ajusta: até 4 colunas lado a lado; acima disso, rolagem lateral. */
+/** Grade que se ajusta: até 4 cartões lado a lado; acima disso, quebra em linhas centralizadas (sem rolagem lateral escondida).
+ *  No celular, um cartão embaixo do outro. */
 export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
   const n = Math.max(1, planos.length);
+  if (n > 4) {
+    return (
+      <div className="flex flex-wrap justify-center gap-4 mx-auto max-w-[1320px]" data-testid="grade-planos">
+        {planos.map((p) => (
+          <div key={p.id} className="w-full sm:w-[300px] flex">
+            <div className="flex-1 min-w-0 flex flex-col [&>article]:flex-1"><CartaoPlano plano={p} onEscolher={onEscolher} /></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
-    <div className="overflow-x-auto no-scrollbar pb-1">
+    <div className="overflow-x-auto no-scrollbar pb-1" data-testid="grade-planos">
       <div
         className="grid gap-4 mx-auto"
         style={{
           gridTemplateColumns: `repeat(${n}, minmax(260px, 1fr))`,
-          maxWidth: n <= 4 ? `${n * 320}px` : undefined,
+          maxWidth: `${n * 320}px`,
         }}
       >
         {planos.map((p) => (
