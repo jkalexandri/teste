@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.33.0 — instalar o app pelo login (23/11/2026)
+
+- No celular, o login mostra o botão **Instalar app** (ao lado de Planos): no Android abre a instalação do Chrome; no iPhone
+  mostra o passo a passo do Safari. Some quando o app já está instalado.
+
 ## v1.32.0 — planos em duas abas (23/11/2026)
 
 ### Para quem visita

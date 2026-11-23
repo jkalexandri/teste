@@ -10,6 +10,7 @@ import {
   Lock, Mail, Moon, ShieldCheck, Sparkles, Sun, Tag, TriangleAlert, Users, Zap,
 } from "@/components/icons";
 import PopupPlanos from "@/components/planos/PopupPlanos";
+import BotaoInstalar from "@/components/pwa/BotaoInstalar";
 import { checkPassword } from "@/lib/password-policy";
 import { useTheme } from "@/lib/theme";
 import { IS_PRODUCTION } from "@/lib/env";
@@ -320,6 +321,8 @@ export default function LoginScreen() {
         <div className="login-right relative z-[1] lg:w-[48%] flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center p-2 sm:p-2.5 lg:p-3">
           {/* Botão "Planos" antes do tema; tema só com ícone (decisão #28) */}
           <div className="w-full max-w-[420px] flex justify-end gap-1.5 mb-1">
+            {/* "Instalar app": só no celular e se ainda não estiver instalado (decisão #112) */}
+            <BotaoInstalar />
             <button
               type="button"
               onClick={() => setPlanosAberto(true)}

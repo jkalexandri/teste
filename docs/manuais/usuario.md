@@ -191,6 +191,8 @@ em até 10 minutos, chegam juntos.
 
 ### Instalar o app no celular
 
+O jeito mais fácil: abra **filaproleads.com.br** no celular e toque em **Instalar app**, ao lado de **Planos**, na tela de login.
+
 - **Android (Chrome):** abra filaproleads.com.br → menu ⋮ → **Instalar app**.
 - **iPhone (Safari):** **Compartilhar** → **Adicionar à Tela de Início**, e abra pelo ícone (iOS 16.4 ou mais novo para notificações).
 
