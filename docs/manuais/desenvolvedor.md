@@ -167,6 +167,13 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - Serviço 24/7: `src/disponibilidade.ts` soma 1 minuto por hora na tabela `Disponibilidade` (35 dias); `/saude` informa `disparos`.
 - Site: `lib/status-publico.ts` (cache 30 s) e `GET /api/status` → `{cor, sistema, fila, uptime}` (liberada na manutenção).
 
+## Planos em duas abas (decisão #111)
+
+- `lib/planos.ts`: `abasDoPlano()` (Free/Personalizado nas duas; com `disparosPorPeriodo` → quantidade) e `semPrecoDeVenda()`.
+- `components/planos/PopupPlanos.tsx`: `PlanosComAbas` (login, renovação e prévia do Super Admin).
+- `app/(app)/planos/actions.ts`: `novoPlano`, `duplicarPlano`, `excluirPlano`, destaque por aba.
+- Sugestão de planos: `packages/db/scripts/planos-sugeridos.ts` (`pnpm --filter @filapro/db planos:sugeridos`).
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

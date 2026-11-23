@@ -21,7 +21,7 @@ const OUT = process.argv[2];
   ok('Padrão começa em destaque', (await p.locator('tr:has-text("Padrão")').innerText()).includes('Em destaque'));
   // tentar exibir sem preço
   await p.click('tr:has-text("Básico") >> text=Oculto'); await p.waitForTimeout(800);
-  ok('Não exibe plano sem preço', (await p.locator('text=Defina o preço atual do plano Básico').count()) >= 1);
+  ok('Não exibe plano sem preço', (await p.locator('text=Defina um preço maior que zero para o plano Básico').count()) >= 1);
 
   const editar = async (nome, campos) => {
     await p.click(`tr:has-text("${nome}") >> text=Editar`);

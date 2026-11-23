@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TriangleAlert } from "@/components/icons";
 import { formatarReais, type PlanoPublico } from "@/lib/planos";
-import { GradePlanos } from "@/components/planos/PopupPlanos";
+import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import TelaPix, { type DadosPix } from "@/components/planos/TelaPix";
 
 type Conta = {
@@ -111,7 +111,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
             <div className="login-glass rounded-[18px] p-5 max-w-[640px] mx-auto text-[13px] text-slate-300">Nenhum plano disponível no momento.</div>
           ) : (
             <div style={{ opacity: enviando ? 0.6 : 1, pointerEvents: enviando ? "none" : undefined }}>
-              <GradePlanos
+              <PlanosComAbas
                 planos={planos.map((p) => ({ ...p, selo: p.id === conta.planoId ? "Seu plano atual" : p.selo, textoBotao: "Renovar com este plano" }))}
                 onEscolher={escolher}
               />

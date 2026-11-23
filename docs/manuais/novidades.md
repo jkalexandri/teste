@@ -2,6 +2,17 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.32.0 — planos em duas abas (23/11/2026)
+
+### Para quem visita
+- O botão **Planos** mostra duas abas: **Sem limite de disparos** e **Por quantidade de disparos**; os cartões mostram os disparos
+  por mês e o pacote extra.
+
+### Super Admin
+- **Novo plano**, **Duplicar** e **Excluir** na tela Planos, com a coluna **Aba** e um destaque por aba.
+- Plano pago com preço R$ 0,00 não fica visível nem pode ser comprado.
+- Sugestão de 12 planos pronta para aplicar (ocultos e com preço zerado).
+
 ## v1.31.1 — bolinha da fila (23/11/2026)
 
 - No login, a fila de envios ganhou a própria bolinha: verde (ativa), amarela (pausada ou em manutenção) ou vermelha (parada).

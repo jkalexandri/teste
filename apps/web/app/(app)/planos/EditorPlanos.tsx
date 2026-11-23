@@ -3,12 +3,14 @@
 // Editor de planos do Super Admin, com prévia ao vivo do popup.
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { formatarReais, type PlanoPublico } from "@/lib/planos";
-import { GradePlanos } from "@/components/planos/PopupPlanos";
+import { abasDoPlano, formatarReais, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
+import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import { Eye, EyeOff, Pencil, Sparkles, X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
 import CampoLimite from "@/components/app/CampoLimite";
-import { alternarVisivel, definirDestaque, moverPlano, salvarPlano } from "./actions";
+import { alternarVisivel, definirDestaque, duplicarPlano, excluirPlano, moverPlano, novoPlano, salvarPlano } from "./actions";
+
+const NOME_ABA = { ilimitado: "Sem limite", quantidade: "Por quantidade" } as const;
 
 const reais = (c: number | null) => (c == null ? "" : (c / 100).toFixed(2).replace(".", ","));
 
@@ -27,15 +29,35 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
     });
 
   const visiveis = planos.filter((p) => p.visivel);
+  const [novo, setNovo] = useState(false);
 
   return (
     <>
+      {/* Novo plano (decisão #111): nasce oculto e sem preço */}
+      <div className="card p-3 mt-3">
+        {!novo ? (
+          <button type="button" className="btn-primary" onClick={() => setNovo(true)}>+ Novo plano</button>
+        ) : (
+          <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            iniciar(async () => { const r = await novoPlano(fd); toast(r.mensagem, r.ok ? "ok" : "erro"); if (r.ok) { setNovo(false); router.refresh(); } });
+          }}>
+            <div><label className="label" htmlFor="novo-nome">Nome do plano</label><input id="novo-nome" name="nome" className="input !w-[220px]" required maxLength={60} /></div>
+            <div><label className="label" htmlFor="novo-modulo">Módulo</label>
+              <select id="novo-modulo" name="modulo" className="input !w-auto"><option value="EMPRESARIAL">Empresarial</option><option value="INDIVIDUAL">Individual</option></select></div>
+            <button className="btn-primary" disabled={pendente}>Criar</button>
+            <button type="button" className="btn-ghost" onClick={() => setNovo(false)}>Cancelar</button>
+            <p className="help w-full">O plano nasce <b>oculto</b>. Depois clique em <b>Editar</b>: com “Disparos por período” preenchido ele vai para a aba <b>Por quantidade</b>; vazio, para <b>Sem limite</b>.</p>
+          </form>
+        )}
+      </div>
       <div className="card p-3 mt-3">
         <div className="table-wrap">
-          <table style={{ minWidth: 760 }}>
+          <table style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                <th>Ordem</th><th>Plano</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
+                <th>Ordem</th><th>Plano</th><th>Aba</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -48,8 +70,9 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                     </div>
                   </td>
                   <td className="font-bold">{p.nome}{p.gratis && <span className="chip ml-1" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>Teste grátis</span>}</td>
+                  <td className="text-[12px]" data-testid="aba-do-plano">{abasDoPlano(p).length > 1 ? "As duas" : NOME_ABA[abasDoPlano(p)[0]!]}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo}</span> : null}</td>
                   <td>{p.personalizado ? "Sob medida" : p.usuarios}</td>
-                  <td>{p.gratis ? "Grátis" : p.precoAtual != null ? `${formatarReais(p.precoAtual)}/${p.periodo}` : <span style={{ color: "#b42318" }}>sem preço</span>}</td>
+                  <td>{p.gratis ? "Grátis" : p.personalizado && p.precoAtual == null ? "Sob consulta" : semPrecoDeVenda(p) ? <span style={{ color: "#b42318" }}>{p.precoAtual === 0 ? "R$ 0,00 — defina" : "sem preço"}</span> : `${formatarReais(p.precoAtual!)}/${p.periodo}`}</td>
                   <td>
                     <button
                       className="btn-ghost !py-1 !px-2 !text-[11px]"
@@ -71,9 +94,14 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                     </button>
                   </td>
                   <td>
-                    <button className="btn-ghost !py-1 !px-2 !text-[11px]" onClick={() => { setErroForm(""); setEditando(p); }}>
-                      <Pencil size={12} /> Editar
-                    </button>
+                    <div className="flex flex-wrap gap-1">
+                      <button className="btn-ghost !py-1 !px-2 !text-[11px]" onClick={() => { setErroForm(""); setEditando(p); }}>
+                        <Pencil size={12} /> Editar
+                      </button>
+                      {!p.gratis && <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => executar(() => duplicarPlano(p.id))}>Duplicar</button>}
+                      {!p.gratis && <button className="btn-ghost !py-1 !px-2 !text-[11px]" style={{ color: "#b42318" }} disabled={pendente}
+                        onClick={() => { if (confirm(`Excluir o plano ${p.nome}? Só é possível se ninguém comprou.`)) executar(() => excluirPlano(p.id)); }}>Excluir</button>}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -90,7 +118,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
             {visiveis.length === 0 ? (
               <div className="login-glass rounded-[18px] p-5 text-[13px] text-slate-300">Nenhum plano visível. Marque “Aparece” em pelo menos um plano.</div>
             ) : (
-              <GradePlanos planos={visiveis} />
+              <PlanosComAbas planos={visiveis} />
             )}
           </div>
         </div>

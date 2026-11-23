@@ -63,6 +63,16 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         {mostraPeriodo && <span className="text-[14px] text-slate-300">/{plano.periodo}</span>}
       </div>
 
+      {/* Disparos do plano (decisão #111): quantidade por período ou sem limite */}
+      {!plano.gratis && !plano.personalizado && (
+        <p className="mt-2 text-[12.5px] font-bold rounded-lg px-2.5 py-1.5" data-testid="disparos-plano"
+          style={{ background: "rgba(45,212,255,.08)", color: "#9fefff", border: "1px solid rgba(45,212,255,.25)" }}>
+          {plano.disparosPorPeriodo
+            ? <>{plano.disparosPorPeriodo.toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")} por {formatarReais(plano.precoPacoteDisparos ?? 0)}</span> : null}</>
+            : <>Disparos sem limite no período</>}
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => onEscolher?.(plano)}

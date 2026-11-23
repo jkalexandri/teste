@@ -272,6 +272,17 @@ Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh && ls -lh /o
 Liga: SSH só com chave (senha desligada), **fail2ban** e **atualizações de segurança automáticas**. Se não houver chave cadastrada,
 o script **não** desliga a senha. Sem a chave, o acesso continua pelo **Terminal do navegador** no painel da Hostinger.
 
+## Parte 6.3 — Sugestão de planos (opcional, decisão #111)
+
+Preenche 12 planos (7 "Sem limite" + 5 "Start" por quantidade), todos **ocultos** e com preço **R$ 0,00**. Sobrescreve o
+conteúdo dos 7 planos da instalação (não mexe em contas, pedidos nem em planos criados por você):
+
+```bash
+cd /opt/filapro/app && set -a && . apps/web/.env.production && set +a && pnpm --filter @filapro/db planos:sugeridos
+```
+
+Depois: Super Admin → **Planos** → **Editar** cada um, coloque o preço e clique em **Oculto** para mostrar.
+
 ## Parte 7 — Primeiro uso (no site publicado)
 
 1. Entre com o seu e-mail e a senha temporária → crie a sua senha (pode usar **Gerar senha forte**).

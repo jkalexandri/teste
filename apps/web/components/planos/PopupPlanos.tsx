@@ -5,7 +5,7 @@
 // número de colunas se ajustam à quantidade de planos.
 import { useEffect, useState } from "react";
 import { X } from "@/components/icons";
-import { linkContato, type PlanoPublico } from "@/lib/planos";
+import { ABAS_PLANOS, abasDoPlano, linkContato, type AbaPlanos, type PlanoPublico } from "@/lib/planos";
 import CartaoPlano from "./CartaoPlano";
 import Checkout from "./Checkout";
 import ChatInteressado from "./ChatInteressado";
@@ -29,6 +29,36 @@ export function GradePlanos({ planos, onEscolher }: { planos: PlanoPublico[]; on
         ))}
       </div>
     </div>
+  );
+}
+
+/** Planos em duas abas largas: Sem limite / Por quantidade de disparos (decisão #111).
+ *  Se só uma das abas tem planos próprios, mostra só a grade, sem abas. */
+export function PlanosComAbas({ planos, onEscolher }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico) => void }) {
+  const [aba, setAba] = useState<AbaPlanos>("ilimitado");
+  const proprios = (a: AbaPlanos) => planos.filter((p) => !p.gratis && !p.personalizado && abasDoPlano(p).includes(a)).length;
+  const comAbas = proprios("ilimitado") > 0 && proprios("quantidade") > 0;
+  if (!comAbas) return <GradePlanos planos={planos} onEscolher={onEscolher} />;
+  const daAba = planos.filter((p) => abasDoPlano(p).includes(aba));
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 max-w-[900px] mx-auto" role="tablist" aria-label="Tipo de plano">
+        {ABAS_PLANOS.map((a) => {
+          const ativa = a.id === aba;
+          return (
+            <button key={a.id} type="button" role="tab" aria-selected={ativa} data-testid={`aba-planos-${a.id}`} onClick={() => setAba(a.id)}
+              className="rounded-2xl px-3 py-3 sm:px-5 sm:py-4 text-left transition"
+              style={ativa
+                ? { background: "linear-gradient(135deg, rgba(37,211,102,.28), rgba(45,212,255,.18))", border: "1px solid rgba(37,211,102,.7)", boxShadow: "0 0 28px rgba(37,211,102,.25)", color: "#eaf6ff" }
+                : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", color: "#9fb3c8" }}>
+              <span className="block font-display font-extrabold text-[14px] sm:text-[18px] leading-tight">{a.icone} {a.titulo}</span>
+              <span className="block text-[11px] sm:text-[13px] mt-0.5" style={{ color: ativa ? "#bfe8d0" : "#7f93a8" }}>{a.frase}</span>
+            </button>
+          );
+        })}
+      </div>
+      <GradePlanos planos={daAba} onEscolher={onEscolher} />
+    </>
   );
 }
 
@@ -98,7 +128,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
         ) : escolhido ? (
           <Checkout plano={escolhido} onVoltar={() => setEscolhido(null)} />
         ) : (
-          <GradePlanos planos={dados.planos} onEscolher={escolher} />
+          <PlanosComAbas planos={dados.planos} onEscolher={escolher} />
         )}
       </div>
       {chat && <ChatInteressado onFechar={() => setChat(false)} />}

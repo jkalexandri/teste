@@ -149,6 +149,15 @@ Grupo **Financeiro** do menu, só para o Super Admin. Tudo em **regime de caixa*
 
 ![Planos](prints/s-planos.png)
 
+**Abas do popup (decisão #111):** o visitante vê duas abas — **Sem limite de disparos** (abre primeiro) e **Por quantidade de
+disparos**. A aba é automática: com **Disparos por período** preenchido o plano vai para *Por quantidade*; vazio, para *Sem limite*.
+**Free e Personalizado** aparecem nas duas. Cada aba tem o **seu destaque**. Se só uma das abas tiver planos visíveis, as abas não aparecem.
+
+- **+ Novo plano:** nome e módulo; nasce **oculto**. Depois, **Editar** para completar.
+- **Duplicar:** cópia oculta (bom para criar a versão "por quantidade" de um plano).
+- **Excluir:** só plano sem pedidos e sem contas usando; senão, use **Oculto**.
+- Plano pago com preço **R$ 0,00** não pode ficar visível nem ser comprado.
+
 **Duas formas de vender:** só por **prazo** (sem limite de envios) ou por **prazo + quantidade de disparos por período**. Na segunda:
 
 - contam só as mensagens de campanha **enviadas com sucesso**; as respostas da IA não contam;

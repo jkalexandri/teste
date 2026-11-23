@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { lerLimite } from "@/lib/limite";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
-import { lerReais } from "@/lib/planos";
+import { lerReais, abasDoPlano, semPrecoDeVenda } from "@/lib/planos";
+import { Modulo } from "@filapro/db";
 
 export type RespostaAcao = { ok: boolean; mensagem: string };
 
@@ -28,8 +29,8 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   const usuarios = inteiro(form.get("usuarios"));
   if (!atual.personalizado && (!usuarios || usuarios < 1)) return { ok: false, mensagem: "Informe a quantidade de usuários (mínimo 1)." };
 
-  if (atual.visivel && !atual.gratis && !atual.personalizado && precoAtual == null) {
-    return { ok: false, mensagem: "Este plano aparece no popup: informe o preço atual ou oculte o plano antes." };
+  if (atual.visivel && semPrecoDeVenda({ ...atual, precoAtual })) {
+    return { ok: false, mensagem: "Este plano aparece no popup: informe um preço maior que zero ou oculte o plano antes." };
   }
 
   const prazoDias = inteiro(form.get("prazoDias")) || 31;
@@ -90,22 +91,71 @@ export async function alternarVisivel(id: string, visivel: boolean): Promise<Res
   const p = await prisma.plano.findUnique({ where: { id } });
   if (!p) return { ok: false, mensagem: "Plano não encontrado." };
   // Plano pago só aparece no popup com preço definido.
-  if (visivel && !p.gratis && !p.personalizado && p.precoAtual == null) {
-    return { ok: false, mensagem: `Defina o preço atual do plano ${p.nome} antes de exibi-lo.` };
+  if (visivel && semPrecoDeVenda(p)) {
+    return { ok: false, mensagem: `Defina um preço maior que zero para o plano ${p.nome} antes de exibi-lo.` };
   }
   await prisma.plano.update({ where: { id }, data: { visivel } });
   revalidatePath("/planos");
   return { ok: true, mensagem: `${p.nome} ${visivel ? "aparece" : "não aparece mais"} no popup.` };
 }
 
+/** Um destaque por aba do popup (decisão #111): tira o destaque só dos planos da mesma aba. */
 export async function definirDestaque(id: string): Promise<RespostaAcao> {
   await exigirSuperAdmin();
+  const p = await prisma.plano.findUnique({ where: { id } });
+  if (!p) return { ok: false, mensagem: "Plano não encontrado." };
+  const abas = abasDoPlano(p);
+  const todos = await prisma.plano.findMany({ select: { id: true, gratis: true, personalizado: true, disparosPorPeriodo: true } });
+  const mesmaAba = todos.filter((x) => abasDoPlano(x).some((a) => abas.includes(a))).map((x) => x.id);
   await prisma.$transaction([
-    prisma.plano.updateMany({ data: { destaque: false } }),
+    prisma.plano.updateMany({ where: { id: { in: mesmaAba } }, data: { destaque: false } }),
     prisma.plano.update({ where: { id }, data: { destaque: true } }),
   ]);
   revalidatePath("/planos");
-  return { ok: true, mensagem: "Plano em destaque atualizado." };
+  return { ok: true, mensagem: "Plano em destaque atualizado (na aba dele)." };
+}
+
+const slugDe = (nome: string) => `${nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "plano"}-${Math.random().toString(36).slice(2, 6)}`;
+
+/** Novo plano (decisão #111): começa oculto e sem preço; o Super Admin completa em Editar. */
+export async function novoPlano(form: FormData): Promise<RespostaAcao> {
+  await exigirSuperAdmin();
+  const nome = texto(form.get("nome"), 60);
+  if (!nome) return { ok: false, mensagem: "Informe o nome do plano." };
+  const modulo = form.get("modulo") === "INDIVIDUAL" ? Modulo.INDIVIDUAL : Modulo.EMPRESARIAL;
+  const ultimo = await prisma.plano.findFirst({ orderBy: { ordem: "desc" }, select: { ordem: true } });
+  await prisma.plano.create({ data: { slug: slugDe(nome), nome, modulo, usuarios: modulo === Modulo.INDIVIDUAL ? 1 : 3, ordem: (ultimo?.ordem ?? 0) + 1, visivel: false } });
+  revalidatePath("/planos");
+  return { ok: true, mensagem: `Plano ${nome} criado (oculto). Clique em Editar para completar e definir o preço.` };
+}
+
+/** Duplicar: cópia oculta, com "(cópia)" no nome, logo depois do original. */
+export async function duplicarPlano(id: string): Promise<RespostaAcao> {
+  await exigirSuperAdmin();
+  const p = await prisma.plano.findUnique({ where: { id } });
+  if (!p) return { ok: false, mensagem: "Plano não encontrado." };
+  if (p.gratis) return { ok: false, mensagem: "O plano de teste grátis não pode ser duplicado." };
+  const { id: _id, slug: _slug, criadoEm: _c, atualizadoEm: _a, ...dados } = p;
+  const nome = `${p.nome} (cópia)`.slice(0, 60);
+  await prisma.$transaction([
+    prisma.plano.updateMany({ where: { ordem: { gt: p.ordem } }, data: { ordem: { increment: 1 } } }),
+    prisma.plano.create({ data: { ...dados, nome, slug: slugDe(nome), ordem: p.ordem + 1, visivel: false, destaque: false } }),
+  ]);
+  revalidatePath("/planos");
+  return { ok: true, mensagem: `Cópia criada (oculta): ${nome}.` };
+}
+
+/** Excluir: só plano sem pedidos e sem contas usando; senão, ocultar. O Free não sai (teste grátis). */
+export async function excluirPlano(id: string): Promise<RespostaAcao> {
+  await exigirSuperAdmin();
+  const p = await prisma.plano.findUnique({ where: { id } });
+  if (!p) return { ok: false, mensagem: "Plano não encontrado." };
+  if (p.gratis) return { ok: false, mensagem: "O plano de teste grátis não pode ser excluído (oculte-o se não quiser oferecer)." };
+  const [pedidos, contas] = await Promise.all([prisma.pedido.count({ where: { planoId: id } }), prisma.empresa.count({ where: { planoId: id } })]);
+  if (pedidos || contas) return { ok: false, mensagem: `Não dá para excluir: ${p.nome} tem ${pedidos} pedido(s) e ${contas} conta(s). Use Oculto para tirar do popup.` };
+  await prisma.plano.delete({ where: { id } });
+  revalidatePath("/planos");
+  return { ok: true, mensagem: `Plano ${p.nome} excluído.` };
 }
 
 export async function moverPlano(id: string, direcao: -1 | 1): Promise<RespostaAcao> {

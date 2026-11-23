@@ -27,7 +27,8 @@ export async function POST(req: Request) {
   };
 
   const plano = await prisma.plano.findUnique({ where: { id: dados.planoId } });
-  if (!plano || !plano.visivel || plano.gratis || plano.personalizado || plano.precoAtual == null) {
+  // Plano pago com preço zero não é vendido (decisão #111)
+  if (!plano || !plano.visivel || plano.gratis || plano.personalizado || plano.precoAtual == null || plano.precoAtual <= 0) {
     return NextResponse.json({ erro: "Plano indisponível." }, { status: 400 });
   }
 
