@@ -1,58 +1,147 @@
-# Publicação do FilaPro Leads na VPS (etapa 12 — decisão #99)
+# Publicação do FilaPro Leads na VPS (decisões #99 e #105)
 
-Tudo fica na VPS da Hostinger: o **site** (filaproleads.com.br), o **serviço 24/7** (api.filaproleads.com.br)
-e o **banco PostgreSQL**, com HTTPS automático (Caddy), pm2 e **backup diário**.
+Tudo fica na VPS da Hostinger (KVM 1 ou maior, Ubuntu 24.04 ou 26.04): o **site** (filaproleads.com.br), o **serviço 24/7**
+(api.filaproleads.com.br) e o **banco PostgreSQL**, com HTTPS automático (Caddy), pm2 e **backup diário**.
 
-> Faça um passo de cada vez e confira o resultado antes de seguir. Em caso de dúvida, pare e pergunte.
-> Nunca cole senhas ou chaves no chat. Elas vão só nos arquivos `.env` da VPS.
+> Faça **uma parte de cada vez** e confira o resultado ("deve mostrar…") antes de seguir. Se algo der diferente, pare e pergunte.
+> **Nunca cole senhas ou chaves no chat.** Elas vão só nos arquivos `.env` da VPS.
+> Os comandos são para rodar **na VPS, como root** (painel da Hostinger → VPS → Terminal do navegador, ou `ssh root@IP_DA_VPS`).
 
 ---
 
-## 1. DNS (painel da Hostinger → Domínios → filaproleads.com.br → DNS)
+## Parte 1 — DNS e e-mail (no painel da Hostinger e no Resend; nada na VPS)
 
-| Tipo | Nome | Aponta para |
-|---|---|---|
-| A | `@` | IP da VPS |
-| A | `www` | IP da VPS |
-| A | `api` | IP da VPS (já existe) |
+### 1.1 DNS (Hostinger → Domínios → filaproleads.com.br → DNS / Nameservers → Gerenciar registros DNS)
 
-Apague registros antigos de `@` e `www` que apontem para outro lugar (ex.: página padrão da Hostinger).
-A propagação leva de minutos a algumas horas.
+O IP da VPS está em: Hostinger → VPS → **Visão geral** (IPv4).
 
-## 2. E-mails (Resend)
+| Tipo | Nome | Aponta para | TTL |
+|---|---|---|---|
+| A | `@` | IP da VPS | 3600 |
+| A | `www` | IP da VPS | 3600 |
+| A | `api` | IP da VPS | 3600 |
 
-1. Crie a conta em **resend.com** (plano grátis: 3.000 e-mails por mês).
-2. **Domains → Add Domain** → `filaproleads.com.br`.
-3. O Resend mostra 3 registros (MX, TXT/SPF e TXT/DKIM): crie cada um no DNS da Hostinger, igual ao que aparece lá.
-4. Espere ficar **Verified**.
-5. **API Keys → Create API Key** (permissão "Sending access"). Guarde a chave: ela vai no `.env.production` do passo 5.
+Apague os registros **A** e **CNAME** antigos de `@` e `www` que apontem para outro lugar (ex.: página padrão da Hostinger).
+**Não** apague registros MX/TXT de e-mail que você já use.
 
-## 3. Banco de produção (novo e limpo)
+### 1.2 E-mails do sistema (Resend — grátis até 3.000 e-mails/mês)
 
-Na VPS:
+1. Crie a conta em **resend.com**.
+2. **Domains → Add Domain** → `filaproleads.com.br` (região: São Paulo, se aparecer).
+3. O Resend mostra alguns registros (MX, TXT/SPF e TXT/DKIM). Crie **cada um** no DNS da Hostinger, com o mesmo Tipo, Nome e
+   Valor que aparecem lá.
+4. Clique em **Verify** e espere ficar **Verified** (minutos a algumas horas).
+5. **API Keys → Create API Key** → permissão **Sending access** → guarde a chave (começa com `re_`). Ela vai no passo 4.3.
+
+---
+
+## Parte 2 — Preparar a VPS (programas)
+
+### 2.1 Atualizar e instalar o básico
+
+```bash
+apt update && apt upgrade -y
+apt install -y git curl ufw gnupg debian-keyring debian-archive-keyring apt-transport-https postgresql
+```
+
+### 2.2 Memória extra (swap de 2 GB — a montagem do site precisa)
+
+```bash
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab
+free -h
+```
+
+Deve mostrar uma linha **Swap: 2.0Gi**.
+
+### 2.3 Node.js 22, pnpm e pm2
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+corepack enable && corepack prepare pnpm@10.28.0 --activate
+npm install -g pm2
+node -v && pnpm -v && pm2 -v
+```
+
+Deve mostrar `v22…`, `10.28.0` e um número do pm2. (Se o primeiro comando disser que o Ubuntu não é suportado, avise antes de seguir.)
+
+### 2.4 Caddy (HTTPS automático)
+
+```bash
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update && apt install -y caddy
+caddy version
+```
+
+### 2.5 Firewall (só SSH, 80 e 443 abertos)
+
+```bash
+ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable && ufw status
+```
+
+Deve mostrar **Status: active** com OpenSSH, 80 e 443.
+
+---
+
+## Parte 3 — Código e banco
+
+### 3.1 Baixar o sistema
+
+```bash
+mkdir -p /opt/filapro/arquivos /opt/filapro/backups
+cd /opt/filapro
+git clone https://github.com/jkalexandri/teste.git app
+cd app
+pnpm install
+```
+
+### 3.2 Gerar os segredos
 
 ```bash
 bash /opt/filapro/app/deploy/gerar-segredos.sh
+echo "WORKER_TOKEN=$(openssl rand -hex 32)"
+echo "CHAVE_CRIPTO=$(openssl rand -hex 32)"
 ```
 
-Anote os valores que aparecem (CRON_SECRET, SENHA_BANCO, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).
+Aparecem 6 valores: **CRON_SECRET, SENHA_BANCO, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, WORKER_TOKEN e CHAVE_CRIPTO**.
+Copie para um bloco de notas **no seu computador** (não no chat). Guarde a **CHAVE_CRIPTO** num lugar seguro: se ela se perder,
+todos os WhatsApps precisam ler o QR Code de novo e a chave da IA precisa ser salva de novo.
+
+### 3.3 Criar o banco
+
+Troque `COLE-A-SENHA_BANCO` pelo valor de SENHA_BANCO:
 
 ```bash
 sudo -u postgres psql -c "CREATE USER filaproleads WITH PASSWORD 'COLE-A-SENHA_BANCO';"
 sudo -u postgres psql -c "CREATE DATABASE filaproleads OWNER filaproleads;"
 ```
 
-O banco de teste antigo (`filapro`) continua lá, sem uso. Pode ser apagado depois que tudo estiver funcionando.
+Deve mostrar `CREATE ROLE` e `CREATE DATABASE`.
 
-## 4. Código atualizado
+---
+
+## Parte 4 — Configuração
+
+### 4.1 Serviço 24/7: `apps/worker/.env`
 
 ```bash
-cd /opt/filapro/app
-git pull
-pnpm install
+cd /opt/filapro/app/apps/worker && cp .env.example .env && nano .env
 ```
 
-## 5. Configuração do site: `apps/web/.env.production`
+Preencha (troque os valores em MAIÚSCULAS pelos do passo 3.2):
+
+```
+DATABASE_URL="postgresql://filaproleads:SENHA_BANCO@127.0.0.1:5432/filaproleads"
+WORKER_TOKEN="WORKER_TOKEN"
+CHAVE_CRIPTO="CHAVE_CRIPTO"
+VAPID_PUBLIC_KEY="VAPID_PUBLIC_KEY"
+VAPID_PRIVATE_KEY="VAPID_PRIVATE_KEY"
+```
+
+(As outras linhas — PORTA, HOST, NIVEL_LOG, PASTA_ARQUIVOS — ficam como estão.) Salve: **Ctrl+O, Enter, Ctrl+X**.
+
+### 4.2 Site: `apps/web/.env.production`
 
 ```bash
 nano /opt/filapro/app/apps/web/.env.production
@@ -62,34 +151,28 @@ nano /opt/filapro/app/apps/web/.env.production
 NEXT_PUBLIC_APP_ENV=production
 NEXT_PUBLIC_SITE_URL="https://filaproleads.com.br"
 DATABASE_URL="postgresql://filaproleads:SENHA_BANCO@127.0.0.1:5432/filaproleads"
-SUPERADMIN_EMAIL="seu-email-de-acesso"
-SUPERADMIN_NOME="Seu nome"
-RESEND_API_KEY="chave-do-resend"
+SUPERADMIN_EMAIL="SEU-EMAIL-DE-ACESSO"
+SUPERADMIN_NOME="SEU NOME"
+RESEND_API_KEY="CHAVE-DO-RESEND"
 EMAIL_FROM="FilaPro Leads <nao-responda@filaproleads.com.br>"
-CRON_SECRET="valor-do-passo-3"
+CRON_SECRET="CRON_SECRET"
 WORKER_URL="http://127.0.0.1:4000"
-WORKER_TOKEN="O MESMO de apps/worker/.env"
-CHAVE_CRIPTO="A MESMA de apps/worker/.env"
-VAPID_PUBLIC_KEY="valor-do-passo-3"
+WORKER_TOKEN="O MESMO do apps/worker/.env"
+CHAVE_CRIPTO="A MESMA do apps/worker/.env"
+VAPID_PUBLIC_KEY="VAPID_PUBLIC_KEY"
 ```
 
-> `WORKER_TOKEN` e `CHAVE_CRIPTO`: copie de `apps/worker/.env` (não gere novos).
-
-## 6. Serviço 24/7: `apps/worker/.env`
+### 4.3 Proteger os dois arquivos
 
 ```bash
-nano /opt/filapro/app/apps/worker/.env
+chmod 600 /opt/filapro/app/apps/worker/.env /opt/filapro/app/apps/web/.env.production
 ```
 
-Troque o `DATABASE_URL` pelo do banco novo e acrescente as chaves das notificações:
+---
 
-```
-DATABASE_URL="postgresql://filaproleads:SENHA_BANCO@127.0.0.1:5432/filaproleads"
-VAPID_PUBLIC_KEY="valor-do-passo-3"
-VAPID_PRIVATE_KEY="valor-do-passo-3"
-```
+## Parte 5 — Criar as tabelas e ligar tudo
 
-## 7. Criar as tabelas, os planos e o seu acesso de Super Admin
+### 5.1 Tabelas, planos e o seu acesso de Super Admin
 
 ```bash
 cd /opt/filapro/app
@@ -98,39 +181,62 @@ pnpm --filter @filapro/db migrate:deploy
 pnpm --filter @filapro/db seed
 ```
 
-O último comando mostra **"Senha temporária…"**: anote. É o seu primeiro acesso (vale 7 dias; você troca a senha
-ao entrar). Em produção **não** são criadas contas de demonstração.
+O último comando mostra **"Senha temporária…"**: anote (vale 7 dias; você troca ao entrar). Em produção **não** são criadas
+contas de demonstração.
 
-## 8. Montar e ligar o site
+### 5.2 Serviço 24/7
+
+```bash
+cd /opt/filapro/app/apps/worker
+pm2 start "bash -c 'set -a && . ./.env && set +a && exec pnpm start'" --name filapro-worker --cwd /opt/filapro/app/apps/worker
+sleep 5 && curl -s http://127.0.0.1:4000/saude
+```
+
+Deve mostrar `{"ok":true}`.
+
+### 5.3 Site (a montagem leva alguns minutos no KVM 1)
 
 ```bash
 cd /opt/filapro/app
 pnpm --filter web build
 pm2 start "pnpm start -p 3000 -H 127.0.0.1" --name filapro-web --cwd /opt/filapro/app/apps/web
-pm2 restart filapro-worker --update-env
-pm2 save
-curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/login   # 200
+sleep 5 && curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/login
 ```
 
-> Se a VPS tiver pouca memória (menos de 4 GB) e o `build` parar com "out of memory", crie 2 GB de swap:
-> `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab`
+Deve mostrar `200`.
 
-## 9. HTTPS (Caddy)
+### 5.4 Religar sozinho quando a VPS reiniciar
+
+```bash
+pm2 save
+pm2 startup systemd
+```
+
+O último comando pode imprimir uma linha começando com `sudo env PATH=…`: copie e rode essa linha.
+
+### 5.5 HTTPS
 
 ```bash
 cp /opt/filapro/app/deploy/Caddyfile /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-Abra **https://filaproleads.com.br** no navegador: deve aparecer a tela de login (sem os botões "Entrar como…").
+Abra **https://filaproleads.com.br**: deve aparecer a tela de login (sem os botões "Entrar como…", com o selo da versão).
+Confira também **https://api.filaproleads.com.br/saude** → `{"ok":true}`.
+(Se o HTTPS não abrir, o DNS da Parte 1 ainda está propagando: espere e rode `systemctl reload caddy` de novo.)
 
-## 10. Backup diário e rotinas automáticas
+---
+
+## Parte 6 — Rotinas, backup e proteção
+
+### 6.1 Backup diário e rotinas
 
 ```bash
+chmod +x /opt/filapro/app/deploy/*.sh
 crontab -e
 ```
 
-Acrescente as duas linhas (horários de Brasília = UTC−3):
+(Se perguntar o editor, escolha **1** — nano.) Acrescente no final:
 
 ```
 30 6 * * * /opt/filapro/app/deploy/backup-banco.sh >> /var/log/filapro-backup.log 2>&1
@@ -138,21 +244,20 @@ Acrescente as duas linhas (horários de Brasília = UTC−3):
 ```
 
 - 03:30 (Brasília): backup do banco em `/opt/filapro/backups` (guarda 14 dias).
-- 09:00 (Brasília): avisos de renovação (10 e 3 dias antes do vencimento).
+- 09:00 (Brasília): avisos de renovação, despesas fixas do mês e contas vencendo.
 
-Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh`
+Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh && ls -lh /opt/filapro/backups`
 
-## 10b. Proteção da VPS (decisão #105)
+### 6.2 Proteção da VPS (decisão #105)
 
-1. No **seu computador**, cadastre a sua chave SSH na VPS (se ainda não tiver uma chave: `ssh-keygen -t ed25519`):
-   `ssh-copy-id root@IP_DA_VPS` — e confira que entra **sem pedir senha**: `ssh root@IP_DA_VPS`.
+1. No **seu computador** (não na VPS), crie uma chave SSH se ainda não tiver: `ssh-keygen -t ed25519`
+   e cadastre na VPS: `ssh-copy-id root@IP_DA_VPS`. Confira que `ssh root@IP_DA_VPS` entra **sem pedir senha**.
 2. Na VPS: `bash /opt/filapro/app/deploy/seguranca-vps.sh`
 
-Liga: SSH só com chave (senha desligada), **fail2ban** (bloqueia por 1 hora quem errar 5 vezes) e **atualizações de segurança
-automáticas**. Se não houver chave cadastrada, o script **não** desliga a senha (para você não perder o acesso).
-Guarde bem a chave: sem ela, o acesso é pelo **console do painel da Hostinger**.
+Liga: SSH só com chave (senha desligada), **fail2ban** e **atualizações de segurança automáticas**. Se não houver chave cadastrada,
+o script **não** desliga a senha. Sem a chave, o acesso continua pelo **Terminal do navegador** no painel da Hostinger.
 
-## 11. Primeiro uso (no site publicado)
+## Parte 7 — Primeiro uso (no site publicado)
 
 1. Entre com o seu e-mail e a senha temporária → crie a sua senha (pode usar **Gerar senha forte**).
    Depois, no menu **Segurança**, ative a **verificação em duas etapas** e guarde os códigos de recuperação.
@@ -162,9 +267,9 @@ Guarde bem a chave: sem ela, o acesso é pelo **console do painel da Hostinger**
 5. **Planos**: preços, limites, WhatsApps extras, Leads de anúncios.
 6. **Número da plataforma**: conecte o WhatsApp que envia os avisos → **Enviar mensagem de teste**.
 7. **Meu WhatsApp**: conecte o seu número.
-8. **Avisos**: ative as notificações no celular (veja o passo 12).
+8. **Avisos**: ative as notificações no celular (veja a Parte 8).
 
-## 12. App no celular
+## Parte 8 — App no celular
 
 - **Android (Chrome):** abra filaproleads.com.br → menu ⋮ → **Instalar app** (ou "Adicionar à tela inicial").
 - **iPhone (Safari):** abra filaproleads.com.br → **Compartilhar** → **Adicionar à Tela de Início**.

@@ -207,7 +207,7 @@ bash /opt/filapro/app/deploy/empacotar-servidor.sh
 Gera `/opt/filapro/mudanca-<data>.tar.gz` com o backup do banco, os dois `.env` e a pasta de arquivos. Copie esse arquivo para o
 servidor novo (ex.: `scp`).
 
-No servidor **novo** (Ubuntu): instale Node 20, pnpm, PostgreSQL, Caddy e pm2 (como em `docs/instalacao-vps.md`), clone o
+No servidor **novo** (Ubuntu): instale Node 22, pnpm, PostgreSQL, Caddy e pm2 (como na Parte 2 de `docs/publicacao-vps.md`), clone o
 repositório em `/opt/filapro/app` e rode:
 
 ```bash
