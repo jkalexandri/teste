@@ -51,6 +51,7 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 | `apps/worker/tests/` | Testes do serviço (`*.test.ts`) com WhatsApp falso e IA simulada |
 | `packages/db/` | `prisma/schema.prisma`, migrações, `seed.ts`, regras puras compartilhadas (`src/envio.ts`, `src/codigos.ts`) |
 | `packages/ia/` | Camada de IA: conectores, preços, custo, gerar mensagens, conversar, ler materiais |
+| `scripts/` | `regressao.sh` (regressão completa no ambiente de teste) |
 | `deploy/` | Scripts da VPS: `atualizar.sh`, `voltar-versao.sh`, `backup-banco.sh`, `rotinas.sh`, `Caddyfile`, `gerar-segredos.sh` |
 | `docs/` | Decisões, especificação, guias de instalação e publicação, manuais e referências |
 
@@ -181,7 +182,8 @@ node apps/web/tests/etapa10-conversas.e2e.cjs /tmp/prints
 
 - A etapa 6 precisa da porta 4000 **livre**; a 8b precisa do serviço com o motor **ligado**.
 - `login-regras` troca a senha da conta de demonstração "usuario@…": restaure depois (o roteiro de regressão faz isso).
-- Rode a **regressão completa** (todas as etapas) antes de cada entrega.
+- Rode a **regressão completa** antes de cada entrega: `bash scripts/regressao.sh`.
+- Para continuar o projeto em outra sessão ou outro login do Claude, veja `docs/continuidade.md`.
 
 ## Versões e Novidades
 
