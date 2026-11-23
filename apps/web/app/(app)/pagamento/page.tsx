@@ -3,6 +3,8 @@
 import { prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import FormPagamento from "./FormPagamento";
+import ConfigAsaas from "./ConfigAsaas";
+import { tokenWebhook, urlWebhook } from "@/lib/asaas";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,16 @@ export default async function PagamentoPage() {
           cidadeRecebedor: c.cidadeRecebedor,
           contatoPersonalizado: c.contatoPersonalizado,
         }}
+      />
+      {/* Asaas (decisão #115): cartão, PIX com confirmação automática e boleto */}
+      <ConfigAsaas
+        estado={{
+          ambiente: c.asaasAmbiente === "producao" ? "producao" : "sandbox",
+          configurado: !!c.asaasChave,
+          conta: c.asaasConta,
+          testadoEm: c.asaasTestadoEm?.toISOString() ?? null,
+        }}
+        webhook={{ url: urlWebhook(), token: await tokenWebhook() }}
       />
     </section>
   );

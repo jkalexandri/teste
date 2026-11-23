@@ -189,6 +189,19 @@ Os cartões do botão **Planos** da tela de login. Em cada plano:
 
 Chave PIX e dados do recebedor (aparecem no PIX copia e cola dos pedidos) e o contato do plano Personalizado.
 
+**Asaas (decisão #115)** — cartão, PIX com confirmação automática e boleto:
+
+1. Crie a conta no Asaas (asaas.com). Para testar sem cobrar ninguém, crie também a conta de testes em sandbox.asaas.com.
+2. No Asaas: **Integrações → Chaves de API → Gerar chave**. Copie a chave (ela não aparece de novo no Asaas).
+3. Aqui em **Pagamento → Asaas**: escolha o **Ambiente** (Testes ou Produção), cole a chave e clique **Salvar e testar conexão**.
+   A chave só é guardada se o Asaas aceitar; fica criptografada e não aparece de novo na tela.
+   Chave de testes começa com `$aact_hmlg_`, de produção com `$aact_prod_` — o sistema avisa se não combinar com o ambiente.
+4. No Asaas: **Integrações → Webhooks → Adicionar**, com a **URL do webhook** e o **Token de autenticação** mostrados aqui
+   (botões Copiar), versão da API v3, envio sequencial, fila ativada e os eventos de **Cobranças**. Faça nos dois ambientes.
+5. Nunca mande a chave por chat, e-mail ou WhatsApp. Se vazar, gere outra no Asaas e cole aqui.
+
+As formas de pagamento pelo Asaas no popup Planos entram nas próximas etapas; até lá os pedidos continuam com o PIX manual.
+
 ![Pagamento](prints/s-pagamento.png)
 
 ## Inteligência Artificial

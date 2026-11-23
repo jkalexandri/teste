@@ -230,6 +230,13 @@ model ConfigVenda {
   aliquotaImposto       Float?
   /// Último aviso de contas vencendo (no máximo 1 por dia)
   avisoFinanceiroEm     DateTime?
+  /// Asaas (decisão #115): ambiente ("sandbox" = testes, "producao"), chave de API e token do aviso (webhook), ambos criptografados
+  asaasAmbiente         String    @default("sandbox")
+  asaasChave            String?
+  asaasTokenWebhook     String?
+  /// Último teste de conexão que deu certo: nome da conta no Asaas e quando
+  asaasConta            String?
+  asaasTestadoEm        DateTime?
   atualizadoEm          DateTime @updatedAt
 }
 

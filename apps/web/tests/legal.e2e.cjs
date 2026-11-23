@@ -20,6 +20,8 @@ const OUT = process.argv[2];
   // Checkout mostra o aceite
   await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
   await p.click('button:has-text("Planos")'); await p.waitForTimeout(800);
+  // O Padrão fica na aba Empresarial (decisão #113)
+  if (await p.locator('[data-testid=aba-modulo-EMPRESARIAL]').count()) { await p.click('[data-testid=aba-modulo-EMPRESARIAL]'); await p.waitForTimeout(300); }
   await p.click('[aria-label="Planos"] article:has-text("Padrão") >> [data-parte=botao]'); await p.waitForTimeout(400);
   ok('Checkout: aceite com links para Termos e Política', (await p.locator('[data-testid=aceite-termos] a[href="/termos"]').count()) === 1 && (await p.locator('[data-testid=aceite-termos] a[href="/privacidade"]').count()) === 1);
   // Super Admin preenche

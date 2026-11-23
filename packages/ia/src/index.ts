@@ -11,7 +11,7 @@ import { ErroIA, type Conector, type PedidoIA, type Provedor, type RespostaIA, t
 
 export * from "./tipos";
 export * from "./precos";
-export { criptografar } from "./cripto";
+export { criptografar, descriptografar } from "./cripto";
 
 const CONECTORES: Record<Provedor, Conector> = { anthropic: conectorAnthropic, compativel: conectorCompativel, simulado: conectorSimulado };
 

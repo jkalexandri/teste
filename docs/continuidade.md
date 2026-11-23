@@ -33,7 +33,7 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
 - `apps/web/.env.local`: `NEXT_PUBLIC_APP_ENV` (não "production"), `DATABASE_URL`, `WORKER_URL=http://127.0.0.1:4000`,
   `WORKER_TOKEN`, `CHAVE_CRIPTO`, `VAPID_PUBLIC_KEY` — valores **de teste**, gerados na hora (nunca os da produção).
 - `apps/worker/.env`: o mesmo banco de teste, o mesmo `WORKER_TOKEN`/`CHAVE_CRIPTO` de teste e as chaves VAPID de teste.
-- Site: `pnpm --filter web build` e `CRON_SECRET=segredo-teste pnpm --filter web start -p 3005`.
+- Site: `pnpm --filter web build` e `ASAAS_URL=http://127.0.0.1:4010 CRON_SECRET=segredo-teste pnpm --filter web start -p 3005` (o ASAAS_URL aponta para o Asaas de mentira dos testes, `apps/web/tests/asaas-falso.cjs`).
 - Serviço 24/7: `cd apps/worker && set -a && . ./.env && set +a && DISPAROS=desligado npx tsx src/index.ts`.
 - Regressão completa: `bash scripts/regressao.sh` (~40 min). Testes de uma etapa: `node apps/web/tests/<etapa>.e2e.cjs /tmp/prints`.
 
