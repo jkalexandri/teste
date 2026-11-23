@@ -7,7 +7,7 @@ import { encerrarSessao } from "@/lib/auth/session";
 export async function GET(req: Request) {
   await encerrarSessao();
   const motivo = new URL(req.url).searchParams.get("motivo") || "";
-  const destino = new URL("/login", req.url);
-  if (motivo) destino.searchParams.set("motivo", motivo);
-  return NextResponse.redirect(destino);
+  // Endereço relativo: atrás do Caddy o "req.url" é o endereço interno (localhost:3000) — o navegador completa com o domínio certo
+  const destino = motivo ? `/login?motivo=${encodeURIComponent(motivo)}` : "/login";
+  return new NextResponse(null, { status: 307, headers: { location: destino } });
 }

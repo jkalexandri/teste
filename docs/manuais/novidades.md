@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.33.3 — correção do app instalado (23/11/2026)
+
+- O app instalado no celular abria em "localhost" (endereço interno da VPS) quando a pessoa ainda não tinha entrado.
+  Agora abre no login do filaproleads.com.br.
+
 ## v1.33.2 — ajuste nos Planos (23/11/2026)
 
 - Todos os planos cabem na mesma linha em telas de computador (cartões mais compactos quando há mais de 4); em telas

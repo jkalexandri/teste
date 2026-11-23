@@ -30,7 +30,11 @@ export async function middleware(req: NextRequest) {
 
   const publica = pathname === "/" || PUBLICAS.some((p) => pathname === p || pathname.startsWith(p + "/"));
   if (!publica && !req.cookies.get(COOKIE_SESSAO)) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    // Atrás do Caddy o "req.url" é o endereço interno (localhost:3000) e o app instalado abria lá:
+    // monta o endereço com o domínio que o navegador usou (Host / X-Forwarded-* repassados pelo Caddy)
+    const host = req.headers.get("host") || req.headers.get("x-forwarded-host") || req.nextUrl.host;
+    const proto = (req.headers.get("x-forwarded-proto") || req.nextUrl.protocol.replace(":", "")).split(",")[0]!.trim();
+    return NextResponse.redirect(`${proto}://${host}/login`);
   }
   const headers = new Headers(req.headers);
   headers.set("x-pathname", pathname);
