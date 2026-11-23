@@ -156,7 +156,8 @@ disparos**. A aba é automática: com **Disparos por período** preenchido o pla
 - **+ Novo plano:** nome e módulo; nasce **oculto**. Depois, **Editar** para completar.
 - **Duplicar:** cópia oculta (bom para criar a versão "por quantidade" de um plano).
 - **Excluir:** só plano sem pedidos e sem contas usando; senão, use **Oculto**.
-- Plano pago com preço **R$ 0,00** não pode ficar visível nem ser comprado.
+- Plano pago com preço **R$ 0,00** (ou sem preço) aparece como **"Em breve"**: o visitante vê o plano, mas não consegue comprar.
+  Coloque o preço e ele passa a vender na hora. Pacote extra e WhatsApp extra com preço zero também não são vendidos.
 
 **Duas formas de vender:** só por **prazo** (sem limite de envios) ou por **prazo + quantidade de disparos por período**. Na segunda:
 

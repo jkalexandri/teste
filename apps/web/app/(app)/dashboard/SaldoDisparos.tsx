@@ -13,7 +13,7 @@ export default async function SaldoDisparos({ empresa, podeComprar }: {
   const total = s.limite + s.extras;
   const pct = total ? Math.min(100, Math.round((s.usados / total) * 100)) : 100;
   const acabou = s.restantes <= 0;
-  const pacote = plano?.pacoteDisparos && plano.precoPacoteDisparos != null && !plano.gratis ? { qtd: plano.pacoteDisparos, preco: plano.precoPacoteDisparos } : null;
+  const pacote = plano?.pacoteDisparos && plano.precoPacoteDisparos != null && plano.precoPacoteDisparos > 0 && !plano.gratis ? { qtd: plano.pacoteDisparos, preco: plano.precoPacoteDisparos } : null;
   return (
     <div className="card p-3 mt-3 flex flex-wrap items-center gap-3" data-testid="saldo-disparos">
       <div className="flex-1 min-w-[220px]">

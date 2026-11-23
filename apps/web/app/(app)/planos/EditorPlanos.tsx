@@ -72,7 +72,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                   <td className="font-bold">{p.nome}{p.gratis && <span className="chip ml-1" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>Teste grátis</span>}</td>
                   <td className="text-[12px]" data-testid="aba-do-plano">{abasDoPlano(p).length > 1 ? "As duas" : NOME_ABA[abasDoPlano(p)[0]!]}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo}</span> : null}</td>
                   <td>{p.personalizado ? "Sob medida" : p.usuarios}</td>
-                  <td>{p.gratis ? "Grátis" : p.personalizado && p.precoAtual == null ? "Sob consulta" : semPrecoDeVenda(p) ? <span style={{ color: "#b42318" }}>{p.precoAtual === 0 ? "R$ 0,00 — defina" : "sem preço"}</span> : `${formatarReais(p.precoAtual!)}/${p.periodo}`}</td>
+                  <td>{p.gratis ? "Grátis" : p.personalizado && p.precoAtual == null ? "Sob consulta" : semPrecoDeVenda(p) ? <span style={{ color: "#b45309" }} data-testid="preco-em-breve">Em breve — defina o preço</span> : `${formatarReais(p.precoAtual!)}/${p.periodo}`}</td>
                   <td>
                     <button
                       className="btn-ghost !py-1 !px-2 !text-[11px]"

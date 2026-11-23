@@ -4,18 +4,20 @@
 // (docs/referencias/modelo-popup-planos.png) com as cores do FilaPro Leads.
 // Todo o conteúdo vem do Super Admin (decisão #27).
 import { Check, Gift, Sparkles } from "@/components/icons";
-import { formatarReais, type PlanoPublico } from "@/lib/planos";
+import { formatarReais, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
 
 export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico; onEscolher?: (p: PlanoPublico) => void }) {
   const d = plano.destaque;
-  const preco = plano.gratis
+  // Plano pago ainda sem preço: aparece como "Em breve", sem compra (decisão #111)
+  const emBreve = semPrecoDeVenda(plano);
+  const preco = emBreve ? "Em breve" : plano.gratis
     ? "Grátis"
     : plano.precoAtual != null
       ? formatarReais(plano.precoAtual)
       : plano.personalizado
         ? "Sob consulta"
         : "—";
-  const mostraPeriodo = !plano.gratis && plano.precoAtual != null;
+  const mostraPeriodo = !emBreve && !plano.gratis && plano.precoAtual != null;
 
   return (
     <article
@@ -54,7 +56,7 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
 
       {/* Preço */}
       <div className="mt-4 h-[20px] leading-[20px]">
-        {plano.precoAntigo != null && !plano.gratis && (
+        {plano.precoAntigo != null && !plano.gratis && !emBreve && (
           <span className="text-[13px] leading-[20px] text-slate-400 line-through">{formatarReais(plano.precoAntigo)}</span>
         )}
       </div>
@@ -68,18 +70,20 @@ export default function CartaoPlano({ plano, onEscolher }: { plano: PlanoPublico
         <p className="mt-2 text-[12.5px] font-bold rounded-lg px-2.5 py-1.5" data-testid="disparos-plano"
           style={{ background: "rgba(45,212,255,.08)", color: "#9fefff", border: "1px solid rgba(45,212,255,.25)" }}>
           {plano.disparosPorPeriodo
-            ? <>{plano.disparosPorPeriodo.toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")} por {formatarReais(plano.precoPacoteDisparos ?? 0)}</span> : null}</>
+            ? <>{plano.disparosPorPeriodo.toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")}{plano.precoPacoteDisparos ? ` por ${formatarReais(plano.precoPacoteDisparos)}` : ""}</span> : null}</>
             : <>Disparos sem limite no período</>}
         </p>
       )}
 
       <button
         type="button"
-        onClick={() => onEscolher?.(plano)}
-        className={d ? "login-cta mt-5 !py-3 !text-[15px]" : "mt-5 w-full rounded-xl py-3 text-[15px] font-bold"}
-        style={d ? undefined : { border: "1px solid #2dd4ff", color: "#7fe7ff", background: "rgba(45,212,255,.06)" }}
+        onClick={() => { if (!emBreve) onEscolher?.(plano); }}
+        disabled={emBreve}
+        data-testid={emBreve ? "plano-em-breve" : undefined}
+        className={emBreve ? "mt-5 w-full rounded-xl py-3 text-[15px] font-bold cursor-not-allowed" : d ? "login-cta mt-5 !py-3 !text-[15px]" : "mt-5 w-full rounded-xl py-3 text-[15px] font-bold"}
+        style={emBreve ? { border: "1px solid rgba(255,255,255,.18)", color: "#9fb3c8", background: "rgba(255,255,255,.05)" } : d ? undefined : { border: "1px solid #2dd4ff", color: "#7fe7ff", background: "rgba(45,212,255,.06)" }}
       >
-        {plano.textoBotao || "Escolher plano"}
+        {emBreve ? "Em breve" : plano.textoBotao || "Escolher plano"}
       </button>
 
       {plano.condicoes && <p className="text-[11.5px] leading-relaxed mt-4 text-slate-400 whitespace-pre-line">{plano.condicoes}</p>}

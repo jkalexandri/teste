@@ -32,11 +32,18 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await p.click('button:has-text("Salvar plano")'); await espera(1200);
     ok('Plano com disparos vai para a aba Por quantidade', (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=aba-do-plano]').innerText()).includes('Por quantidade'));
     await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('button:has-text("Oculto")').click(); await espera(1000);
-    ok('Preço zero não pode ficar visível', sql(`select visivel from "Plano" where id='${QID}'`) === 'f');
+    ok('Preço zero fica visível como Em breve', sql(`select visivel from "Plano" where id='${QID}'`) === 't' && (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=preco-em-breve]').count()) === 1);
+    // Visitante vê "Em breve" e não consegue comprar
+    const vb = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+    await vb.goto(BASE + '/login', { waitUntil: 'networkidle' }); await vb.click('button:has-text("Planos")'); await espera(1000);
+    await vb.click('[data-testid=aba-planos-quantidade]').catch(() => undefined); await espera(400);
+    const cartao = vb.locator('article:has-text("T17 Quantidade")');
+    ok('Visitante vê "Em breve" e o botão desativado', (await cartao.locator('[data-testid=plano-em-breve]').isDisabled()) && (await cartao.innerText()).includes('Em breve') && !(await cartao.innerText()).includes('R$ 0,00'));
+    await vb.screenshot({ path: OUT + '/plano-em-breve.png' });
+    await vb.close();
     sql(`update "Plano" set "precoAtual"=9990 where id='${QID}'`);
     await p.reload(); await espera(800);
-    await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('button:has-text("Oculto")').click(); await espera(1000);
-    ok('Com preço, fica visível', sql(`select visivel from "Plano" where id='${QID}'`) === 't');
+    ok('Com preço, vende normalmente', (await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('[data-testid=preco-em-breve]').count()) === 0);
     // Duplicar
     await p.locator('tr', { hasText: 'T17 Quantidade' }).locator('button:has-text("Duplicar")').click(); await espera(1200);
     ok('Duplicar cria cópia oculta', sql(`select count(*)||'|'||bool_and(not visivel) from "Plano" where nome='T17 Quantidade (cópia)'`) === '1|true');

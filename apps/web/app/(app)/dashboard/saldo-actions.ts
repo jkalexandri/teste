@@ -14,7 +14,7 @@ export async function comprarPacoteDisparos(pacotes: number): Promise<{ ok: fals
   const dono = u.cargo === Cargo.ADMIN_EMPRESA || (u.cargo === Cargo.USUARIO && u.empresa?.modulo === Modulo.INDIVIDUAL);
   if (!dono || !u.empresa?.planoId) return { ok: false, mensagem: "Só o responsável pela conta compra disparos extras." };
   const plano = await prisma.plano.findUnique({ where: { id: u.empresa.planoId } });
-  if (!plano?.pacoteDisparos || plano.precoPacoteDisparos == null) return { ok: false, mensagem: "O seu plano não tem pacote extra de disparos." };
+  if (!plano?.pacoteDisparos || plano.precoPacoteDisparos == null || plano.precoPacoteDisparos <= 0) return { ok: false, mensagem: "O seu plano não tem pacote extra de disparos." };
   const n = Math.min(20, Math.max(1, Math.floor(Number(pacotes) || 1)));
   const abertos = await prisma.pedido.count({ where: { empresaId: u.empresa.id, pacotesDisparos: { gt: 0 }, status: StatusPedido.AGUARDANDO, expiraEm: { gt: new Date() } } });
   if (abertos > 0) return { ok: false, mensagem: "Você já tem um pedido de disparos extras aguardando pagamento." };

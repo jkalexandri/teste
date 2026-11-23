@@ -274,14 +274,15 @@ o script **não** desliga a senha. Sem a chave, o acesso continua pelo **Termina
 
 ## Parte 6.3 — Sugestão de planos (opcional, decisão #111)
 
-Preenche 12 planos (7 "Sem limite" + 5 "Start" por quantidade), todos **ocultos** e com preço **R$ 0,00**. Sobrescreve o
+Preenche 12 planos (7 "Sem limite" + 5 "Start" por quantidade), todos **visíveis como "Em breve"** (preço **R$ 0,00**, sem compra).
+Sobrescreve o
 conteúdo dos 7 planos da instalação (não mexe em contas, pedidos nem em planos criados por você):
 
 ```bash
 cd /opt/filapro/app && set -a && . apps/web/.env.production && set +a && pnpm --filter @filapro/db planos:sugeridos
 ```
 
-Depois: Super Admin → **Planos** → **Editar** cada um, coloque o preço e clique em **Oculto** para mostrar.
+Depois: Super Admin → **Planos** → **Editar** cada um e coloque o preço — o plano passa a vender na hora.
 
 ## Parte 7 — Primeiro uso (no site publicado)
 

@@ -10,8 +10,8 @@ Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
 ### Super Admin
 - **Novo plano**, **Duplicar** e **Excluir** na tela Planos, com a coluna **Aba** e um destaque por aba.
-- Plano pago com preço R$ 0,00 não fica visível nem pode ser comprado.
-- Sugestão de 12 planos pronta para aplicar (ocultos e com preço zerado).
+- Plano pago ainda sem preço aparece como **"Em breve"** (sem compra).
+- Sugestão de 12 planos pronta para aplicar (visíveis como "Em breve", com preço zerado).
 
 ## v1.31.1 — bolinha da fila (23/11/2026)
 

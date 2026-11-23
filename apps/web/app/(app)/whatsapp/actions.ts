@@ -32,7 +32,7 @@ export async function infoExtra() {
   const u = await ator();
   if (!podeTerExtras(u) || !u.empresa?.planoId) return null;
   const plano = await prisma.plano.findUnique({ where: { id: u.empresa.planoId } });
-  if (!plano || plano.gratis || plano.precoWhatsappExtra == null || plano.maxWhatsapps <= 1) return null;
+  if (!plano || plano.gratis || plano.precoWhatsappExtra == null || plano.precoWhatsappExtra <= 0 || plano.maxWhatsapps <= 1) return null;
   const total = 1 + u.empresa.whatsappsExtras;
   return {
     podeComprar: total < plano.maxWhatsapps,

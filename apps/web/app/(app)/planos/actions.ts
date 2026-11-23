@@ -29,9 +29,6 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
   const usuarios = inteiro(form.get("usuarios"));
   if (!atual.personalizado && (!usuarios || usuarios < 1)) return { ok: false, mensagem: "Informe a quantidade de usuários (mínimo 1)." };
 
-  if (atual.visivel && semPrecoDeVenda({ ...atual, precoAtual })) {
-    return { ok: false, mensagem: "Este plano aparece no popup: informe um preço maior que zero ou oculte o plano antes." };
-  }
 
   const prazoDias = inteiro(form.get("prazoDias")) || 31;
   const limiteLeads = lerLimite(form);
@@ -91,12 +88,10 @@ export async function alternarVisivel(id: string, visivel: boolean): Promise<Res
   const p = await prisma.plano.findUnique({ where: { id } });
   if (!p) return { ok: false, mensagem: "Plano não encontrado." };
   // Plano pago só aparece no popup com preço definido.
-  if (visivel && semPrecoDeVenda(p)) {
-    return { ok: false, mensagem: `Defina um preço maior que zero para o plano ${p.nome} antes de exibi-lo.` };
-  }
+  // Plano pago sem preço pode aparecer: fica "Em breve" (sem compra) até ter preço (decisão #111)
   await prisma.plano.update({ where: { id }, data: { visivel } });
   revalidatePath("/planos");
-  return { ok: true, mensagem: `${p.nome} ${visivel ? "aparece" : "não aparece mais"} no popup.` };
+  return { ok: true, mensagem: `${p.nome} ${visivel ? (semPrecoDeVenda(p) ? "aparece como “Em breve” (defina o preço para vender)" : "aparece") : "não aparece mais"} no popup.` };
 }
 
 /** Um destaque por aba do popup (decisão #111): tira o destaque só dos planos da mesma aba. */

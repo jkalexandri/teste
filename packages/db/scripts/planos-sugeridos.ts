@@ -1,4 +1,4 @@
-// Preenche a sugestão de planos (decisão #111): todos OCULTOS e com preço R$ 0,00, para o Super Admin ajustar e ativar.
+// Preenche a sugestão de planos (decisão #111): todos VISÍVEIS como "Em breve" (preço R$ 0,00, sem compra) até o Super Admin colocar o preço.
 // Atualiza os 7 planos da instalação (pelo slug) e cria os 5 planos "Start" (por quantidade de disparos).
 // Não mexe em contas, pedidos nem em outros planos criados pelo Super Admin. Pode rodar de novo (sobrescreve a sugestão).
 // Uso (na VPS): cd /opt/filapro/app && set -a && . apps/web/.env.production && set +a && pnpm --filter @filapro/db planos:sugeridos
@@ -72,15 +72,15 @@ async function main() {
       maxWhatsapps: s.maxWhatsapps ?? 1, precoWhatsappExtra: (s.maxWhatsapps ?? 1) > 1 ? 0 : null,
       disparosPorPeriodo: s.disparosPorPeriodo ?? null, pacoteDisparos: s.pacoteDisparos ?? null, precoPacoteDisparos: s.pacoteDisparos ? 0 : null,
       selo: s.selo, frase: s.frase, condicoes: s.condicoes, ofertaTexto: "", recursos: s.recursos, textoBotao: s.textoBotao,
-      visivel: false, destaque: !!s.destaque, ordem: s.ordem,
+      visivel: true, destaque: !!s.destaque, ordem: s.ordem,
     };
     const existe = await prisma.plano.findUnique({ where: { slug: s.slug } });
     if (existe) await prisma.plano.update({ where: { slug: s.slug }, data: dados });
     else await prisma.plano.create({ data: { slug: s.slug, ...dados } });
-    console.log(`${existe ? "atualizado" : "criado    "}  ${s.nome.padEnd(18)} ${s.disparosPorPeriodo ? `por quantidade (${s.disparosPorPeriodo}/mês)` : s.gratis || s.personalizado ? "as duas abas" : "sem limite"}  — oculto`);
+    console.log(`${existe ? "atualizado" : "criado    "}  ${s.nome.padEnd(18)} ${s.disparosPorPeriodo ? `por quantidade (${s.disparosPorPeriodo}/mês)` : s.gratis || s.personalizado ? "as duas abas" : "sem limite"}  — ${pago ? "Em breve" : "disponível"}`);
   }
-  console.log("\nPronto: 12 planos preenchidos, todos OCULTOS e com preço R$ 0,00.");
-  console.log("Ajuste os preços em Super Admin → Planos → Editar e clique em “Oculto” para mostrar cada um.");
+  console.log("\nPronto: 12 planos preenchidos e visíveis. Os pagos aparecem como “Em breve” (sem compra) até ter preço.");
+  console.log("Coloque os preços em Super Admin → Planos → Editar: o plano passa a vender na hora.");
 }
 
 main().finally(() => prisma.$disconnect());
