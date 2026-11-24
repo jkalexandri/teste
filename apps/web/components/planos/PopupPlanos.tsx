@@ -61,7 +61,7 @@ function Aba({ ativa, onClick, titulo, frase, testid, grande }: { ativa: boolean
 
 /** Planos em abas (decisão #113): Individual | Empresarial e, em cada um, Mensal | Por disparo.
  *  Uma aba só aparece se tiver planos; se só houver um tipo, mostra direto a grade. */
-export function PlanosComAbas({ planos, onEscolher, quantidadeInicial }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number }) {
+export function PlanosComAbas({ planos, onEscolher, quantidadeInicial, fixarAbas }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number; fixarAbas?: boolean }) {
   const modulos = MODULOS_PLANOS.filter((m) => planos.some((p) => p.modulo === m.id));
   const [modulo, setModulo] = useState<ModuloPlano>(modulos[0]?.id ?? "INDIVIDUAL");
   const [aba, setAba] = useState<AbaPlanos>("ilimitado");
@@ -73,6 +73,12 @@ export function PlanosComAbas({ planos, onEscolher, quantidadeInicial }: { plano
   const nomeModulo = MODULOS_PLANOS.find((m) => m.id === modulo)?.titulo ?? "";
   return (
     <>
+      {/* Celular: abas fixas no topo do popup ao rolar (decisão #119), para trocar de aba de qualquer ponto da lista.
+          No computador (sm ou maior) fica como antes, sem fundo e sem fixar. */}
+      <div
+        className={fixarAbas ? "sticky -top-3 z-10 -mx-3 px-3 pt-3 pb-1 bg-[rgba(3,6,14,.96)] backdrop-blur-[8px] sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-none" : undefined}
+        data-testid={fixarAbas ? "abas-fixas" : undefined}
+      >
       {modulos.length > 1 && (
         <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2.5 max-w-[900px] mx-auto" role="tablist" aria-label="Tipo de conta">
           {modulos.map((m) => (
@@ -87,6 +93,7 @@ export function PlanosComAbas({ planos, onEscolher, quantidadeInicial }: { plano
           ))}
         </div>
       )}
+      </div>
       <GradePlanos planos={daAba} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} />
     </>
   );
@@ -161,7 +168,7 @@ export default function PopupPlanos({ onFechar }: { onFechar: () => void }) {
         ) : escolhido ? (
           <Checkout plano={escolhido} quantidadeInicial={quantidade} onVoltar={() => setEscolhido(null)} />
         ) : (
-          <PlanosComAbas planos={dados.planos} onEscolher={escolher} />
+          <PlanosComAbas planos={dados.planos} onEscolher={escolher} fixarAbas />
         )}
       </div>
       {chat && <ChatInteressado onFechar={() => setChat(false)} />}

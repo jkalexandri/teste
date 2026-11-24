@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.36.2 — abas dos Planos sempre visíveis no celular (24/11/2026)
+
+- No celular, ao rolar a lista do botão **Planos**, as abas (Individual / Empresarial e Mensal / Por disparo) ficam **fixas no topo**:
+  dá para trocar de aba sem voltar lá para cima. No computador nada muda.
+
 ## v1.36.1 — login centralizado no celular (24/11/2026)
 
 - No celular (navegador e app instalado), o nome **FilaPro Leads**, a frase e o quadro de acesso ficam **centralizados na tela**,
