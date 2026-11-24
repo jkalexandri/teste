@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.34.4 — aviso do Asaas configurado sozinho (24/11/2026)
+
+- Pagamento → Asaas: botão **Configurar aviso automaticamente** — o FilaPro cadastra (ou corrige) o aviso de pagamento no Asaas,
+  sem passo manual no painel deles. **Verificar no Asaas** mostra se está ativo ou com a fila pausada.
+- Quadro **Último aviso recebido**: mostra quando o Asaas avisou pela última vez, ou se o aviso foi recusado por token diferente.
+
 ## v1.34.3 — login fixo no celular (23/11/2026)
 
 - A tela de login não rola mais nem "pula" no celular (navegador e app instalado). O visual continua o mesmo.

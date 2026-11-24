@@ -5,9 +5,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
-import { removerAsaas, salvarAsaas } from "./actions";
+import { configurarAvisoAsaas, removerAsaas, salvarAsaas, verificarAvisoAsaas } from "./actions";
 
-type Estado = { ambiente: "sandbox" | "producao"; configurado: boolean; conta: string | null; testadoEm: string | null };
+type Estado = {
+  ambiente: "sandbox" | "producao"; configurado: boolean; conta: string | null; testadoEm: string | null;
+  /** Último aviso que chegou do Asaas e se o token conferiu */
+  aviso: { em: string; evento: string; ok: boolean } | null;
+};
 
 /** Campo só de leitura com botão "Copiar". */
 function Copiavel({ id, rotulo, valor }: { id: string; rotulo: string; valor: string }) {
@@ -31,6 +35,10 @@ export default function ConfigAsaas({ estado, webhook }: { estado: Estado; webho
   const [erro, setErro] = useState("");
   const [pendente, iniciar] = useTransition();
   const [ambiente, setAmbiente] = useState(estado.ambiente);
+  // Resultado do "Configurar aviso automaticamente" / "Verificar no Asaas"
+  const [msgAviso, setMsgAviso] = useState<{ ok: boolean; mensagem: string } | null>(null);
+  const agirAviso = (fn: () => Promise<{ ok: boolean; mensagem: string }>) =>
+    iniciar(async () => { const r = await fn(); setMsgAviso(r); router.refresh(); });
 
   return (
     <div className="grid lg:grid-cols-2 gap-3 mt-3" data-testid="config-asaas">
@@ -97,15 +105,46 @@ export default function ConfigAsaas({ estado, webhook }: { estado: Estado; webho
         <h2 className="font-display font-bold text-[14px]">Aviso automático de pagamento (webhook)</h2>
         <p className="help">
           É por aqui que o Asaas avisa o FilaPro quando um pagamento é aprovado, e a conta é liberada sozinha.
-          No Asaas: <b>Integrações → Webhooks → Adicionar</b>, e preencha:
         </p>
-        <Copiavel id="webhook-url" rotulo="URL do webhook" valor={webhook.url} />
-        <Copiavel id="webhook-token" rotulo="Token de autenticação" valor={webhook.token} />
-        <ul className="help list-disc pl-5 space-y-0.5">
-          <li><b>Versão da API:</b> v3 • <b>Tipo de envio:</b> sequencial • <b>Fila de sincronização:</b> ativada</li>
-          <li><b>Eventos:</b> marque os de <b>Cobranças</b> (cobrança criada, confirmada, recebida, vencida, estornada).</li>
-          <li>Faça isso nos dois ambientes (Testes e Produção), com a mesma URL e o mesmo token.</li>
-        </ul>
+
+        {/* Último aviso recebido: mostra se o Asaas está mesmo chegando aqui */}
+        <div className="rounded-lg p-2.5 text-[12px]" style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }} data-testid="ultimo-aviso">
+          {estado.aviso ? (
+            estado.aviso.ok ? (
+              <><b style={{ color: "var(--primary-dark)" }}>● Último aviso recebido</b> em {new Date(estado.aviso.em).toLocaleString("pt-BR")} — {estado.aviso.evento}</>
+            ) : (
+              <><b className="text-[#b42318]">● Aviso recusado</b> em {new Date(estado.aviso.em).toLocaleString("pt-BR")}: o token do Asaas está diferente.
+                Clique em <b>Configurar aviso automaticamente</b>.</>
+            )
+          ) : (
+            <><b>○ Nenhum aviso recebido ainda.</b> <span style={{ color: "var(--muted)" }}>Depois de configurar, crie uma cobrança de teste no Asaas e recarregue esta página.</span></>
+          )}
+        </div>
+
+        {estado.configurado ? (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-primary" disabled={pendente} onClick={() => agirAviso(configurarAvisoAsaas)} data-testid="configurar-aviso">
+              {pendente ? "Aguarde…" : "Configurar aviso automaticamente"}
+            </button>
+            <button type="button" className="btn-ghost" disabled={pendente} onClick={() => agirAviso(verificarAvisoAsaas)} data-testid="verificar-aviso">Verificar no Asaas</button>
+          </div>
+        ) : (
+          <p className="help">Conecte a chave do Asaas ao lado para o FilaPro cadastrar o aviso sozinho.</p>
+        )}
+        {msgAviso && <p className={`text-[12px] font-semibold ${msgAviso.ok ? "" : "text-[#b42318]"}`} style={msgAviso.ok ? { color: "var(--primary-dark)" } : undefined} data-testid="msg-aviso">{msgAviso.mensagem}</p>}
+
+        <details className="text-[12px]">
+          <summary className="cursor-pointer font-bold">Prefere cadastrar à mão no Asaas?</summary>
+          <div className="space-y-2 mt-2">
+            <p className="help">No Asaas: <b>Integrações → Webhooks → Adicionar</b>, e preencha:</p>
+            <Copiavel id="webhook-url" rotulo="URL do webhook" valor={webhook.url} />
+            <Copiavel id="webhook-token" rotulo="Token de autenticação" valor={webhook.token} />
+            <ul className="help list-disc pl-5 space-y-0.5">
+              <li><b>Versão da API:</b> v3 • <b>Tipo de envio:</b> sequencial • <b>Fila de sincronização:</b> ativada</li>
+              <li><b>Eventos:</b> marque os de <b>Cobranças</b> (cobrança criada, confirmada, recebida, vencida, estornada).</li>
+            </ul>
+          </div>
+        </details>
       </div>
     </div>
   );

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criptografar, descriptografar } from "@filapro/ia";
-import { ambienteDaChave, ErroAsaas, testarConexao, type AmbienteAsaas } from "@/lib/asaas";
+import { ambienteDaChave, configurarWebhookNoAsaas, ErroAsaas, testarConexao, webhookNoAsaas, type AmbienteAsaas } from "@/lib/asaas";
+import { obterSessao } from "@/lib/auth/session";
 
 // O padrão do PIX (BR Code) limita o nome a 25 e a cidade a 15 caracteres.
 export async function salvarPagamento(form: FormData): Promise<{ ok: boolean; mensagem: string }> {
@@ -66,4 +67,32 @@ export async function removerAsaas(): Promise<{ ok: boolean; mensagem: string }>
   await prisma.configVenda.update({ where: { id: "config" }, data: { asaasChave: null, asaasConta: null, asaasTestadoEm: null } });
   revalidatePath("/pagamento");
   return { ok: true, mensagem: "Chave do Asaas removida." };
+}
+
+/** Cria ou corrige o aviso (webhook) do FilaPro direto no Asaas, sem passo manual no painel deles. */
+export async function configurarAvisoAsaas(): Promise<{ ok: boolean; mensagem: string }> {
+  await exigirSuperAdmin();
+  const s = await obterSessao();
+  // E-mail que o Asaas avisa se o webhook falhar: o do Super Admin
+  const email = s?.usuario.email ?? process.env.SUPERADMIN_EMAIL ?? "";
+  try {
+    const r = await configurarWebhookNoAsaas(email);
+    return { ok: true, mensagem: r.criado ? "Aviso criado no Asaas. Crie uma cobrança de teste para conferir." : "Aviso atualizado no Asaas (token, eventos e fila liberada)." };
+  } catch (e) {
+    return { ok: false, mensagem: e instanceof ErroAsaas ? `Asaas: ${e.message}` : "Não foi possível configurar o aviso no Asaas." };
+  }
+}
+
+/** Situação do aviso no Asaas: existe, ativado, fila pausada. */
+export async function verificarAvisoAsaas(): Promise<{ ok: boolean; mensagem: string }> {
+  await exigirSuperAdmin();
+  try {
+    const w = await webhookNoAsaas();
+    if (!w) return { ok: false, mensagem: "O aviso não está cadastrado no Asaas. Clique em “Configurar aviso automaticamente”." };
+    if (w.interrupted) return { ok: false, mensagem: "O aviso existe, mas a fila está PAUSADA no Asaas. Clique em “Configurar aviso automaticamente” para liberar." };
+    if (w.enabled === false) return { ok: false, mensagem: "O aviso existe, mas está DESATIVADO no Asaas. Clique em “Configurar aviso automaticamente”." };
+    return { ok: true, mensagem: "Aviso cadastrado e ativo no Asaas." };
+  } catch (e) {
+    return { ok: false, mensagem: e instanceof ErroAsaas ? `Asaas: ${e.message}` : "Não foi possível consultar o Asaas." };
+  }
 }

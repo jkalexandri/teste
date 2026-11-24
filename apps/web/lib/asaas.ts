@@ -74,3 +74,40 @@ export function urlWebhook() {
   const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br").replace(/\/$/, "");
   return `${site}/api/asaas/webhook`;
 }
+
+// ===== Cadastro automático do aviso (webhook) pela API do Asaas =====
+// Evita o passo manual no painel do Asaas: com a chave conectada, o FilaPro cria (ou corrige) o webhook dele.
+
+/** Eventos de cobrança que o FilaPro usa (criada, confirmada, recebida, vencida, apagada, estornada…). */
+export const EVENTOS_WEBHOOK = [
+  "PAYMENT_CREATED", "PAYMENT_UPDATED", "PAYMENT_CONFIRMED", "PAYMENT_RECEIVED", "PAYMENT_OVERDUE",
+  "PAYMENT_DELETED", "PAYMENT_RESTORED", "PAYMENT_REFUNDED", "PAYMENT_CHARGEBACK_REQUESTED",
+  "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED", "PAYMENT_REPROVED_BY_RISK_ANALYSIS",
+];
+
+type WebhookAsaas = { id: string; name?: string; url: string; enabled?: boolean; interrupted?: boolean; penalizedRequestsCount?: number; events?: string[] };
+
+/** Situação do webhook do FilaPro no Asaas (ou null se não existe). */
+export async function webhookNoAsaas(): Promise<WebhookAsaas | null> {
+  const lista = await chamarAsaas<{ data?: WebhookAsaas[] }>("/webhooks?limit=100");
+  return (lista.data ?? []).find((w) => w.url.replace(/\/$/, "") === urlWebhook()) ?? null;
+}
+
+/** Cria o webhook do FilaPro no Asaas, ou atualiza o que já existe (token, eventos, ativado e fila liberada). */
+export async function configurarWebhookNoAsaas(email: string) {
+  const corpo = {
+    name: "FilaPro Leads",
+    url: urlWebhook(),
+    email,
+    enabled: true,
+    interrupted: false,
+    apiVersion: 3,
+    authToken: await tokenWebhook(),
+    sendType: "SEQUENTIALLY",
+    events: EVENTOS_WEBHOOK,
+  };
+  const atual = await webhookNoAsaas();
+  if (atual) await chamarAsaas(`/webhooks/${atual.id}`, { metodo: "PUT", corpo });
+  else await chamarAsaas("/webhooks", { metodo: "POST", corpo });
+  return { criado: !atual };
+}

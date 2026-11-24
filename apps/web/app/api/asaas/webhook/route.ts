@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { tokenWebhook } from "@/lib/asaas";
+import { prisma } from "@filapro/db";
 
 /** Compara o token sem vazar o tempo da comparação. */
 function igual(a: string, b: string) {
@@ -14,10 +15,17 @@ function igual(a: string, b: string) {
 
 export async function POST(req: Request) {
   const recebido = req.headers.get("asaas-access-token") ?? "";
-  if (!recebido || !igual(recebido, await tokenWebhook())) {
-    return NextResponse.json({ erro: "Token inválido." }, { status: 401 });
-  }
   const evento = (await req.json().catch(() => ({}))) as { event?: string };
+  const tokenOk = !!recebido && igual(recebido, await tokenWebhook());
+  // Guarda o último aviso (quando, evento, se o token conferiu) para conferir na tela Pagamento.
+  // Chamada sem token (ex.: teste com curl) não conta como aviso do Asaas.
+  if (recebido) {
+    await prisma.configVenda.update({
+      where: { id: "config" },
+      data: { asaasAvisoEm: new Date(), asaasAvisoEvento: String(evento.event ?? "sem evento").slice(0, 60), asaasAvisoOk: tokenOk },
+    }).catch(() => undefined);
+  }
+  if (!tokenOk) return NextResponse.json({ erro: "Token inválido." }, { status: 401 });
   console.log(`[asaas] aviso recebido: ${evento.event ?? "sem evento"} (processamento na etapa C)`);
   return NextResponse.json({ ok: true });
 }

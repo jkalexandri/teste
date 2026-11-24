@@ -32,6 +32,7 @@ export default async function PagamentoPage() {
           configurado: !!c.asaasChave,
           conta: c.asaasConta,
           testadoEm: c.asaasTestadoEm?.toISOString() ?? null,
+          aviso: c.asaasAvisoEm ? { em: c.asaasAvisoEm.toISOString(), evento: c.asaasAvisoEvento ?? "", ok: c.asaasAvisoOk === true } : null,
         }}
         webhook={{ url: urlWebhook(), token: await tokenWebhook() }}
       />

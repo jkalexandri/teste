@@ -15,7 +15,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
 
 (async () => {
   const srv = await falso.iniciar();
-  sql(`update "ConfigVenda" set "asaasChave"=null, "asaasConta"=null, "asaasTestadoEm"=null, "asaasAmbiente"='sandbox' where id='config'`);
+  sql(`update "ConfigVenda" set "asaasChave"=null, "asaasConta"=null, "asaasTestadoEm"=null, "asaasAmbiente"='sandbox', "asaasAvisoEm"=null, "asaasAvisoEvento"=null, "asaasAvisoOk"=null where id='config'`);
   const b = await chromium.launch();
   const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage();
   p.on('dialog', (d) => d.accept());
@@ -44,6 +44,29 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   // Salvar de novo sem chave (mesmo ambiente): mantém
   await p.click('[data-testid=salvar-asaas]');
   ok('Salvar sem chave nova mantém a atual', await ate(async () => (await p.locator('[data-testid=erro-asaas]').count()) === 0) && sql(`select "asaasChave" from "ConfigVenda" where id='config'`).startsWith('v1:'));
+  // Aviso automático: ainda nenhum recebido; o FilaPro cadastra o webhook sozinho pela API do Asaas
+  ok('Mostra "Nenhum aviso recebido ainda"', (await p.locator('[data-testid=ultimo-aviso]').innerText()).includes('Nenhum aviso'));
+  await p.click('[data-testid=verificar-aviso]');
+  ok('Verificar: aviso não cadastrado no Asaas', await ate(async () => (await p.locator('[data-testid=msg-aviso]').innerText().catch(() => '')).includes('não está cadastrado')));
+  await p.click('[data-testid=configurar-aviso]');
+  ok('Configurar automaticamente cria o webhook no Asaas', await ate(async () => (await p.locator('[data-testid=msg-aviso]').innerText().catch(() => '')).includes('criado')) && falso.webhooks.length === 1);
+  const w = falso.webhooks[0] || {};
+  ok('Webhook com URL, token, v3, sequencial, ativado e eventos de cobrança', w.url === url && w.authToken === token && w.apiVersion === 3 && w.sendType === 'SEQUENTIALLY' && w.enabled === true && w.interrupted === false && w.events.includes('PAYMENT_RECEIVED'));
+  // Fila pausada no Asaas: verificar acusa e configurar de novo libera, sem duplicar
+  w.interrupted = true;
+  await p.click('[data-testid=verificar-aviso]');
+  ok('Verificar acusa fila PAUSADA', await ate(async () => (await p.locator('[data-testid=msg-aviso]').innerText().catch(() => '')).includes('PAUSADA')));
+  await p.click('[data-testid=configurar-aviso]');
+  ok('Configurar de novo libera a fila sem duplicar', await ate(async () => (await p.locator('[data-testid=msg-aviso]').innerText().catch(() => '')).includes('atualizado')) && falso.webhooks.length === 1 && w.interrupted === false);
+  // O Asaas manda um aviso: a tela mostra
+  const st = await falso.avisar('PAYMENT_CREATED');
+  ok('Aviso do Asaas aceito (200)', st.join() === '200', st.join());
+  await p.reload(); await espera(600);
+  ok('Tela mostra o último aviso recebido', (await p.locator('[data-testid=ultimo-aviso]').innerText()).includes('PAYMENT_CREATED'));
+  // Token diferente no Asaas: tela mostra "Aviso recusado"
+  w.authToken = 'fp_diferente'; await falso.avisar('PAYMENT_UPDATED'); w.authToken = token;
+  await p.reload(); await espera(600);
+  ok('Token diferente: tela mostra "Aviso recusado"', (await p.locator('[data-testid=ultimo-aviso]').innerText()).includes('recusado'));
   await p.screenshot({ path: OUT + '/pagamento-asaas.png', fullPage: true });
   // Trocar para Produção sem colar a chave de Produção: pede a chave
   await p.selectOption('#asaasAmbiente', 'producao'); await p.click('[data-testid=salvar-asaas]');

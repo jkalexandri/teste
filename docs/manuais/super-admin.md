@@ -196,8 +196,11 @@ Chave PIX e dados do recebedor (aparecem no PIX copia e cola dos pedidos) e o co
 3. Aqui em **Pagamento → Asaas**: escolha o **Ambiente** (Testes ou Produção), cole a chave e clique **Salvar e testar conexão**.
    A chave só é guardada se o Asaas aceitar; fica criptografada e não aparece de novo na tela.
    Chave de testes começa com `$aact_hmlg_`, de produção com `$aact_prod_` — o sistema avisa se não combinar com o ambiente.
-4. No Asaas: **Integrações → Webhooks → Adicionar**, com a **URL do webhook** e o **Token de autenticação** mostrados aqui
-   (botões Copiar), versão da API v3, envio sequencial, fila ativada e os eventos de **Cobranças**. Faça nos dois ambientes.
+4. Clique **Configurar aviso automaticamente**: o FilaPro cadastra sozinho o aviso (webhook) no Asaas, com o token, os eventos
+   de cobrança e a fila liberada. **Verificar no Asaas** mostra se o aviso existe, está ativo ou com a fila pausada.
+   O quadro **Último aviso recebido** mostra quando chegou o último aviso do Asaas; "Aviso recusado" = token diferente
+   (clique em Configurar de novo). Quem preferir pode cadastrar à mão (em "Prefere cadastrar à mão no Asaas?").
+   Ao trocar de ambiente (Testes → Produção), clique em Configurar de novo.
 5. Nunca mande a chave por chat, e-mail ou WhatsApp. Se vazar, gere outra no Asaas e cole aqui.
 
 As formas de pagamento pelo Asaas no popup Planos entram nas próximas etapas; até lá os pedidos continuam com o PIX manual.

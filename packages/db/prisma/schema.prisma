@@ -237,6 +237,10 @@ model ConfigVenda {
   /// Último teste de conexão que deu certo: nome da conta no Asaas e quando
   asaasConta            String?
   asaasTestadoEm        DateTime?
+  /// Último aviso (webhook) que chegou do Asaas: quando, qual evento e se o token conferiu — para conferir na tela Pagamento
+  asaasAvisoEm          DateTime?
+  asaasAvisoEvento      String?
+  asaasAvisoOk          Boolean?
   atualizadoEm          DateTime @updatedAt
 }
 
