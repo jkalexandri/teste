@@ -10,6 +10,7 @@ export const TIPOS_LOG = {
   LEADS: "Leads",
   CAMPANHAS: "Campanhas",
   WHATSAPP: "WhatsApp",
+  PAGAMENTOS: "Pagamentos (Asaas)",
 } as const;
 export type TipoLog = keyof typeof TIPOS_LOG;
 export const DIAS_LOG = 90;

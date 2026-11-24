@@ -37,7 +37,7 @@ const amanha = new Date(Date.now() - 3 * 3600_000 + 86400_000).toISOString().sli
     await p.goto(BASE + '/financeiro'); await espera(1000);
     const pagos = Number(sql(`select count(*) from "Pedido" where status='PAGO'`));
     ok('Pedidos pagos (inclusive antigos) viram receitas', Number(sql(`select count(*) from "Lancamento" where origem='PEDIDO'`)) === pagos, String(pagos));
-    ok('Categorias prontas criadas', Number(sql(`select count(*) from "CategoriaFinanceira" where padrao`)) === 17);
+    ok('Categorias prontas criadas', Number(sql(`select count(*) from "CategoriaFinanceira" where padrao`)) === 18); // 17 + "Taxas do Asaas" (decisão #117)
     ok('Pacote de disparos na categoria certa', sql(`select c.nome from "Lancamento" l join "CategoriaFinanceira" c on c.id=l."categoriaId" where l."pedidoId"='ped-fin'`) === 'Pacotes de disparos');
     ok('Despesa com IA do mês anterior lançada sozinha (US$ 10 × R$ 5)', sql(`select valor||'|'||situacao from "Lancamento" where origem='IA'`) === '5000|PAGO');
     const recMes = Number(sql(`select coalesce(sum(valor),0) from "Lancamento" where tipo='RECEITA' and situacao='PAGO' and "pagoEm" >= date_trunc('month', now() at time zone 'America/Sao_Paulo') at time zone 'America/Sao_Paulo'`));

@@ -9,6 +9,7 @@ const chamadas = [];
 const webhooks = [];
 const clientes = [];
 const cobrancas = [];
+const RODADA = Date.now().toString(36);
 function iniciar(porta = 4010) {
   const srv = http.createServer((req, res) => {
     let corpo = '';
@@ -34,7 +35,8 @@ function iniciar(porta = 4010) {
         const b = JSON.parse(corpo || '{}');
         if (!clientes.some((c) => c.id === b.customer)) return responder(400, { errors: [{ description: 'Cliente inexistente' }] });
         if (!['PIX', 'BOLETO', 'CREDIT_CARD'].includes(b.billingType)) return responder(400, { errors: [{ description: 'billingType inválido' }] });
-        const id = 'pay_' + (cobrancas.length + 1);
+        // Código único por rodada (o banco de teste guarda as cobranças das rodadas anteriores)
+        const id = 'pay_' + RODADA + '_' + (cobrancas.length + 1);
         const p = { id, ...b, status: 'PENDING', invoiceUrl: `https://sandbox.asaas.com/i/${id}`, bankSlipUrl: b.billingType === 'BOLETO' ? `https://sandbox.asaas.com/b/pdf/${id}` : null };
         cobrancas.push(p); return responder(200, p);
       }

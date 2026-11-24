@@ -79,16 +79,16 @@ Plano em 6 etapas, uma por vez, testando e mostrando ao dono antes da próxima:
   aviso (webhook) cadastrado pelo botão "Configurar aviso automaticamente"; aviso PAYMENT_CREATED chegou.
 - **B — o cliente escolhe PIX, cartão ou boleto: FEITA (v1.35.0)**, enviada ao GitHub. Falta o dono atualizar a VPS, definir os
   juros em Pagamento → Parcelamento no cartão e testar uma compra no sandbox. A confirmação ainda é manual em Pedidos.
-- **C — confirmação automática (próxima):** o aviso do Asaas (`app/api/asaas/webhook/route.ts`) chama `confirmarPedido`
-  (`lib/confirmar-pedido.ts`) pelo `externalReference` = código do pedido; idempotente; estorno vira estorno no Financeiro;
-  taxa do Asaas lançada como despesa. Sugestão registrada: guardar o aviso recebido e responder 200 rápido.
-- **D — cobrança automática no cartão** (assinatura no Asaas, sempre à vista; o cliente escolhe automática ou avulsa).
+- **C — confirmação automática: FEITA (v1.36.0)**, regras na decisão #117. O aviso é guardado (`AvisoAsaas`), respondido com 200
+  e processado em `lib/asaas-avisos.ts`: confirma o pedido, lança a taxa ("Taxas do Asaas"), estorno inativa a empresa, contestação e
+  pedido cancelado só avisam. Teste `etapa19c-asaas-confirmacao` (28 verificações). Falta o dono atualizar a VPS e testar no sandbox.
+- **D — cobrança automática no cartão (próxima)** (assinatura no Asaas, sempre à vista; o cliente escolhe automática ou avulsa).
 - **E — cartão recusado:** 3 dias com envio reduzido (Empresarial 100/dia para a empresa toda; Individual 20/dia); depois,
   bloqueia campanhas e respostas (IA e manuais), mas o cliente continua entrando para ver e pagar.
 - **F — testes no sandbox real com o dono, manuais e versão final.**
 
 Testes do Asaas usam o **Asaas de mentira** (`apps/web/tests/asaas-falso.cjs`, site de teste com `ASAAS_URL=http://127.0.0.1:4010`):
-`etapa19a-asaas-config` e `etapa19b-asaas-pagamento`.
+`etapa19a-asaas-config`, `etapa19b-asaas-pagamento` e `etapa19c-asaas-confirmacao`.
 
 ### Pendências da publicação (`docs/publicacao-vps.md`)
 - Parte 6.1 — backup diário e rotinas (crontab).

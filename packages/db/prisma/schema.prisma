@@ -976,3 +976,24 @@ model Disponibilidade {
   hora    DateTime @id
   minutos Int      @default(0)
 }
+
+/// Aviso (webhook) recebido do Asaas (decisões #115 e #117, etapa C): guardado antes de processar, para responder rápido
+/// ao Asaas e poder reprocessar. "eventoId" é o id do evento no Asaas (não repete o mesmo aviso).
+model AvisoAsaas {
+  id           String    @id @default(cuid())
+  eventoId     String    @unique
+  evento       String
+  /// Cobrança no Asaas (payment.id) e código do pedido (payment.externalReference)
+  cobrancaId   String?
+  referencia   String?
+  dados        Json
+  recebidoEm   DateTime  @default(now())
+  processadoEm DateTime?
+  /// O que foi feito (ex.: "Pedido confirmado", "Ignorado: evento sem ação") ou o erro, para conferir
+  resultado    String?
+  erro         String?
+  tentativas   Int       @default(0)
+
+  @@index([processadoEm])
+  @@index([cobrancaId])
+}

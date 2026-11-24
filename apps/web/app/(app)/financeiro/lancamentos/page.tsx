@@ -13,7 +13,7 @@ import { criarLancamento } from "../actions";
 export const dynamic = "force-dynamic";
 const POR_PAGINA = 100;
 const SITUACAO: Record<string, string> = { PENDENTE: "Pendente", PAGO: "Pago", CANCELADO: "Cancelado" };
-const ORIGEM: Record<string, string> = { MANUAL: "Manual", PEDIDO: "Pedido", FIXA: "Despesa fixa", IA: "IA (automático)", ESTORNO: "Estorno" };
+const ORIGEM: Record<string, string> = { MANUAL: "Manual", PEDIDO: "Pedido", FIXA: "Despesa fixa", IA: "IA (automático)", ESTORNO: "Estorno", ASAAS: "Asaas (automático)" };
 type Busca = { de?: string; ate?: string; tipo?: string; categoria?: string; conta?: string; situacao?: string; pagina?: string; busca?: string };
 
 export default async function LancamentosPage({ searchParams }: { searchParams: Promise<Busca> }) {

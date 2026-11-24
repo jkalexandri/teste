@@ -14,10 +14,10 @@ export const CATEGORIAS_PADRAO: { tipo: TipoLancamento; nome: string; ordem: num
   { tipo: RECEITA, nome: "Pacotes de disparos", ordem: 4 },
   { tipo: RECEITA, nome: "Outras receitas", ordem: 5 },
   { tipo: RECEITA, nome: "Estornos", ordem: 6 },
-  ...["Servidor (VPS)", "Domínio", "E-mail", "Chips de WhatsApp", "IA", "Marketing e anúncios", "Impostos", "Taxas bancárias", "Comissões", "Salários e pró-labore", "Outras despesas"]
+  ...["Servidor (VPS)", "Domínio", "E-mail", "Chips de WhatsApp", "IA", "Marketing e anúncios", "Impostos", "Taxas bancárias", "Taxas do Asaas", "Comissões", "Salários e pró-labore", "Outras despesas"]
     .map((nome, i) => ({ tipo: DESPESA, nome, ordem: i + 1 })),
 ];
-export const CAT = { venda: "Vendas (novos clientes)", renovacao: "Renovações", whatsapp: "WhatsApp extra", disparos: "Pacotes de disparos", estorno: "Estornos", ia: "IA" };
+export const CAT = { venda: "Vendas (novos clientes)", renovacao: "Renovações", whatsapp: "WhatsApp extra", disparos: "Pacotes de disparos", estorno: "Estornos", ia: "IA", taxaAsaas: "Taxas do Asaas" };
 
 // ===================== Datas (horário de Brasília, sem horário de verão) =====================
 export const mesAtual = (d = new Date()) => new Date(d.getTime() - 3 * 3600_000).toISOString().slice(0, 7);

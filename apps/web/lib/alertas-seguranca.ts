@@ -11,11 +11,13 @@ import { chamarWorker } from "@/lib/worker";
 export const BLOQUEIOS_ALERTA = 3;
 let ultimoAlertaBloqueios = 0;
 
-async function avisarSuperAdmins(texto: string) {
+/** Avisa os Super Admins no WhatsApp de avisos e no celular. "url" = tela aberta ao tocar na notificação.
+ *  Também usado pelos avisos do Asaas (decisão #117). */
+export async function avisarSuperAdmins(texto: string, url = "/logs") {
   const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
   if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, texto).catch(() => undefined);
   const sas = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { id: true } });
-  for (const s of sas) await chamarWorker(`/push/${s.id}/enviar`, { texto, url: "/logs" }).catch(() => undefined);
+  for (const s of sas) await chamarWorker(`/push/${s.id}/enviar`, { texto, url }).catch(() => undefined);
   console.warn(`[alerta de segurança] ${texto}`);
 }
 

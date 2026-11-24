@@ -174,6 +174,16 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - `app/(app)/planos/actions.ts`: `novoPlano`, `duplicarPlano`, `excluirPlano`, destaque por aba.
 - Sugestão de planos: `packages/db/scripts/planos-sugeridos.ts` (`pnpm --filter @filapro/db planos:sugeridos`).
 
+## Asaas (decisões #115 e #117)
+
+- `lib/asaas.ts`: chamadas à API (chave criptografada em `ConfigVenda.asaasChave`), webhook e cobranças (`externalReference` = código do pedido).
+- `app/api/asaas/webhook/route.ts`: confere o token (`asaas-access-token`), guarda o aviso em `AvisoAsaas` (o `eventoId` não repete),
+  responde 200 e processa com `after()`.
+- `lib/asaas-avisos.ts`: `PAYMENT_RECEIVED`/`PAYMENT_CONFIRMED` → `confirmarPedido(id, "Asaas")` + taxa (`chaveAuto` `asaas-taxa:<cobrança>`);
+  `PAYMENT_REFUNDED` → estorno (`asaas-estorno:<cobrança>`) + `Empresa.ativa = false`; `PAYMENT_CHARGEBACK_REQUESTED` e pedido cancelado → só aviso.
+  Aviso com erro: `reprocessarPendentes()` (a cada aviso novo e na rotina diária), até 5 tentativas.
+- Testes com o Asaas de mentira (`tests/asaas-falso.cjs`, `ASAAS_URL=http://127.0.0.1:4010`): `etapa19a`, `etapa19b` e `etapa19c`.
+
 ## Testes
 
 Pré-requisitos locais: Postgres na porta 5433, site em `http://localhost:3005`, serviço 24/7 em `127.0.0.1:4000`.

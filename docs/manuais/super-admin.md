@@ -93,7 +93,8 @@ e você recebe um aviso no WhatsApp. Abaixo do valor aparece a **forma de pagame
 
 ![Pedidos](prints/s-pedidos.png)
 
-- Confira o PIX no seu banco (o **código do pedido** vai na identificação do PIX) e clique em **Confirmar pagamento**:
+- Pedidos pagos pelo **Asaas** se confirmam sozinhos (veja *Pagamento → Asaas*). No **PIX manual**, confira o PIX no seu banco
+  (o **código do pedido** vai na identificação do PIX) e clique em **Confirmar pagamento**:
   - **compra nova:** a conta é criada e o acesso vai por e-mail;
   - **renovação:** o prazo é somado e o plano trocado, se mudou; os WhatsApps extras ficam como o cliente escolheu;
   - **WhatsApp extra:** o número é liberado na tela WhatsApp do cliente;
@@ -214,8 +215,22 @@ Chave PIX e dados do recebedor (aparecem no PIX copia e cola dos pedidos) e o co
 - WhatsApp extra e pacotes de disparos: PIX do Asaas;
 - o **PIX manual** (chave acima) fica como **reserva**: só é usado com o Asaas desligado.
 
-Por enquanto a confirmação continua em **Pedidos** (confira o pagamento no painel do Asaas e clique **Confirmar pagamento**);
-a confirmação automática pelo aviso do Asaas é a próxima etapa.
+**Confirmação automática (decisão #117):** com o aviso configurado, o pedido se confirma sozinho — sem clicar em nada:
+
+- **PIX e boleto:** quando o dinheiro cai no Asaas; **cartão:** quando a compra é aprovada (parcelado: na 1ª parcela aprovada);
+- acontece o mesmo que no botão **Confirmar pagamento** (conta criada, renovação, extras liberados, e-mail ao cliente);
+  em Pedidos, "confirmado por" mostra **Asaas**;
+- a **taxa do Asaas** (valor cobrado − valor recebido) entra no Financeiro como despesa paga, na categoria **Taxas do Asaas**
+  (uma por cobrança; no cartão parcelado, uma por parcela);
+- **estorno** no Asaas: o estorno entra no Financeiro (abatendo a venda) e a **empresa é inativada** (vale também para WhatsApp
+  extra e pacote de disparos). Você recebe um aviso; para liberar de novo, use **Empresas**;
+- **contestação no cartão** (chargeback): você só é avisado; a conta só é bloqueada se o estorno acontecer;
+- **pagamento de um pedido cancelado:** o pedido **não** é confirmado — você recebe um aviso e decide em Pedidos;
+- se o pedido não puder ser confirmado sozinho (ex.: o e-mail já tem acesso), você também é avisado.
+
+Os avisos chegam no WhatsApp de avisos e no celular, e ficam em **Logs** (tipo *Pagamentos (Asaas)*). Se um aviso do Asaas falhar
+no processamento, o FilaPro tenta de novo no próximo aviso e na rotina diária. O botão **Confirmar pagamento** continua valendo
+para o PIX manual e para conferir à mão se algum aviso não chegar.
 
 ![Pagamento](prints/s-pagamento.png)
 

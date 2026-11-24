@@ -8,6 +8,7 @@ import { Cargo } from "@filapro/db";
 import { avisarContasVencendo, sincronizarFinanceiro } from "@/lib/financeiro";
 import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
 import { chamarWorker } from "@/lib/worker";
+import { reprocessarPendentes } from "@/lib/asaas-avisos";
 
 export const dynamic = "force-dynamic";
 
@@ -54,5 +55,7 @@ export async function GET(req: Request) {
     const sas = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { id: true } });
     for (const sa of sas) await chamarWorker(`/push/${sa.id}/enviar`, { texto: texto.slice(0, 280), url: "/financeiro/contas" }).catch(() => undefined);
   }).catch(() => 0);
-  return NextResponse.json({ verificadas: contas.length, enviados10, enviados3, financeiro: { semCotacao: fin?.semCotacao ?? false, contasAvisadas } });
+  // Avisos do Asaas que ficaram pela metade (decisão #117): tenta processar de novo
+  const avisosAsaas = await reprocessarPendentes().catch(() => 0);
+  return NextResponse.json({ verificadas: contas.length, enviados10, enviados3, financeiro: { semCotacao: fin?.semCotacao ?? false, contasAvisadas }, avisosAsaas });
 }

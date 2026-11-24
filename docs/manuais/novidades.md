@@ -2,6 +2,18 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.36.0 — pagamento do Asaas confirmado sozinho (24/11/2026)
+
+### Para quem compra ou renova
+- Pagou pelo Asaas, o acesso chega sozinho: **PIX e boleto** assim que o pagamento cai; **cartão** assim que a compra é aprovada.
+
+### Para o Super Admin
+- **Pedidos do Asaas se confirmam sozinhos** pelo aviso do Asaas (conta criada, renovação, extras, e-mail ao cliente).
+- A **taxa do Asaas** de cada cobrança entra no Financeiro na categoria nova **Taxas do Asaas**.
+- **Estorno** no Asaas: entra como estorno no Financeiro e a **empresa é inativada**; você recebe um aviso.
+- **Contestação no cartão** e **pagamento de pedido cancelado**: você é avisado e decide (nada é feito sozinho).
+- **Logs** ganhou o tipo **Pagamentos (Asaas)** com tudo o que o Asaas confirmou, estornou ou recusou.
+
 ## v1.35.0 — pagar com PIX, cartão ou boleto pelo Asaas (24/11/2026)
 
 ### Para quem compra ou renova
