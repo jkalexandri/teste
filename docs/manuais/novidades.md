@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.36.1 — login centralizado no celular (24/11/2026)
+
+- No celular (navegador e app instalado), o nome **FilaPro Leads**, a frase e o quadro de acesso ficam **centralizados na tela**,
+  sem o espaço vazio no meio. O visual continua o mesmo; no computador nada muda.
+
 ## v1.36.0 — pagamento do Asaas confirmado sozinho (24/11/2026)
 
 ### Para quem compra ou renova

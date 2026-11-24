@@ -84,7 +84,8 @@ a { color: inherit }
 .login-right{overflow:hidden}
 .login-card{max-height:100%;overflow:hidden}
 .benefit-card{padding:6px 8px!important}
-@media (max-width:1023px){.login-shell{flex-direction:column}.login-aside{flex:0 0 auto}.login-right{flex:1 1 auto;min-height:0}.login-aside>*{margin-left:0!important}.login-aside h1{font-size:20px!important}.login-aside .login-brand{font-size:22pt!important}.login-aside p{max-width:100%!important}}
+/* Celular/tablet (decisão #118): marca + cartão centralizados juntos na altura da tela (antes a marca ficava colada no topo) */
+@media (max-width:1023px){.login-shell{flex-direction:column;justify-content:center}.login-aside{flex:0 0 auto}.login-right{flex:0 1 auto;min-height:0}.login-aside>*{margin-left:0!important}.login-aside h1{font-size:20px!important}.login-aside .login-brand{font-size:22pt!important}.login-aside p{max-width:100%!important}}
 @media (max-height:560px){.login-aside p.text-slate-300{display:none!important}.login-aside .login-status-pill{display:none!important}}
 @media (max-height:700px){.login-hide-short{display:none!important}.login-aside h1{font-size:19px!important}}
 @media (max-height:620px){.login-aside .login-status-pill{display:none!important}}
