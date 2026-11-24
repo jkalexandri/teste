@@ -29,7 +29,7 @@ export default function FormPagamento({ inicial }: { inicial: Dados }) {
         <label className="flex items-center gap-2 text-[13px] font-bold">
           <input type="checkbox" checked readOnly className="w-4 h-4 accent-emerald-600" /> PIX
         </label>
-        <p className="help">Por enquanto só PIX. Outras formas poderão ser ativadas depois.</p>
+        <p className="help">PIX com a sua chave e confirmação manual em Pedidos. Com o <b>Asaas</b> conectado (abaixo), o cliente paga por PIX automático, cartão ou boleto, e este PIX manual fica só como <b>reserva</b> (usado quando o Asaas está desligado).</p>
 
         <div>
           <label className="label" htmlFor="chavePix">Chave PIX</label>

@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, StatusPedido } from "@filapro/db";
-import { criarPedidoPix } from "@/lib/pedidos";
+import { criarPedidoPix, lerPagamento } from "@/lib/pedidos";
 import { responsavelDaConta } from "@/lib/renovacao";
 
 export async function POST(req: Request) {
@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     renovarEmpresaId: empresa.id,
     quantidade,
     manterSessoes: manter,
+    pagamento: lerPagamento(c),
   });
-  if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 503 });
+  if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: r.erro.includes("CPF") ? 400 : 503 });
   return NextResponse.json(r);
 }

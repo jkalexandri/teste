@@ -115,7 +115,7 @@ param e continuam depois, sem perder nem repetir envios.
 
 - O menu **Empresas** mostra o pacote, o vencimento e os usuários da empresa.
 - **10 dias** e **3 dias** antes do vencimento você recebe por e-mail (e WhatsApp) o **link de renovação**, onde pode manter ou trocar
-  o plano. O pagamento é por PIX.
+  o plano. O pagamento é por PIX, cartão (planos trimestrais e anuais em até 6x) ou boleto, informando o CPF/CNPJ de quem paga.
 - Nos planos com pacotes (ex.: Padrão 10, 20… 50 usuários) você escolhe a quantidade **no cartão do plano**; o preço muda na hora.
   Disparos e limite de leads acompanham a quantidade. Usuários a mais só na renovação (ou pelo suporte).
 - Se renovar com **menos usuários** do que tem, os mais recentes ficam **bloqueados**; você escolhe em Usuários quem reativar,

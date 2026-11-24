@@ -50,7 +50,7 @@ export async function infoExtra() {
 }
 
 /** "Adicionar mais um WhatsApp": gera o PIX do valor proporcional (decisões #80 e #95). Liberado na confirmação em Pedidos. */
-export async function comprarExtra(): Promise<{ ok: false; mensagem: string } | ({ ok: true } & RespostaPix)> {
+export async function comprarExtra(cpfCnpj?: string): Promise<{ ok: false; mensagem: string } | ({ ok: true } & RespostaPix)> {
   const u = await ator();
   const info = await infoExtra();
   if (!info || !u.empresa) return { ok: false, mensagem: "Seu plano não permite WhatsApp extra." };
@@ -64,6 +64,8 @@ export async function comprarExtra(): Promise<{ ok: false; mensagem: string } | 
     comprador: { nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "" },
     quantidade: 1,
     somenteExtras: { empresaId: u.empresa.id, valor: info.valorAgora },
+    // PIX (do Asaas, se ligado); CPF/CNPJ: o guardado na conta ou o informado agora (decisão #115)
+    pagamento: { cpfCnpj: String(cpfCnpj ?? "").slice(0, 20) },
   });
   if ("erro" in r) return { ok: false, mensagem: r.erro };
   await avisarNovoPedido({ codigo: r.codigo, planoNome: r.plano, valor: r.valor, renovacao: false, nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "" }).catch(() => undefined);

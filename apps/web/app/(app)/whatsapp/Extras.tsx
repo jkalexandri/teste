@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { formatarReais } from "@/lib/planos";
+import { mascaraDocumento } from "@/lib/documento";
 import { alterarNumerosSuperAdmin, comprarExtra, salvarApelido } from "./actions";
 
 export function Apelido({ sessaoId, inicial, saude }: { sessaoId: string; inicial: string; saude?: { rotulo: string; nivel: string; enviados7d: number } }) {
@@ -28,6 +29,9 @@ export function ComprarExtra({ info }: { info: Info }) {
   const toast = useToast();
   const [pix, setPix] = useState<Pix | null>(null);
   const [pendente, iniciar] = useTransition();
+  // CPF/CNPJ pedido pelo Asaas quando a conta ainda não tem guardado (decisão #115)
+  const [pedirDoc, setPedirDoc] = useState(false);
+  const [doc, setDoc] = useState("");
   return (
     <div className="card p-4 mt-3" data-testid="comprar-extra">
       <h2 className="font-display font-extrabold text-[16px]">Mais números</h2>
@@ -51,8 +55,9 @@ export function ComprarExtra({ info }: { info: Info }) {
         </div>
       ) : info.podeComprar ? (
         <div className="flex flex-wrap items-center gap-2 mt-3">
+          {pedirDoc && <input className="input !w-[200px]" value={doc} onChange={(ev) => setDoc(mascaraDocumento(ev.target.value))} placeholder="CPF ou CNPJ de quem paga" aria-label="CPF ou CNPJ de quem paga" data-testid="doc-extra" />}
           <button type="button" className="btn-primary" disabled={pendente}
-            onClick={() => iniciar(async () => { const r = await comprarExtra(); if (r.ok) setPix(r); else toast(r.mensagem, "erro"); })}>
+            onClick={() => iniciar(async () => { const r = await comprarExtra(doc); if (r.ok) setPix(r); else { if (r.mensagem.includes("CPF")) setPedirDoc(true); toast(r.mensagem, "erro"); } })}>
             {pendente ? "Gerando PIX…" : "Adicionar mais um WhatsApp"}
           </button>
           <span className="text-[12px]">Valor agora: <b>{formatarReais(info.valorAgora)}</b> (proporcional aos dias que faltam)</span>

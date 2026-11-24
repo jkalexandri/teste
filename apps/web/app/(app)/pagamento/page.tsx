@@ -35,6 +35,7 @@ export default async function PagamentoPage() {
           aviso: c.asaasAvisoEm ? { em: c.asaasAvisoEm.toISOString(), evento: c.asaasAvisoEvento ?? "", ok: c.asaasAvisoOk === true } : null,
         }}
         webhook={{ url: urlWebhook(), token: await tokenWebhook() }}
+        jurosMes={c.jurosParcelaMes}
       />
     </section>
   );

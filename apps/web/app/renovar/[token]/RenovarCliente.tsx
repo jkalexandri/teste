@@ -5,6 +5,7 @@ import { TriangleAlert } from "@/components/icons";
 import { formatarReais, precoComQuantidade, rotuloQuantidade, type PlanoPublico } from "@/lib/planos";
 import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import TelaPix, { type DadosPix } from "@/components/planos/TelaPix";
+import EscolhaPagamento, { textoBotaoPagar, useFormas, type Pagamento } from "@/components/planos/EscolhaPagamento";
 
 type Conta = {
   nome: string; pacote: string; planoId: string | null; expiraEm: string;
@@ -12,6 +13,8 @@ type Conta = {
   extras: number; numerosExtras: { id: string; rotulo: string }[];
   /** Módulo e pacotes de usuários atuais (decisão #113) */
   modulo: "INDIVIDUAL" | "EMPRESARIAL"; pacotes: number;
+  /** Final do CPF/CNPJ já guardado na conta (decisão #115) */
+  documentoFinal?: string | null;
 };
 
 export default function RenovarCliente({ token, conta, planos }: { token: string; conta: Conta; planos: PlanoPublico[] }) {
@@ -22,6 +25,10 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   const [escolhido, setEscolhido] = useState<PlanoPublico | null>(null);
   const [qtd, setQtd] = useState(0);
   const [manter, setManter] = useState<string[]>([]);
+  // Forma de pagamento pelo Asaas (decisão #115): passo depois de escolher o plano (e os extras)
+  const formas = useFormas();
+  const [passoForma, setPassoForma] = useState(false);
+  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "" });
   const venc = new Date(conta.expiraEm);
   const vencido = venc < new Date();
 
@@ -31,13 +38,22 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   /** Escolheu plano e quantidade no cartão. Individual diminuindo números: escolhe quais extras ficam. */
   function escolher(p: PlanoPublico, quantidade = 1) {
     const extras = conta.modulo === "INDIVIDUAL" ? quantidade - 1 : 0;
+    const manterIds = conta.numerosExtras.slice(0, Math.max(0, extras)).map((n) => n.id);
     if (conta.modulo === "INDIVIDUAL" && extras > 0 && extras < conta.numerosExtras.length) {
       setEscolhido(p);
       setQtd(quantidade);
-      setManter(conta.numerosExtras.slice(0, extras).map((n) => n.id));
+      setManter(manterIds);
       return;
     }
-    void gerar(p, quantidade, conta.numerosExtras.slice(0, Math.max(0, extras)).map((n) => n.id));
+    // Com o Asaas ligado, escolhe a forma de pagamento antes de gerar
+    if (formas?.asaas) {
+      setEscolhido(p);
+      setQtd(quantidade);
+      setManter(manterIds);
+      setPassoForma(true);
+      return;
+    }
+    void gerar(p, quantidade, manterIds);
   }
 
   async function gerar(p: PlanoPublico, quantidade: number, manterIds: string[]) {
@@ -46,7 +62,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
     const r = await fetch("/api/renovacao", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, planoId: p.id, quantidade, manter: manterIds }),
+      body: JSON.stringify({ token, planoId: p.id, quantidade, manter: manterIds, ...(formas?.asaas ? pagamento : {}) }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -75,7 +91,19 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
           </div>
         )}
         {pix && <TelaPix pix={pix} />}
-        {!pix && escolhido && (
+        {!pix && escolhido && passoForma && formas && (
+          <div className="mt-3 space-y-2.5" data-testid="passo-forma">
+            <p className="text-[13px] font-bold text-white">Plano {escolhido.nome}: {rotuloQuantidade(escolhido, qtd)}</p>
+            <EscolhaPagamento formas={formas} valor={precoComQuantidade(escolhido.precoAtual ?? 0, escolhido.descontos, qtd)}
+              prazoDias={escolhido.prazoDias} periodo={escolhido.periodo} valorPagamento={pagamento} onChange={setPagamento}
+              documentoGuardado={conta.documentoFinal} />
+            <div className="flex gap-2">
+              <button type="button" className="login-ghost-btn !px-3" onClick={() => { setPassoForma(false); setEscolhido(null); }}>Voltar</button>
+              <button type="button" className="login-cta !py-2.5" disabled={enviando} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : textoBotaoPagar(pagamento, true)}</button>
+            </div>
+          </div>
+        )}
+        {!pix && escolhido && !passoForma && (
           <div className="mt-3" data-testid="passo-extras">
             <p className="text-[13px] font-bold text-white">Plano {escolhido.nome}: {rotuloQuantidade(escolhido, qtd)}</p>
             <p className="text-[12px] text-slate-300 mt-1">Você tem {conta.extras} {conta.extras === 1 ? "número extra" : "números extras"}. Escolha {qtd - 1 === 1 ? "o que fica" : `os ${qtd - 1} que ficam`} (os outros ficam desconectados até comprar de novo):</p>
@@ -92,7 +120,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
             </p>
             <div className="flex gap-2 mt-3">
               <button type="button" className="login-ghost-btn !px-3" onClick={() => setEscolhido(null)}>Voltar</button>
-              <button type="button" className="login-cta !py-2.5" disabled={enviando || manter.length !== qtd - 1} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : "Gerar PIX"}</button>
+              <button type="button" className="login-cta !py-2.5" disabled={enviando || manter.length !== qtd - 1} onClick={() => (formas?.asaas ? setPassoForma(true) : void gerar(escolhido, qtd, manter))}>{enviando ? "Gerando…" : formas?.asaas ? "Continuar" : "Gerar PIX"}</button>
             </div>
           </div>
         )}

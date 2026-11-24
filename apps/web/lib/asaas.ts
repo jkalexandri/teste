@@ -111,3 +111,68 @@ export async function configurarWebhookNoAsaas(email: string) {
   else await chamarAsaas("/webhooks", { metodo: "POST", corpo });
   return { criado: !atual };
 }
+
+// ===== Cobranças (decisão #115, etapa B) =====
+
+/** Asaas ligado = tem chave salva (testada). */
+export async function asaasLigado() {
+  const c = await prisma.configVenda.findUnique({ where: { id: "config" }, select: { asaasChave: true } });
+  return !!c?.asaasChave;
+}
+
+/** Cliente no Asaas: reaproveita o do mesmo CPF/CNPJ; senão cria. */
+export async function clienteAsaas(dados: { nome: string; email: string; cpfCnpj: string; whatsapp?: string }) {
+  const doc = dados.cpfCnpj.replace(/\D/g, "");
+  const achados = await chamarAsaas<{ data?: { id: string }[] }>(`/customers?cpfCnpj=${doc}&limit=1`);
+  if (achados.data?.[0]) return achados.data[0].id;
+  const fone = (dados.whatsapp ?? "").replace(/\D/g, "");
+  const novo = await chamarAsaas<{ id: string }>("/customers", {
+    metodo: "POST",
+    corpo: { name: dados.nome, email: dados.email, cpfCnpj: doc, mobilePhone: fone.length >= 10 ? fone : undefined, notificationDisabled: true },
+  });
+  return novo.id;
+}
+
+const TIPO_ASAAS = { PIX: "PIX", BOLETO: "BOLETO", CARTAO: "CREDIT_CARD" } as const;
+
+/** Data AAAA-MM-DD daqui a N dias (vencimento da cobrança). */
+const dataDaqui = (dias: number) => new Date(Date.now() + dias * 86_400_000).toISOString().slice(0, 10);
+
+export type CobrancaAsaas = { id: string; link: string | null; pix?: { payload: string; imagem: string; expira: string | null }; boletoLinha?: string | null; boletoLink?: string | null };
+
+/**
+ * Cria a cobrança no Asaas. "valor" já é o total com acréscimo (boleto) ou juros (parcelas).
+ * Cartão: o cliente paga na página do Asaas (link). PIX: QR Code e copia e cola. Boleto: link e linha digitável.
+ */
+export async function criarCobrancaAsaas(o: {
+  clienteId: string; forma: "PIX" | "BOLETO" | "CARTAO"; valor: number; parcelas: number; descricao: string; referencia: string; vencimentoDias: number;
+}): Promise<CobrancaAsaas> {
+  const reais = (c: number) => Math.round(c) / 100;
+  const base = {
+    customer: o.clienteId,
+    billingType: TIPO_ASAAS[o.forma],
+    dueDate: dataDaqui(o.vencimentoDias),
+    description: o.descricao.slice(0, 500),
+    externalReference: o.referencia,
+  };
+  const corpo = o.forma === "CARTAO" && o.parcelas > 1
+    ? { ...base, installmentCount: o.parcelas, totalValue: reais(o.valor) }
+    : { ...base, value: reais(o.valor) };
+  const p = await chamarAsaas<{ id: string; invoiceUrl?: string; bankSlipUrl?: string }>("/payments", { metodo: "POST", corpo });
+  const r: CobrancaAsaas = { id: p.id, link: p.invoiceUrl ?? null };
+  if (o.forma === "PIX") {
+    const q = await chamarAsaas<{ encodedImage: string; payload: string; expirationDate?: string }>(`/payments/${p.id}/pixQrCode`);
+    r.pix = { payload: q.payload, imagem: `data:image/png;base64,${q.encodedImage}`, expira: q.expirationDate ?? null };
+  }
+  if (o.forma === "BOLETO") {
+    r.boletoLink = p.bankSlipUrl ?? p.invoiceUrl ?? null;
+    const l = await chamarAsaas<{ identificationField?: string }>(`/payments/${p.id}/identificationField`).catch(() => ({ identificationField: undefined }));
+    r.boletoLinha = l.identificationField ?? null;
+  }
+  return r;
+}
+
+/** Cancela (apaga) a cobrança no Asaas — usado quando o pedido é cancelado no FilaPro. */
+export async function apagarCobrancaAsaas(id: string) {
+  await chamarAsaas(`/payments/${id}`, { metodo: "DELETE" }).catch(() => undefined);
+}

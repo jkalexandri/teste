@@ -5,7 +5,7 @@ import { after, NextResponse } from "next/server";
 import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, Cargo, Modulo, StatusPedido } from "@filapro/db";
 import { validarComprador } from "@/lib/contas";
-import { criarPedidoPix } from "@/lib/pedidos";
+import { criarPedidoPix, lerPagamento } from "@/lib/pedidos";
 import { avisarNovoPedido } from "@/lib/avisos-whatsapp";
 
 const MAX_PEDIDOS_ABERTOS_POR_EMAIL = 3;
@@ -74,8 +74,9 @@ export async function POST(req: Request) {
     },
     renovarEmpresaId,
     quantidade: dados.quantidade,
+    pagamento: lerPagamento(c),
   });
-  if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: 503 });
+  if ("erro" in r) return NextResponse.json({ erro: r.erro }, { status: r.erro.includes("CPF") ? 400 : 503 });
   // Decisão #38: aviso pelo WhatsApp ao Super Admin, depois de responder ao cliente.
   after(() =>
     avisarNovoPedido({ codigo: r.codigo, planoNome: r.plano, valor: r.valor, renovacao: r.renovacao, nome: dados.nome, email: dados.email, whatsapp: dados.whatsapp, empresaNome: dados.empresaNome || existente?.empresa?.nome })

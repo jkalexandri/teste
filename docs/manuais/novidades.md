@@ -2,6 +2,19 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.35.0 — pagar com PIX, cartão ou boleto pelo Asaas (24/11/2026)
+
+### Para quem compra ou renova
+- Com o Asaas ligado, o pagamento oferece **PIX**, **Cartão** (na página segura do Asaas) e **Boleto** (+2%).
+- Planos **trimestrais e anuais** podem ser pagos em **até 6x no cartão**; o valor de cada parcela aparece antes de pagar.
+- Pede o **CPF ou CNPJ** de quem paga (exigido pelo Asaas); nas próximas compras a conta já tem guardado.
+- WhatsApp extra e pacotes de disparos usam o PIX do Asaas.
+
+### Para o Super Admin
+- **Pagamento → Parcelamento no cartão:** juros ao mês (vazio = só à vista; 0 = sem juros).
+- **Pedidos** mostra a forma de pagamento; cancelar um pedido apaga a cobrança no Asaas.
+- O PIX manual vira reserva (usado só com o Asaas desligado). A confirmação ainda é em Pedidos; a automática vem na próxima etapa.
+
 ## v1.34.4 — aviso do Asaas configurado sozinho (24/11/2026)
 
 - Pagamento → Asaas: botão **Configurar aviso automaticamente** — o FilaPro cadastra (ou corrige) o aviso de pagamento no Asaas,

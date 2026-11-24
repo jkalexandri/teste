@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/app/Toast";
 import { formatarReais } from "@/lib/planos";
+import { mascaraDocumento } from "@/lib/documento";
 import { comprarPacoteDisparos } from "./saldo-actions";
 
 type Pix = { codigo: string; valor: number; copiaECola: string; qrCode: string; expiraEm: string };
@@ -13,6 +14,9 @@ export default function ComprarPacote({ qtd, preco, precoTexto }: { qtd: number;
   const [n, setN] = useState(1);
   const [pix, setPix] = useState<Pix | null>(null);
   const [pendente, iniciar] = useTransition();
+  // CPF/CNPJ pedido pelo Asaas quando a conta ainda não tem guardado (decisão #115)
+  const [pedirDoc, setPedirDoc] = useState(false);
+  const [doc, setDoc] = useState("");
   if (pix) {
     return (
       <div className="flex gap-3 items-start w-full" data-testid="pix-disparos">
@@ -31,11 +35,12 @@ export default function ComprarPacote({ qtd, preco, precoTexto }: { qtd: number;
   }
   return (
     <div className="flex items-center gap-2">
+      {pedirDoc && <input className="input !py-1.5 !w-[180px] !text-[12px]" value={doc} onChange={(e) => setDoc(mascaraDocumento(e.target.value))} placeholder="CPF ou CNPJ de quem paga" aria-label="CPF ou CNPJ de quem paga" data-testid="doc-disparos" />}
       <select className="input !py-1.5 !w-auto !text-[12px]" value={n} onChange={(e) => setN(Number(e.target.value))} aria-label="Quantidade de pacotes">
         {[1, 2, 3, 5, 10].map((i) => <option key={i} value={i}>{(i * qtd).toLocaleString("pt-BR")} disparos — {formatarReais(i * preco)}</option>)}
       </select>
       <button type="button" className="btn-primary" disabled={pendente} data-testid="comprar-disparos" title={`Pacote de ${qtd} disparos por ${precoTexto}`}
-        onClick={() => iniciar(async () => { const r = await comprarPacoteDisparos(n); if (r.ok) setPix(r); else toast(r.mensagem, "erro"); })}>
+        onClick={() => iniciar(async () => { const r = await comprarPacoteDisparos(n, doc); if (r.ok) setPix(r); else { if (r.mensagem.includes("CPF")) setPedirDoc(true); toast(r.mensagem, "erro"); } })}>
         {pendente ? "Gerando PIX…" : "Comprar mais disparos"}
       </button>
     </div>

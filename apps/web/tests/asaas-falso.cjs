@@ -5,8 +5,10 @@
 const http = require('http');
 const CHAVES = { '$aact_hmlg_teste': 'Conta Teste Sandbox', '$aact_prod_teste': 'Conta Teste Produção' };
 const chamadas = [];
-// Webhooks cadastrados (como o Asaas guarda)
+// Webhooks cadastrados (como o Asaas guarda), clientes e cobranças
 const webhooks = [];
+const clientes = [];
+const cobrancas = [];
 function iniciar(porta = 4010) {
   const srv = http.createServer((req, res) => {
     let corpo = '';
@@ -17,6 +19,31 @@ function iniciar(porta = 4010) {
       const conta = CHAVES[req.headers['access_token']];
       if (!conta) return responder(401, { errors: [{ code: 'invalid_access_token', description: 'A chave de API fornecida é inválida' }] });
       if (req.method === 'GET' && req.url.startsWith('/myAccount/commercialInfo')) return responder(200, { companyName: conta, email: 'conta@teste.com' });
+      // Clientes: buscar por CPF/CNPJ e criar (CPF/CNPJ obrigatório, como no Asaas)
+      if (req.method === 'GET' && req.url.startsWith('/customers')) {
+        const doc = new URL('http://x' + req.url).searchParams.get('cpfCnpj');
+        return responder(200, { data: clientes.filter((c) => !doc || c.cpfCnpj === doc) });
+      }
+      if (req.method === 'POST' && req.url === '/customers') {
+        const b = JSON.parse(corpo || '{}');
+        if (!b.name || !b.cpfCnpj) return responder(400, { errors: [{ description: 'O campo cpfCnpj deve ser informado.' }] });
+        const c = { id: 'cus_' + (clientes.length + 1), ...b }; clientes.push(c); return responder(200, c);
+      }
+      // Cobranças: criar (à vista ou parceladas), QR Code do PIX, linha digitável do boleto, apagar
+      if (req.method === 'POST' && req.url === '/payments') {
+        const b = JSON.parse(corpo || '{}');
+        if (!clientes.some((c) => c.id === b.customer)) return responder(400, { errors: [{ description: 'Cliente inexistente' }] });
+        if (!['PIX', 'BOLETO', 'CREDIT_CARD'].includes(b.billingType)) return responder(400, { errors: [{ description: 'billingType inválido' }] });
+        const id = 'pay_' + (cobrancas.length + 1);
+        const p = { id, ...b, status: 'PENDING', invoiceUrl: `https://sandbox.asaas.com/i/${id}`, bankSlipUrl: b.billingType === 'BOLETO' ? `https://sandbox.asaas.com/b/pdf/${id}` : null };
+        cobrancas.push(p); return responder(200, p);
+      }
+      let mp = req.url.match(/^\/payments\/([^/?]+)\/pixQrCode/);
+      if (req.method === 'GET' && mp) return responder(200, { encodedImage: 'iVBORw0KGgo=', payload: `00020126PIXASAAS${mp[1]}`, expirationDate: '2030-01-01 23:59:59' });
+      mp = req.url.match(/^\/payments\/([^/?]+)\/identificationField/);
+      if (req.method === 'GET' && mp) return responder(200, { identificationField: '00190000090123456789012345678901234567890123', barCode: '0019' });
+      mp = req.url.match(/^\/payments\/([^/?]+)$/);
+      if (req.method === 'DELETE' && mp) { const c = cobrancas.find((x) => x.id === mp[1]); if (c) c.deleted = true; return responder(200, { deleted: true, id: mp[1] }); }
       // Webhooks: listar, criar e atualizar
       if (req.method === 'GET' && req.url.startsWith('/webhooks')) return responder(200, { data: webhooks });
       if (req.method === 'POST' && req.url === '/webhooks') {
@@ -45,5 +72,5 @@ async function avisar(evento = 'PAYMENT_CREATED', dados = {}) {
   }
   return r;
 }
-module.exports = { iniciar, chamadas, webhooks, avisar };
+module.exports = { iniciar, chamadas, webhooks, avisar, clientes, cobrancas };
 if (require.main === module) iniciar().then(() => console.log('Asaas de mentira em http://127.0.0.1:4010'));

@@ -77,6 +77,8 @@ model Empresa {
   ficha           FichaEmpresa?
 
   @@index([modulo])
+  /// CPF/CNPJ de quem paga a conta (decisão #115): guardado na confirmação do 1º pedido pelo Asaas
+  cpfCnpj         String?
 }
 
 model Usuario {
@@ -241,6 +243,9 @@ model ConfigVenda {
   asaasAvisoEm          DateTime?
   asaasAvisoEvento      String?
   asaasAvisoOk          Boolean?
+  /// Juros do parcelamento no cartão (decisão #115, item j): % ao mês definido pelo Super Admin.
+  /// Vazio = sem parcelamento; 0 = parcelas sem juros. Vale para planos trimestrais e anuais, até 6x.
+  jurosParcelaMes       Float?
   atualizadoEm          DateTime @updatedAt
 }
 
@@ -287,6 +292,15 @@ model Pedido {
   pacotesDisparos Int          @default(0)
   /// Renovação com menos extras: números que o cliente escolheu manter
   manterSessoes   String[]     @default([])
+  /// Forma de pagamento (decisão #115): PIX_MANUAL (chave PIX própria), PIX, BOLETO ou CARTAO (pelo Asaas)
+  forma           String       @default("PIX_MANUAL")
+  /// Parcelas no cartão (1 = à vista) e CPF/CNPJ de quem paga (exigido pelo Asaas)
+  parcelas        Int          @default(1)
+  cpfCnpj         String?
+  /// Cobrança no Asaas: código, página de pagamento (cartão/fatura), boleto (link e linha digitável)
+  asaasId         String?      @unique
+  linkPagamento   String?
+  boletoLinha     String?
   /// Receita e estorno na gestão financeira (decisão #106)
   lancamentos     Lancamento[]
   /// Conta criada na confirmação

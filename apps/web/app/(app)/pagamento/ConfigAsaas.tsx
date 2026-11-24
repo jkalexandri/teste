@@ -5,7 +5,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
-import { configurarAvisoAsaas, removerAsaas, salvarAsaas, verificarAvisoAsaas } from "./actions";
+import { configurarAvisoAsaas, removerAsaas, salvarAsaas, salvarJuros, verificarAvisoAsaas } from "./actions";
 
 type Estado = {
   ambiente: "sandbox" | "producao"; configurado: boolean; conta: string | null; testadoEm: string | null;
@@ -29,7 +29,7 @@ function Copiavel({ id, rotulo, valor }: { id: string; rotulo: string; valor: st
   );
 }
 
-export default function ConfigAsaas({ estado, webhook }: { estado: Estado; webhook: { url: string; token: string } }) {
+export default function ConfigAsaas({ estado, webhook, jurosMes }: { estado: Estado; webhook: { url: string; token: string }; jurosMes: number | null }) {
   const toast = useToast();
   const router = useRouter();
   const [erro, setErro] = useState("");
@@ -146,6 +146,19 @@ export default function ConfigAsaas({ estado, webhook }: { estado: Estado; webho
           </div>
         </details>
       </div>
+      {/* Juros do parcelamento (decisão #115, itens d e j) */}
+      <form className="card p-4 space-y-2.5 self-start" data-testid="juros-parcelamento"
+        onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); iniciar(async () => { const r = await salvarJuros(fd); toast(r.mensagem, r.ok ? "ok" : "erro"); router.refresh(); }); }}>
+        <h2 className="font-display font-bold text-[14px]">Parcelamento no cartão</h2>
+        <p className="help">Planos <b>trimestrais e anuais</b> podem ser pagos em até <b>6x no cartão</b>, com juros para o cliente (tabela Price). O cliente vê o valor de cada parcela antes de pagar.</p>
+        <div>
+          <label className="label" htmlFor="jurosParcelaMes">Juros ao mês (%)</label>
+          <input id="jurosParcelaMes" name="jurosParcelaMes" className="input !w-[140px]" inputMode="decimal" placeholder="ex.: 2,99"
+            defaultValue={jurosMes == null ? "" : String(jurosMes).replace(".", ",")} />
+          <p className="help mt-0.5">Vazio = sem parcelamento (cartão só à vista). 0 = parcelas sem juros.</p>
+        </div>
+        <button className="btn-primary" disabled={pendente} data-testid="salvar-juros">Salvar parcelamento</button>
+      </form>
     </div>
   );
 }

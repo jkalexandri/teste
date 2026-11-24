@@ -85,9 +85,11 @@ Não vai cópia por WhatsApp nem e-mail.
   usuários escolhidos um a um.
 - **Enviadas:** quantos leram de cada mensagem; abra para ver **quem leu** (com data e hora) e quem ainda não leu.
 
-## Pedidos (vendas por PIX)
+## Pedidos
 
-Toda compra feita no botão **Planos** da tela de login (ou renovação, ou WhatsApp extra) vira um pedido aqui, e você recebe um aviso no WhatsApp.
+Toda compra feita no botão **Planos** da tela de login (ou renovação, WhatsApp extra, pacote de disparos) vira um pedido aqui,
+e você recebe um aviso no WhatsApp. Abaixo do valor aparece a **forma de pagamento**: PIX manual, PIX (Asaas), Boleto ou Cartão
+(com o número de parcelas). Cancelar um pedido do Asaas apaga a cobrança lá também.
 
 ![Pedidos](prints/s-pedidos.png)
 
@@ -203,7 +205,17 @@ Chave PIX e dados do recebedor (aparecem no PIX copia e cola dos pedidos) e o co
    Ao trocar de ambiente (Testes → Produção), clique em Configurar de novo.
 5. Nunca mande a chave por chat, e-mail ou WhatsApp. Se vazar, gere outra no Asaas e cole aqui.
 
-As formas de pagamento pelo Asaas no popup Planos entram nas próximas etapas; até lá os pedidos continuam com o PIX manual.
+**Com o Asaas conectado, o cliente escolhe a forma de pagamento** (compra, renovação):
+
+- **PIX** (aprovação na hora), **Cartão** (na página segura do Asaas — o FilaPro não vê o cartão) ou **Boleto** (+2%, compensa em 1 a 3 dias úteis);
+- o cliente informa o **CPF ou CNPJ** de quem paga (o Asaas exige); fica guardado na conta e as próximas compras usam o mesmo;
+- **Parcelamento no cartão:** planos **trimestrais e anuais**, até **6x**, com os **juros ao mês** que você define no quadro
+  *Parcelamento no cartão* (vazio = só à vista; 0 = sem juros). O cliente vê o valor de cada parcela antes de pagar;
+- WhatsApp extra e pacotes de disparos: PIX do Asaas;
+- o **PIX manual** (chave acima) fica como **reserva**: só é usado com o Asaas desligado.
+
+Por enquanto a confirmação continua em **Pedidos** (confira o pagamento no painel do Asaas e clique **Confirmar pagamento**);
+a confirmação automática pelo aviso do Asaas é a próxima etapa.
 
 ![Pagamento](prints/s-pagamento.png)
 

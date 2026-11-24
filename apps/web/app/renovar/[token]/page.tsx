@@ -45,6 +45,8 @@ export default async function RenovarPage({ params }: { params: Promise<{ token:
               numerosExtras: extras,
               modulo: empresa.modulo,
               pacotes: empresa.pacotes,
+              // Só o final do CPF/CNPJ guardado (decisão #115): o link de renovação não mostra o documento inteiro
+              documentoFinal: empresa.cpfCnpj ? `final ${empresa.cpfCnpj.slice(-2)}` : null,
             }}
             planos={planos.map(({ criadoEm, atualizadoEm, ...p }) => p)}
           />

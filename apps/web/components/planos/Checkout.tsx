@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { ChevronRight, CircleCheck, TriangleAlert } from "@/components/icons";
 import TelaPix, { type DadosPix } from "./TelaPix";
+import EscolhaPagamento, { textoBotaoPagar, useFormas, type Pagamento } from "./EscolhaPagamento";
 import { formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, type PlanoPublico } from "@/lib/planos";
 
 type Pix = DadosPix;
@@ -30,6 +31,10 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
   // Quantidade (decisão #113): números de WhatsApp (Individual) ou pacotes de usuários (Empresarial); vem do cartão e pode trocar aqui
   const maxQ = maxQuantidade(plano);
   const [quantidade, setQuantidade] = useState(Math.min(Math.max(1, quantidadeInicial), maxQ));
+  // Forma de pagamento pelo Asaas (decisão #115): PIX, cartão ou boleto; sem Asaas, PIX manual
+  const formas = useFormas();
+  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "" });
+  const valorBase = plano.precoAtual != null ? precoComQuantidade(plano.precoAtual, plano.descontos, quantidade) : 0;
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +44,7 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
     const r = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome, quantidade }),
+      body: JSON.stringify({ planoId: plano.id, nome, email, whatsapp, empresaNome, quantidade, ...(formas?.asaas ? pagamento : {}) }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -101,10 +106,15 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
                   <option key={n} value={n}>{rotuloQuantidade(plano, n)} — {formatarReais(precoComQuantidade(plano.precoAtual ?? 0, plano.descontos, n))}/{plano.periodo}</option>
                 ))}
               </select>
-              <p className="text-[12px] text-slate-300 mt-1" data-testid="total-extras">
+              {/* Com o Asaas, o total aparece junto da forma de pagamento (não repete aqui) */}
+              {!formas?.asaas && <p className="text-[12px] text-slate-300 mt-1" data-testid="total-extras">
                 Total: <b className="text-white">{formatarReais(precoComQuantidade(plano.precoAtual ?? 0, plano.descontos, quantidade))}</b>/{plano.periodo}
-              </p>
+              </p>}
             </div>
+          )}
+          {!plano.gratis && formas && (
+            <EscolhaPagamento formas={formas} valor={valorBase} prazoDias={plano.prazoDias ?? 31} periodo={plano.periodo}
+              valorPagamento={pagamento} onChange={setPagamento} />
           )}
           {empresarial && <p className="text-[11px] text-slate-400">Quem compra um plano de empresa se torna o Administrador da empresa. Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
           {!empresarial && !plano.gratis && <p className="text-[11px] text-slate-400">Já é cliente? Use o seu e-mail de acesso para renovar.</p>}
@@ -113,8 +123,8 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
               <TriangleAlert size={15} className="shrink-0" /> {erro}
             </div>
           )}
-          <button className="login-cta !py-3" type="submit" disabled={enviando}>
-            {enviando ? "Enviando…" : plano.gratis ? "Criar minha conta de teste" : "Gerar PIX"}
+          <button className="login-cta !py-3" type="submit" disabled={enviando || (!plano.gratis && !formas)}>
+            {enviando ? "Enviando…" : plano.gratis ? "Criar minha conta de teste" : textoBotaoPagar(pagamento, !!formas?.asaas)}
           </button>
           {/* Decisão #88: aceite dos Termos e da Política ao comprar */}
           <p className="text-[11px] text-slate-400 text-center leading-snug" data-testid="aceite-termos">

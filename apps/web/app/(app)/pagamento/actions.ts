@@ -96,3 +96,17 @@ export async function verificarAvisoAsaas(): Promise<{ ok: boolean; mensagem: st
     return { ok: false, mensagem: e instanceof ErroAsaas ? `Asaas: ${e.message}` : "Não foi possível consultar o Asaas." };
   }
 }
+
+/** Juros do parcelamento no cartão (decisão #115, item j): % ao mês; vazio = sem parcelamento; 0 = sem juros. */
+export async function salvarJuros(form: FormData): Promise<{ ok: boolean; mensagem: string }> {
+  await exigirSuperAdmin();
+  const bruto = String(form.get("jurosParcelaMes") ?? "").trim().replace(",", ".");
+  const juros = bruto === "" ? null : Number(bruto);
+  if (juros != null && (!Number.isFinite(juros) || juros < 0 || juros > 15)) return { ok: false, mensagem: "Informe os juros entre 0 e 15% ao mês (ou deixe vazio para não parcelar)." };
+  await prisma.configVenda.upsert({ where: { id: "config" }, update: { jurosParcelaMes: juros }, create: { id: "config", jurosParcelaMes: juros } });
+  revalidatePath("/pagamento");
+  return {
+    ok: true,
+    mensagem: juros == null ? "Parcelamento desligado: cartão só à vista." : juros === 0 ? "Parcelamento até 6x sem juros (trimestral e anual)." : `Parcelamento até 6x com juros de ${juros.toLocaleString("pt-BR")}% ao mês (trimestral e anual).`,
+  };
+}

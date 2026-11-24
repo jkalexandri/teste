@@ -122,3 +122,33 @@ export function linkContato(contato: string): string | null {
   if (digitos.length >= 10) return `https://wa.me/${digitos.length <= 11 ? "55" + digitos : digitos}`;
   return null;
 }
+
+// ===== Formas de pagamento pelo Asaas (decisão #115) =====
+export type FormaPagamento = "PIX_MANUAL" | "PIX" | "BOLETO" | "CARTAO";
+export const NOME_FORMA: Record<FormaPagamento, string> = { PIX_MANUAL: "PIX", PIX: "PIX", BOLETO: "Boleto", CARTAO: "Cartão de crédito" };
+/** Boleto tem acréscimo de 2% no valor (item f). */
+export const ACRESCIMO_BOLETO = 2;
+/** Parcelamento no cartão: até 6x, só em planos trimestrais e anuais (item d). */
+export const MAX_PARCELAS = 6;
+export const valorBoleto = (valor: number) => Math.round((valor * (100 + ACRESCIMO_BOLETO)) / 100);
+/** Plano de 3 meses ou mais (trimestral, anual) pode parcelar. */
+export const podeParcelar = (p: { prazoDias: number }) => p.prazoDias >= 89;
+
+/**
+ * Parcelas com juros para o cliente (itens d e j): tabela Price com a taxa ao mês do Super Admin.
+ * Devolve o valor de cada parcela e o total, em centavos. Taxa 0 = parcelas sem juros.
+ */
+export function parcelamento(valor: number, parcelas: number, jurosMes: number) {
+  const n = Math.max(1, Math.floor(parcelas));
+  const i = Math.max(0, jurosMes) / 100;
+  if (n === 1) return { parcela: valor, total: valor };
+  const parcela = i === 0 ? Math.ceil(valor / n) : Math.ceil((valor * i) / (1 - Math.pow(1 + i, -n)));
+  return { parcela, total: parcela * n };
+}
+
+/** Valor final do pedido conforme a forma de pagamento escolhida. */
+export function valorDaForma(valor: number, forma: FormaPagamento, parcelas = 1, jurosMes: number | null = null) {
+  if (forma === "BOLETO") return valorBoleto(valor);
+  if (forma === "CARTAO" && parcelas > 1 && jurosMes != null) return parcelamento(valor, parcelas, jurosMes).total;
+  return valor;
+}

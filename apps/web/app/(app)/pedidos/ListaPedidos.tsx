@@ -8,7 +8,7 @@ import { cancelarPedido, confirmarPagamento } from "./actions";
 
 type Pedido = {
   id: string; codigo: string; renovacao: boolean; status: "AGUARDANDO" | "PAGO" | "CANCELADO" | "EXPIRADO";
-  planoNome: string; modulo: "INDIVIDUAL" | "EMPRESARIAL"; usuarios: number | null; valor: number;
+  planoNome: string; modulo: "INDIVIDUAL" | "EMPRESARIAL"; usuarios: number | null; valor: number; forma: string;
   nome: string; email: string; whatsapp: string; empresaNome: string | null;
   criadoEm: string; expiraEm: string; confirmadoEm: string | null;
 };
@@ -80,7 +80,7 @@ export default function ListaPedidos({ pedidos }: { pedidos: Pedido[] }) {
                       {p.modulo === "EMPRESARIAL" ? `Empresarial • ${p.usuarios ?? "—"} usuários` : "Individual"}
                     </span>
                   </td>
-                  <td className="font-bold">{formatarReais(p.valor)}</td>
+                  <td className="font-bold">{formatarReais(p.valor)}<span className="block text-[11px] font-semibold" style={{ color: "var(--muted)" }} data-testid="forma-pedido">{p.forma}</span></td>
                   <td>
                     <b>{p.nome}</b>
                     {p.empresaNome && <span className="block text-[11px]">{p.empresaNome}</span>}

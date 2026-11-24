@@ -7,7 +7,7 @@ import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { criarPedidoPix, type RespostaPix } from "@/lib/pedidos";
 import { avisarNovoPedido } from "@/lib/avisos-whatsapp";
 
-export async function comprarPacoteDisparos(pacotes: number): Promise<{ ok: false; mensagem: string } | ({ ok: true } & RespostaPix)> {
+export async function comprarPacoteDisparos(pacotes: number, cpfCnpj?: string): Promise<{ ok: false; mensagem: string } | ({ ok: true } & RespostaPix)> {
   const s = await obterSessao();
   if (!s || s.precisaTrocar || motivoSemAcesso(s)) return { ok: false, mensagem: "Acesso negado." };
   const u = s.usuario;
@@ -23,6 +23,8 @@ export async function comprarPacoteDisparos(pacotes: number): Promise<{ ok: fals
     comprador: { nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "", empresaNome: u.empresa.nome },
     somenteExtras: { empresaId: u.empresa.id, valor: n * plano.precoPacoteDisparos },
     pacotesDisparos: n,
+    // PIX (do Asaas, se ligado); CPF/CNPJ: o guardado na conta ou o informado agora
+    pagamento: { cpfCnpj: String(cpfCnpj ?? "").slice(0, 20) },
   });
   if ("erro" in r) return { ok: false, mensagem: r.erro };
   await avisarNovoPedido({ codigo: r.codigo, planoNome: r.plano, valor: r.valor, renovacao: false, nome: u.nome, email: u.email, whatsapp: u.whatsapp ?? "", empresaNome: u.empresa.nome }).catch(() => undefined);
