@@ -24,6 +24,27 @@ em qualquer login, continua do mesmo ponto lendo estes arquivos:
    (`/opt/filapro/app/apps/web/.env.production` e `/opt/filapro/app/apps/worker/.env`) e no seu bloco de notas.
    Nunca cole senhas, chaves ou tokens no chat.
 
+## Como o dono gosta de trabalhar (combinado nas sessões anteriores)
+
+- **Tudo em português do Brasil**, linguagem simples (o dono não é programador). Sem jargão; quando precisar, explique.
+- **Perguntas com sugestão:** liste as dúvidas numeradas ou com letras — (a), (b), (c) — e uma **sugestão** em cada uma.
+  O dono costuma responder "sugestão" (ou "(a) sugestão (b) …"): **"sugestão" = aceitar o que foi sugerido**.
+  Respostas curtas como "ok", "feito", "deu certo" confirmam o passo anterior.
+- **Regra nova ou mudança de regra:** registrar em `docs/decisoes.md` (número seguinte) antes ou junto com o código.
+- **Passo a passo na VPS:** o dono usa o **terminal do navegador da Hostinger**. Dê comandos prontos para copiar,
+  um por bloco, e diga o que deve aparecer no final. Ele responde com **prints** — leia o print e diga o próximo passo.
+- **Nunca peça senha, chave ou token no chat** (nem do Asaas, nem da IA). Chaves vão nas telas do sistema (criptografadas).
+  Se um print mostrar um segredo, avise e peça para gerar outro.
+- **Cada entrega:** testar (teste da etapa + os afetados; regressão completa quando mexer em muita coisa), conferir o login
+  com print, subir a versão no `package.json`, escrever em `docs/manuais/novidades.md` e nos manuais, commit e push.
+  No final, dizer em poucas linhas o que mudou, o que foi testado e o comando para atualizar a VPS.
+- **Login:** só muda com pedido expresso do dono (decisões #100, #107, #108, #114, #116…); comparar prints antes/depois.
+- **Corrigir só o que foi pedido.** Se notar outro problema, avise e pergunte antes de mexer.
+- **Quando algo do painel de terceiros (Asaas, Hostinger, Resend) não é achado pelo dono:** prefira fazer o sistema resolver
+  sozinho (ex.: "Configurar aviso automaticamente" do Asaas) ou um script de diagnóstico (`deploy/diagnostico-asaas.sh`)
+  em vez de mandar procurar menus.
+- A conversa antiga foi exportada pelo dono (`conversa-filapro.md`, fora do GitHub); se ele anexar, procure só o trecho do assunto.
+
 ## Ambiente de teste (para a sessão nova conseguir testar)
 
 Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão nova monta um ambiente de teste próprio:
