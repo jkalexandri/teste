@@ -19,7 +19,7 @@ em qualquer login, continua do mesmo ponto lendo estes arquivos:
    (claude.ai → Configurações → Conectores/GitHub) e abra o Claude Code nesse repositório.
 2. Primeira mensagem sugerida:
    > "Leia CLAUDE.md, docs/decisoes.md, docs/continuidade.md e docs/manuais/desenvolvedor.md e continue o projeto
-   > FilaPro Leads de onde parou. Responda em português."
+   > FilaPro Leads de onde parou. Responda em português. Comece pela seção 'Em andamento' do continuidade.md."
 3. **Segredos não estão no GitHub** (de propósito — o repositório é público). Eles ficam só na VPS
    (`/opt/filapro/app/apps/web/.env.production` e `/opt/filapro/app/apps/worker/.env`) e no seu bloco de notas.
    Nunca cole senhas, chaves ou tokens no chat.
@@ -34,6 +34,7 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
   `WORKER_TOKEN`, `CHAVE_CRIPTO`, `VAPID_PUBLIC_KEY` — valores **de teste**, gerados na hora (nunca os da produção).
 - `apps/worker/.env`: o mesmo banco de teste, o mesmo `WORKER_TOKEN`/`CHAVE_CRIPTO` de teste e as chaves VAPID de teste.
 - Site: `pnpm --filter web build` e `ASAAS_URL=http://127.0.0.1:4010 CRON_SECRET=segredo-teste pnpm --filter web start -p 3005` (o ASAAS_URL aponta para o Asaas de mentira dos testes, `apps/web/tests/asaas-falso.cjs`).
+- Diagnóstico do Asaas na VPS (sem mostrar chave nem token): `bash /opt/filapro/app/deploy/diagnostico-asaas.sh`.
 - Serviço 24/7: `cd apps/worker && set -a && . ./.env && set +a && DISPAROS=desligado npx tsx src/index.ts`.
 - Regressão completa: `bash scripts/regressao.sh` (~40 min). Testes de uma etapa: `node apps/web/tests/<etapa>.e2e.cjs /tmp/prints`.
 
@@ -45,11 +46,28 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
    (backup, modo manutenção, atualiza, libera e mostra "Atualizado para a versão vX.Y.Z").
 3. Se der problema: `bash /opt/filapro/app/deploy/voltar-versao.sh`.
 
-## Estado atual (23/11/2026)
+## Estado atual (24/11/2026)
 
 - **Versão no GitHub:** veja `"version"` no `package.json` da raiz e o topo de `docs/manuais/novidades.md`.
 - **Produção:** VPS Hostinger KVM 1 (Ubuntu 26.04, Campinas) com site, serviço 24/7 e banco `filaproleads`; HTTPS pelo Caddy;
   DNS `@`, `www`, `api` apontando para a VPS; e-mails pelo Resend (domínio verificado).
+
+### Em andamento — pagamento pelo Asaas (decisão #115, regras completas em `docs/decisoes.md`)
+Plano em 6 etapas, uma por vez, testando e mostrando ao dono antes da próxima:
+- **A — ligar o Asaas: FEITA e funcionando na VPS** (v1.34.2–1.34.4). Chave do **sandbox** conectada em Pagamento → Asaas;
+  aviso (webhook) cadastrado pelo botão "Configurar aviso automaticamente"; aviso PAYMENT_CREATED chegou.
+- **B — o cliente escolhe PIX, cartão ou boleto: FEITA (v1.35.0)**, enviada ao GitHub. Falta o dono atualizar a VPS, definir os
+  juros em Pagamento → Parcelamento no cartão e testar uma compra no sandbox. A confirmação ainda é manual em Pedidos.
+- **C — confirmação automática (próxima):** o aviso do Asaas (`app/api/asaas/webhook/route.ts`) chama `confirmarPedido`
+  (`lib/confirmar-pedido.ts`) pelo `externalReference` = código do pedido; idempotente; estorno vira estorno no Financeiro;
+  taxa do Asaas lançada como despesa. Sugestão registrada: guardar o aviso recebido e responder 200 rápido.
+- **D — cobrança automática no cartão** (assinatura no Asaas, sempre à vista; o cliente escolhe automática ou avulsa).
+- **E — cartão recusado:** 3 dias com envio reduzido (Empresarial 100/dia para a empresa toda; Individual 20/dia); depois,
+  bloqueia campanhas e respostas (IA e manuais), mas o cliente continua entrando para ver e pagar.
+- **F — testes no sandbox real com o dono, manuais e versão final.**
+
+Testes do Asaas usam o **Asaas de mentira** (`apps/web/tests/asaas-falso.cjs`, site de teste com `ASAAS_URL=http://127.0.0.1:4010`):
+`etapa19a-asaas-config` e `etapa19b-asaas-pagamento`.
 
 ### Pendências da publicação (`docs/publicacao-vps.md`)
 - Parte 6.1 — backup diário e rotinas (crontab).
@@ -65,4 +83,4 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
 
 ### Próximas funcionalidades combinadas
 - Integração direta com Facebook/Instagram Lead Ads (hoje entra pelo Make/Zapier).
-- Fase 2: cobrança automática (ver `docs/decisoes.md`, seção "Fase 2").
+- Fase 2: cobrança automática — em andamento pelo Asaas (acima).
