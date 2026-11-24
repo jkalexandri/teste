@@ -173,7 +173,8 @@ e você vê.
 
 ![Empresa | IA](prints/u-empresa-ia-individual.png)
 
-- **Dados da empresa:** nome, endereço, telefone, WhatsApp, atividade e, se quiser, **Como qualificar** (as perguntas que a IA deve fazer).
+- **Dados da empresa:** nome, endereço, telefone, WhatsApp, atividade e, se quiser, **Como qualificar** (as perguntas que a IA deve fazer;
+  ao clicar no campo, abre um editor grande no meio da tela, com **Salvar** e **Cancelar**).
 - **Materiais:** link ou site (até 20 páginas), texto, imagem (JPG/PNG até 5 MB) ou PDF (até 20 MB e 100 páginas).
   A IA lê, faz um resumo e monta a **Ficha da IA** — um resumo de tamanho fixo usado nas campanhas e nas conversas.
 - **Esquecer:** a IA deixa de usar o material. **Ler de novo:** relê um site que mudou.

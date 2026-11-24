@@ -74,7 +74,8 @@ Tudo o que a IA sabe sobre a empresa — o mesmo conhecimento vale para todos os
 ![Empresa | IA](prints/a-empresa-ia.png)
 
 - **Dados da empresa:** nome, endereço, telefone, WhatsApp, atividade e **Como qualificar** (opcional: as perguntas que a IA deve fazer
-  para qualificar; em branco, ela usa interesse, prazo e orçamento).
+  para qualificar; em branco, ela usa interesse, prazo e orçamento). Ao clicar em **Como qualificar**, abre um editor grande no meio
+  da tela: escreva com calma e clique em **Salvar** (ou **Cancelar** para descartar).
 - **Materiais:** link ou site (até 20 páginas), texto, imagem JPG/PNG (até 5 MB) ou PDF (até 20 MB / 100 páginas).
   A IA lê e monta a **Ficha da IA**, um resumo de tamanho fixo (para a IA não ficar cara).
 - **Esquecer** um material: a ficha é refeita sem ele. **Ler de novo:** relê um site que mudou.

@@ -124,7 +124,15 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   [c, p] = await novo();
   await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
   await p.goto(BASE + '/empresa-ia'); await espera(600);
-  await p.fill('#ei-qualificar', 'Pergunte o tipo de clínica e quantas salas.'); await p.click('button:has-text("Salvar dados")');
+  // "Como qualificar" abre o editor grande em popup (decisão #120)
+  await p.click('#ei-qualificar');
+  const editor = p.locator('[data-testid=editor-comoQualificar]');
+  const caixa = await editor.locator('textarea').boundingBox();
+  ok('Clicar no campo abre o editor grande no meio da tela', (await editor.count()) === 1 && caixa && caixa.height >= 350 && caixa.width >= 600, caixa ? `${Math.round(caixa.width)}x${Math.round(caixa.height)}` : 'sem popup');
+  await editor.locator('textarea').fill('Texto que vai ser descartado'); await p.click('[data-testid=editor-comoQualificar] >> button:has-text("Cancelar")');
+  ok('Cancelar fecha o popup sem mudar o campo', (await editor.count()) === 0 && (await p.inputValue('#ei-qualificar')) !== 'Texto que vai ser descartado');
+  await p.click('#ei-qualificar'); await editor.locator('textarea').fill('Pergunte o tipo de clínica e quantas salas.');
+  await p.click('[data-testid=salvar-comoQualificar]');
   ok('"Como qualificar" salvo no Empresa | IA', await ate(() => sql(`select "comoQualificar" from "FichaEmpresa" where "empresaId"='${EMP}'`) === 'Pergunte o tipo de clínica e quantas salas.'));
   await c.close();
 

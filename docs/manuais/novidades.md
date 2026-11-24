@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.37.0 — editor grande para "Como qualificar os leads" (24/11/2026)
+
+- Empresa | IA: ao clicar em **Como qualificar os leads**, abre um **editor grande no meio da tela**, com contador de caracteres,
+  **Salvar** e **Cancelar**. Fica muito mais fácil escrever orientações longas para a IA.
+
 ## v1.36.3 — botão Testar da IA usa a chave única (24/11/2026)
 
 - Inteligência Artificial: o botão **Testar** de cada tarefa (Gerar, Aprender, Qualificar, Conversar) agora usa a

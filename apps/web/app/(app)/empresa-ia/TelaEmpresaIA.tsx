@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
+import CampoTextoGrande from "@/components/app/CampoTextoGrande";
 import { adicionarLink, adicionarTexto, enviarMaterialArquivo, esquecerMaterial, estadoEmpresaIA, lerDeNovo, salvarCampos } from "./actions";
 
 type Campos = { nome: string; endereco: string; telefone: string; whatsapp: string; atividade: string; comoQualificar: string };
@@ -107,8 +108,10 @@ export default function TelaEmpresaIA(p: {
             </div>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="ei-qualificar">Como qualificar os leads (opcional)</label>
-              <textarea id="ei-qualificar" name="comoQualificar" className="input min-h-[70px]" defaultValue={p.campos.comoQualificar} maxLength={2000}
-                placeholder="Ex.: pergunte o bairro, o valor que pretende investir e quando quer se mudar." />
+              {/* Clicar abre o editor grande em popup (decisão #120) */}
+              <CampoTextoGrande id="ei-qualificar" name="comoQualificar" rotulo="Como qualificar os leads" valorInicial={p.campos.comoQualificar} maxLength={2000}
+                placeholder="Ex.: pergunte o bairro, o valor que pretende investir e quando quer se mudar."
+                ajuda="Orientação que a IA segue em todas as conversas, junto com a Ficha da IA. Vazio = critério geral (interesse, prazo e orçamento)." />
               <p className="help mt-0.5">Vazio = a IA usa o critério geral (interesse, prazo e orçamento).</p>
             </div>
           </fieldset>
