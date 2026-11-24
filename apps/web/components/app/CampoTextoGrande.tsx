@@ -3,6 +3,8 @@
 // Campo de texto que abre um editor grande em popup, centralizado na tela (decisão #120).
 // O campo pequeno só mostra o texto; ao clicar nele, abre o popup para escrever com espaço.
 // "Salvar" aplica o texto e envia o formulário da tela; "Cancelar" (ou Esc) descarta o que mudou no popup.
+// Com "sugestao" (decisão #121): botão "Texto sugestão" preenche o texto padrão e uma faixa amarela pede para trocar
+// os textos entre colchetes [ ] pelas informações reais.
 import { useEffect, useRef, useState } from "react";
 import { X } from "@/components/icons";
 
@@ -16,9 +18,18 @@ type Props = {
   ajuda?: string;
   /** Altura do campo pequeno (classe do Tailwind) */
   alturaCampo?: string;
+  /** Texto sugestão (botão "Texto sugestão" no popup) */
+  sugestao?: string;
+  /** Nome do botão da sugestão (padrão: "Texto sugestão") */
+  rotuloSugestao?: string;
+  /** Faixa amarela e confirmação quando há colchetes (padrão: sim). O Super Admin, editando a sugestão, não precisa. */
+  avisarColchetes?: boolean;
 };
 
-export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLength, placeholder, ajuda, alturaCampo = "min-h-[70px]" }: Props) {
+/** Há algo entre colchetes, como [NOME DA IA]? */
+const temColchetes = (t: string) => /\[[^\]\n]+\]/.test(t);
+
+export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLength, placeholder, ajuda, alturaCampo = "min-h-[70px]", sugestao, rotuloSugestao = "Texto sugestão", avisarColchetes = true }: Props) {
   const [valor, setValor] = useState(valorInicial);
   const [rascunho, setRascunho] = useState(valorInicial);
   const [aberto, setAberto] = useState(false);
@@ -48,7 +59,18 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
     return () => window.removeEventListener("keydown", tecla);
   }, [aberto]);
 
+  /** Preenche com o texto sugestão (pergunta antes de apagar o que já foi escrito) */
+  function usarSugestao() {
+    if (!sugestao) return;
+    if (rascunho.trim() && rascunho !== sugestao && !window.confirm("Substituir o texto atual pela sugestão?")) return;
+    setRascunho(sugestao.slice(0, maxLength));
+    editor.current?.focus();
+    editor.current?.setSelectionRange(0, 0);
+    if (editor.current) editor.current.scrollTop = 0;
+  }
+
   function salvar() {
+    if (avisarColchetes && temColchetes(rascunho) && !window.confirm("Ainda há textos entre colchetes [ ]. Salvar mesmo assim?")) return;
     setValor(rascunho);
     setAberto(false);
     // Envia o formulário da tela depois de o campo receber o texto novo
@@ -80,8 +102,18 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
                 <h2 className="font-display font-extrabold text-[16px]">{rotulo}</h2>
                 {ajuda && <p className="help mt-0.5">{ajuda}</p>}
               </div>
-              <button type="button" className="btn-ghost !p-2" onClick={fechar} aria-label="Fechar sem salvar"><X size={16} /></button>
+              <div className="flex items-center gap-2 shrink-0">
+                {sugestao && (
+                  <button type="button" className="btn-ghost !py-1.5 !px-3 !text-[12px]" onClick={usarSugestao} data-testid={`sugestao-${name}`}>{rotuloSugestao}</button>
+                )}
+                <button type="button" className="btn-ghost !p-2" onClick={fechar} aria-label="Fechar sem salvar"><X size={16} /></button>
+              </div>
             </div>
+            {avisarColchetes && temColchetes(rascunho) && (
+              <div className="mt-3 rounded-lg px-3 py-2 text-[12px] font-semibold" style={{ background: "#fff7e0", color: "#8a5a00", border: "1px solid #f5d48a" }} data-testid={`aviso-colchetes-${name}`}>
+                Troque os textos entre colchetes [ ] pelas informações reais. Exemplo: [NOME DA IA] → Sofia.
+              </div>
+            )}
             <textarea
               ref={editor}
               className="input flex-1 mt-3 !text-[14px] leading-relaxed resize-none"

@@ -2,6 +2,18 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.38.0 — botão "Texto sugestão" no Como qualificar (24/11/2026)
+
+### Para quem configura a IA (Empresa | IA)
+- No editor grande do **Como qualificar os leads**, o botão **Texto sugestão** preenche um roteiro completo de atendimento
+  (tom de voz, regras, perguntas de qualificação, objeções e exemplo de conversa).
+- Uma **faixa amarela** lembra de trocar os textos entre colchetes, como [NOME DA IA], pelas informações reais.
+- O campo agora aceita até **10.000 caracteres**.
+
+### Para o Super Admin
+- **Inteligência Artificial → Texto sugestão do "Como qualificar os leads"**: edite o texto que aparece para todos os clientes,
+  ou clique em **Voltar ao texto padrão**.
+
 ## v1.37.0 — editor grande para "Como qualificar os leads" (24/11/2026)
 
 - Empresa | IA: ao clicar em **Como qualificar os leads**, abre um **editor grande no meio da tela**, com contador de caracteres,

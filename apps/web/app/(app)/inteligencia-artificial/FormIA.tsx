@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
-import { salvarChaveGlobal, salvarConfigIA, salvarCotacao, testarChaveGlobal, testarConfigIA } from "./actions";
+import { salvarChaveGlobal, salvarConfigIA, salvarCotacao, salvarSugestaoQualificar, testarChaveGlobal, testarConfigIA } from "./actions";
+import CampoTextoGrande from "@/components/app/CampoTextoGrande";
 
 type Modelo = { id: string; nome: string; entrada: number; saida: number };
 type Inicial = { provedor: string; modelo: string; urlBase: string; temChave: boolean; precoEntrada: number; precoSaida: number };
@@ -180,6 +181,43 @@ export function FormChaveGlobal({ temChave }: { temChave: boolean }) {
         </label>
       )}
       <p className="help mt-1">Para trocar de conta da Anthropic, é só colar a chave nova aqui e salvar.</p>
+    </form>
+  );
+}
+
+/** Texto sugestão do "Como qualificar os leads" (decisão #121): o botão "Texto sugestão" do Empresa | IA de todos os clientes usa este texto. */
+export function FormSugestaoQualificar({ texto, padrao, personalizado, max }: { texto: string; padrao: string; personalizado: boolean; max: number }) {
+  const toast = useToast();
+  const router = useRouter();
+  const [pendente, iniciar] = useTransition();
+  return (
+    <form
+      className="card p-4 mt-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        iniciar(async () => {
+          const r = await salvarSugestaoQualificar(fd);
+          toast(r.mensagem, r.ok ? "ok" : "erro");
+          if (r.ok) router.refresh();
+        });
+      }}
+      data-testid="form-sugestao-qualificar"
+    >
+      <div className="flex flex-wrap justify-between items-start gap-2">
+        <div>
+          <h2 className="font-display font-extrabold text-[16px]">Texto sugestão do “Como qualificar os leads”</h2>
+          <p className="help">Aparece no botão <b>Texto sugestão</b> do Empresa | IA de todos os clientes. Deixe os textos entre colchetes [ ] para o cliente trocar pelas informações dele. Clique no campo para editar.</p>
+        </div>
+        <span className="chip" style={personalizado ? { background: "var(--primary-soft)", color: "var(--primary-dark)" } : { background: "rgba(0,0,0,.05)", color: "var(--muted)" }}>
+          {personalizado ? "Texto personalizado" : "Texto padrão"}
+        </span>
+      </div>
+      <fieldset disabled={pendente} className="mt-2">
+        <CampoTextoGrande id="sugestao-qualificar" name="sugestaoQualificar" rotulo="Texto sugestão do “Como qualificar os leads”" valorInicial={texto} maxLength={max}
+          alturaCampo="min-h-[110px]" sugestao={padrao} rotuloSugestao="Voltar ao texto padrão" avisarColchetes={false}
+          ajuda="Salvar vale para todos os clientes a partir de agora (quem já salvou o próprio texto não muda)." />
+      </fieldset>
     </form>
   );
 }

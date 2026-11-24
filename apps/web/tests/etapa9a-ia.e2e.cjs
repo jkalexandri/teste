@@ -62,6 +62,15 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   const resAprender = await p.locator('form[data-tarefa=aprender] [data-testid=resultado-teste-ia]').innerText();
   ok('Testar sem chave própria usa a chave única (não diz "não configurada")', !resAprender.includes('não configurada'), resAprender.slice(0, 120));
   sql(`delete from "ConfigIA" where tarefa='_anthropic'`);
+  // Texto sugestão do "Como qualificar" (decisão #121): o Super Admin edita para todos
+  ok('Quadro do texto sugestão, com o texto padrão', (await p.locator('[data-testid=form-sugestao-qualificar] .chip:has-text("Texto padrão")').count()) === 1 && (await p.inputValue('#sugestao-qualificar')).startsWith('Você é [NOME DA IA]'));
+  await p.click('#sugestao-qualificar'); await p.locator('[data-testid=editor-sugestaoQualificar] textarea').fill('Você é [NOME DA IA]. Pergunte o bairro e o valor.');
+  ok('Super Admin não recebe a faixa dos colchetes', (await p.locator('[data-testid=aviso-colchetes-sugestaoQualificar]').count()) === 0);
+  await p.click('[data-testid=salvar-sugestaoQualificar]');
+  ok('Texto sugestão personalizado salvo', await ate(() => sql(`select coalesce("sugestaoQualificar",'') from "ConfigVenda" where id='config'`) === 'Você é [NOME DA IA]. Pergunte o bairro e o valor.'));
+  await espera(1000);
+  await p.click('#sugestao-qualificar'); await p.click('[data-testid=sugestao-sugestaoQualificar]'); await p.click('[data-testid=salvar-sugestaoQualificar]');
+  ok('"Voltar ao texto padrão" volta ao texto do sistema', await ate(() => sql(`select coalesce("sugestaoQualificar",'nulo') from "ConfigVenda" where id='config'`) === 'nulo'));
   await p.screenshot({ path: OUT + '/inteligencia-artificial.png', fullPage: true });
   await c.close();
 

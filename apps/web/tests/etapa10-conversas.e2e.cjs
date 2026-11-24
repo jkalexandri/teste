@@ -131,7 +131,17 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   ok('Clicar no campo abre o editor grande no meio da tela', (await editor.count()) === 1 && caixa && caixa.height >= 350 && caixa.width >= 600, caixa ? `${Math.round(caixa.width)}x${Math.round(caixa.height)}` : 'sem popup');
   await editor.locator('textarea').fill('Texto que vai ser descartado'); await p.click('[data-testid=editor-comoQualificar] >> button:has-text("Cancelar")');
   ok('Cancelar fecha o popup sem mudar o campo', (await editor.count()) === 0 && (await p.inputValue('#ei-qualificar')) !== 'Texto que vai ser descartado');
-  await p.click('#ei-qualificar'); await editor.locator('textarea').fill('Pergunte o tipo de clínica e quantas salas.');
+  // Botão "Texto sugestão" (decisão #121): preenche o texto padrão e pede para trocar os colchetes
+  await p.click('#ei-qualificar'); await editor.locator('textarea').fill('Texto antigo');
+  const dialogos = []; p.on('dialog', (d) => dialogos.push(d.message()));
+  await p.click('[data-testid=sugestao-comoQualificar]');
+  const sug = await editor.locator('textarea').inputValue();
+  ok('Texto sugestão preenche o campo com o texto padrão', sug.startsWith('Você é [NOME DA IA], atendente virtual') && sug.length > 6000, String(sug.length));
+  ok('Pergunta antes de substituir o texto que já estava escrito', dialogos.some((m) => m.includes('Substituir o texto atual')));
+  ok('Faixa amarela pede para trocar os colchetes', (await p.locator('[data-testid=aviso-colchetes-comoQualificar]').count()) === 1);
+  await p.screenshot({ path: OUT + '/empresa-ia-sugestao.png' });
+  await editor.locator('textarea').fill('Pergunte o tipo de clínica e quantas salas.');
+  ok('Sem colchetes, a faixa amarela some', (await p.locator('[data-testid=aviso-colchetes-comoQualificar]').count()) === 0);
   await p.click('[data-testid=salvar-comoQualificar]');
   ok('"Como qualificar" salvo no Empresa | IA', await ate(() => sql(`select "comoQualificar" from "FichaEmpresa" where "empresaId"='${EMP}'`) === 'Pergunte o tipo de clínica e quantas salas.'));
   await c.close();

@@ -3,7 +3,8 @@ import { prisma } from "@filapro/db";
 import { CHAVE_GLOBAL, MODELOS_CLAUDE, PADRAO, TAREFAS } from "@filapro/ia";
 import Cabecalho from "@/components/app/Cabecalho";
 import { IS_PRODUCTION } from "@/lib/env";
-import FormIA, { FormChaveGlobal, FormCotacao } from "./FormIA";
+import FormIA, { FormChaveGlobal, FormCotacao, FormSugestaoQualificar } from "./FormIA";
+import { MAX_COMO_QUALIFICAR, SUGESTAO_QUALIFICAR_PADRAO } from "@/lib/sugestao-qualificar";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function InteligenciaArtificialPage() {
         })}
       </div>
       <FormCotacao cotacao={venda?.cotacaoDolar ?? null} />
+      <FormSugestaoQualificar texto={venda?.sugestaoQualificar?.trim() ? venda.sugestaoQualificar : SUGESTAO_QUALIFICAR_PADRAO}
+        padrao={SUGESTAO_QUALIFICAR_PADRAO} personalizado={!!venda?.sugestaoQualificar?.trim()} max={MAX_COMO_QUALIFICAR} />
       <p className="help mt-2">
         Economia aplicada automaticamente: instruções e ficha da empresa em cache (custam ~10% a partir da segunda chamada), respostas curtas,
         esforço baixo e mensagem principal + variações numa única chamada.

@@ -243,6 +243,9 @@ para o PIX manual e para conferir à mão se algum aviso não chegar.
 - **Cada tarefa** (gerar mensagens, aprender sobre a empresa, qualificar, conversar) pode usar outro provedor ou modelo, sem mexer no
   código. Padrão: **Claude Haiku 5.5**, o mais barato. Use **Testar** antes de salvar.
 - **Cotação do dólar:** para a tela de despesas mostrar também em reais.
+- **Texto sugestão do "Como qualificar os leads":** o roteiro que aparece no botão **Texto sugestão** do Empresa | IA de todos os
+  clientes. Clique no campo para editar e **Salvar**; **Voltar ao texto padrão** desfaz. Deixe os textos entre colchetes [ ] para o
+  cliente trocar. Quem já salvou o próprio texto no Empresa | IA não muda.
 
 ### Despesas com IA
 

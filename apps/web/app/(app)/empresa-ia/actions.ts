@@ -2,6 +2,7 @@
 
 // Empresa | IA (etapa 9b — decisões #74, #75 e #77). A leitura pesada (sites, PDFs, imagens) e a
 // montagem da ficha acontecem no serviço 24/7; aqui só cadastramos e pedimos o processamento.
+import { MAX_COMO_QUALIFICAR } from "@/lib/sugestao-qualificar";
 import { revalidatePath } from "next/cache";
 import { prisma, StatusMaterial, TipoMaterial } from "@filapro/db";
 import { atorEmpresaIA, LIMITES_MATERIAL, mesAtual } from "@/lib/empresa-ia";
@@ -51,7 +52,7 @@ export async function salvarCampos(form: FormData): Promise<R> {
     whatsapp: txt(form.get("whatsapp"), 40),
     atividade: txt(form.get("atividade"), 2000),
     // Orientação opcional para a IA qualificar os leads (decisão #92)
-    comoQualificar: txt(form.get("comoQualificar"), 2000),
+    comoQualificar: txt(form.get("comoQualificar"), MAX_COMO_QUALIFICAR), // decisão #121 (era 2.000)
   };
   if (!dados.nome) return { ok: false, mensagem: "Informe o nome da empresa." };
   await prisma.fichaEmpresa.update({ where: { id: a.ficha.id }, data: dados });

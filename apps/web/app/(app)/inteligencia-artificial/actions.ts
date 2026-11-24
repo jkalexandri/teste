@@ -2,6 +2,7 @@
 
 // Super Admin → Inteligência Artificial (decisões #72, #75 e #77): provedor, modelo, chave e preços
 // de cada tarefa; botão Testar; cotação do dólar para a tela de despesas.
+import { MAX_COMO_QUALIFICAR, SUGESTAO_QUALIFICAR_PADRAO } from "@/lib/sugestao-qualificar";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { CHAVE_GLOBAL, criptografar, ErroIA, PADRAO, TAREFAS, testarConfig, type Tarefa } from "@filapro/ia";
@@ -100,4 +101,16 @@ export async function testarChaveGlobal(form: FormData): Promise<R> {
   } catch (e) {
     return { ok: false, mensagem: e instanceof ErroIA ? e.message : "Falha no teste." };
   }
+}
+
+/** Texto sugestão do "Como qualificar os leads" (decisão #121). Vazio ou igual ao padrão = volta ao texto padrão do sistema. */
+export async function salvarSugestaoQualificar(form: FormData): Promise<R> {
+  await exigirSuperAdmin();
+  // O navegador envia as quebras de linha como \r\n: normaliza para comparar com o texto padrão
+  const texto = String(form.get("sugestaoQualificar") ?? "").replace(/\r\n/g, "\n").trim().slice(0, MAX_COMO_QUALIFICAR);
+  const padrao = !texto || texto === SUGESTAO_QUALIFICAR_PADRAO.trim();
+  await prisma.configVenda.upsert({ where: { id: "config" }, update: { sugestaoQualificar: padrao ? null : texto }, create: { id: "config", sugestaoQualificar: padrao ? null : texto } });
+  revalidatePath("/inteligencia-artificial");
+  revalidatePath("/empresa-ia");
+  return { ok: true, mensagem: padrao ? "Texto sugestão: usando o texto padrão do sistema." : "Texto sugestão salvo para todos os clientes." };
 }

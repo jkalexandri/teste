@@ -5,6 +5,7 @@ import Cabecalho from "@/components/app/Cabecalho";
 import { atorEmpresaIA, mesAtual } from "@/lib/empresa-ia";
 import { workerConfigurado } from "@/lib/worker";
 import TelaEmpresaIA from "./TelaEmpresaIA";
+import { MAX_COMO_QUALIFICAR, sugestaoQualificar } from "@/lib/sugestao-qualificar";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,8 @@ export default async function EmpresaIAPage() {
         treinarIA={a.treinarIA}
         servicoConfigurado={workerConfigurado()}
         campos={{ nome: f.nome, endereco: f.endereco, telefone: f.telefone, whatsapp: f.whatsapp, atividade: f.atividade, comoQualificar: f.comoQualificar }}
+        sugestaoQualificar={a.podeEditar ? await sugestaoQualificar() : ""}
+        maxQualificar={MAX_COMO_QUALIFICAR}
         resumo={f.resumo}
         resumoEm={f.resumoEm?.toISOString() ?? null}
         montando={f.montando}

@@ -35,6 +35,8 @@ const limiteTxt = (usado: number, limite: number | null) => `${usado.toLocaleStr
 export default function TelaEmpresaIA(p: {
   podeEditar: boolean; treinarIA: boolean; servicoConfigurado: boolean; campos: Campos; resumo: string; resumoEm: string | null;
   montando: boolean; uso: Uso; materiais: Material[];
+  /** Texto sugestão do "Como qualificar" e o limite do campo (decisão #121) */
+  sugestaoQualificar: string; maxQualificar: number;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -109,7 +111,7 @@ export default function TelaEmpresaIA(p: {
             <div className="sm:col-span-2">
               <label className="label" htmlFor="ei-qualificar">Como qualificar os leads (opcional)</label>
               {/* Clicar abre o editor grande em popup (decisão #120) */}
-              <CampoTextoGrande id="ei-qualificar" name="comoQualificar" rotulo="Como qualificar os leads" valorInicial={p.campos.comoQualificar} maxLength={2000}
+              <CampoTextoGrande id="ei-qualificar" name="comoQualificar" rotulo="Como qualificar os leads" valorInicial={p.campos.comoQualificar} maxLength={p.maxQualificar} sugestao={p.sugestaoQualificar || undefined}
                 placeholder="Ex.: pergunte o bairro, o valor que pretende investir e quando quer se mudar."
                 ajuda="Orientação que a IA segue em todas as conversas, junto com a Ficha da IA. Vazio = critério geral (interesse, prazo e orçamento)." />
               <p className="help mt-0.5">Vazio = a IA usa o critério geral (interesse, prazo e orçamento).</p>
