@@ -38,6 +38,10 @@ em qualquer login, continua do mesmo ponto lendo estes arquivos:
 - **Cada entrega:** testar (teste da etapa + os afetados; regressão completa quando mexer em muita coisa), conferir o login
   com print, subir a versão no `package.json`, escrever em `docs/manuais/novidades.md` e nos manuais, commit e push.
   No final, dizer em poucas linhas o que mudou, o que foi testado e o comando para atualizar a VPS.
+- **Commit e envio ao GitHub (autorizado pelo dono em 24/11/2026):** pode fazer commit e enviar ao `main` sempre que os
+  testes passarem — sem perguntar. **Mudanças na tela de login só depois da aprovação do dono pelos prints** (antes/depois).
+  A permissão fica em `.claude/settings.json` (libera `git add`, `git commit` e `git push origin main`). Na sessão nova, clone o
+  repositório **com acesso de escrita** (peça ao dono, se o acesso não vier junto).
 - **Login:** só muda com pedido expresso do dono (decisões #100, #107, #108, #114, #116…); comparar prints antes/depois.
 - **Corrigir só o que foi pedido.** Se notar outro problema, avise e pergunte antes de mexer.
 - **Quando algo do painel de terceiros (Asaas, Hostinger, Resend) não é achado pelo dono:** prefira fazer o sistema resolver
