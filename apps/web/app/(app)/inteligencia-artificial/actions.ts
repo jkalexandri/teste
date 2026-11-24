@@ -48,7 +48,9 @@ export async function testarConfigIA(tarefa: string, form: FormData): Promise<R>
   const d = lerForm(tarefa, form);
   if ("erro" in d) return { ok: false, mensagem: d.erro! };
   const atual = await prisma.configIA.findUnique({ where: { tarefa } });
-  const chave = d.chaveNova || atual?.chave || null;
+  // Sem chave própria, o teste usa a chave única da Anthropic, como o uso real (configDaTarefa)
+  const global = !d.chaveNova && !atual?.chave && d.provedor === "anthropic" ? await prisma.configIA.findUnique({ where: { tarefa: CHAVE_GLOBAL } }) : null;
+  const chave = d.chaveNova || atual?.chave || global?.chave || null;
   try {
     const r = await testarConfig(d.tarefa, { tarefa, provedor: d.provedor, modelo: d.modelo, urlBase: d.urlBase, chave, precoEntrada: d.precoEntrada, precoSaida: d.precoSaida });
     return { ok: true, mensagem: `Funcionou ✓ Resposta: “${r.texto.slice(0, 120)}” • custo do teste: US$ ${r.custoUsd.toFixed(6)}` };

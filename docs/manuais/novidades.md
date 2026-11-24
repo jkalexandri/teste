@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.36.3 — botão Testar da IA usa a chave única (24/11/2026)
+
+- Inteligência Artificial: o botão **Testar** de cada tarefa (Gerar, Aprender, Qualificar, Conversar) agora usa a
+  **chave da Anthropic para todas as tarefas** quando a tarefa não tem chave própria. Antes ele dizia "chave não configurada"
+  mesmo com a chave salva (o uso de verdade já funcionava; só o teste estava errado).
+
 ## v1.36.2 — abas dos Planos sempre visíveis no celular (24/11/2026)
 
 - No celular, ao rolar a lista do botão **Planos**, as abas (Individual / Empresarial e Mensal / Por disparo) ficam **fixas no topo**:

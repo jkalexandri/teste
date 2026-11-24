@@ -54,6 +54,14 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   ok('Padrão compatível pede o endereço do provedor', (await p.locator('form[data-tarefa=conversar] [data-testid=resultado-teste-ia]').innerText()).includes('endereço do provedor'));
   await p.fill('#cotacao', '5,40'); await p.click('button:has-text("Salvar cotação")');
   ok('Cotação do dólar salva', await ate(() => sql(`select "cotacaoDolar" from "ConfigVenda" where id='config'`) === '5.4'));
+  // Testar de uma tarefa sem chave própria usa a chave única da Anthropic (como o uso real)
+  await p.fill('#chave-global', 'sk-ant-teste-global'); await p.click('button:has-text("Salvar chave")');
+  await ate(() => /^v1:/.test(sql(`select coalesce(chave,'') from "ConfigIA" where tarefa='_anthropic'`)));
+  await espera(800);
+  await p.click('form[data-tarefa=aprender] >> button:has-text("Testar")'); await p.waitForSelector('form[data-tarefa=aprender] [data-testid=resultado-teste-ia]');
+  const resAprender = await p.locator('form[data-tarefa=aprender] [data-testid=resultado-teste-ia]').innerText();
+  ok('Testar sem chave própria usa a chave única (não diz "não configurada")', !resAprender.includes('não configurada'), resAprender.slice(0, 120));
+  sql(`delete from "ConfigIA" where tarefa='_anthropic'`);
   await p.screenshot({ path: OUT + '/inteligencia-artificial.png', fullPage: true });
   await c.close();
 
