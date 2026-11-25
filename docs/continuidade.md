@@ -110,7 +110,8 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
   Encapsulamento (decisão #132): portas únicas + teste vigia, módulo a módulo. Item 5 (API do 24/7 só por dentro da VPS) logo após C2/A1; item 2 (dado por dono) começa no Módulo 5.
   C2 e A1 FEITAS (v1.41.4, decisão #133: serviço único + porta por número).
   Item 5 do encapsulamento FEITO (v1.41.5, decisão #134: Caddy libera só /saude).
-  Próximas, cada uma com prévia: A3; depois A2, A4–A7; depois médias/baixas. A6: avisar com 3 min, avisar na volta, "com problema" após 2 h.
+  Próximas, cada uma com prévia: A3;
+  Módulo 9 (quando chegar): decisão #135 — mensagens recebidas no número da plataforma (conhecido → conversa certa + aviso; desconhecido → só registrar, sem responder). depois A2, A4–A7; depois médias/baixas. A6: avisar com 3 min, avisar na volta, "com problema" após 2 h.
 - Quadro "Módulos e revisões" na Ajuda (só Super Admin, decisão #131) FEITO (v1.41.3). **Em toda entrega:** atualizar `docs/modulos/README.md` (último ajuste, histórico com data e hora; módulo "Revisado" que for ajustado sem revisão completa vira "Sem revisão").
 
 ### Criação de campanha — decisão #128 (em andamento, um passo por vez com prévia)
