@@ -104,7 +104,7 @@ Filtre por usuário, tipo e período.
 
 ## Suporte e mensagens do FilaPro Leads
 
-- Botão **ícone do atendente (verde, ao lado do Sair)** (canto de baixo da tela): chat em tempo real com o suporte, com imagem ou PDF. Se o suporte chamar, o chat abre
+- **Ícone do atendente** (verde, ao lado do botão Sair; no celular, no canto de baixo): chat em tempo real com o suporte, com imagem ou PDF. Se o suporte chamar, o chat abre
   sozinho. Você **não vê** as conversas dos seus usuários com o suporte (cada um vê só a própria).
 - **Mensagens no centro da tela:** avisos do FilaPro Leads; leia e clique em **OK**.
 
