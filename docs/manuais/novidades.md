@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.4 — WhatsApp mais estável (25/11/2026)
+
+- Se, por engano, dois serviços do WhatsApp forem ligados ao mesmo tempo, o segundo espera e **nenhum número cai**.
+- Quando o WhatsApp avisar "aberto em outro lugar", o número **não perde mais o login**: basta clicar em **Conectar**,
+  sem ler o QR Code de novo.
+- Clicar em Conectar ou Cancelar enquanto o número se reconecta sozinho não cria mais conexão duplicada nem QR Code fantasma.
+
 ## v1.41.3 — segurança em todas as telas e quadro de revisão dos módulos (25/11/2026)
 
 - Correção de segurança: todas as telas passam a conferir, por conta própria, se o seu perfil pode abri-las.

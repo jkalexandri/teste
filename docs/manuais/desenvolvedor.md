@@ -251,6 +251,10 @@ Depois aponte o DNS (`@`, `www`, `api`) para o IP novo. Com a mesma `CHAVE_CRIPT
 - **Toda página nova da área logada começa com `await protegerTela()`** (`lib/auth/tela.ts`, decisão #130), antes de ler
   qualquer dado. A checagem do layout não basta: na navegação interna do Next.js a página é entregue sem refazer o layout.
   O teste `etapa21-acesso-telas` percorre todas as telas com cada perfil e falha se alguma entregar conteúdo proibido.
+- **Serviço 24/7 único (decisão #133):** `apps/worker/src/instancia.ts` registra o serviço no ar (`ServicoInstancia`, batimento 20 s,
+  limite 60 s). Um 2º processo com o mesmo banco espera e não abre números. Para testar dois serviços, use portas diferentes.
+- **Porta por número (decisão #133):** em `sessoes.ts`, conectar/desconectar/reconectar passam pela fila do número (`emFila`),
+  o relógio da reconexão fica em `timers` e o nº de série (`geracoes`) descarta avisos de conexões antigas. Não abra socket por fora.
 - **Encapsulamento (decisão #132):** cada assunto sensível tem **uma porta única** e um **teste vigia**. Não acesse dados,
   segredos ou o WhatsApp "por fora" da porta do assunto. Portas existentes: `protegerTela()` (telas), `packages/ia` (IA),
   serviço 24/7 (login e envio do WhatsApp). Portas novas entram módulo a módulo, nas revisões (lista na decisão #132).

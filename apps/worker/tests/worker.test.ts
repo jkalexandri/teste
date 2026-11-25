@@ -125,6 +125,9 @@ test("queda: demais casos", () => {
   const q401 = decidirQueda(401, true, false, 0);
   assert.equal(q401.acao, "encerrar");
   assert.ok(q401.acao === "encerrar" && q401.apagarLogin && q401.erro.includes("desconectado pelo celular"));
+  // "Aberto em outro lugar" (440) não apaga mais o login (decisão #133)
+  const q440 = decidirQueda(440, true, false, 0);
+  assert.ok(q440.acao === "encerrar" && !q440.apagarLogin && q440.erro.includes("outro lugar"));
   const qrExpirou = decidirQueda(408, false, true, 0);
   assert.ok(qrExpirou.acao === "encerrar" && qrExpirou.erro.includes("QR Code expirou"));
   const semRede = decidirQueda(408, false, false, 0);

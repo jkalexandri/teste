@@ -13,6 +13,7 @@ import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
 import { enviarPush } from "./push.js";
 import { Disponibilidade } from "./disponibilidade.js";
+import { Instancia } from "./instancia.js";
 
 const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
@@ -54,7 +55,13 @@ sessoes.aoConectar = async (sessaoId) => {
   if (dono) await atendente.aoConectar(dono);
 };
 
+// Só um serviço 24/7 por vez (decisão #133): espera a vez antes de abrir a API e os números
+const instancia = new Instancia(log);
+
 async function iniciar() {
+  await instancia.aguardarVez();
+  // Se outro serviço assumir (este travou mais de 60 s), este para sem mexer nos números
+  instancia.iniciarBatimento(() => { sessoes.encerrarTudo(); process.exit(1); });
   await api.listen({ port: config.porta, host: config.host });
   log.info(`Serviço no ar em http://${config.host}:${config.porta}`);
   await sessoes.iniciarTodas();
@@ -74,6 +81,7 @@ async function desligar(sinal: string) {
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);
+  await instancia.liberar(); // o próximo serviço assume na hora
   await prisma.$disconnect().catch(() => undefined);
   process.exit(0);
 }

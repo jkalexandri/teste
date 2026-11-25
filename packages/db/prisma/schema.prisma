@@ -1022,3 +1022,11 @@ model AvisoAsaas {
   @@index([processadoEm])
   @@index([cobrancaId])
 }
+
+/// Serviço 24/7 no ar (decisão #133): só um por vez. O serviço que está rodando confirma a cada 20 s;
+/// outro só assume quando este libera (desligamento normal) ou para de confirmar por 60 s.
+model ServicoInstancia {
+  id      String   @id
+  dono    String
+  vistoEm DateTime
+}
