@@ -99,7 +99,7 @@ Baileys 7 (WhatsApp), `@anthropic-ai/sdk`, unpdf (PDF), web-push, write-excel-fi
 - **Reconexão:** `queda.ts` decide o que fazer em cada código de queda (515 → reconecta; "pareado" = `creds.me`).
 - **Motor de envio** (`disparos.ts`): um "corredor" por usuário, relendo tudo do banco a cada envio; rodízio entre números,
   limites por número e por modo (Conservador/Equilibrado/Rápido), aquecimento, janela, feriados e regras de pular lead.
-- **Conversas** (`conversas.ts`): a IA responde 8–15 s após a última mensagem (teto 30 s); resposta pendente no banco (`Lead.responderEm`…) + varredura a cada 5 s, 3 tentativas e texto reserva (decisão #127); ficha da empresa em cache + resumo + últimas 12 mensagens.
+- **Conversas** (`conversas.ts`): a IA responde 8–15 s após a última mensagem (teto 30 s); resposta pendente no banco (`Lead.responderEm`…) + varredura a cada 5 s, 3 tentativas e texto reserva (decisão #127); responde no endereço de onde o lead escreveu (`Lead.jidWhatsapp`, contato LID — decisão #129); ficha da empresa em cache + resumo + últimas 12 mensagens.
 - **Saldo de disparos** (`packages/db/src/saldo.ts`, decisão #102): conta os `Envio` ENVIADO desde `Empresa.inicioPeriodo`;
   limite = `Empresa.limiteDisparos` + `disparosExtras`. Sem saldo, o motor pausa com o motivo `MOTIVO_SEM_SALDO`; a confirmação do pacote
   em Pedidos chama `retomarSemSaldo`.

@@ -103,6 +103,10 @@ Testes do Asaas usam o **Asaas de mentira** (`apps/web/tests/asaas-falso.cjs`, s
 Resposta pendente no banco + varredura, 8–15 s (teto 30 s), 3 tentativas e texto reserva, "não sei" não pausa, saída estruturada.
 Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: responder no mesmo endereço (jid/LID) de onde veio a mensagem.
 
+### Revisão por módulos — decisão #129 (quadro em `docs/modulos/README.md`)
+- Ordem: módulos 4 (WhatsApp) e 8 (Conversas IA) → 6 (Campanhas) → 5 (Leads) → 3 (Pagamento) → demais.
+- Módulo 8, passo 1 FEITO (v1.41.2): resposta no endereço LID. Próximo: o dono testa na VPS; depois, mapa + auditoria dos módulos 4 e 8.
+
 ### Criação de campanha — decisão #128 (em andamento, um passo por vez com prévia)
 - Passo 1 FEITO (v1.41.1): trava contra disparo duplicado + ir para Em andamento.
 - Próximos: 2 salvamento automático · 3 painel "Adicionar leads" sem sair da tela · 4 Cancelar campanha · 5 IA com confirmação e validação no Avançar · 6 menores.

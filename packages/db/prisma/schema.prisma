@@ -451,6 +451,8 @@ model Lead {
   tentativasResposta  Int        @default(0)
   /// Aviso "WhatsApp desconectado com lead esperando" já enviado nesta pendência
   avisoEsperaEm       DateTime?
+  /// Endereço exato do WhatsApp de onde o lead escreveu por último (ex.: "123…@lid"); as respostas vão para ele (decisão #129)
+  jidWhatsapp           String?
 
   @@index([usuarioId, ultimaMensagemEm])
   @@index([responderEm])

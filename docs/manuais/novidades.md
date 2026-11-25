@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.2 — respostas chegam aos contatos do WhatsApp novo (25/11/2026)
+
+- Alguns contatos escrevem pelo formato novo do WhatsApp, que esconde o número. Agora a IA e as suas mensagens
+  respondem **no mesmo endereço de onde o lead escreveu**, e a resposta aparece na conversa dele.
+
 ## v1.41.1 — campanha nunca sai duas vezes (25/11/2026)
 
 - Se a mesma campanha estiver aberta em duas abas, ou o botão for clicado de novo, ela **não é enviada duas vezes**:

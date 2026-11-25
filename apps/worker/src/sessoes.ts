@@ -16,7 +16,7 @@ export const SESSAO_PLATAFORMA = "plataforma";
 type Conexao = { sock: WASocket; tentativas: number; encerrando: boolean; qrGerado: boolean };
 
 /** Mensagem recebida, com o tipo e (para imagens) como baixar a imagem — Conversas IA. */
-export type MensagemRecebida = { texto: string; tipo: string; baixarImagem?: () => Promise<{ tipo: string; base64: string } | null> };
+export type MensagemRecebida = { texto: string; tipo: string; /** Endereço de origem quando o contato é LID (decisão #129) */ jid?: string; baixarImagem?: () => Promise<{ tipo: string; base64: string } | null> };
 
 export class GerenciadorSessoes implements Remetente {
   private conexoes = new Map<string, Conexao>();
@@ -106,7 +106,7 @@ export class GerenciadorSessoes implements Remetente {
             }
           : undefined;
         this.log.info({ id, tipo, temTexto: !!texto, lid, tel: `${telefone.slice(0, 4)}…${telefone.slice(-4)}` }, "mensagem recebida de contato");
-        await this.aoReceber(id, telefone, texto, { texto, tipo, baixarImagem }).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
+        await this.aoReceber(id, telefone, texto, { texto, tipo, baixarImagem, jid: lid ? k.remoteJid : undefined }).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
       }
     });
 

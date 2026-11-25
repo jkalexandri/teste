@@ -320,3 +320,21 @@ test("usuário escreve à mão: a resposta pendente da IA é cancelada", async (
   assert.equal(wa.enviados.length, 1, "só a mensagem manual");
   assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).respostaPendenteDesde, null);
 });
+
+test("contato LID: a resposta vai para o endereço de onde ele escreveu (decisão #129)", async () => {
+  const l = await novoLead();
+  const LID = "123456789012345@lid";
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto", jid: LID });
+  await aguardar();
+  assert.equal(wa.enviados.length, 1);
+  assert.equal(wa.enviados[0]!.jid, LID, "a IA responde no endereço LID");
+  assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).jidWhatsapp, LID);
+  // A mensagem escrita pelo usuário também vai para o LID
+  await at.enviarManual(l.id, USU, "Aqui é o vendedor");
+  assert.equal(wa.enviados[1]!.jid, LID);
+  // Se depois ele escrever pelo número normal, volta a responder no telefone
+  await prisma.lead.update({ where: { id: l.id }, data: { iaPausada: false, iaPausaMotivo: null } });
+  await at.receber(USU, USU, TEL, { texto: "Oi de novo", tipo: "texto" });
+  await aguardar();
+  assert.equal(wa.enviados[2]!.jid, `${TEL}@s.whatsapp.net`);
+});

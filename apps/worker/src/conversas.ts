@@ -46,12 +46,14 @@ export const MOTIVO_ASSUMIDA = "Conversa assumida pelo usuário.";
 export const MOTIVO_NAO_SEI = "A IA não soube responder. Confirme a informação com o lead e depois devolva a conversa para a IA.";
 export const MOTIVO_LIMITE = `Limite de ${MAX_IA_DIA} respostas da IA nesta conversa hoje.`;
 
-export type Recebida = { texto: string; tipo: string; baixarImagem?: () => Promise<{ tipo: string; base64: string } | null> };
+export type Recebida = { texto: string; tipo: string; /** Endereço de origem (contato LID — decisão #129) */ jid?: string; baixarImagem?: () => Promise<{ tipo: string; base64: string } | null> };
 
 /** Status que a IA pode trocar; os outros (venda concluída, pediu para sair, bloqueado) só o usuário muda. */
 const STATUS_DA_IA: StatusLead[] = [StatusLead.NOVO, StatusLead.EM_CONVERSA, StatusLead.QUALIFICADO, StatusLead.OBJECAO];
 
 const jidDe = (telefone: string) => `${telefone}@s.whatsapp.net`;
+/** Para onde responder (decisão #129): o endereço de onde o lead escreveu (LID); se não houver, o telefone. */
+const destinoDo = (lead: { telefone: string; jidWhatsapp?: string | null }) => lead.jidWhatsapp || jidDe(lead.telefone);
 const inicioDoDiaSP = (d: Date) => new Date(`${new Date(d.getTime() - 3 * 3600_000).toISOString().slice(0, 10)}T00:00:00-03:00`);
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -144,8 +146,11 @@ export class Atendente {
     }
     const agora = this.agora();
     await prisma.mensagem.create({ data: { leadId: lead.id, autor: AutorMensagem.LEAD, texto: r.texto, tipo: r.tipo, sessaoId } });
-    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: agora, naoLidas: { increment: 1 }, sessaoId } });
+    // Guarda o endereço de onde ele escreveu: contato LID recebe a resposta nesse endereço (decisão #129)
+    const jidWhatsapp = r.jid ?? null;
+    await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: agora, naoLidas: { increment: 1 }, sessaoId, jidWhatsapp } });
     lead.sessaoId = sessaoId;
+    lead.jidWhatsapp = jidWhatsapp;
 
     // SAIR/PARAR/STOP/CANCELAR e mensagens vazias não chamam a IA (decisões #75 e #83)
     const palavra = r.texto.trim().toUpperCase().replace(/[^A-ZÇÃÕÁÉÍÓÚ]/g, "");
@@ -213,13 +218,13 @@ export class Atendente {
   }
 
   /** Envia como a empresa. Falha no WhatsApp: tenta de novo uma vez depois de 5 s (decisão #127); falhando de novo, lança o erro. */
-  private async enviarComoEmpresa(lead: { id: string; usuarioId: string; telefone: string; sessaoId: string | null }, texto: string, autor: AutorMensagem, preferido?: string | null) {
+  private async enviarComoEmpresa(lead: { id: string; usuarioId: string; telefone: string; sessaoId: string | null; jidWhatsapp?: string | null }, texto: string, autor: AutorMensagem, preferido?: string | null) {
     const numero = await this.numeroDo(lead, preferido);
     if (!numero) {
       this.log.warn({ leadId: lead.id }, "WhatsApp desconectado: resposta não enviada");
       return false;
     }
-    const jid = jidDe(lead.telefone);
+    const jid = destinoDo(lead);
     await this.remetente.digitando(numero, jid, Math.min(4_000, 1_500 + texto.length * 30));
     const inicio = Date.now();
     try {
@@ -229,7 +234,7 @@ export class Atendente {
       await dormir(this.opcoes.reenvioMs ?? REENVIO_MS);
       await this.remetente.enviar(numero, jid, { texto });
     }
-    this.log.info({ leadId: lead.id, numero, ms: Date.now() - inicio }, "mensagem enviada ao lead");
+    this.log.info({ leadId: lead.id, numero, para: lead.jidWhatsapp ? "lid" : "numero", ms: Date.now() - inicio }, "mensagem enviada ao lead");
     await prisma.mensagem.create({ data: { leadId: lead.id, autor, texto, sessaoId: numero } });
     await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: this.agora(), sessaoId: numero } });
     return true;
@@ -405,7 +410,7 @@ export class Atendente {
     this.timers.delete(leadId);
     const anexo = arquivo ? { caminho: join(this.opcoes.pastaArquivos, arquivo.id), tipo: arquivo.tipo, nome: arquivo.nome } : undefined;
     try {
-      await this.remetente.enviar(numero, jidDe(lead.telefone), { texto, anexo });
+      await this.remetente.enviar(numero, destinoDo(lead), { texto, anexo });
     } catch (e) {
       this.log.warn({ e, leadId }, "mensagem manual não enviada");
       return { ok: false, mensagem: "Não foi possível enviar. Confira o WhatsApp e tente de novo." };
