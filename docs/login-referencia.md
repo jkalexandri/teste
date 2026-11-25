@@ -29,6 +29,7 @@ Tokens do app (resto das telas): ver seção 9.
 ## 3. Estrutura e layout
 - Container `.login-future .login-shell`: `height: 100dvh`, `overflow: hidden` (sem scroll). Flex coluna no mobile, linha em `lg` (≥1024px).
   No mobile (até 1023px), o conjunto (lado esquerdo + card) fica **centralizado na altura da tela** (`justify-content:center`; `.login-right` sem `flex:1`) — decisão #118.
+  Telas de até 600px de altura escondem o subtítulo (antes 560px), para o card caber inteiro — decisão #122.
 - **Esquerda** (`aside.login-aside`): `lg:w-[52%]`, centralizado verticalmente em `lg`.
 - **Direita** (`.login-right`): `lg:w-[48%]`, card centralizado, `max-width: 420px`.
 - Todos os textos da esquerda com `margin-left: 75.6px` (0 em telas < 1024px).

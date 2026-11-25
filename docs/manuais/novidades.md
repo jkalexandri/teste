@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.38.2 — login inteiro em celular pequeno (25/11/2026)
+
+- Em celulares de tela bem baixa (ex.: iPhone SE antigo), a frase "Envios com ritmo…" do login não aparece, para o quadro de
+  acesso caber inteiro, com o botão Entrar visível. Nos outros celulares e no computador nada muda.
+
 ## v1.38.1 — texto da lista de leads vazia (25/11/2026)
 
 - Leads: com a lista vazia, a frase agora diz "Adicione no quadro **Adicionar leads**" (no celular o quadro fica embaixo, não ao lado).
