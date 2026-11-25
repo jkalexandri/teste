@@ -66,7 +66,12 @@ export default function TelaConversas(p: {
   useEffect(() => {
     if (p.aberto?.podeResponder && p.aberto.naoLidas > 0) void marcarLida(p.aberto.id);
   }, [p.aberto?.id, p.aberto?.naoLidas, p.aberto?.podeResponder]);
-  useEffect(() => { fim.current?.scrollIntoView({ block: "end" }); }, [p.aberto?.id, p.mensagens.length]);
+  // Abre (e recebe mensagem nova) mostrando a mais recente. Rola só a área das mensagens — antes o
+  // scrollIntoView rolava a página inteira e escondia o cabeçalho da conversa.
+  useEffect(() => {
+    const area = fim.current?.parentElement;
+    if (area) area.scrollTop = area.scrollHeight;
+  }, [p.aberto?.id, p.mensagens.length]);
 
   const ir = (mudar: Record<string, string>) => {
     const q = new URLSearchParams(sp.toString());
@@ -83,8 +88,16 @@ export default function TelaConversas(p: {
 
   const a = p.aberto;
   return (
-    <>
-      <div className="card p-3 mt-3 flex flex-wrap items-center gap-2">
+    // Rolagem da tela (pedido do dono, decisão #136): a página rola só até a barra de busca encostar no topo fixo;
+    // daí em diante este bloco ocupa a altura da tela e só a lista de conversas e as mensagens rolam.
+    // Ficam fixos: busca e filtros, cabeçalho da conversa e a caixa de escrever.
+    // Altura do topo fixo: 52 px; abaixo de 1024 px soma a fileira do menu (44 px). Sobra embaixo = espaço do <main>.
+    <div
+      className="sticky z-10 flex flex-col pt-3 min-h-[360px] top-[calc(var(--safe-area-inset-top)+96px)] lg:top-[calc(var(--safe-area-inset-top)+52px)] h-[calc(100dvh-var(--safe-area-inset-top)-96px-12px)] sm:h-[calc(100dvh-var(--safe-area-inset-top)-96px-16px)] lg:h-[calc(100dvh-var(--safe-area-inset-top)-52px-16px)]"
+      style={{ background: "var(--bg)" }}
+      data-testid="area-conversas"
+    >
+      <div className="card p-3 flex flex-wrap items-center gap-2 shrink-0">
         <form className="flex gap-2 flex-1 min-w-[220px]" onSubmit={(e) => { e.preventDefault(); ir({ q: busca.trim() }); }}>
           <input className="input !py-1.5" placeholder="Buscar por nome, telefone ou código" value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar conversa" />
           <button className="btn-ghost !py-1.5">Buscar</button>
@@ -106,7 +119,7 @@ export default function TelaConversas(p: {
         )}
       </div>
 
-      <div className="card mt-3 flex-1 min-h-[520px] grid md:grid-cols-[320px_1fr] overflow-hidden">
+      <div className="card mt-3 flex-1 min-h-0 grid grid-rows-[minmax(0,1fr)] md:grid-cols-[320px_1fr] overflow-hidden">
         {/* Lista de conversas */}
         <aside className={`${a ? "hidden md:flex" : "flex"} flex-col min-h-0`} style={{ borderRight: "1px solid var(--border)" }}>
           {p.lista.length === 0 ? (
@@ -238,6 +251,6 @@ export default function TelaConversas(p: {
           <div className="hidden md:flex items-center justify-center p-6 text-[13px]" style={{ color: "var(--muted)" }}>Escolha uma conversa.</div>
         )}
       </div>
-    </>
+    </div>
   );
 }

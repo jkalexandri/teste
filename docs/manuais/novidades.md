@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.6 — Conversas IA mais fácil de usar (25/11/2026)
+
+- Em **Conversas IA**, a busca, o nome do lead (com Assumir/Devolver) e a caixa de escrever ficam sempre à vista;
+  só a lista de conversas e as mensagens rolam. A conversa abre já na mensagem mais recente.
+
 ## v1.41.5 — serviço do WhatsApp fechado para a internet (25/11/2026)
 
 - Segurança: o endereço do serviço do WhatsApp (`api.filaproleads.com.br`) passa a responder pela internet só se está no ar;

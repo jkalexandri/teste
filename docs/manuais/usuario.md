@@ -156,6 +156,7 @@ Menu **Conversas IA**: todas as conversas com os leads, no estilo do WhatsApp We
   Se o seu WhatsApp estiver desconectado, a resposta espera e você é avisado depois de 5 minutos.
 - A cada resposta ela classifica o lead em **Quente** (quer comprar ou agendar agora), **Morno** (tem interesse, sem urgência)
   ou **Frio** (sem interesse), e marca o status (Em conversa, Qualificado ou Objeção).
+- A busca, o nome do lead e a caixa de escrever ficam sempre à vista; só a lista de conversas e as mensagens rolam.
 - **Assumir conversa:** a IA para de responder aquele lead. **Devolver para a IA:** ela volta a responder.
 - **Escrever uma mensagem** (com ou sem arquivo) também assume a conversa.
 - Se a IA não souber responder (algo que não está no Empresa | IA), ela diz que vai confirmar com você, **continua a conversa** e avisa você.

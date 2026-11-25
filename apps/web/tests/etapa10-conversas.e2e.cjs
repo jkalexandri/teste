@@ -83,6 +83,23 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   ok('Desligar "IA responde sozinha"', await ate(() => sql(`select "iaConversas" from "Usuario" where id='${ANA}'`) === 'f'));
   await espera(1200); await p.locator('[data-testid=ia-geral]').click();
   ok('Ligar de novo', await ate(() => sql(`select "iaConversas" from "Usuario" where id='${ANA}'`) === 't'));
+
+  // Rolagem (decisão #136): a página rola só até a busca encostar no topo; lista e mensagens rolam sozinhas;
+  // busca, cabeçalho da conversa e caixa de escrever ficam visíveis
+  sql(`insert into "Mensagem"(id,"leadId",autor,texto,tipo,"criadoEm") select 'tm10-rol-'||g,'tc10-2',(case when g%2=0 then 'LEAD' else 'IA' end)::"AutorMensagem",'Mensagem '||g||' do teste de rolagem.','texto',now()-((40-g)||' seconds')::interval from generate_series(1,30) g`);
+  await p.goto(BASE + '/conversas?lead=tc10-2'); await espera(1200);
+  await p.evaluate(() => window.scrollTo(0, 99999)); await espera(500);
+  const rol = await p.evaluate(() => {
+    const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1 && r.height > 0; };
+    const area = document.querySelector('[data-testid=conversa] .overflow-y-auto');
+    return { busca: vis(document.querySelector('[aria-label="Buscar conversa"]')), cabecalho: vis(document.querySelector('[data-testid=conversa] b')),
+      caixa: vis(document.querySelector('#conv-texto')), enviar: vis([...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Enviar')),
+      rolaDentro: !!area && area.scrollHeight > area.clientHeight, naMaisRecente: !!area && Math.abs(area.scrollTop + area.clientHeight - area.scrollHeight) < 4 };
+  });
+  ok('Rolagem: busca, cabeçalho da conversa e caixa de escrever continuam visíveis', rol.busca && rol.cabecalho && rol.caixa && rol.enviar, JSON.stringify(rol));
+  ok('Rolagem: as mensagens rolam dentro do quadro e abrem na mais recente', rol.rolaDentro && rol.naMaisRecente);
+  await p.screenshot({ path: OUT + '/conversas-rolagem.png' });
+  sql(`delete from "Mensagem" where id like 'tm10-rol-%'`);
   await c.close();
 
   // Celular: lista e conversa em telas separadas
