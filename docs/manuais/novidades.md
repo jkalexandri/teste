@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.7 — novo ícone do suporte (25/11/2026)
+
+- O botão **💬 Suporte** virou o **ícone do atendente** (verde): no computador fica ao lado do botão **Sair**, que ficou menor;
+  no celular fica no canto de baixo e, em Conversas IA, acima da caixa de escrever (não cobre mais o "Escolher arquivo").
+
 ## v1.41.6 — Conversas IA mais fácil de usar (25/11/2026)
 
 - Em **Conversas IA**, a busca, o nome do lead (com Assumir/Devolver) e a caixa de escrever ficam sempre à vista;

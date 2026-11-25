@@ -75,6 +75,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     // ===== 3. Suporte =====
     ok('Cliente tem o botão Suporte', (await pU.locator('[data-testid=botao-suporte]').count()) === 1);
     ok('Super Admin não tem o botão Suporte', (await pS.locator('[data-testid=botao-suporte]').count()) === 0);
+    // Ícone do suporte (decisão #137): o atendente verde, sem o antigo "💬 Suporte"
+    ok('Suporte é o ícone do atendente (imagem carregada, sem o texto antigo)', await pU.locator('[data-testid=botao-suporte] img').evaluate((i) => i.complete && i.naturalWidth > 0) && (await pU.locator('text=💬 Suporte').count()) === 0);
     await pU.click('[data-testid=botao-suporte]');
     await pU.fill('[aria-label="Mensagem para o suporte"]', 'Olá, preciso de ajuda com a campanha');
     await pU.click('[data-testid=janela-suporte] button:has-text("Enviar")'); await espera(800);

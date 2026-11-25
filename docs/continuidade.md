@@ -106,7 +106,7 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
 ### Revisão por módulos — decisão #129 (quadro em `docs/modulos/README.md`)
 - Ordem: módulos 4 (WhatsApp) e 8 (Conversas IA) → 6 (Campanhas) → 5 (Leads) → 3 (Pagamento) → demais.
 - Módulo 8, passo 1 FEITO (v1.41.2): resposta no endereço LID — **confirmado pelo dono na VPS em 25/11/2026** (mensagem chegou no lead 7836).
-- Módulo 8: rolagem da tela Conversas IA (v1.41.6, decisão #136). Pendente decidir: botão flutuante "Suporte" cobre o "Escolher arquivo" no celular.
+- Módulo 8: rolagem da tela Conversas IA (v1.41.6, decisão #136). Botão do suporte resolvido na v1.41.7 (decisão #137).
 - Módulo 4: auditoria feita (decisão #130, 22 falhas). C1 FEITA (v1.41.3: protegerTela em todas as telas + teste etapa21).
   Encapsulamento (decisão #132): portas únicas + teste vigia, módulo a módulo. Item 5 (API do 24/7 só por dentro da VPS) logo após C2/A1; item 2 (dado por dono) começa no Módulo 5.
   C2 e A1 FEITAS (v1.41.4, decisão #133: serviço único + porta por número).

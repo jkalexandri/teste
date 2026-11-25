@@ -243,7 +243,7 @@ Não compartilhe o endereço. Se precisar, use **Gerar novo endereço** — o an
 
 ## Suporte
 
-O botão **💬 Suporte**, no canto de baixo da tela, abre um chat com o suporte do FilaPro Leads:
+O **ícone do atendente** (verde, com fone), ao lado do botão Sair no computador ou no canto de baixo no celular, abre um chat com o suporte do FilaPro Leads:
 
 - escreva a dúvida e, se quiser, anexe uma **imagem (JPG/PNG) ou PDF** de até 15 MB;
 - a resposta aparece na hora, no mesmo chat; o número vermelho no botão mostra mensagens novas;

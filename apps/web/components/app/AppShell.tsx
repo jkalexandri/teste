@@ -154,7 +154,8 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                   </p>
                 )}
               </div>
-            <button onClick={sair} className="btn-ghost mt-2 w-full justify-center">
+            {/* Sair menor, à esquerda; ao lado fica o ícone flutuante do suporte (decisão #137) */}
+            <button onClick={sair} className="btn-ghost mt-2 w-[150px] self-start justify-center !py-2.5">
               <Repeat size={14} /> Sair
             </button>
             {/* Versão do sistema (decisão #100) */}

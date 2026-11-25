@@ -73,8 +73,16 @@ export default function Presenca({ cliente, manutencaoInicial = false }: { clien
               <ChatSuporte modo="cliente" altura={300} />
             </div>
           )}
-          <button type="button" className="fixed z-[80] bottom-3 left-3 lg:left-[248px] btn-primary !rounded-full shadow-lg nao-imprimir" onClick={() => setAberto((a) => !a)} data-testid="botao-suporte">
-            💬 Suporte{suporte.naoLidas > 0 && <span className="ml-1 rounded-full px-1.5 text-[11px] font-extrabold" style={{ background: "#e5484d", color: "#fff" }} data-testid="suporte-nao-lidas">{suporte.naoLidas}</span>}
+          {/* Ícone flutuante do suporte (decisão #137): o atendente enviado pelo dono, verde e sem fundo.
+              Computador: colado ao lado do botão Sair, no rodapé do menu. Celular: no canto de baixo e, em
+              Conversas IA, acima da caixa de escrever (a tela informa a altura dela em --caixa-conversa). */}
+          <button type="button" aria-label="Suporte" title="Suporte"
+            className="fixed z-[80] left-3 lg:left-[176px] lg:!bottom-[30px] nao-imprimir p-0.5 transition-transform hover:scale-105"
+            style={{ bottom: "calc(var(--caixa-conversa, 0px) + 12px)", filter: "drop-shadow(0 2px 3px rgba(0,0,0,.18))" }}
+            onClick={() => setAberto((a) => !a)} data-testid="botao-suporte">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icones/suporte.png" alt="" width={34} height={44} className="block h-[44px] w-auto" />
+            {suporte.naoLidas > 0 && <span className="absolute -top-1 -right-2 rounded-full px-1.5 text-[11px] font-extrabold" style={{ background: "#e5484d", color: "#fff" }} data-testid="suporte-nao-lidas">{suporte.naoLidas}</span>}
           </button>
         </>
       )}

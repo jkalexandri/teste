@@ -56,6 +56,18 @@ export default function TelaConversas(p: {
   const fim = useRef<HTMLDivElement>(null);
   const arquivoRef = useRef<HTMLInputElement>(null);
   const [arquivoId, setArquivoId] = useState("");
+  // Altura da caixa de escrever: o ícone flutuante do suporte fica acima dela no celular (decisão #137)
+  const caixa = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const el = caixa.current;
+    const raiz = document.documentElement;
+    if (!el) { raiz.style.removeProperty("--caixa-conversa"); return; }
+    const medir = () => raiz.style.setProperty("--caixa-conversa", `${el.getBoundingClientRect().height + 8}px`);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => { ro.disconnect(); raiz.style.removeProperty("--caixa-conversa"); };
+  }, [p.aberto?.id, p.aberto?.podeResponder]);
 
   // Atualiza a cada 5 s (mensagens novas e respostas da IA)
   useEffect(() => {
@@ -220,6 +232,7 @@ export default function TelaConversas(p: {
 
             {a.podeResponder ? (
               <form
+                ref={caixa}
                 className="p-2 flex flex-wrap items-end gap-2"
                 style={{ borderTop: "1px solid var(--border)" }}
                 onSubmit={(e) => {

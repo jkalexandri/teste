@@ -23,7 +23,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 8 | Conversas IA (atendimento) | 🟡 Em revisão | iniciada em 25/11/2026 13:31 (auditoria a fazer) | v1.41.2 | v1.41.6 — 25/11/2026 19:08 (rolagem da tela: cabeçalho e caixa de escrever fixos) |
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
-| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (Ajuda → Módulos e revisões) |
+| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.41.7 — 25/11/2026 19:27 (ícone flutuante do suporte) |
 | 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | v1.41.5 — 25/11/2026 18:28 (Caddy: só /saude pela internet) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.41.7 | 25/11/2026 19:27 | 11 Comunicação | Ícone do atendente (suporte) ao lado do Sair, que ficou menor | 2 Contas e usuários (menu), 8 Conversas IA | não |
 | v1.41.6 | 25/11/2026 19:08 | 8 Conversas IA | Tela: só a lista e as mensagens rolam; busca, cabeçalho da conversa e caixa de escrever fixos | — | não |
 | v1.41.5 | 25/11/2026 18:28 | 4 WhatsApp (conexão) | API do serviço 24/7 só por dentro da VPS; pela internet só /saude (M5) | 12 Operação (VPS) | não |
 | v1.41.4 | 25/11/2026 18:22 | 4 WhatsApp (conexão) | Um serviço 24/7 por vez; "aberto em outro lugar" mantém o login; porta única por número (C2 e A1) | 12 Operação (VPS) | não |
