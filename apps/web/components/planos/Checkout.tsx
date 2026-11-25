@@ -33,7 +33,7 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
   const [quantidade, setQuantidade] = useState(Math.min(Math.max(1, quantidadeInicial), maxQ));
   // Forma de pagamento pelo Asaas (decisão #115): PIX, cartão ou boleto; sem Asaas, PIX manual
   const formas = useFormas();
-  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "" });
+  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "", automatica: true });
   const valorBase = plano.precoAtual != null ? precoComQuantidade(plano.precoAtual, plano.descontos, quantidade) : 0;
 
   async function enviar(e: React.FormEvent) {

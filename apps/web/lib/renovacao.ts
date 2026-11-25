@@ -47,6 +47,21 @@ export async function enviarAvisoRenovacao(empresa: Empresa, diasRestantes: numb
   return enviarEmail({ para: resp.email, assunto: `Renove seu acesso ao FilaPro Leads — ${quando}`, texto, html });
 }
 
+/** Aviso para quem tem cobrança automática no cartão (decisão #124, item g): um só, 3 dias antes, sem o link de renovação. */
+export async function enviarAvisoRenovacaoAutomatica(empresa: Empresa) {
+  const resp = await responsavelDaConta(empresa);
+  if (!resp) return false;
+  const data = empresa.expiraEm.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const texto =
+    `Olá, ${resp.nome}.\n\nSeu acesso ao FilaPro Leads (${empresa.nome}, plano ${empresa.pacote}) será renovado automaticamente em ${data}, ` +
+    `com cobrança no cartão cadastrado.\n\nSe quiser desligar a cobrança automática, acesse o FilaPro.`;
+  const html =
+    `<p>Olá, ${resp.nome}.</p><p>Seu acesso ao <b>FilaPro Leads</b> (${empresa.nome}, plano ${empresa.pacote}) será <b>renovado automaticamente em ${data}</b>, ` +
+    `com cobrança no cartão cadastrado.</p><p>Se quiser desligar a cobrança automática, acesse o FilaPro.</p>`;
+  if (resp.whatsapp) await enviarPelaPlataforma(resp.whatsapp, texto);
+  return enviarEmail({ para: resp.email, assunto: `Seu acesso ao FilaPro Leads será renovado automaticamente em ${data}`, texto, html });
+}
+
 /** Aplica um pedido de renovação confirmado: troca o plano (se mudou) e soma o prazo. */
 export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionClient) {
   if (!pedido.empresaId) throw new Error("Pedido de renovação sem conta.");

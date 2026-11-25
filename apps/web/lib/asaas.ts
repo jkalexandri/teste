@@ -176,3 +176,43 @@ export async function criarCobrancaAsaas(o: {
 export async function apagarCobrancaAsaas(id: string) {
   await chamarAsaas(`/payments/${id}`, { metodo: "DELETE" }).catch(() => undefined);
 }
+
+// ===== Assinaturas: cobrança automática no cartão (decisão #124, etapa D) =====
+// O cliente paga a 1ª cobrança na página do Asaas (o cartão fica guardado lá); nos períodos seguintes o Asaas cobra sozinho.
+
+/** Data AAAA-MM-DD no horário de Brasília (vencimento da cobrança). */
+export const dataBR = (d: Date) => new Date(d.getTime() - 3 * 3600_000).toISOString().slice(0, 10);
+
+/** Cria a assinatura no cartão e devolve o código dela e a 1ª cobrança (página de pagamento). */
+export async function criarAssinaturaAsaas(o: {
+  clienteId: string; valor: number; ciclo: string; descricao: string; referencia: string;
+}): Promise<{ id: string; cobrancaId: string | null; link: string | null }> {
+  const a = await chamarAsaas<{ id: string }>("/subscriptions", {
+    metodo: "POST",
+    corpo: {
+      customer: o.clienteId,
+      billingType: "CREDIT_CARD",
+      value: Math.round(o.valor) / 100,
+      nextDueDate: dataBR(new Date(Date.now() + 86_400_000)), // 1ª cobrança: vence amanhã, como o cartão avulso
+      cycle: o.ciclo,
+      description: o.descricao.slice(0, 500),
+      externalReference: o.referencia,
+    },
+  });
+  const lista = await chamarAsaas<{ data?: { id: string; invoiceUrl?: string }[] }>(`/subscriptions/${a.id}/payments`).catch(() => ({ data: [] }));
+  const primeira = lista.data?.[0];
+  return { id: a.id, cobrancaId: primeira?.id ?? null, link: primeira?.invoiceUrl ?? null };
+}
+
+/** Atualiza valor, período e próxima data da assinatura; a cobrança já gerada e ainda não paga acompanha. */
+export async function atualizarAssinaturaAsaas(id: string, o: { valor: number; ciclo: string; proximaData: Date }) {
+  await chamarAsaas(`/subscriptions/${id}`, {
+    metodo: "PUT",
+    corpo: { value: Math.round(o.valor) / 100, cycle: o.ciclo, nextDueDate: dataBR(o.proximaData), updatePendingPayments: true },
+  });
+}
+
+/** Cancela a assinatura no Asaas (o cartão deixa de ser cobrado). */
+export async function cancelarAssinaturaAsaas(id: string) {
+  await chamarAsaas(`/subscriptions/${id}`, { metodo: "DELETE" });
+}

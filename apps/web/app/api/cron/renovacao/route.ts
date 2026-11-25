@@ -3,7 +3,7 @@
 // Protegido por CRON_SECRET (o agendador envia "Authorization: Bearer <CRON_SECRET>").
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
-import { enviarAvisoRenovacao } from "@/lib/renovacao";
+import { enviarAvisoRenovacao, enviarAvisoRenovacaoAutomatica } from "@/lib/renovacao";
 import { Cargo } from "@filapro/db";
 import { avisarContasVencendo, sincronizarFinanceiro } from "@/lib/financeiro";
 import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
@@ -34,6 +34,14 @@ export async function GET(req: Request) {
   let enviados3 = 0;
   for (const e of contas) {
     const d = diasAte(e.expiraEm);
+    // Cobrança automática no cartão (decisão #124, item g): um aviso só, 3 dias antes, sem o link de renovação
+    if (e.asaasAssinaturaId) {
+      if (d <= 3 && !e.avisoRenovacao3Em && (await enviarAvisoRenovacaoAutomatica(e))) {
+        await prisma.empresa.update({ where: { id: e.id }, data: { avisoRenovacao3Em: new Date(), avisoRenovacao10Em: e.avisoRenovacao10Em ?? new Date() } });
+        enviados3++;
+      }
+      continue;
+    }
     if (d <= 3 && !e.avisoRenovacao3Em) {
       if (await enviarAvisoRenovacao(e, d)) {
         // Lembrete de 3 dias cobre também o de 10 se este ainda não tinha saído.

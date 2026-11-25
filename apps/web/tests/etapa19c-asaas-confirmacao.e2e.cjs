@@ -39,6 +39,8 @@ const evento = (n) => `evt_19c_${suf}_${n}`;
     await p.locator('[aria-label="Planos"] article:has-text("Individual")').first().locator('[data-parte=botao]').click(); await espera(500);
     await p.fill('#ck-nome', 'Carlos Confirmação'); await p.fill('#ck-email', email); await p.fill('#ck-whats', '11987650001'); await p.fill('#ck-documento', CPF);
     await p.click(`[data-testid=forma-${forma}]`);
+    // Cartão avulso: desmarca a cobrança automática, que vem marcada (decisão #124, item a)
+    if (forma === 'CARTAO') await p.uncheck('[data-testid=cobranca-automatica]');
     if (nParcelas) await p.selectOption('#ck-parcelas', String(nParcelas));
     await p.click({ PIX: 'button:has-text("Gerar PIX")', BOLETO: 'button:has-text("Gerar boleto")', CARTAO: 'button:has-text("Pagar com cartão")' }[forma]);
     if (!(await ate(() => sql(`select count(*) from "Pedido" where email='${email}' and "asaasId" is not null`) === '1'))) await p.screenshot({ path: `${OUT}/19c-compra-falhou-${forma}.png` });

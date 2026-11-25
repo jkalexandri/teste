@@ -87,6 +87,8 @@ const parcelas = (v, n, j) => { const i = j / 100; const p = Math.ceil((v * i) /
   const e3 = `cartao${suf}@x.com`;
   await abrirPlano(p, 'Individual'); await dados(p, e3); await p.fill('#ck-documento', CPF);
   await p.click('[data-testid=forma-CARTAO]');
+  // Cartão avulso (parcelado): desmarca a cobrança automática, que vem marcada (decisão #124, item a)
+  await p.uncheck('[data-testid=cobranca-automatica]');
   ok('Cartão em plano trimestral: parcelas de 1 a 6', (await p.locator('#ck-parcelas option').count()) === 6);
   await p.selectOption('#ck-parcelas', '3');
   const pp = parcelas(2990, 3, 2.99);

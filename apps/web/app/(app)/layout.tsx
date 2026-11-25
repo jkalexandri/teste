@@ -4,7 +4,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { prisma, Cargo, StatusPedido } from "@filapro/db";
+import { prisma, Cargo, Modulo, StatusPedido } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { diasRestantes, motivoSemAcesso } from "@/lib/auth/acesso";
 import { menuDoCargo, rotaPermitida } from "@/lib/menu";
@@ -54,6 +54,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         cargo: u.cargo,
         dias: diasRestantes(sessao),
         expiraEm: u.empresa ? u.empresa.expiraEm.toISOString() : null,
+        // Cobrança automática no cartão (decisão #124, item h): só o dono da conta desliga
+        renovacaoAutomatica: u.empresa?.asaasAssinaturaId
+          ? { podeDesligar: (u.empresa.modulo === Modulo.INDIVIDUAL && u.cargo === Cargo.USUARIO) || (u.empresa.modulo === Modulo.EMPRESARIAL && u.cargo === Cargo.ADMIN_EMPRESA) }
+          : null,
         menu: menuDoCargo(u.cargo, permissoes),
         contadores,
       }}

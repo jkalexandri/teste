@@ -14,6 +14,7 @@ import { useTheme } from "@/lib/theme";
 import type { CargoMenu, IconeMenu, ItemMenu } from "@/lib/menu";
 import { VERSAO_CURTA, VERSAO_DATA } from "@/lib/versao";
 import AvisoExpiracao from "./AvisoExpiracao";
+import ChipRenovacao from "./ChipRenovacao";
 import { ToastProvider } from "./Toast";
 
 const ICONES: Record<IconeMenu, (p: { size?: number }) => ReactNode> = {
@@ -44,6 +45,8 @@ export type DadosShell = {
   cargo: CargoMenu;
   dias: number | null;
   expiraEm: string | null;
+  /** Cobrança automática no cartão ligada (decisão #124): o selo vira "Renova em X dias"; o dono pode desligar */
+  renovacaoAutomatica?: { podeDesligar: boolean } | null;
   menu: ItemMenu[];
   contadores?: Record<string, number>;
 };
@@ -170,7 +173,10 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                 <div className="font-bold text-[12px] [overflow-wrap:anywhere]">{dados.email}</div>
               </div>
               <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && (
+                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && dados.renovacaoAutomatica && dados.expiraEm && (
+                  <ChipRenovacao dias={dias} expiraEm={dados.expiraEm} podeDesligar={dados.renovacaoAutomatica.podeDesligar} />
+                )}
+                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && !dados.renovacaoAutomatica && (
                   <span
                     className="chip"
                     style={
@@ -243,7 +249,8 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
           </div>
         </div>
 
-        {cargo !== "SUPERADMIN" && dias !== null && dados.expiraEm && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} souAdmin={cargo === "ADMIN_EMPRESA"} />}
+        {/* Com cobrança automática, o aviso "renove pelo link" não aparece (decisão #124, item g): o selo do topo mostra a renovação */}
+        {cargo !== "SUPERADMIN" && dias !== null && dados.expiraEm && !dados.renovacaoAutomatica && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} souAdmin={cargo === "ADMIN_EMPRESA"} />}
       </div>
     </ToastProvider>
   );

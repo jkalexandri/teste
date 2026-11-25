@@ -7,9 +7,14 @@ import { confirmarPedido } from "@/lib/confirmar-pedido";
 import { sincronizarFinanceiro, garantirCategorias, RECEITA, DESPESA, CAT, reais } from "@/lib/financeiro";
 import { avisarSuperAdmins } from "@/lib/alertas-seguranca";
 import { registrarLog } from "@/lib/logs";
+import { pedidoDoPeriodo } from "@/lib/assinatura";
 
 /** Cobrança como o Asaas manda no aviso (só os campos que o FilaPro usa). Valores em reais. */
-type CobrancaAviso = { id?: string; value?: number; netValue?: number; externalReference?: string | null; billingType?: string; installment?: string | null };
+type CobrancaAviso = {
+  id?: string; value?: number; netValue?: number; externalReference?: string | null; billingType?: string; installment?: string | null;
+  /** Cobrança gerada por uma assinatura (cobrança automática no cartão — decisão #124) e o vencimento dela */
+  subscription?: string | null; dueDate?: string;
+};
 export type CorpoAviso = { id?: string; event?: string; payment?: CobrancaAviso };
 
 /** Pagamento aprovado: PIX e boleto avisam quando o dinheiro cai; cartão avisa quando a compra é aprovada (decisão #117, item 1). */
@@ -69,9 +74,14 @@ export async function reprocessarPendentes() {
 /** Decide o que fazer com cada evento. Devolve o texto do resultado. */
 async function tratar(evento: string, corpo: CorpoAviso): Promise<string> {
   const cobranca = corpo.payment ?? {};
-  const codigo = cobranca.externalReference ?? "";
-  const pedido = codigo ? await prisma.pedido.findUnique({ where: { codigo } }) : null;
+  // Cobrança de assinatura (decisão #124): o pedido é achado pela cobrança, não pelo código (o código é o do 1º pedido)
+  const pedido = cobranca.subscription ? await pedidoDaAssinatura(evento, cobranca) : cobranca.externalReference ? await prisma.pedido.findUnique({ where: { codigo: cobranca.externalReference } }) : null;
+  const codigo = pedido?.codigo ?? cobranca.externalReference ?? "";
 
+  if (evento === "PAYMENT_CREATED" && cobranca.subscription) {
+    // Novo período da cobrança automática: o pedido de renovação fica aguardando o cartão ser cobrado
+    return pedido ? `Pedido ${pedido.codigo} da cobrança automática (${pedido.status === StatusPedido.PAGO ? "já pago" : "aguardando a cobrança"}).` : "Ignorado: assinatura sem conta no FilaPro.";
+  }
   if (PAGO.includes(evento)) {
     if (!pedido) return `Ignorado: nenhum pedido com o código "${codigo}".`;
     return pagamentoAprovado(pedido, cobranca);
@@ -91,6 +101,23 @@ async function tratar(evento: string, corpo: CorpoAviso): Promise<string> {
 
 type PedidoBD = NonNullable<Awaited<ReturnType<typeof prisma.pedido.findUnique>>>;
 
+/**
+ * Pedido de uma cobrança da assinatura (decisão #124):
+ * 1) a cobrança já tem pedido; 2) é a 1ª cobrança do pedido que criou a assinatura (aviso chegou antes de gravar o código);
+ * 3) é um novo período de uma conta com cobrança automática: cria o pedido de renovação.
+ */
+async function pedidoDaAssinatura(evento: string, cobranca: CobrancaAviso): Promise<PedidoBD | null> {
+  if (!cobranca.id || !cobranca.subscription) return null;
+  const ja = await prisma.pedido.findUnique({ where: { asaasId: cobranca.id } });
+  if (ja) return ja;
+  const primeiro = await prisma.pedido.findFirst({ where: { asaasAssinaturaId: cobranca.subscription, asaasId: null, status: { in: [StatusPedido.AGUARDANDO, StatusPedido.EXPIRADO] } } });
+  if (primeiro) return prisma.pedido.update({ where: { id: primeiro.id }, data: { asaasId: cobranca.id } }).catch(() => prisma.pedido.findUnique({ where: { asaasId: cobranca.id } }));
+  if (evento !== "PAYMENT_CREATED" && !PAGO.includes(evento)) return null;
+  const conta = await prisma.empresa.findUnique({ where: { asaasAssinaturaId: cobranca.subscription } });
+  if (!conta) return null;
+  return pedidoDoPeriodo(conta, { id: cobranca.id, value: cobranca.value, dueDate: cobranca.dueDate });
+}
+
 /** PAYMENT_CONFIRMED / PAYMENT_RECEIVED: confirma o pedido (como o botão de Pedidos) e lança a taxa do Asaas. */
 async function pagamentoAprovado(pedido: PedidoBD, cobranca: CobrancaAviso): Promise<string> {
   // Pedido cancelado que foi pago depois (decisão #117, item 4): não confirma, só avisa
@@ -98,6 +125,11 @@ async function pagamentoAprovado(pedido: PedidoBD, cobranca: CobrancaAviso): Pro
     await avisarSuperAdmins(`⚠️ Asaas: chegou o pagamento de ${reais(centavos(cobranca.value))} do pedido ${pedido.codigo} (${pedido.empresaNome || pedido.nome}, ${pedido.email}), que estava CANCELADO. O pedido não foi confirmado: decida em Pedidos o que fazer.`, "/pedidos");
     await registrarLog(null, "PAGAMENTOS", `Pagamento do pedido cancelado ${pedido.codigo} (${pedido.email}) — não confirmado, Super Admin avisado.`, null);
     return "Pedido cancelado: não confirmado, Super Admin avisado.";
+  }
+
+  // Cobrança automática (decisão #124): o pedido fica com o valor que o cartão pagou de fato
+  if (pedido.automatica && pedido.status !== StatusPedido.PAGO && cobranca.value && centavos(cobranca.value) !== pedido.valor) {
+    pedido = await prisma.pedido.update({ where: { id: pedido.id }, data: { valor: centavos(cobranca.value) } });
   }
 
   let resultado: string;

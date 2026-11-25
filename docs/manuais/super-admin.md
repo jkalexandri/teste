@@ -232,6 +232,15 @@ Os avisos chegam no WhatsApp de avisos e no celular, e ficam em **Logs** (tipo *
 no processamento, o FilaPro tenta de novo no próximo aviso e na rotina diária. O botão **Confirmar pagamento** continua valendo
 para o PIX manual e para conferir à mão se algum aviso não chegar.
 
+**Cobrança automática no cartão (decisão #124):** na compra e na renovação, ao escolher **Cartão**, a opção **Cobrar automaticamente
+a cada período** vem marcada (só planos mensais, trimestrais, semestrais e anuais; sempre à vista). O FilaPro cria uma **assinatura**
+no Asaas: o cliente paga a 1ª vez na página do Asaas (o cartão fica guardado lá) e, a cada período, o Asaas cobra sozinho no dia do
+vencimento — o FilaPro cria e confirma o pedido de renovação (em Pedidos: **Cartão (automática)**), soma o prazo e lança a receita
+e a taxa. Mudou o plano, a quantidade ou o vencimento (inclusive **Alterar pacote** e **Prorrogar**): o valor e a data da assinatura
+acompanham. Plano sem período fixo: a cobrança automática é desligada e o dono recebe um e-mail. Em **Empresas** e em **Usuários
+Individuais** aparece **Cobrança automática: ligada** e o botão **Desligar cobrança automática**. Quem tem cobrança automática
+recebe um aviso só, 3 dias antes ("será renovado automaticamente"), sem o link de renovação.
+
 ![Pagamento](prints/s-pagamento.png)
 
 ## Inteligência Artificial

@@ -6,6 +6,7 @@ import { prisma, Modulo, StatusPedido, MOTIVO_SEM_SALDO } from "@filapro/db";
 import { criarConta, enviarEmailBoasVindas } from "@/lib/contas";
 import { aplicarRenovacao, enviarEmailRenovacaoConfirmada } from "@/lib/renovacao";
 import { sincronizarExtrasDaConta } from "@/lib/whatsapp-extra";
+import { ligarAssinatura, sincronizarAssinatura } from "@/lib/assinatura";
 
 type R = { ok: boolean; mensagem: string };
 
@@ -15,8 +16,20 @@ async function guardarDocumento(empresaId: string, cpfCnpj: string | null) {
 }
 
 /** Confirma o pagamento: cria a conta (ou renova, ou libera extras) e envia o acesso por e-mail.
- *  Também aceita pedido expirado (cliente que pagou depois). "por" = quem confirmou (e-mail do Super Admin ou "Asaas"). */
+ *  Também aceita pedido expirado (cliente que pagou depois). "por" = quem confirmou (e-mail do Super Admin ou "Asaas").
+ *  Cobrança automática no cartão (decisão #124): o 1º pagamento liga a assinatura na conta; qualquer outro pedido pago
+ *  de uma conta com assinatura atualiza valor e data dela no Asaas (item d). */
 export async function confirmarPedido(id: string, por: string): Promise<R> {
+  const r = await confirmarPedidoSemAssinatura(id, por);
+  if (r.ok) {
+    const p = await prisma.pedido.findUnique({ where: { id }, select: { empresaId: true, asaasAssinaturaId: true, automatica: true, codigo: true } });
+    if (p?.automatica && p.asaasAssinaturaId) await ligarAssinatura(p).catch((e) => console.error("[assinatura] ligar", e));
+    else if (p?.empresaId) await sincronizarAssinatura(p.empresaId);
+  }
+  return r;
+}
+
+async function confirmarPedidoSemAssinatura(id: string, por: string): Promise<R> {
   const pedido = await prisma.pedido.findUnique({ where: { id } });
   if (!pedido) return { ok: false, mensagem: "Pedido não encontrado." };
   if (pedido.status === StatusPedido.PAGO) return { ok: false, mensagem: "Este pedido já foi confirmado." };

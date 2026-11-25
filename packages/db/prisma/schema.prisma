@@ -42,6 +42,8 @@ model Empresa {
   ativa           Boolean  @default(true)
   expiraEm        DateTime
   prazoDias       Int      @default(31)
+  /// Cobrança automática no cartão (decisão #124): código da assinatura no Asaas; vazio = desligada
+  asaasAssinaturaId String? @unique
   /// Plano de origem (compra/renovação). Vazio em contas criadas manualmente.
   planoId         String?
   /// Limite de disparos do teste grátis (Free — decisão #34). Vazio = sem limite.
@@ -301,6 +303,10 @@ model Pedido {
   cpfCnpj         String?
   /// Cobrança no Asaas: código, página de pagamento (cartão/fatura), boleto (link e linha digitável)
   asaasId         String?      @unique
+  /// Cobrança automática no cartão (decisão #124): pedido de assinatura (1º pagamento ou renovação de cada período)
+  automatica      Boolean      @default(false)
+  /// Assinatura no Asaas criada por este pedido (1º pagamento) ou da qual ele faz parte
+  asaasAssinaturaId String?
   linkPagamento   String?
   boletoLinha     String?
   /// Receita e estorno na gestão financeira (decisão #106)

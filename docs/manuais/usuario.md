@@ -194,6 +194,14 @@ em até 10 minutos, chegam juntos.
 
 ![Avisos](prints/u-avisos.png)
 
+### Renovação automática no cartão (plano Individual)
+
+- Ao pagar com **Cartão**, a opção **Cobrar automaticamente a cada período** vem marcada: o cartão é cobrado sozinho no dia do
+  vencimento e o acesso renova sem você fazer nada (sempre à vista). Você recebe um aviso 3 dias antes.
+- Com ela ligada, o selo do topo mostra **Renova em X dias**. Toque nele para ver a data e, se quiser, **Desligar cobrança automática**
+  (o acesso continua até o vencimento).
+- Usuário de empresa: só o administrador muda a forma de pagamento.
+
 ### Instalar o app no celular
 
 O jeito mais fácil: abra **filaproleads.com.br** no celular e toque em **Instalar app**, ao lado de **Planos**, na tela de login.

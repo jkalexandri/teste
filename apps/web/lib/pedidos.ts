@@ -5,13 +5,14 @@ import { randomBytes } from "node:crypto";
 import QRCode from "qrcode";
 import { prisma, type Plano } from "@filapro/db";
 import { gerarPixCopiaECola } from "@/lib/pix";
-import { MAX_PARCELAS, maxQuantidade, podeParcelar, precoComQuantidade, rotuloQuantidade, valorDaForma, type FormaPagamento } from "@/lib/planos";
-import { asaasLigado, clienteAsaas, criarCobrancaAsaas, ErroAsaas } from "@/lib/asaas";
+import { cicloAutomatico, MAX_PARCELAS, maxQuantidade, podeParcelar, precoComQuantidade, rotuloQuantidade, valorDaForma, type FormaPagamento } from "@/lib/planos";
+import { asaasLigado, clienteAsaas, criarAssinaturaAsaas, criarCobrancaAsaas, ErroAsaas } from "@/lib/asaas";
 import { documentoValido, soDigitos } from "@/lib/documento";
 
 export const VALIDADE_PEDIDO_HORAS = 24;
 
-function novoCodigo() {
+/** Código curto do pedido (também usado nos pedidos de cada período da cobrança automática — decisão #124). */
+export function novoCodigoPedido() {
   // Sem letras/números que se confundem (0/O, 1/I).
   const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return "FP" + Array.from(randomBytes(6), (x) => abc[x % abc.length]).join("");
@@ -35,8 +36,9 @@ export async function criarPedidoPix(opts: {
   somenteExtras?: { empresaId: string; valor: number };
   /** Pacotes extras de disparos (decisão #102): quantos pacotes */
   pacotesDisparos?: number;
-  /** Forma de pagamento, parcelas e CPF/CNPJ (decisão #115). Sem isso: PIX (do Asaas, se ligado; senão manual). */
-  pagamento?: { forma?: FormaPagamento; parcelas?: number; cpfCnpj?: string };
+  /** Forma de pagamento, parcelas e CPF/CNPJ (decisão #115). Sem isso: PIX (do Asaas, se ligado; senão manual).
+   *  "automatica": cobrança automática no cartão (decisão #124) — só cartão, plano de período fixo, compra de plano. */
+  pagamento?: { forma?: FormaPagamento; parcelas?: number; cpfCnpj?: string; automatica?: boolean };
 }): Promise<{ erro: string } | RespostaPix> {
   const { plano } = opts;
   if (plano.precoAtual == null) return { erro: "Plano indisponível." };
@@ -61,7 +63,10 @@ export async function criarPedidoPix(opts: {
     forma = "PIX_MANUAL";
   } else if (forma === "PIX_MANUAL") forma = "PIX";
   // Parcelas: só cartão, plano trimestral/anual, juros configurados e compra de plano (não extras nem pacotes)
-  const parcelavel = forma === "CARTAO" && podeParcelar(plano) && config?.jurosParcelaMes != null && !opts.somenteExtras && !opts.pacotesDisparos;
+  // Cobrança automática no cartão (decisão #124): sempre à vista (item a), só planos de período fixo (item c), não para extras/pacotes (item f)
+  const ciclo = cicloAutomatico(plano.prazoDias);
+  const automatica = forma === "CARTAO" && !!opts.pagamento?.automatica && !!ciclo && !opts.somenteExtras && !opts.pacotesDisparos;
+  const parcelavel = !automatica && forma === "CARTAO" && podeParcelar(plano) && config?.jurosParcelaMes != null && !opts.somenteExtras && !opts.pacotesDisparos;
   const parcelas = parcelavel ? Math.min(MAX_PARCELAS, Math.max(1, Math.floor(opts.pagamento?.parcelas ?? 1))) : 1;
   // CPF/CNPJ de quem paga: exigido pelo Asaas; nas compras de quem já é cliente, usa o guardado na conta
   const contaId = opts.renovarEmpresaId ?? opts.somenteExtras?.empresaId ?? null;
@@ -75,7 +80,7 @@ export async function criarPedidoPix(opts: {
   if (forma === "PIX_MANUAL" && (!config?.chavePix || !config.nomeRecebedor || !config.cidadeRecebedor)) {
     return { erro: "Pagamento indisponível no momento. Tente mais tarde." };
   }
-  const codigo = novoCodigo();
+  const codigo = novoCodigoPedido();
   const pix = forma === "PIX_MANUAL"
     ? gerarPixCopiaECola({ chave: config!.chavePix, nome: config!.nomeRecebedor, cidade: config!.cidadeRecebedor, valorCentavos: total, identificador: codigo })
     : "";
@@ -101,6 +106,7 @@ export async function criarPedidoPix(opts: {
       valor: total,
       forma,
       parcelas,
+      automatica,
       cpfCnpj,
       nome: opts.comprador.nome,
       email: opts.comprador.email.toLowerCase(),
@@ -118,16 +124,23 @@ export async function criarPedidoPix(opts: {
   if (forma !== "PIX_MANUAL") {
     try {
       const cliente = await clienteAsaas({ nome: opts.comprador.nome, email: opts.comprador.email, cpfCnpj: cpfCnpj!, whatsapp: opts.comprador.whatsapp });
-      const c = await criarCobrancaAsaas({
-        clienteId: cliente, forma, valor: total, parcelas, referencia: codigo,
-        descricao: `FilaPro Leads — ${rotulo} (pedido ${codigo})`,
-        vencimentoDias: forma === "BOLETO" ? 3 : 1,
-      });
-      link = forma === "BOLETO" ? c.boletoLink ?? c.link : c.link;
-      boletoLinha = c.boletoLinha ?? null;
-      copiaECola = c.pix?.payload ?? "";
-      qrCode = c.pix?.imagem ?? "";
-      await prisma.pedido.update({ where: { id: pedido.id }, data: { asaasId: c.id, linkPagamento: link, boletoLinha, pixCopiaECola: copiaECola } });
+      if (automatica) {
+        // Assinatura no Asaas: o cliente paga a 1ª cobrança na página do Asaas e o cartão fica guardado (decisão #124)
+        const a = await criarAssinaturaAsaas({ clienteId: cliente, valor: total, ciclo: ciclo!, referencia: codigo, descricao: `FilaPro Leads — ${rotulo} (cobrança automática, pedido ${codigo})` });
+        link = a.link;
+        await prisma.pedido.update({ where: { id: pedido.id }, data: { asaasId: a.cobrancaId, asaasAssinaturaId: a.id, linkPagamento: link } });
+      } else {
+        const c = await criarCobrancaAsaas({
+          clienteId: cliente, forma, valor: total, parcelas, referencia: codigo,
+          descricao: `FilaPro Leads — ${rotulo} (pedido ${codigo})`,
+          vencimentoDias: forma === "BOLETO" ? 3 : 1,
+        });
+        link = forma === "BOLETO" ? c.boletoLink ?? c.link : c.link;
+        boletoLinha = c.boletoLinha ?? null;
+        copiaECola = c.pix?.payload ?? "";
+        qrCode = c.pix?.imagem ?? "";
+        await prisma.pedido.update({ where: { id: pedido.id }, data: { asaasId: c.id, linkPagamento: link, boletoLinha, pixCopiaECola: copiaECola } });
+      }
     } catch (e) {
       await prisma.pedido.delete({ where: { id: pedido.id } }).catch(() => undefined);
       console.error("[asaas] falha ao criar a cobrança", e);
@@ -155,5 +168,5 @@ export async function criarPedidoPix(opts: {
 export function lerPagamento(c: Record<string, unknown>) {
   const f = String(c.forma ?? "");
   const forma = (["PIX", "BOLETO", "CARTAO", "PIX_MANUAL"] as const).find((x) => x === f);
-  return { forma, parcelas: Math.max(1, Math.min(6, Math.floor(Number(c.parcelas) || 1))), cpfCnpj: String(c.cpfCnpj ?? "").slice(0, 20) };
+  return { forma, parcelas: Math.max(1, Math.min(6, Math.floor(Number(c.parcelas) || 1))), cpfCnpj: String(c.cpfCnpj ?? "").slice(0, 20), automatica: c.automatica === true };
 }

@@ -31,7 +31,8 @@ export default async function PedidosPage() {
           usuarios: p.usuarios,
           valor: p.valor,
           // Forma de pagamento (decisão #115)
-          forma: p.forma === "CARTAO" ? (p.parcelas > 1 ? `Cartão ${p.parcelas}x` : "Cartão") : p.forma === "BOLETO" ? "Boleto" : p.forma === "PIX" ? "PIX (Asaas)" : "PIX manual",
+          // Cobrança automática no cartão (decisão #124): "Cartão (automática)"
+          forma: p.forma === "CARTAO" ? (p.automatica ? "Cartão (automática)" : p.parcelas > 1 ? `Cartão ${p.parcelas}x` : "Cartão") : p.forma === "BOLETO" ? "Boleto" : p.forma === "PIX" ? "PIX (Asaas)" : "PIX manual",
           nome: p.nome,
           email: p.email,
           whatsapp: p.whatsapp,

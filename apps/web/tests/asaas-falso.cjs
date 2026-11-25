@@ -10,6 +10,8 @@ const webhooks = [];
 const clientes = [];
 const cobrancas = [];
 const RODADA = Date.now().toString(36);
+// Assinaturas (cobrança automática no cartão — decisão #124)
+const assinaturas = [];
 function iniciar(porta = 4010) {
   const srv = http.createServer((req, res) => {
     let corpo = '';
@@ -46,6 +48,29 @@ function iniciar(porta = 4010) {
       if (req.method === 'GET' && mp) return responder(200, { identificationField: '00190000090123456789012345678901234567890123', barCode: '0019' });
       mp = req.url.match(/^\/payments\/([^/?]+)$/);
       if (req.method === 'DELETE' && mp) { const c = cobrancas.find((x) => x.id === mp[1]); if (c) c.deleted = true; return responder(200, { deleted: true, id: mp[1] }); }
+      // Assinaturas: criar (gera a 1ª cobrança), listar cobranças, atualizar e cancelar
+      if (req.method === 'POST' && req.url === '/subscriptions') {
+        const b = JSON.parse(corpo || '{}');
+        if (!clientes.some((c) => c.id === b.customer)) return responder(400, { errors: [{ description: 'Cliente inexistente' }] });
+        if (b.billingType !== 'CREDIT_CARD' || !['MONTHLY', 'QUARTERLY', 'SEMIANNUALLY', 'YEARLY'].includes(b.cycle) || !b.nextDueDate || !(b.value > 0)) return responder(400, { errors: [{ description: 'Assinatura inválida' }] });
+        const a = { id: 'sub_' + RODADA + '_' + (assinaturas.length + 1), ...b, status: 'ACTIVE' };
+        assinaturas.push(a);
+        const id = 'pay_' + RODADA + '_' + (cobrancas.length + 1);
+        cobrancas.push({ id, customer: b.customer, billingType: 'CREDIT_CARD', value: b.value, dueDate: b.nextDueDate, subscription: a.id, externalReference: b.externalReference, status: 'PENDING', invoiceUrl: `https://sandbox.asaas.com/i/${id}` });
+        return responder(200, a);
+      }
+      let ms = req.url.match(/^\/subscriptions\/([^/?]+)\/payments/);
+      if (req.method === 'GET' && ms) return responder(200, { data: cobrancas.filter((c) => c.subscription === ms[1]) });
+      ms = req.url.match(/^\/subscriptions\/([^/?]+)$/);
+      if (ms && (req.method === 'PUT' || req.method === 'DELETE')) {
+        const a = assinaturas.find((x) => x.id === ms[1]);
+        if (!a || a.deleted) return responder(404, { errors: [{ description: 'Assinatura não encontrada' }] });
+        if (req.method === 'DELETE') { a.deleted = true; return responder(200, { deleted: true, id: a.id }); }
+        const b = JSON.parse(corpo || '{}');
+        Object.assign(a, b);
+        if (b.updatePendingPayments) for (const c of cobrancas.filter((x) => x.subscription === a.id && x.status === 'PENDING')) { if (b.value) c.value = b.value; if (b.nextDueDate) c.dueDate = b.nextDueDate; }
+        return responder(200, a);
+      }
       // Webhooks: listar, criar e atualizar
       if (req.method === 'GET' && req.url.startsWith('/webhooks')) return responder(200, { data: webhooks });
       if (req.method === 'POST' && req.url === '/webhooks') {
@@ -74,5 +99,5 @@ async function avisar(evento = 'PAYMENT_CREATED', dados = {}) {
   }
   return r;
 }
-module.exports = { iniciar, chamadas, webhooks, avisar, clientes, cobrancas };
+module.exports = { iniciar, chamadas, webhooks, avisar, clientes, cobrancas, assinaturas };
 if (require.main === module) iniciar().then(() => console.log('Asaas de mentira em http://127.0.0.1:4010'));

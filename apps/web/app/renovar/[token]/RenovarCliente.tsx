@@ -28,7 +28,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   // Forma de pagamento pelo Asaas (decisão #115): passo depois de escolher o plano (e os extras)
   const formas = useFormas();
   const [passoForma, setPassoForma] = useState(false);
-  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "" });
+  const [pagamento, setPagamento] = useState<Pagamento>({ forma: "PIX", parcelas: 1, cpfCnpj: "", automatica: true });
   const venc = new Date(conta.expiraEm);
   const vencido = venc < new Date();
 

@@ -134,6 +134,18 @@ export const valorBoleto = (valor: number) => Math.round((valor * (100 + ACRESCI
 /** Plano de 3 meses ou mais (trimestral, anual) pode parcelar. */
 export const podeParcelar = (p: { prazoDias: number }) => p.prazoDias >= 89;
 
+// ===== Cobrança automática no cartão (decisão #124) =====
+export type CicloAsaas = "MONTHLY" | "QUARTERLY" | "SEMIANNUALLY" | "YEARLY";
+/** Período fixo que o Asaas repete (item c): mensal, trimestral, semestral ou anual, pela faixa de dias do plano. Outro prazo: null. */
+export function cicloAutomatico(prazoDias: number): CicloAsaas | null {
+  if (prazoDias >= 28 && prazoDias <= 31) return "MONTHLY";
+  if (prazoDias >= 89 && prazoDias <= 93) return "QUARTERLY";
+  if (prazoDias >= 180 && prazoDias <= 186) return "SEMIANNUALLY";
+  if (prazoDias >= 360 && prazoDias <= 366) return "YEARLY";
+  return null;
+}
+export const NOME_CICLO: Record<CicloAsaas, string> = { MONTHLY: "mês", QUARTERLY: "trimestre", SEMIANNUALLY: "semestre", YEARLY: "ano" };
+
 /**
  * Parcelas com juros para o cliente (itens d e j): tabela Price com a taxa ao mês do Super Admin.
  * Devolve o valor de cada parcela e o total, em centavos. Taxa 0 = parcelas sem juros.

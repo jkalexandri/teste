@@ -123,6 +123,10 @@ param e continuam depois, sem perder nem repetir envios.
 - Se renovar com **menos usuários** do que tem, os mais recentes ficam **bloqueados**; você escolhe em Usuários quem reativar,
   dentro do limite.
 - Também dá para renovar pelo botão **Planos** da tela de login, usando o seu e-mail de acesso.
+- **Cobrança automática no cartão:** ao pagar com **Cartão**, a opção **Cobrar automaticamente a cada período** vem marcada (planos
+  mensais, trimestrais, semestrais e anuais; sempre à vista). O cartão fica guardado no Asaas e é cobrado sozinho no dia do vencimento;
+  o acesso renova sem você fazer nada. Com ela ligada, o selo do topo mostra **Renova em X dias**: toque nele para ver a data e, se
+  quiser, **Desligar cobrança automática** (o acesso continua até o vencimento). Você recebe um aviso 3 dias antes de cada cobrança.
 - Venceu sem renovar: os usuários deixam de entrar, mas os dados ficam guardados.
 
 ## Perguntas frequentes

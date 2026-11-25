@@ -86,8 +86,14 @@ Plano em 6 etapas, uma por vez, testando e mostrando ao dono antes da próxima:
 - **C — confirmação automática: FEITA (v1.36.0)**, regras na decisão #117. O aviso é guardado (`AvisoAsaas`), respondido com 200
   e processado em `lib/asaas-avisos.ts`: confirma o pedido, lança a taxa ("Taxas do Asaas"), estorno inativa a empresa, contestação e
   pedido cancelado só avisam. Teste `etapa19c-asaas-confirmacao` (28 verificações). Falta o dono atualizar a VPS e testar no sandbox.
-- **D — cobrança automática no cartão (próxima)** (assinatura no Asaas, sempre à vista; o cliente escolhe automática ou avulsa).
-- **E — cartão recusado:** 3 dias com envio reduzido (Empresarial 100/dia para a empresa toda; Individual 20/dia); depois,
+- **D — cobrança automática no cartão: FEITA (v1.39.0)**, regras na decisão #124. Assinatura no Asaas (`lib/assinatura.ts`):
+  1º pagamento liga na conta (`Empresa.asaasAssinaturaId`), cada período gera e confirma um pedido "Cartão (automática)", mudanças
+  sincronizam valor/data, dono e Super Admin desligam. Teste `etapa19d-asaas-automatica` (30 verificações).
+- **Upgrade de conta (pedido do dono em 25/11/2026, a fazer depois da D):** botão **"Fazer upgrade"** dentro do sistema, só para o dono
+  da conta, no selo do topo e no aviso de vencimento; Free → pago começa hoje com prazo inteiro; downgrade só na renovação;
+  Individual → Empresarial permitido (vira Admin + usuário com os dados). Respostas (a)(b)(d)(e)(f)(g) "sugestão"; **(c) preço:
+  "valor cheio e soma data ou disparo restante"** — confirmar o detalhe com o dono e mostrar a prévia antes de implementar.
+- **E — cartão recusado (próxima; antes, o dono testa as etapas C e D no sandbox):** 3 dias com envio reduzido (Empresarial 100/dia para a empresa toda; Individual 20/dia); depois,
   bloqueia campanhas e respostas (IA e manuais), mas o cliente continua entrando para ver e pagar.
 - **F — testes no sandbox real com o dono, manuais e versão final.**
 

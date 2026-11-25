@@ -52,6 +52,8 @@ export default async function IndividuaisPage() {
           whatsapp: u.whatsapp ?? "",
           pacote: u.empresa?.pacote ?? "",
           expiraEm: u.empresa?.expiraEm.toISOString() ?? "",
+          // Cobrança automática no cartão ligada (decisão #124)
+          automatica: !!u.empresa?.asaasAssinaturaId,
           dias: u.empresa ? dias(u.empresa.expiraEm) : 0,
           ativo: u.status === "ATIVO",
           primeiroAcesso: !u.senhaHash,

@@ -2,6 +2,19 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.39.0 — cobrança automática no cartão (25/11/2026)
+
+### Para quem compra ou renova
+- Ao pagar com **Cartão**, a opção **Cobrar automaticamente a cada período** vem marcada: o cartão é cobrado sozinho no dia do
+  vencimento e o acesso renova sem precisar fazer nada (planos mensais, trimestrais, semestrais e anuais; sempre à vista).
+- O selo do topo mostra **Renova em X dias**; tocando nele, o dono da conta pode **desligar** a cobrança automática.
+- Aviso 3 dias antes de cada cobrança.
+
+### Para o Super Admin
+- **Pedidos** mostra **Cartão (automática)**; cada renovação automática é confirmada sozinha, com receita e taxa no Financeiro.
+- **Empresas** e **Usuários Individuais**: **Cobrança automática: ligada** e o botão para desligar.
+- **Alterar pacote** e **Prorrogar** atualizam o valor e a data da próxima cobrança no Asaas.
+
 ## v1.38.3 — botão "Instalar app" instala direto no Android (25/11/2026)
 
 - **Android:** o botão **Instalar app** do login agora só aparece quando dá para instalar direto, e instala na hora pela janela
