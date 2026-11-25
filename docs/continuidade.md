@@ -107,6 +107,7 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
 - Ordem: módulos 4 (WhatsApp) e 8 (Conversas IA) → 6 (Campanhas) → 5 (Leads) → 3 (Pagamento) → demais.
 - Módulo 8, passo 1 FEITO (v1.41.2): resposta no endereço LID (falta o dono confirmar na VPS).
 - Módulo 4: auditoria feita (decisão #130, 22 falhas). C1 FEITA (v1.41.3: protegerTela em todas as telas + teste etapa21).
+  Encapsulamento (decisão #132): portas únicas + teste vigia, módulo a módulo. Item 5 (API do 24/7 só por dentro da VPS) logo após C2/A1; item 2 (dado por dono) começa no Módulo 5.
   Próximas, cada uma com prévia: C2, A1, A3; depois A2, A4–A7; depois médias/baixas. A6: avisar com 3 min, avisar na volta, "com problema" após 2 h.
 - Quadro "Módulos e revisões" na Ajuda (só Super Admin, decisão #131) FEITO (v1.41.3). **Em toda entrega:** atualizar `docs/modulos/README.md` (último ajuste, histórico com data e hora; módulo "Revisado" que for ajustado sem revisão completa vira "Sem revisão").
 
