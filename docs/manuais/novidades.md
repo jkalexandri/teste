@@ -2,6 +2,16 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.0 — IA do WhatsApp responde sempre e mais rápido (25/11/2026)
+
+- A IA responde **8 a 15 segundos** depois da última mensagem do lead (no máximo 30 s, mesmo que ele mande várias seguidas).
+- Se o serviço reiniciar ou o WhatsApp cair, **nenhuma resposta se perde**: ela fica guardada e sai assim que possível.
+- Se a IA falhar, o sistema tenta de novo (10 s e 30 s). Na 3ª falha, o lead recebe "Recebi sua mensagem! Já te respondo. 🙂"
+  e **você é avisado** para assumir.
+- WhatsApp desconectado com leads esperando resposta: você recebe um aviso depois de 5 minutos.
+- Quando a IA não sabe algo, ela diz que vai confirmar com você e **continua a conversa** (não pausa mais); você recebe o aviso.
+- Leads achados pelo número com ou sem o 9º dígito.
+
 ## v1.40.2 — quadro do menu de volta (25/11/2026)
 
 - O quadro **Espaço individual** no fim do menu do usuário voltou (só com o título); saiu apenas o texto dele.

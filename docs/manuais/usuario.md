@@ -149,12 +149,14 @@ Menu **Conversas IA**: todas as conversas com os leads, no estilo do WhatsApp We
 
 ![Conversas IA](prints/u-conversas.png)
 
-- **A IA responde sozinha**, a qualquer hora, de 20 a 60 segundos depois da mensagem do lead, com "digitando…".
+- **A IA responde sozinha**, a qualquer hora, de 8 a 15 segundos depois da última mensagem do lead (no máximo 30 s), com "digitando…".
+  Se a IA falhar 3 vezes seguidas, o lead recebe "Recebi sua mensagem! Já te respondo. 🙂" e você é avisado.
+  Se o seu WhatsApp estiver desconectado, a resposta espera e você é avisado depois de 5 minutos.
 - A cada resposta ela classifica o lead em **Quente** (quer comprar ou agendar agora), **Morno** (tem interesse, sem urgência)
   ou **Frio** (sem interesse), e marca o status (Em conversa, Qualificado ou Objeção).
 - **Assumir conversa:** a IA para de responder aquele lead. **Devolver para a IA:** ela volta a responder.
 - **Escrever uma mensagem** (com ou sem arquivo) também assume a conversa.
-- Se a IA não souber responder (algo que não está no Empresa | IA), ela diz que vai confirmar, **pausa a conversa e avisa você**.
+- Se a IA não souber responder (algo que não está no Empresa | IA), ela diz que vai confirmar com você, **continua a conversa** e avisa você.
 - **Áudio:** a IA não ouve; pede para o lead escrever e avisa você. **Imagem:** a IA lê.
 - Limite de 30 respostas da IA por conversa por dia; depois disso ela pausa e avisa.
 - A opção **IA responde sozinha** (no topo) liga ou desliga a IA para todos os seus leads.

@@ -8,6 +8,7 @@ import { PALAVRAS_SAIR } from "@filapro/db/src/envio.ts";
 import { reservarCodigos } from "@filapro/db/src/codigos.ts";
 import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
 import { escolherNumero } from "./numeros.js";
+import { variantesTelefone } from "./numero.js";
 import { emManutencao } from "./manutencao.js";
 import { enviarPush, urlDoAviso } from "./push.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
@@ -23,6 +24,23 @@ export const DIAS_HISTORICO = 365;
 /** Quando o trecho fora do resumo passa disto, as mensagens mais antigas entram no resumo (economia). */
 const RESUMIR_ACIMA = MENSAGENS_RECENTES + 8;
 
+// ===== Resposta pendente (decisão #127, muda a #92): fica no banco e nunca é abandonada em silêncio =====
+/** Espera antes de responder: 8–15 s, com teto de 30 s desde a 1ª mensagem do lead ainda sem resposta. */
+export const ESPERA_MIN_MS = 8_000;
+export const ESPERA_MAX_MS = 15_000;
+export const TETO_ESPERA_MS = 30_000;
+/** Varredura das respostas pendentes (pega o que um reinício ou reconexão deixou para trás). */
+const VARREDURA_MS = 5_000;
+/** WhatsApp desconectado na hora de responder: tenta de novo a cada 30 s; passou de 5 min, avisa o usuário. */
+const REPETIR_SEM_WHATSAPP_MS = 30_000;
+const AVISO_ESPERA_MS = 5 * 60_000;
+/** Falhou (IA ou envio): tenta de novo depois de 10 s e de 30 s; na 3ª falha vai a mensagem reserva e o usuário é avisado. */
+const ESPERA_TENTATIVA_MS = [10_000, 30_000];
+export const MAX_TENTATIVAS = 3;
+export const TEXTO_RESERVA = "Recebi sua mensagem! Já te respondo. 🙂";
+/** Envio no WhatsApp que falhou: tenta de novo uma vez depois de 5 s. */
+const REENVIO_MS = 5_000;
+
 export const TEXTO_AUDIO = "Oi! No momento não consigo ouvir áudios por aqui. Pode me escrever, por favor? 🙂";
 export const MOTIVO_ASSUMIDA = "Conversa assumida pelo usuário.";
 export const MOTIVO_NAO_SEI = "A IA não soube responder. Confirme a informação com o lead e depois devolva a conversa para a IA.";
@@ -35,11 +53,17 @@ const STATUS_DA_IA: StatusLead[] = [StatusLead.NOVO, StatusLead.EM_CONVERSA, Sta
 
 const jidDe = (telefone: string) => `${telefone}@s.whatsapp.net`;
 const inicioDoDiaSP = (d: Date) => new Date(`${new Date(d.getTime() - 3 * 3600_000).toISOString().slice(0, 10)}T00:00:00-03:00`);
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class Atendente {
+  /** Caminho rápido: um timer por lead para responder na hora certa (a garantia é o banco + a varredura). */
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   private imagens = new Map<string, () => Promise<{ tipo: string; base64: string } | null>>();
   private limpeza: ReturnType<typeof setInterval> | null = null;
+  /** Leads sendo respondidos agora: um lead nunca recebe duas respostas ao mesmo tempo (decisão #127). */
+  private emResposta = new Set<string>();
+  /** Tarefas depois da resposta (resumo da conversa), para os testes esperarem. */
+  private emSegundoPlano = 0;
 
   constructor(
     private remetente: Remetente,
@@ -47,8 +71,12 @@ export class Atendente {
     private opcoes: {
       pastaArquivos: string;
       notificar?: (para: string, texto: string) => Promise<unknown>;
-      /** Espera antes de responder (padrão 20–60 s — decisão #92). Nos testes, 0. */
+      /** Espera antes de responder (padrão 8–15 s — decisão #127). Nos testes, 0. */
       esperaMs?: () => number;
+      /** Espera entre tentativas que falharam (padrão 10 s e 30 s). Nos testes, curta. */
+      esperaTentativaMs?: (tentativa: number) => number;
+      /** Espera antes de reenviar no WhatsApp (padrão 5 s). */
+      reenvioMs?: number;
       agora?: () => Date;
       /** Avisos com liga/desliga e resumo (etapa 10b) */
       avisos?: { avisar(tipo: TipoAviso, donoId: string, texto: string): Promise<void> };
@@ -58,20 +86,26 @@ export class Atendente {
   private agora() { return this.opcoes.agora?.() ?? new Date(); }
   private emAtendimento = new Set<string>();
   private varredura: ReturnType<typeof setInterval> | null = null;
+  private varreduraPendentes: ReturnType<typeof setInterval> | null = null;
   private avisar(tipo: TipoAviso, donoId: string, texto: string) {
     return this.opcoes.avisos?.avisar(tipo, donoId, texto).catch((e) => this.log.warn({ e }, "aviso não registrado"));
   }
-  private espera() { return this.opcoes.esperaMs?.() ?? 20_000 + Math.random() * 40_000; }
+  private espera() { return this.opcoes.esperaMs?.() ?? ESPERA_MIN_MS + Math.random() * (ESPERA_MAX_MS - ESPERA_MIN_MS); }
+  private esperaTentativa(n: number) { return this.opcoes.esperaTentativaMs?.(n) ?? ESPERA_TENTATIVA_MS[n - 1] ?? 30_000; }
 
   iniciar() {
     void this.limparAntigas();
     this.limpeza = setInterval(() => void this.limparAntigas(), 24 * 3600_000);
     // Leads de anúncios que não foram atendidos na hora (serviço fora, WhatsApp desconectado)
     this.varredura = setInterval(() => void this.varrerAnuncios().catch((e) => this.log.error({ e }, "falha na varredura de anúncios")), 60_000);
+    // Respostas pendentes (decisão #127): começa já, para responder o que ficou para trás no reinício
+    void this.varrerPendentes().catch((e) => this.log.error({ e }, "falha na varredura de respostas pendentes"));
+    this.varreduraPendentes = setInterval(() => void this.varrerPendentes().catch((e) => this.log.error({ e }, "falha na varredura de respostas pendentes")), VARREDURA_MS);
   }
   parar() {
     if (this.limpeza) clearInterval(this.limpeza);
     if (this.varredura) clearInterval(this.varredura);
+    if (this.varreduraPendentes) clearInterval(this.varreduraPendentes);
     for (const t of this.timers.values()) clearTimeout(t);
     this.timers.clear();
   }
@@ -100,10 +134,14 @@ export class Atendente {
   /**
    * Mensagem recebida de um contato pelo número `sessaoId` do usuário `usuarioId`.
    * Quem não é lead é ignorado (decisão #92, item 9). A conversa continua pelo número que recebeu (decisão #79).
+   * O lead é achado também com ou sem o 9º dígito (decisão #127).
    */
   async receber(sessaoId: string, usuarioId: string, telefone: string, r: Recebida) {
-    const lead = await prisma.lead.findFirst({ where: { usuarioId, telefone }, include: { usuario: true } });
-    if (!lead) return;
+    const lead = await prisma.lead.findFirst({ where: { usuarioId, telefone: { in: variantesTelefone(telefone) } }, include: { usuario: true } });
+    if (!lead) {
+      this.log.info({ sessaoId, tel: mascarar(telefone) }, "mensagem de quem não é lead: ignorada");
+      return;
+    }
     const agora = this.agora();
     await prisma.mensagem.create({ data: { leadId: lead.id, autor: AutorMensagem.LEAD, texto: r.texto, tipo: r.tipo, sessaoId } });
     await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: agora, naoLidas: { increment: 1 }, sessaoId } });
@@ -111,44 +149,70 @@ export class Atendente {
 
     // SAIR/PARAR/STOP/CANCELAR e mensagens vazias não chamam a IA (decisões #75 e #83)
     const palavra = r.texto.trim().toUpperCase().replace(/[^A-ZÇÃÕÁÉÍÓÚ]/g, "");
-    if (PALAVRAS_SAIR.includes(palavra)) return;
+    if (PALAVRAS_SAIR.includes(palavra)) { this.log.info({ leadId: lead.id }, "IA não chamada: pediu para sair"); return; }
     // Aviso "lead respondeu" (decisão #81), exceto SAIR/PARAR/STOP/CANCELAR
     const trecho = r.texto.trim() ? `"${r.texto.trim().slice(0, 120)}"` : r.tipo === "audio" ? "(áudio)" : r.tipo === "imagem" ? "(imagem)" : `(${r.tipo})`;
     void this.avisar("RESPONDEU", lead.usuarioId, `💬 ${nomeDo(lead)} respondeu: ${trecho}`);
-    if (!lead.usuario.iaConversas || lead.iaPausada) return;
-    if (lead.status === StatusLead.PEDIU_SAIR) return;
-
-    // Áudio: a IA não ouve; pede para escrever e avisa o usuário (decisão #92, item 8)
-    if (r.tipo === "audio") {
-      this.agendar(lead.id, () => this.responderAudio(lead.id));
-      return;
-    }
-    if (!r.texto.trim() && r.tipo !== "imagem") return;
+    const motivo = !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    if (motivo) { this.log.info({ leadId: lead.id, motivo }, "IA não chamada"); return; }
+    if (!r.texto.trim() && r.tipo !== "imagem" && r.tipo !== "audio") { this.log.info({ leadId: lead.id, tipo: r.tipo }, "IA não chamada: mensagem sem texto"); return; }
     if (r.tipo === "imagem" && r.baixarImagem) this.imagens.set(lead.id, r.baixarImagem);
-    // Várias mensagens seguidas viram uma resposta só: o relógio recomeça a cada mensagem
-    this.agendar(lead.id, () => this.responder(lead.id));
+    // Várias mensagens seguidas viram uma resposta só: o relógio recomeça a cada mensagem, até o teto
+    await this.marcarPendente(lead.id);
   }
 
-  private agendar(leadId: string, acao: () => Promise<void>) {
+  /** Marca a resposta como pendente no banco (decisão #127) e programa o timer do caminho rápido. */
+  private async marcarPendente(leadId: string) {
+    const agora = this.agora();
+    const l = await prisma.lead.findUnique({ where: { id: leadId }, select: { respostaPendenteDesde: true } });
+    if (!l) return;
+    const desde = l.respostaPendenteDesde ?? agora;
+    const quando = new Date(Math.min(agora.getTime() + this.espera(), desde.getTime() + TETO_ESPERA_MS));
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        respostaPendenteDesde: desde, responderEm: quando, pendenteVersao: { increment: 1 },
+        // Pendência nova: zera as tentativas e o aviso de espera
+        ...(l.respostaPendenteDesde ? {} : { tentativasResposta: 0, avisoEsperaEm: null }),
+      },
+    });
+    this.log.info({ leadId, emMs: quando.getTime() - agora.getTime() }, "resposta agendada");
+    this.programar(leadId, quando);
+  }
+
+  /** Timer do caminho rápido (se o serviço reiniciar, a varredura pega pelo banco). */
+  private programar(leadId: string, quando: Date) {
     clearTimeout(this.timers.get(leadId));
     this.timers.set(leadId, setTimeout(() => {
       this.timers.delete(leadId);
-      void (async () => {
-        // Atualização em andamento (decisão #103): a resposta fica guardada e sai depois
-        if (await emManutencao()) { this.agendar(leadId, acao); return; }
-        await acao();
-      })().catch((e) => this.log.error({ e, leadId }, "falha ao responder lead"));
-    }, this.espera()));
+      void this.processar(leadId);
+    }, Math.max(0, quando.getTime() - this.agora().getTime())));
   }
 
-  /** Para os testes: espera as respostas agendadas terminarem. */
-  pendentes() { return this.timers.size; }
+  /** Respostas pendentes que já passaram da hora e não têm timer neste processo (reinício, reconexão): Quente primeiro. */
+  async varrerPendentes() {
+    const vencidas = await prisma.lead.findMany({
+      where: { responderEm: { lte: this.agora() } },
+      select: { id: true, qualificacao: true, responderEm: true },
+      orderBy: { responderEm: "asc" },
+      take: 50,
+    });
+    vencidas.sort((a, b) => (a.qualificacao === "QUENTE" ? 0 : 1) - (b.qualificacao === "QUENTE" ? 0 : 1));
+    for (const v of vencidas) {
+      if (this.timers.has(v.id) || this.emResposta.has(v.id)) continue;
+      void this.processar(v.id);
+    }
+  }
+
+  /** Para os testes: respostas agendadas, em andamento e tarefas depois da resposta. */
+  pendentes() { return this.timers.size + this.emResposta.size + this.emSegundoPlano; }
 
   /** Número por onde falar com o lead (o da conversa; senão o principal; senão outro conectado). */
   private numeroDo(lead: { usuarioId: string; sessaoId: string | null }, preferido?: string | null) {
     return escolherNumero((id) => this.remetente.conectado(id), lead.usuarioId, preferido === undefined ? lead.sessaoId : preferido);
   }
 
+  /** Envia como a empresa. Falha no WhatsApp: tenta de novo uma vez depois de 5 s (decisão #127); falhando de novo, lança o erro. */
   private async enviarComoEmpresa(lead: { id: string; usuarioId: string; telefone: string; sessaoId: string | null }, texto: string, autor: AutorMensagem, preferido?: string | null) {
     const numero = await this.numeroDo(lead, preferido);
     if (!numero) {
@@ -156,77 +220,162 @@ export class Atendente {
       return false;
     }
     const jid = jidDe(lead.telefone);
-    await this.remetente.digitando(numero, jid, Math.min(8_000, 1_500 + texto.length * 40));
-    await this.remetente.enviar(numero, jid, { texto });
+    await this.remetente.digitando(numero, jid, Math.min(4_000, 1_500 + texto.length * 30));
+    const inicio = Date.now();
+    try {
+      await this.remetente.enviar(numero, jid, { texto });
+    } catch (e) {
+      this.log.warn({ leadId: lead.id, numero, e: e instanceof Error ? e.message : String(e) }, "envio falhou: tentando de novo");
+      await dormir(this.opcoes.reenvioMs ?? REENVIO_MS);
+      await this.remetente.enviar(numero, jid, { texto });
+    }
+    this.log.info({ leadId: lead.id, numero, ms: Date.now() - inicio }, "mensagem enviada ao lead");
     await prisma.mensagem.create({ data: { leadId: lead.id, autor, texto, sessaoId: numero } });
     await prisma.lead.update({ where: { id: lead.id }, data: { ultimaMensagemEm: this.agora(), sessaoId: numero } });
     return true;
   }
 
-  private async responderAudio(leadId: string) {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { usuario: true } });
-    if (!lead || lead.iaPausada || !lead.usuario.iaConversas) return;
-    if (await this.enviarComoEmpresa(lead, TEXTO_AUDIO, AutorMensagem.IA)) {
-      await this.avisarUsuario(lead.usuario, `🎤 FilaPro Leads: o lead ${nomeDo(lead)} mandou um áudio. A IA pediu para ele escrever; se preferir, ouça no seu WhatsApp.`);
+  /** Responde um lead com resposta pendente. Nunca dois ao mesmo tempo para o mesmo lead (decisão #127). */
+  async processar(leadId: string) {
+    if (this.emResposta.has(leadId)) {
+      // Já está respondendo (chegou mensagem nova no meio): tenta de novo logo depois
+      this.programar(leadId, new Date(this.agora().getTime() + 1_000));
+      return;
+    }
+    this.emResposta.add(leadId);
+    try {
+      await this.processarAgora(leadId);
+    } catch (e) {
+      this.log.error({ e, leadId }, "falha ao responder lead");
+    } finally {
+      this.emResposta.delete(leadId);
     }
   }
 
-  async responder(leadId: string) {
+  private async processarAgora(leadId: string) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { usuario: { include: { empresa: true } } } });
-    if (!lead || lead.iaPausada || !lead.usuario.iaConversas || lead.status === StatusLead.PEDIU_SAIR) return;
-    const quem = { empresaId: lead.empresaId, usuarioId: lead.usuarioId };
+    if (!lead?.respostaPendenteDesde) return;
+    const versao = lead.pendenteVersao;
+    const agora = this.agora();
+    /** Fecha a pendência, se nenhuma mensagem nova chegou enquanto respondia (senão a próxima rodada responde). */
+    const fechar = (extra: Record<string, unknown> = {}) => prisma.lead.updateMany({
+      where: { id: leadId, pendenteVersao: versao },
+      data: { respostaPendenteDesde: null, responderEm: null, tentativasResposta: 0, avisoEsperaEm: null, ...extra },
+    });
+    const reagendar = async (ms: number, extra: Record<string, unknown> = {}) => {
+      const quando = new Date(agora.getTime() + ms);
+      await prisma.lead.update({ where: { id: leadId }, data: { responderEm: quando, ...extra } });
+      this.programar(leadId, quando);
+    };
+
+    const motivo = !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    if (motivo) { this.log.info({ leadId, motivo }, "resposta pendente cancelada"); await fechar(); return; }
+    // Atualização em andamento (decisão #103): a resposta fica guardada e sai depois
+    if (await emManutencao()) { await reagendar(this.espera()); return; }
+    // WhatsApp desconectado: continua aguardando; passou de 5 min, avisa o usuário uma vez
+    if (!(await this.numeroDo(lead))) {
+      const esperando = agora.getTime() - lead.respostaPendenteDesde.getTime();
+      this.log.warn({ leadId, esperandoMs: esperando }, "WhatsApp desconectado: lead aguardando resposta");
+      const avisar = esperando >= AVISO_ESPERA_MS && !lead.avisoEsperaEm;
+      await reagendar(REPETIR_SEM_WHATSAPP_MS, avisar ? { avisoEsperaEm: agora } : {});
+      if (avisar) {
+        const n = await prisma.lead.count({ where: { usuarioId: lead.usuarioId, respostaPendenteDesde: { not: null } } });
+        await this.avisarUsuario(lead.usuario, `⚠️ FilaPro Leads: seu WhatsApp está desconectado e ${n} ${n === 1 ? "lead aguarda" : "leads aguardam"} resposta da IA. Abra FilaPro Leads → WhatsApp para reconectar.`);
+      }
+      return;
+    }
+
+    // Última mensagem do lead: áudio a IA não ouve (decisão #92, item 8)
+    const ultimaDoLead = await prisma.mensagem.findFirst({ where: { leadId, autor: AutorMensagem.LEAD }, orderBy: { criadoEm: "desc" }, select: { tipo: true } });
+    if (ultimaDoLead?.tipo === "audio") {
+      try {
+        if (await this.enviarComoEmpresa(lead, TEXTO_AUDIO, AutorMensagem.IA)) {
+          await fechar();
+          await this.avisarUsuario(lead.usuario, `🎤 FilaPro Leads: o lead ${nomeDo(lead)} mandou um áudio. A IA pediu para ele escrever; se preferir, ouça no seu WhatsApp.`);
+        }
+      } catch (e) {
+        await this.falhou(lead, "o envio no WhatsApp falhou", e, reagendar, fechar);
+      }
+      return;
+    }
 
     // Limite de 30 respostas da IA por conversa por dia: pausa e avisa (decisão #92, item 12)
-    const hoje = await prisma.mensagem.count({ where: { leadId, autor: AutorMensagem.IA, criadoEm: { gte: inicioDoDiaSP(this.agora()) } } });
+    const hoje = await prisma.mensagem.count({ where: { leadId, autor: AutorMensagem.IA, criadoEm: { gte: inicioDoDiaSP(agora) } } });
     if (hoje >= MAX_IA_DIA) {
-      await prisma.lead.update({ where: { id: leadId }, data: { iaPausada: true, iaPausaMotivo: MOTIVO_LIMITE } });
+      await fechar({ iaPausada: true, iaPausaMotivo: MOTIVO_LIMITE });
       await this.avisarUsuario(lead.usuario, `⏸️ FilaPro Leads: a IA parou de responder ${nomeDo(lead)} hoje (limite de ${MAX_IA_DIA} respostas). Abra Conversas IA para continuar.`);
       return;
     }
-    if (!(await this.numeroDo(lead))) return;
 
-    // Contexto enxuto: ficha (cache) + resumo + últimas mensagens (decisão #75)
+    // Contexto enxuto: ficha (cache) + resumo + últimas mensagens (decisão #75). O resumo novo é feito depois de responder.
+    const quem = { empresaId: lead.empresaId, usuarioId: lead.usuarioId };
     const ficha = await fichaDoUsuario(lead.usuario);
-    await this.atualizarResumo(lead.id, lead.resumoConversa, lead.resumidoAte, quem);
-    const atual = await prisma.lead.findUniqueOrThrow({ where: { id: leadId }, select: { resumoConversa: true } });
     const recentes = (await prisma.mensagem.findMany({ where: { leadId }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();
     const baixar = this.imagens.get(leadId);
-    this.imagens.delete(leadId);
     const imagem = baixar ? await baixar().catch(() => null) : null;
 
     let r;
+    const inicio = Date.now();
+    this.log.info({ leadId, tentativa: lead.tentativasResposta + 1 }, "IA: início");
     try {
       r = await responderConversa(
-        { ficha: ficha.texto, comoQualificar: ficha.comoQualificar, resumo: atual.resumoConversa, nomeLead: lead.nome, recentes: recentes.map(paraIA), imagem: imagem ?? undefined },
+        { ficha: ficha.texto, comoQualificar: ficha.comoQualificar, resumo: lead.resumoConversa, nomeLead: lead.nome, recentes: recentes.map(paraIA), imagem: imagem ?? undefined },
         quem,
       );
     } catch (e) {
-      this.log.warn({ leadId, msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu");
+      this.log.warn({ leadId, ms: Date.now() - inicio, msg: e instanceof Error ? e.message : String(e), bruto: e instanceof ErroIA ? e.bruto : undefined }, "IA não respondeu");
+      await this.falhou(lead, "a IA não respondeu", e, reagendar, fechar);
       return;
     }
+    this.log.info({ leadId, ms: Date.now() - inicio }, "IA: fim");
     // Pode ter sido assumida enquanto a IA pensava
     const agoraLead = await prisma.lead.findUnique({ where: { id: leadId }, select: { iaPausada: true } });
-    if (!agoraLead || agoraLead.iaPausada) return;
-    if (!(await this.enviarComoEmpresa(lead, r.resposta, AutorMensagem.IA))) return;
+    if (!agoraLead || agoraLead.iaPausada) { await fechar(); return; }
+    try {
+      if (!(await this.enviarComoEmpresa(lead, r.resposta, AutorMensagem.IA))) { await reagendar(REPETIR_SEM_WHATSAPP_MS); return; }
+    } catch (e) {
+      await this.falhou(lead, "o envio no WhatsApp falhou", e, reagendar, fechar);
+      return;
+    }
+    this.imagens.delete(leadId);
 
+    // Fecha a pendência (se chegou mensagem nova enquanto respondia, ela continua para a próxima rodada)
+    await fechar();
     await prisma.lead.update({
       where: { id: leadId },
-      data: {
-        qualificacao: r.temperatura,
-        qualificacaoMotivo: r.motivo || null,
-        qualificacaoEm: this.agora(),
-        ...(STATUS_DA_IA.includes(lead.status) ? { status: r.status as StatusLead } : {}),
-        // Não soube responder: pausa e avisa (decisão #92, item 7)
-        ...(r.naoSei ? { iaPausada: true, iaPausaMotivo: MOTIVO_NAO_SEI } : {}),
-      },
+      data: { qualificacao: r.temperatura, qualificacaoMotivo: r.motivo || null, qualificacaoEm: this.agora(), ...(STATUS_DA_IA.includes(lead.status) ? { status: r.status as StatusLead } : {}) },
     });
     // Aviso de lead Quente (decisão #81): só quando passa a ser Quente
     if (r.temperatura === "QUENTE" && lead.qualificacao !== "QUENTE") {
       void this.avisar("QUENTE", lead.usuarioId, `🔥 Lead Quente: ${nomeDo(lead)}${r.motivo ? ` — ${r.motivo}` : ""}`);
     }
+    // Não soube responder: NÃO pausa mais (decisão #127); a IA disse que vai confirmar e seguiu a qualificação. Só avisa.
     if (r.naoSei) {
-      await this.avisarUsuario(lead.usuario, `❓ FilaPro Leads: o lead ${nomeDo(lead)} perguntou algo que a IA não sabe responder. A IA disse que vai confirmar e pausou a conversa. Abra Conversas IA para responder.`);
+      await this.avisarUsuario(lead.usuario, `❓ FilaPro Leads: o lead ${nomeDo(lead)} perguntou algo que a IA não sabe responder. A IA disse que vai confirmar e seguiu a conversa. Abra Conversas IA para responder.`);
     }
+    // Resumo da conversa depois de responder (não atrasa a resposta)
+    this.emSegundoPlano++;
+    void this.atualizarResumo(leadId, lead.resumoConversa, lead.resumidoAte, quem).finally(() => { this.emSegundoPlano--; });
+  }
+
+  /** Falha da IA ou do envio: tenta de novo (10 s, 30 s); na 3ª, manda a mensagem reserva e avisa o usuário (decisão #127). */
+  private async falhou(
+    lead: { id: string; tentativasResposta: number; usuarioId: string; telefone: string; sessaoId: string | null; nome: string; usuario: { id: string; cargo: Cargo; whatsapp: string | null; numeroAvisos: string | null } },
+    oque: string, e: unknown,
+    reagendar: (ms: number, extra?: Record<string, unknown>) => Promise<void>,
+    fechar: () => Promise<unknown>,
+  ) {
+    const tentativa = lead.tentativasResposta + 1;
+    this.log.warn({ leadId: lead.id, tentativa, msg: e instanceof Error ? e.message : String(e) }, "resposta falhou");
+    if (tentativa < MAX_TENTATIVAS) {
+      await reagendar(this.esperaTentativa(tentativa), { tentativasResposta: tentativa });
+      return;
+    }
+    let reserva = false;
+    try { reserva = await this.enviarComoEmpresa(lead, TEXTO_RESERVA, AutorMensagem.IA); } catch { reserva = false; }
+    await fechar();
+    this.log.error({ leadId: lead.id, reserva }, "resposta desistida depois de 3 tentativas: usuário avisado");
+    await this.avisarUsuario(lead.usuario, `⚠️ FilaPro Leads: ${oque} para ${nomeDo(lead)} depois de ${MAX_TENTATIVAS} tentativas.${reserva ? ` O lead recebeu: "${TEXTO_RESERVA}"` : ""} Abra Conversas IA para responder.`);
   }
 
   /** Coloca no resumo as mensagens que ficaram fora da janela recente. */
@@ -266,7 +415,12 @@ export class Atendente {
     });
     await prisma.lead.update({
       where: { id: leadId },
-      data: { ultimaMensagemEm: this.agora(), naoLidas: 0, sessaoId: numero, iaPausada: true, iaPausaMotivo: MOTIVO_ASSUMIDA, ...(lead.status === StatusLead.NOVO ? { status: StatusLead.EM_CONVERSA } : {}) },
+      data: {
+        ultimaMensagemEm: this.agora(), naoLidas: 0, sessaoId: numero, iaPausada: true, iaPausaMotivo: MOTIVO_ASSUMIDA,
+        ...(lead.status === StatusLead.NOVO ? { status: StatusLead.EM_CONVERSA } : {}),
+        // O usuário assumiu: a resposta pendente da IA é cancelada
+        respostaPendenteDesde: null, responderEm: null, tentativasResposta: 0, avisoEsperaEm: null,
+      },
     });
     return { ok: true, mensagem: "Mensagem enviada." };
   }
@@ -408,14 +562,22 @@ export class Atendente {
     const u = await prisma.usuario.findUnique({ where: { id: usuarioId } });
     if (!u?.iaConversas) return;
     const desde = new Date(this.agora().getTime() - HORAS_RECONEXAO * 3600_000);
+    // Só quem ainda não tem resposta pendente: a reconexão não zera nem adia a espera de quem já aguarda (decisão #127)
     const leads = await prisma.lead.findMany({
-      where: { usuarioId, iaPausada: false, status: { not: StatusLead.PEDIU_SAIR }, ultimaMensagemEm: { gte: desde } },
-      select: { id: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true, tipo: true } } },
+      where: { usuarioId, iaPausada: false, status: { not: StatusLead.PEDIU_SAIR }, ultimaMensagemEm: { gte: desde }, respostaPendenteDesde: null },
+      select: { id: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true } } },
     });
     for (const l of leads) {
-      const ultima = l.mensagens[0];
-      if (ultima?.autor !== AutorMensagem.LEAD) continue;
-      this.agendar(l.id, () => (ultima.tipo === "audio" ? this.responderAudio(l.id) : this.responder(l.id)));
+      if (l.mensagens[0]?.autor !== AutorMensagem.LEAD) continue;
+      await this.marcarPendente(l.id);
+    }
+    // Quem já aguardava (WhatsApp estava desconectado): responde na hora marcada ou já, sem esperar os 30 s da nova tentativa
+    const aguardando = await prisma.lead.findMany({ where: { usuarioId, respostaPendenteDesde: { not: null } }, select: { id: true, responderEm: true, tentativasResposta: true } });
+    for (const l of aguardando) {
+      if (this.emResposta.has(l.id) || l.tentativasResposta > 0) continue; // falhas da IA seguem o próprio intervalo
+      // Espera curta normal (até 15 s) é mantida; a espera longa por WhatsApp desconectado vira "agora"
+      const falta = l.responderEm ? l.responderEm.getTime() - this.agora().getTime() : 0;
+      this.programar(l.id, falta > 0 && falta <= ESPERA_MAX_MS ? l.responderEm! : this.agora());
     }
   }
 }
@@ -442,3 +604,6 @@ async function fichaDoUsuario(u: { id: string; cargo: Cargo; empresaId: string |
   if (!texto && u.empresa) texto = `Empresa: ${u.empresa.nome}`;
   return { texto, comoQualificar: f?.comoQualificar ?? "" };
 }
+
+/** Telefone mascarado para os logs (LGPD): só o começo e os 4 últimos dígitos. */
+export const mascarar = (tel: string) => (tel.length > 8 ? `${tel.slice(0, 4)}…${tel.slice(-4)}` : "…");

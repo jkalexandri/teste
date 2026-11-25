@@ -99,6 +99,10 @@ Plano em 6 etapas, uma por vez, testando e mostrando ao dono antes da próxima:
 Testes do Asaas usam o **Asaas de mentira** (`apps/web/tests/asaas-falso.cjs`, site de teste com `ASAAS_URL=http://127.0.0.1:4010`):
 `etapa19a-asaas-config`, `etapa19b-asaas-pagamento` e `etapa19c-asaas-confirmacao`.
 
+### Atendimento da IA no WhatsApp — FEITO (v1.41.0), decisão #127
+Resposta pendente no banco + varredura, 8–15 s (teto 30 s), 3 tentativas e texto reserva, "não sei" não pausa, saída estruturada.
+Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: responder no mesmo endereço (jid/LID) de onde veio a mensagem.
+
 ### Pendências da publicação (`docs/publicacao-vps.md`)
 - Parte 6.1 — backup diário e rotinas (crontab).
 - Parte 6.2 — proteção da VPS (`deploy/seguranca-vps.sh`, depois de cadastrar a chave SSH).

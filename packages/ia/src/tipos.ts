@@ -18,6 +18,8 @@ export type PedidoIA = {
   mensagens: { papel: "usuario" | "assistente"; texto: string; imagens?: { tipo: string; base64: string }[] }[];
   /** Limite de tamanho da resposta (custo — decisão #75). */
   maxTokens: number;
+  /** Saída estruturada (decisão #127): a resposta vem sempre como JSON válido neste esquema (Anthropic; os outros ignoram). */
+  esquemaJson?: Record<string, unknown>;
 };
 
 export type UsoTokens = { entrada: number; saida: number; cacheLeitura: number; cacheEscrita: number };
@@ -29,4 +31,8 @@ export interface Conector {
   chamar(cfg: ConfigConector, pedido: PedidoIA): Promise<RespostaIA>;
 }
 
-export class ErroIA extends Error {}
+/** Erro da IA. "tentarDeNovo" = vale tentar de novo (tempo esgotado, limite de uso, servidor, resposta cortada ou inválida);
+ *  "bruto" = começo do texto que a IA devolveu, para o log (decisão #127). */
+export class ErroIA extends Error {
+  constructor(mensagem: string, public tentarDeNovo = false, public bruto?: string) { super(mensagem); }
+}

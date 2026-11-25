@@ -19,3 +19,11 @@ export function numeroDoJid(jid: string | undefined): string | null {
   if (!jid) return null;
   return jid.split("@")[0]!.split(":")[0]! || null;
 }
+
+/** O mesmo celular brasileiro com e sem o 9º dígito (o WhatsApp às vezes usa a forma antiga) — decisão #127. */
+export function variantesTelefone(tel: string) {
+  const v = [tel];
+  if (/^55\d{2}9\d{8}$/.test(tel)) v.push(tel.slice(0, 4) + tel.slice(5));
+  else if (/^55\d{2}[6-9]\d{7}$/.test(tel)) v.push(tel.slice(0, 4) + "9" + tel.slice(4));
+  return v;
+}

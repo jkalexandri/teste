@@ -4,7 +4,7 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import pino from "pino";
 import { prisma, AutorMensagem, Cargo, Modulo, StatusLead } from "@filapro/db";
-import { Atendente, MAX_IA_DIA, MOTIVO_ASSUMIDA, MOTIVO_LIMITE, MOTIVO_NAO_SEI, TEXTO_AUDIO } from "../src/conversas.js";
+import { Atendente, MAX_IA_DIA, MOTIVO_ASSUMIDA, MOTIVO_LIMITE, TEXTO_AUDIO, TEXTO_RESERVA, TETO_ESPERA_MS } from "../src/conversas.js";
 import type { Conteudo, Remetente } from "../src/disparos.js";
 import { limparCacheManutencao } from "../src/manutencao.js";
 
@@ -12,11 +12,16 @@ const EMP = "teste-conv-emp", USU = "teste-conv-usu", TEL = "5511990001111";
 
 class Falso implements Remetente {
   conectadoAgora = true;
+  /** Quantos envios seguidos falham (simula erro do WhatsApp) */
+  falharEnvios = 0;
   enviados: { jid: string; conteudo: Conteudo }[] = [];
   conectado() { return this.conectadoAgora; }
   async verificarNumero(_s: string, tel: string) { return `${tel}@s.whatsapp.net`; }
   async digitando() {}
-  async enviar(_s: string, jid: string, conteudo: Conteudo) { this.enviados.push({ jid, conteudo }); }
+  async enviar(_s: string, jid: string, conteudo: Conteudo) {
+    if (this.falharEnvios > 0) { this.falharEnvios--; throw new Error("falha simulada do WhatsApp"); }
+    this.enviados.push({ jid, conteudo });
+  }
 }
 
 let wa: Falso, at: Atendente, avisos: string[] = [];
@@ -117,20 +122,19 @@ test("objeção marca o status Objeção", async () => {
   assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).status, StatusLead.OBJECAO);
 });
 
-test("não sabe responder: diz que vai confirmar, pausa e avisa o usuário", async () => {
+test("não sabe responder: diz que vai confirmar, NÃO pausa e avisa o usuário (decisão #127)", async () => {
   const l = await novoLead();
   await at.receber(USU, USU, TEL, { texto: "Quanto custa a limpeza de pele?", tipo: "texto" });
   await aguardar();
   assert.match(wa.enviados[0]!.conteudo.texto, /confirmar/);
   const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
-  assert.equal(lead.iaPausada, true);
-  assert.equal(lead.iaPausaMotivo, MOTIVO_NAO_SEI);
+  assert.equal(lead.iaPausada, false);
   assert.equal(avisos.length, 1);
-  // Pausada: a próxima mensagem fica guardada, mas a IA não responde
+  // Continua: a próxima mensagem é respondida
   await at.receber(USU, USU, TEL, { texto: "Oi?", tipo: "texto" });
   await aguardar();
-  assert.equal(wa.enviados.length, 1);
-  assert.equal((await msgs(l.id)).length, 3);
+  assert.equal(wa.enviados.length, 2);
+  assert.equal((await msgs(l.id)).length, 4);
 });
 
 test("SAIR, IA desligada e venda concluída não mudam pela IA", async () => {
@@ -218,4 +222,101 @@ test("campanha enviada entra no histórico; mensagens com mais de 365 dias são 
   await at.limparAntigas();
   const m = await msgs(l.id);
   assert.deepEqual(m.map((x) => [x.autor, x.texto]), [[AutorMensagem.CAMPANHA, "Oi Maria, tudo bem?"]]);
+});
+
+// ===== Resposta pendente (decisão #127) =====
+
+test("a resposta fica pendente no banco e fecha depois de responder", async () => {
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 150 });
+  const l = await novoLead();
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  const pendente = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
+  assert.ok(pendente.respostaPendenteDesde && pendente.responderEm, "pendência gravada");
+  await espera(300); await aguardar();
+  assert.equal(wa.enviados.length, 1);
+  const depois = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
+  assert.equal(depois.respostaPendenteDesde, null);
+  assert.equal(depois.responderEm, null);
+});
+
+test("serviço reiniciado: a varredura responde o que ficou pendente", async () => {
+  const l = await novoLead();
+  await prisma.mensagem.create({ data: { leadId: l.id, autor: AutorMensagem.LEAD, texto: "Oi, ainda está aí?" } });
+  await prisma.lead.update({ where: { id: l.id }, data: { respostaPendenteDesde: new Date(Date.now() - 60_000), responderEm: new Date(Date.now() - 1_000) } });
+  // Atendente novo (sem timers, como depois de um reinício)
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 0 });
+  await at.varrerPendentes();
+  await aguardar();
+  assert.equal(wa.enviados.length, 1);
+});
+
+test("teto de espera: mensagens seguidas não adiam além de 30 s desde a primeira", async () => {
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 60_000 });
+  const l = await novoLead();
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  const p = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
+  assert.ok(p.responderEm!.getTime() - p.respostaPendenteDesde!.getTime() <= TETO_ESPERA_MS);
+  at.parar();
+});
+
+test("WhatsApp desconectado: a resposta continua pendente e sai quando reconecta", async () => {
+  const l = await novoLead();
+  wa.conectadoAgora = false;
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  await espera(200);
+  assert.equal(wa.enviados.length, 0);
+  assert.ok((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).respostaPendenteDesde, "continua pendente");
+  wa.conectadoAgora = true;
+  await at.aoConectar(USU);
+  await aguardar();
+  assert.equal(wa.enviados.length, 1);
+  at.parar();
+});
+
+test("envio falhou uma vez: tenta de novo e entrega", async () => {
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 0, reenvioMs: 10 });
+  await novoLead();
+  wa.falharEnvios = 1;
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  await aguardar();
+  assert.equal(wa.enviados.length, 1);
+});
+
+test("IA falhou 3 vezes: manda a mensagem reserva e avisa o usuário", async () => {
+  await prisma.configIA.update({ where: { tarefa: "conversar" }, data: { provedor: "anthropic", modelo: "claude-haiku-5-5", chave: null } });
+  const global = await prisma.configIA.findUnique({ where: { tarefa: "_anthropic" } });
+  if (global) await prisma.configIA.delete({ where: { tarefa: "_anthropic" } });
+  try {
+    at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 0, esperaTentativaMs: () => 30, notificar: async (_p, t) => { avisos.push(t); } });
+    const l = await novoLead();
+    await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+    for (let i = 0; i < 50 && wa.enviados.length === 0; i++) await espera(50);
+    await aguardar();
+    assert.equal(wa.enviados.length, 1);
+    assert.equal(wa.enviados[0]!.conteudo.texto, TEXTO_RESERVA);
+    assert.ok(avisos.some((a) => a.includes("3 tentativas")), "usuário avisado");
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: l.id } });
+    assert.equal(lead.respostaPendenteDesde, null, "pendência fechada");
+    assert.equal(lead.iaPausada, false);
+  } finally {
+    await prisma.configIA.update({ where: { tarefa: "conversar" }, data: { provedor: "simulado", modelo: "simulado", chave: null } });
+    if (global) await prisma.configIA.create({ data: global });
+  }
+});
+
+test("lead achado com ou sem o 9º dígito", async () => {
+  await novoLead({ telefone: "5511990001111" });
+  await at.receber(USU, USU, "551190001111", { texto: "Oi", tipo: "texto" });
+  await aguardar();
+  assert.equal(wa.enviados.length, 1);
+});
+
+test("usuário escreve à mão: a resposta pendente da IA é cancelada", async () => {
+  at = new Atendente(wa, pino({ level: "silent" }), { pastaArquivos: "/tmp", esperaMs: () => 200 });
+  const l = await novoLead();
+  await at.receber(USU, USU, TEL, { texto: "Oi", tipo: "texto" });
+  await at.enviarManual(l.id, USU, "Oi, aqui é o vendedor");
+  await espera(400); await aguardar();
+  assert.equal(wa.enviados.length, 1, "só a mensagem manual");
+  assert.equal((await prisma.lead.findUniqueOrThrow({ where: { id: l.id } })).respostaPendenteDesde, null);
 });

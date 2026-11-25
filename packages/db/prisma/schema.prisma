@@ -441,7 +441,19 @@ model Lead {
   @@unique([usuarioId, telefone])
   @@index([usuarioId])
   @@index([empresaId])
+  /// Resposta da IA pendente (decisão #127): fica no banco, então reiniciar o serviço ou reconectar o WhatsApp não perde nem adia.
+  /// "respostaPendenteDesde" = 1ª mensagem do lead ainda sem resposta; "responderEm" = quando responder (espera de 8–15 s, teto de 30 s)
+  respostaPendenteDesde DateTime?
+  responderEm         DateTime?
+  /// Sobe a cada mensagem nova do lead: a resposta só "fecha" a pendência se nada novo chegou enquanto a IA respondia
+  pendenteVersao      Int        @default(0)
+  /// Tentativas seguidas que falharam (IA ou envio); na 3ª vai a mensagem reserva e o usuário é avisado
+  tentativasResposta  Int        @default(0)
+  /// Aviso "WhatsApp desconectado com lead esperando" já enviado nesta pendência
+  avisoEsperaEm       DateTime?
+
   @@index([usuarioId, ultimaMensagemEm])
+  @@index([responderEm])
 }
 
 enum AutorMensagem {

@@ -15,9 +15,10 @@ export type MensagemConversa = { autor: "LEAD" | "IA" | "USUARIO" | "CAMPANHA"; 
 export type RespostaConversa = { resposta: string; temperatura: Temperatura; status: StatusIA; naoSei: boolean; motivo: string };
 
 const SISTEMA_CONVERSA = `ATENDENTE DE WHATSAPP. Você atende, em nome da empresa, um lead que respondeu no WhatsApp. Escreva em português do Brasil,
-de forma natural, curta (até 3 frases), cordial e humana, como um vendedor atencioso. Uma pergunta por vez.
+de forma natural, com mensagens curtas, cordial e humana, como um vendedor atencioso. Uma pergunta por vez.
 Use SOMENTE as informações da ficha da empresa. Se o lead perguntar algo que não está na ficha (preço, prazo, estoque, dado específico),
-NÃO invente: diga que vai confirmar a informação e retorna em seguida, e marque "naoSei": true.
+NÃO invente: diga que vai confirmar a informação com o consultor, CONTINUE a conversa com a próxima pergunta da qualificação
+e marque "naoSei": true.
 Trate objeções (preço, tempo, desconfiança, "vou pensar" etc.) com empatia, usando o que o lead já revelou na conversa (o perfil dele).
 Qualifique o lead:
 - "QUENTE": quer comprar ou agendar agora;
@@ -36,6 +37,20 @@ function linha(m: MensagemConversa) {
   const extra = m.tipo && m.tipo !== "texto" ? `[${m.tipo}] ` : "";
   return `${rotulo(m.autor)}: ${extra}${m.texto}`.trim();
 }
+
+/** Esquema da resposta (decisão #127): com a saída estruturada, a IA sempre devolve este JSON válido. */
+export const ESQUEMA_CONVERSA = {
+  type: "object",
+  properties: {
+    resposta: { type: "string" },
+    temperatura: { type: "string", enum: [...TEMPERATURAS] },
+    status: { type: "string", enum: [...STATUS_IA] },
+    naoSei: { type: "boolean" },
+    motivo: { type: "string" },
+  },
+  required: ["resposta", "temperatura", "status", "naoSei", "motivo"],
+  additionalProperties: false,
+};
 
 /** Extrai e valida o JSON da resposta da conversa (tolerante a texto em volta). */
 export function lerJsonConversa(texto: string): RespostaConversa | null {
@@ -84,11 +99,13 @@ export async function responderConversa(
   ].filter(Boolean).join("\n\n");
   const r = await chamarIA(
     "conversar",
-    { sistema: SISTEMA_CONVERSA, contexto: contexto || undefined, mensagens: [{ papel: "usuario", texto: corpo, imagens: d.imagem ? [d.imagem] : undefined }], maxTokens: 600 },
+    // 1500: o "pensamento" do modelo conta no limite; com 600 a resposta era cortada (decisão #127)
+    { sistema: SISTEMA_CONVERSA, contexto: contexto || undefined, mensagens: [{ papel: "usuario", texto: corpo, imagens: d.imagem ? [d.imagem] : undefined }], maxTokens: 1500, esquemaJson: ESQUEMA_CONVERSA },
     quem,
   );
   const j = lerJsonConversa(r.texto);
-  if (!j) throw new ErroIA("A IA respondeu num formato inesperado.");
+  // Formato inválido vale tentar de novo; o começo do texto vai para o log
+  if (!j) throw new ErroIA("A IA respondeu num formato inesperado.", true, r.texto.slice(0, 300));
   return { ...j, custoUsd: r.custoUsd };
 }
 

@@ -9,7 +9,8 @@ const COM_FALLBACK = new Set(["claude-opus-5-5", "claude-sonnet-5-5", "claude-op
 export const conectorAnthropic: Conector = {
   async chamar(cfg: ConfigConector, p: PedidoIA): Promise<RespostaIA> {
     if (!cfg.chave) throw new ErroIA("Chave da Anthropic não configurada (menu Inteligência Artificial).");
-    const client = new Anthropic({ apiKey: cfg.chave, ...(cfg.urlBase ? { baseURL: cfg.urlBase } : {}), maxRetries: 2, timeout: 60_000 });
+    // Tempo de espera de 20 s e 1 nova tentativa aqui; as outras ficam com quem chamou (decisão #127: antes 60 s × 3 = até 3 min)
+    const client = new Anthropic({ apiKey: cfg.chave, ...(cfg.urlBase ? { baseURL: cfg.urlBase } : {}), maxRetries: 1, timeout: 20_000 });
     // Bloco fixo (instruções + ficha) com cache: nas próximas chamadas custa ~10%
     const system: Anthropic.TextBlockParam[] = [{ type: "text", text: p.sistema }];
     if (p.contexto) system.push({ type: "text", text: p.contexto });
@@ -23,13 +24,19 @@ export const conectorAnthropic: Conector = {
           ]
         : m.texto,
     }));
-    const base = { model: cfg.modelo, max_tokens: p.maxTokens, system, messages, output_config: { effort: "low" as const } };
+    // Saída estruturada (decisão #127): com esquema, a API garante JSON válido
+    const output_config = p.esquemaJson
+      ? { effort: "low" as const, format: { type: "json_schema" as const, schema: p.esquemaJson } }
+      : { effort: "low" as const };
+    const base = { model: cfg.modelo, max_tokens: p.maxTokens, system, messages, output_config };
     try {
       const r = COM_FALLBACK.has(cfg.modelo)
         ? await client.beta.messages.create({ ...base, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
         : await client.messages.create(base);
       if (r.stop_reason === "refusal") throw new ErroIA("A IA recusou este pedido. Revise o texto e tente de novo.");
       const texto = r.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+      // Resposta cortada no limite de tamanho (decisão #127): antes virava "formato inesperado" sem explicação
+      if (r.stop_reason === "max_tokens") throw new ErroIA("A resposta da IA foi cortada no limite de tamanho.", true, texto.slice(0, 300));
       const u = r.usage;
       return {
         texto,
@@ -41,10 +48,11 @@ export const conectorAnthropic: Conector = {
       if (e instanceof Anthropic.AuthenticationError) throw new ErroIA("Chave da Anthropic inválida.");
       if (e instanceof Anthropic.PermissionDeniedError) throw new ErroIA("A chave não tem permissão (confira os créditos da conta Anthropic).");
       if (e instanceof Anthropic.NotFoundError) throw new ErroIA(`Modelo "${cfg.modelo}" não encontrado.`);
-      if (e instanceof Anthropic.RateLimitError) throw new ErroIA("Limite de uso da Anthropic atingido. Tente de novo em instantes.");
+      if (e instanceof Anthropic.RateLimitError) throw new ErroIA("Limite de uso da Anthropic atingido. Tente de novo em instantes.", true);
       if (e instanceof Anthropic.BadRequestError) throw new ErroIA(`Pedido recusado pela Anthropic: ${e.message}`);
-      if (e instanceof Anthropic.APIError) throw new ErroIA(`Erro da Anthropic (${e.status ?? "sem código"}). Tente de novo.`);
-      throw new ErroIA("Não foi possível falar com a Anthropic.");
+      if (e instanceof Anthropic.APIConnectionTimeoutError) throw new ErroIA("A Anthropic demorou para responder (tempo esgotado).", true);
+      if (e instanceof Anthropic.APIError) throw new ErroIA(`Erro da Anthropic (${e.status ?? "sem código"}). Tente de novo.`, (e.status ?? 500) >= 500 || e.status === 408 || e.status === 409);
+      throw new ErroIA("Não foi possível falar com a Anthropic.", true);
     }
   },
 };

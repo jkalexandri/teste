@@ -3,6 +3,7 @@
 // remetente (o WhatsApp de cada usuário) envia um de cada vez, respeitando o Antibloqueio.
 // Tudo é relido do banco a cada envio: pausar/cancelar na tela vale na hora, e se o serviço
 // reiniciar a campanha continua de onde parou, sem repetir quem já recebeu.
+import { variantesTelefone } from "./numero.js";
 import { join } from "node:path";
 import type { Logger } from "pino";
 import { prisma, Cargo, StatusCampanha, StatusEnvio, StatusLead } from "@filapro/db";
@@ -351,7 +352,8 @@ export class MotorDisparos {
    * e tira o lead da fila das campanhas desse remetente.
    */
   async registrarResposta(usuarioId: string, telefone: string, texto: string) {
-    const leads = await prisma.lead.findMany({ where: { usuarioId, telefone } });
+    // Com e sem o 9º dígito (decisão #127)
+    const leads = await prisma.lead.findMany({ where: { usuarioId, telefone: { in: variantesTelefone(telefone) } } });
     if (!leads.length) return;
     const agora = this.agora();
     const palavra = texto.trim().toUpperCase().replace(/[^A-ZÇÃÕÁÉÍÓÚ]/g, "");

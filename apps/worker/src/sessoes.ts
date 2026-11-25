@@ -84,9 +84,14 @@ export class GerenciadorSessoes implements Remetente {
         const k = msg.key;
         if (k.fromMe || !k.remoteJid || k.remoteJid.endsWith("@g.us") || k.remoteJid === "status@broadcast") continue;
         // No WhatsApp novo o contato pode vir como "LID"; o número real vem em remoteJidAlt.
-        const jid = isLidUser(k.remoteJid) ? k.remoteJidAlt ?? "" : k.remoteJid;
+        const lid = isLidUser(k.remoteJid);
+        const jid = lid ? k.remoteJidAlt ?? "" : k.remoteJid;
         const telefone = numeroDoJid(jid);
-        if (!telefone || !/^\d{8,15}$/.test(telefone)) continue;
+        if (!telefone || !/^\d{8,15}$/.test(telefone)) {
+          // Antes era descartada sem log (decisão #127): agora fica registrado para provar a causa
+          this.log.warn({ id, lid, temAlt: !!k.remoteJidAlt }, "mensagem descartada: sem número de telefone (contato LID sem o número real)");
+          continue;
+        }
         // Abre os "envelopes" do WhatsApp (mensagem temporária, visualização única, editada…) antes de ler o texto
         const m = extractMessageContent(msg.message);
         const texto = m?.conversation ?? m?.extendedTextMessage?.text ?? m?.imageMessage?.caption ?? m?.videoMessage?.caption ?? m?.buttonsResponseMessage?.selectedDisplayText ?? m?.listResponseMessage?.title ?? "";
@@ -100,7 +105,7 @@ export class GerenciadorSessoes implements Remetente {
               return { tipo: m?.imageMessage?.mimetype?.split(";")[0] || "image/jpeg", base64: buf.toString("base64") };
             }
           : undefined;
-        this.log.info({ id, tipo, temTexto: !!texto }, "mensagem recebida de contato");
+        this.log.info({ id, tipo, temTexto: !!texto, lid, tel: `${telefone.slice(0, 4)}…${telefone.slice(-4)}` }, "mensagem recebida de contato");
         await this.aoReceber(id, telefone, texto, { texto, tipo, baixarImagem }).catch((e) => this.log.error({ e, id }, "falha ao registrar resposta"));
       }
     });
