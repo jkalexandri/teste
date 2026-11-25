@@ -81,7 +81,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       ? { rotulo: "Super Admin • Leads", titulo: "Leads", descricao: "Todos os leads, por empresa e por usuário individual. Você também pode cadastrar leads para você ou para qualquer usuário." }
       : u.cargo === Cargo.ADMIN_EMPRESA
         ? { rotulo: "Admin • Leads", titulo: "Leads da empresa", descricao: "Leads de todos os usuários da empresa. Cadastre ou importe escolhendo o usuário dono do lead." }
-        : { rotulo: "Leads • só os seus", titulo: "Seus leads", descricao: "Adicione um a um ou cole vários de uma vez. Nenhum outro usuário vê esta lista." };
+        : { rotulo: "Leads", titulo: "Seus leads", descricao: "Adicione um a um ou cole vários de uma vez." };
 
   return (
     <section className="flex-1 flex flex-col">

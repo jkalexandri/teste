@@ -27,7 +27,7 @@ function diasAte(d: Date) {
 }
 
 function CardKpi({ icone, cor, valor, titulo, sub, selo }: {
-  icone: ReactNode; cor: string; valor: number | string; titulo: string; sub?: string; selo: ReactNode;
+  icone: ReactNode; cor: string; valor: number | string; titulo: string; sub?: string; selo?: ReactNode;
 }) {
   return (
     <div className="card p-3">
@@ -46,9 +46,6 @@ function CardKpi({ icone, cor, valor, titulo, sub, selo }: {
 
 const seloTotal = (
   <span className="chip" style={{ background: "#0b2f1f", color: "#fff", fontSize: "9px", padding: "3px 6px" }}>Total</span>
-);
-const seloSeus = (
-  <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)", fontSize: "9px", padding: "3px 6px" }}>Só seus dados</span>
 );
 
 const KPIS = [
@@ -263,9 +260,6 @@ export default async function DashboardPage() {
         descricao={dias !== null ? `Seu acesso vale por mais ${dias} ${dias === 1 ? "dia" : "dias"}.` : undefined}
         direita={
           <div className="flex items-center gap-2">
-            <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)" }}>
-              <ShieldCheck size={12} /> Só seus dados
-            </span>
             {u.permissoes.includes("campanhas") && <Link href="/campanhas" className="btn-primary"><Play size={14} /> Criar campanha</Link>}
           </div>
         }
@@ -274,7 +268,7 @@ export default async function DashboardPage() {
       <SaldoDisparos empresa={u.empresa} podeComprar={u.empresa?.modulo === Modulo.INDIVIDUAL} />
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
         {KPIS.map((k, i) => (
-          <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valoresUsuario[i] ?? 0} titulo={k.titulo} selo={seloSeus} />
+          <CardKpi key={k.titulo} icone={k.icone} cor={k.cor} valor={valoresUsuario[i] ?? 0} titulo={k.titulo} />
         ))}
       </div>
       <div className="grid lg:grid-cols-[1.55fr_.85fr] gap-3 mt-3">

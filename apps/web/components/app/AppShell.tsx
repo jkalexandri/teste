@@ -82,9 +82,11 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
           {/* ===== Barra lateral fixa ===== */}
           <aside
             data-safe-area-sticky-top
-            className="hidden lg:flex flex-col w-[232px] shrink-0 border-r p-3 sticky self-start h-[calc(100dvh-var(--safe-area-inset-top))] overflow-y-auto"
+            className="hidden lg:flex flex-col w-[232px] shrink-0 border-r p-3 sticky self-start h-[calc(100dvh-var(--safe-area-inset-top))] overflow-hidden"
             style={{ borderColor: "var(--border)", background: "var(--surface)", top: "var(--safe-area-inset-top)" }}
           >
+            {/* Cabeçalho fixo do menu (decisão #126) */}
+            <div className="shrink-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
               <div className="font-display text-[20px] font-extrabold leading-none tracking-tight shrink-0 whitespace-nowrap">
                 Fila<span style={{ color: "var(--primary)" }}>Pro</span> Leads
@@ -101,8 +103,10 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
             >
               {admin ? <ShieldCheck size={14} /> : <Users size={14} />} {PERFIL[cargo]}
             </div>
+            </div>
 
-            <nav className="mt-2 space-y-0.5" aria-label="Menu principal">
+            {/* Só a lista do menu rola (decisão #126) */}
+            <nav className="mt-2 space-y-0.5 flex-1 min-h-0 overflow-y-auto" aria-label="Menu principal" data-testid="menu-rolavel">
               {menu.map((item, idx) => {
                 const anterior = idx > 0 ? menu[idx - 1] : undefined;
                 const novoGrupo = !anterior || anterior.grupo !== item.grupo;
@@ -138,18 +142,20 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
               })}
             </nav>
 
-            <div className="mt-auto rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
-              <div className="flex items-center gap-1.5 font-bold text-[12px]">
-                <ShieldCheck size={14} style={{ color: "var(--primary)" }} /> {admin ? "Visão agregada" : "Espaço individual"}
+            {/* Rodapé fixo do menu (decisão #126). O quadro "Espaço individual" do usuário e o texto do Super Admin saíram (decisão #126) */}
+            <div className="shrink-0 pt-2 flex flex-col">
+            {admin && (
+              <div className="rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
+                <div className="flex items-center gap-1.5 font-bold text-[12px]">
+                  <ShieldCheck size={14} style={{ color: "var(--primary)" }} /> Visão agregada
+                </div>
+                {cargo === "ADMIN_EMPRESA" && (
+                  <p className="text-[11px] leading-relaxed mt-1.5" style={{ color: "var(--muted)" }}>
+                    O administrador vê contadores agregados da sua empresa. Admin não envia mensagens.
+                  </p>
+                )}
               </div>
-              <p className="text-[11px] leading-relaxed mt-1.5" style={{ color: "var(--muted)" }}>
-                {cargo === "SUPERADMIN"
-                  ? "Acesso total, sempre agrupado por empresa e por usuário individual."
-                  : cargo === "ADMIN_EMPRESA"
-                    ? "O administrador vê contadores agregados da sua empresa. Admin não envia mensagens."
-                    : "Você vê só seus leads, conversas e seu WhatsApp. Nenhum usuário acessa dados de outro."}
-              </p>
-            </div>
+            )}
             <button onClick={sair} className="btn-ghost mt-2 w-full justify-center">
               <Repeat size={14} /> Sair
             </button>
@@ -157,6 +163,7 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
             <a href="/ajuda" className="mt-2 text-center text-[10px]" style={{ color: "var(--muted-2, var(--muted))" }} data-testid="versao-menu">
               FilaPro Leads {VERSAO_CURTA}{VERSAO_DATA ? ` • ${VERSAO_DATA}` : ""}
             </a>
+            </div>
           </aside>
 
           <div className="flex-1 min-w-0 flex flex-col">
@@ -226,15 +233,6 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
 
             <main className="flex-1 p-3 sm:p-4">
               <div className="max-w-[1180px] mx-auto w-full flex flex-col">
-                {cargo === "USUARIO" && (
-                  <div className="flex gap-2 rounded-xl px-3 py-2 mb-3 shrink-0" style={{ background: "var(--primary-soft)", border: "1px solid var(--border)" }}>
-                    <ShieldCheck size={16} className="shrink-0" style={{ color: "var(--primary)" }} />
-                    <p className="text-[12px] leading-relaxed">
-                      <b>Você está vendo apenas seus dados.</b>{" "}
-                      <span style={{ color: "var(--muted)" }}>Seus leads, campanhas, conversas e arquivos não são compartilhados com outros usuários.</span>
-                    </p>
-                  </div>
-                )}
                 {children}
               </div>
             </main>

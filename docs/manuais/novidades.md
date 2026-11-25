@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.40.1 — menu fixo e telas mais limpas (25/11/2026)
+
+- **Menu lateral:** o nome e o perfil (em cima) e o botão Sair e a versão (embaixo) ficam fixos; só a lista do menu rola.
+- Saíram os avisos "Você está vendo apenas seus dados" (barrinha do topo, quadro do menu, selos do Dashboard e frase da tela Leads).
+  Nada muda em quem vê o quê: cada usuário continua vendo só os próprios dados.
+
 ## v1.40.0 — fazer upgrade quando quiser (25/11/2026)
 
 ### Para o dono da conta (usuário Individual ou Admin da Empresa)
