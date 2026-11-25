@@ -87,7 +87,7 @@ export default function ListaLeads({ linhas, total, totalGeral, pagina, porPagin
 
       {linhas.length === 0 ? (
         <p className="text-[12px] mt-3" style={{ color: "var(--muted)" }}>
-          {totalGeral === 0 ? "Nenhum lead ainda. Adicione ao lado." : "Nenhum lead encontrado para os filtros escolhidos."}
+          {totalGeral === 0 ? "Nenhum lead ainda. Adicione no quadro Adicionar leads." : "Nenhum lead encontrado para os filtros escolhidos."}
         </p>
       ) : (
         <div className="table-wrap mt-2">

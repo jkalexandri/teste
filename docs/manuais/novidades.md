@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.38.1 — texto da lista de leads vazia (25/11/2026)
+
+- Leads: com a lista vazia, a frase agora diz "Adicione no quadro **Adicionar leads**" (no celular o quadro fica embaixo, não ao lado).
+
 ## v1.38.0 — botão "Texto sugestão" no Como qualificar (24/11/2026)
 
 ### Para quem configura a IA (Empresa | IA)
