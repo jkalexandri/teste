@@ -4,11 +4,13 @@ import { prisma, Cargo, Modulo } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import { obterSessao } from "@/lib/auth/session";
 import FormComunicado from "./FormComunicado";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const dataBR = (d: Date) => d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 export default async function ComunicadosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

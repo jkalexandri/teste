@@ -105,7 +105,10 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
 
 ### Revisão por módulos — decisão #129 (quadro em `docs/modulos/README.md`)
 - Ordem: módulos 4 (WhatsApp) e 8 (Conversas IA) → 6 (Campanhas) → 5 (Leads) → 3 (Pagamento) → demais.
-- Módulo 8, passo 1 FEITO (v1.41.2): resposta no endereço LID. Próximo: o dono testa na VPS; depois, mapa + auditoria dos módulos 4 e 8.
+- Módulo 8, passo 1 FEITO (v1.41.2): resposta no endereço LID (falta o dono confirmar na VPS).
+- Módulo 4: auditoria feita (decisão #130, 22 falhas). C1 FEITA (v1.41.3: protegerTela em todas as telas + teste etapa21).
+  Próximas, cada uma com prévia: C2, A1, A3; depois A2, A4–A7; depois médias/baixas. A6: avisar com 3 min, avisar na volta, "com problema" após 2 h.
+- Quadro "Módulos e revisões" na Ajuda (só Super Admin, decisão #131) FEITO (v1.41.3). **Em toda entrega:** atualizar `docs/modulos/README.md` (último ajuste, histórico com data e hora; módulo "Revisado" que for ajustado sem revisão completa vira "Sem revisão").
 
 ### Criação de campanha — decisão #128 (em andamento, um passo por vez com prévia)
 - Passo 1 FEITO (v1.41.1): trava contra disparo duplicado + ir para Em andamento.

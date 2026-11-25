@@ -7,12 +7,14 @@ import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import { CartoesTotal, ChipSaude, Pessoa } from "@/components/painel/Painel";
 import { metricasPorUsuario, saudeDoNumero, somar, VAZIO } from "@/lib/metricas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const ATIVAS: StatusCampanha[] = [StatusCampanha.EM_ANDAMENTO, StatusCampanha.AGENDADA, StatusCampanha.PAUSADA];
 const ROTULO: Record<string, string> = { EM_ANDAMENTO: "Em andamento", AGENDADA: "Agendada", PAUSADA: "Pausada" };
 
 export default async function TodosDisparosPage({ searchParams }: { searchParams: Promise<{ usuario?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const u = s.usuario;

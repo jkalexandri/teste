@@ -5,10 +5,12 @@ import Cabecalho from "@/components/app/Cabecalho";
 import { obterSessao } from "@/lib/auth/session";
 import { manuaisDoPerfil } from "@/lib/ajuda";
 import { VERSAO_CURTA, VERSAO_DATA } from "@/lib/versao";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function AjudaPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const manuais = manuaisDoPerfil(s.usuario.cargo);

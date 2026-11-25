@@ -10,6 +10,7 @@ import { LISTA_STATUS } from "@/lib/leads-status";
 import { formatarTelefone } from "@/lib/telefone";
 import ListaLeads, { type LinhaTabela } from "./ListaLeads";
 import AdicionarLeads from "./AdicionarLeads";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const POR_PAGINA = 50;
@@ -17,6 +18,7 @@ const POR_PAGINA = 50;
 type Busca = { q?: string; usuario?: string; conta?: string; status?: string; situacao?: string; pagina?: string };
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Busca> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const u = s.usuario;

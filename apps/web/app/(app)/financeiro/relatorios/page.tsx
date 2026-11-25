@@ -7,11 +7,13 @@ import { AutoImprimir } from "@/components/relatorios/BarraRelatorio";
 import { obterSessao } from "@/lib/auth/session";
 import { sincronizarFinanceiro } from "@/lib/financeiro";
 import { gerarRelatorioFin, periodo, TIPOS_FIN, type TipoFin } from "@/lib/relatorios-financeiros";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default async function RelatoriosFinanceirosPage({ searchParams }: { searchParams: Promise<{ tipo?: string; de?: string; ate?: string; imprimir?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

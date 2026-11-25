@@ -5,10 +5,12 @@ import Cabecalho from "@/components/app/Cabecalho";
 import { obterSessao } from "@/lib/auth/session";
 import { formatarTelefone } from "@/lib/telefone";
 import FormAvisos from "./FormAvisos";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function AvisosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const u = s.usuario;

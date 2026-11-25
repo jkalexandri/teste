@@ -9,6 +9,7 @@ import { obterSessao } from "@/lib/auth/session";
 import { nomeDaTela } from "@/lib/menu";
 import { ONLINE_MS } from "@/lib/suporte";
 import BotaoChamar from "./BotaoChamar";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const ABAS = [
@@ -29,6 +30,7 @@ function quando(d: Date | null) {
 }
 
 export default async function OnlinePage({ searchParams }: { searchParams: Promise<{ aba?: string; busca?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

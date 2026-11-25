@@ -11,10 +11,12 @@ import { infoExtra } from "./actions";
 import { Cargo } from "@filapro/db";
 import { saudeDoNumero } from "@/lib/metricas";
 import { Apelido, ComprarExtra, NumerosSuperAdmin } from "./Extras";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function WhatsappPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await sessaoDoAlvo("proprio");
   const sessao = await obterSessao();
   if (!s || !sessao) redirect("/dashboard");

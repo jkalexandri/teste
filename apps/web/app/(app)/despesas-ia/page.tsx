@@ -4,6 +4,7 @@ import { prisma, Modulo, Prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import Grafico, { type Barra } from "./Grafico";
 import Atualizador from "./Atualizador";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ const inicioSP = (dia: string) => new Date(`${dia}T00:00:00-03:00`);
 const somaDias = (dia: string, n: number) => new Date(inicioSP(dia).getTime() + n * 86_400_000).toISOString().slice(0, 10);
 
 export default async function DespesasIAPage({ searchParams }: { searchParams: Promise<{ periodo?: string; de?: string; ate?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const f = await searchParams;
   const periodo = PERIODOS.some((p) => p.id === f.periodo) ? f.periodo! : "hoje";
   const hoje = hojeSP();

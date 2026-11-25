@@ -5,10 +5,12 @@ import Cabecalho from "@/components/app/Cabecalho";
 import { IS_PRODUCTION } from "@/lib/env";
 import FormIA, { FormChaveGlobal, FormCotacao, FormSugestaoQualificar } from "./FormIA";
 import { MAX_COMO_QUALIFICAR, SUGESTAO_QUALIFICAR_PADRAO } from "@/lib/sugestao-qualificar";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function InteligenciaArtificialPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const [configs, venda] = await Promise.all([prisma.configIA.findMany(), prisma.configVenda.findUnique({ where: { id: "config" } })]);
   return (
     <section className="flex-1 flex flex-col">

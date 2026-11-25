@@ -6,6 +6,7 @@ import Cabecalho from "@/components/app/Cabecalho";
 import AbasFinanceiro from "@/components/financeiro/AbasFinanceiro";
 import { obterSessao } from "@/lib/auth/session";
 import { contasVencendo, diaBR, mesAtual, nomeMes, proximoMes, reais, receitaRecorrente, resumoDoMes, sincronizarFinanceiro } from "@/lib/financeiro";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ function Cartao({ rotulo, valor, cor, teste }: { rotulo: string; valor: string; 
 }
 
 export default async function PainelFinanceiro() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

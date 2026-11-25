@@ -248,6 +248,9 @@ Depois aponte o DNS (`@`, `www`, `api`) para o IP novo. Com a mesma `CHAVE_CRIPT
 
 - Cada usuário vê só os próprios dados; o Admin vê a empresa; o Super Admin vê tudo. As regras ficam no servidor
   (`lib/leads.ts`, `lib/conversas.ts`, `lib/campanhas.ts`, `lib/menu.ts`) — nunca confie só na tela.
+- **Toda página nova da área logada começa com `await protegerTela()`** (`lib/auth/tela.ts`, decisão #130), antes de ler
+  qualquer dado. A checagem do layout não basta: na navegação interna do Next.js a página é entregue sem refazer o layout.
+  O teste `etapa21-acesso-telas` percorre todas as telas com cada perfil e falha se alguma entregar conteúdo proibido.
 - Todas as rotas do serviço 24/7 exigem o `WORKER_TOKEN`; ele escuta só em `127.0.0.1`.
 - O leitor de sites do Empresa | IA bloqueia endereços internos (proteção contra SSRF).
 - Senhas com scrypt (sal aleatório por senha), bloqueio de 15 min após 5 erros, sessão em cookie `httpOnly`.

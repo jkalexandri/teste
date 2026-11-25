@@ -14,6 +14,8 @@ export const MANUAIS = [
   { id: "super-admin", titulo: "Manual do Super Admin", resumo: "Contas, planos, pagamentos, IA, relatórios, logs, atualização e backup.", perfis: [Cargo.SUPERADMIN] },
   { id: "desenvolvedor", titulo: "Manual do Desenvolvedor", resumo: "Como o sistema é montado, publicado, testado e como mudar com segurança.", perfis: [Cargo.SUPERADMIN] },
   { id: "novidades", titulo: "Novidades (versões)", resumo: "O que mudou em cada versão do FilaPro Leads.", perfis: [Cargo.SUPERADMIN] },
+  // Quadro da revisão por módulos (decisão #131): status, data/hora e versão de cada revisão — só o Super Admin
+  { id: "modulos", titulo: "Módulos e revisões", resumo: "Os 12 módulos da plataforma, o status da revisão de cada um e o histórico de ajustes.", perfis: [Cargo.SUPERADMIN] },
 ] as const;
 export type IdManual = (typeof MANUAIS)[number]["id"];
 
@@ -25,7 +27,8 @@ const slug = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
 
 /** Lê o manual e devolve o HTML, o índice (títulos de seção) e o título. */
 export async function lerManual(id: IdManual) {
-  const arquivo = id === "novidades" ? "novidades.md" : `${id}.md`;
+  // O quadro dos módulos fica em docs/modulos/README.md (o mesmo do GitHub)
+  const arquivo = id === "novidades" ? "novidades.md" : id === "modulos" ? join("..", "modulos", "README.md") : `${id}.md`;
   const md = await readFile(join(PASTA_MANUAIS, arquivo), "utf8");
   const indice: { id: string; texto: string }[] = [];
   const marked = new Marked({

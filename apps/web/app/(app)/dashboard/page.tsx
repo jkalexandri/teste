@@ -15,6 +15,7 @@ import Link from "next/link";
 import { formatarTelefone } from "@/lib/telefone";
 import { STATUS_LEAD } from "@/lib/leads-status";
 import { COR_SAUDE, metricasPorUsuario, saudeDoNumero, somar, VAZIO } from "@/lib/metricas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,7 @@ const KPIS = [
 ];
 
 export default async function DashboardPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const sessao = await obterSessao();
   if (!sessao) redirect("/login");
   const u = sessao.usuario;

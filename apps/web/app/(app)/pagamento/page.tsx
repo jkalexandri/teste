@@ -5,10 +5,12 @@ import Cabecalho from "@/components/app/Cabecalho";
 import FormPagamento from "./FormPagamento";
 import ConfigAsaas from "./ConfigAsaas";
 import { tokenWebhook, urlWebhook } from "@/lib/asaas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function PagamentoPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const c = await prisma.configVenda.upsert({ where: { id: "config" }, update: {}, create: { id: "config" } });
   return (
     <section className="flex-1 flex flex-col">

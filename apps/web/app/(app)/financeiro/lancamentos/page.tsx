@@ -9,6 +9,7 @@ import { obterSessao } from "@/lib/auth/session";
 import { diaBR, reais, sincronizarFinanceiro } from "@/lib/financeiro";
 import { periodo } from "@/lib/relatorios-financeiros";
 import { criarLancamento } from "../actions";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const POR_PAGINA = 100;
@@ -17,6 +18,7 @@ const ORIGEM: Record<string, string> = { MANUAL: "Manual", PEDIDO: "Pedido", FIX
 type Busca = { de?: string; ate?: string; tipo?: string; categoria?: string; conta?: string; situacao?: string; pagina?: string; busca?: string };
 
 export default async function LancamentosPage({ searchParams }: { searchParams: Promise<Busca> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

@@ -2,10 +2,12 @@
 import { prisma, StatusPedido } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import ListaPedidos from "./ListaPedidos";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function PedidosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   // Pedidos aguardando há mais de 24 h passam a "expirado" (decisão #37).
   await prisma.pedido.updateMany({
     where: { status: StatusPedido.AGUARDANDO, expiraEm: { lt: new Date() } },

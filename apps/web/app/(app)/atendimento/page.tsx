@@ -11,6 +11,7 @@ import { ONLINE_MS } from "@/lib/suporte";
 import BotaoChamar from "../online/BotaoChamar";
 import NovoAtendimento from "./NovoAtendimento";
 import BotaoIA from "./BotaoIA";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const CARGOS: Record<string, string> = { ADMIN_EMPRESA: "Admin da Empresa", USUARIO: "Usuário" };
@@ -18,6 +19,7 @@ const CARGOS: Record<string, string> = { ADMIN_EMPRESA: "Admin da Empresa", USUA
 const TEMP: Record<string, string> = { QUENTE: "🔥 Quente", MORNO: "Morno", FRIO: "Frio" };
 
 export default async function AtendimentoPage({ searchParams }: { searchParams: Promise<{ cliente?: string; aba?: string; interessado?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

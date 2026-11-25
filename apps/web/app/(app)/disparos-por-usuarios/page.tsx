@@ -4,6 +4,7 @@ import { prisma, Cargo, Modulo } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import { ChipSaude, Pessoa } from "@/components/painel/Painel";
 import { metricasPorUsuario, saudeDoNumero, VAZIO, type Saude } from "@/lib/metricas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ function diasAte(d: Date) {
 }
 
 export default async function DisparosPorUsuariosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const [empresas, individuais] = await Promise.all([
     prisma.empresa.findMany({ where: { modulo: Modulo.EMPRESARIAL }, include: { usuarios: { orderBy: [{ cargo: "asc" }, { nome: "asc" }] } }, orderBy: { nome: "asc" } }),
     prisma.usuario.findMany({ where: { cargo: Cargo.USUARIO, empresa: { modulo: Modulo.INDIVIDUAL } }, orderBy: { nome: "asc" } }),

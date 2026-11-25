@@ -3,10 +3,12 @@
 import { prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import EditorPlanos from "./EditorPlanos";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlanosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const planos = await prisma.plano.findMany({ orderBy: { ordem: "asc" } });
   return (
     <section className="flex-1 flex flex-col">

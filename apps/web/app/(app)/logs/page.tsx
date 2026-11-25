@@ -5,6 +5,7 @@ import { prisma, Cargo, Modulo, type Prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import { obterSessao } from "@/lib/auth/session";
 import { DIAS_LOG, TIPOS_LOG } from "@/lib/logs";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const POR_PAGINA = 100;
@@ -12,6 +13,7 @@ const POR_PAGINA = 100;
 type Busca = { conta?: string; usuario?: string; tipo?: string; de?: string; ate?: string; pagina?: string };
 
 export default async function LogsPage({ searchParams }: { searchParams: Promise<Busca> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const u = s.usuario;

@@ -5,10 +5,12 @@ import { redirect } from "next/navigation";
 import { obterSessao } from "@/lib/auth/session";
 import { itemDaRota } from "@/lib/menu";
 import Cabecalho from "@/components/app/Cabecalho";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function SecaoEmConstrucao() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const sessao = await obterSessao();
   if (!sessao) redirect("/login");
   const caminho = (await headers()).get("x-pathname") || "";

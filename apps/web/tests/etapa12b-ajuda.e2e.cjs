@@ -33,6 +33,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await p.screenshot({ path: OUT + '/ajuda-usuario.png' });
   await p.goto(BASE + '/ajuda/super-admin'); await espera(500);
   ok('Usuário não abre o manual do Super Admin', (await p.locator('.manual').count()) === 0);
+  await p.goto(BASE + '/ajuda/modulos'); await espera(500);
+  ok('Usuário não abre Módulos e revisões (decisão #131)', (await p.locator('.manual').count()) === 0);
   await c.close();
 
   // Admin
@@ -45,7 +47,11 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   [c, p] = await novo();
   await entrar(p, 'superadmin@disparopro.com.br', 'Super@12345678');
   const sa = await manuais(p);
-  ok('Super Admin vê os 4 manuais e as Novidades', ['Manual do Usuário', 'Manual do Admin da Empresa', 'Manual do Super Admin', 'Manual do Desenvolvedor', 'Novidades (versões)'].every((m) => sa.includes(m)), sa.join(', '));
+  ok('Super Admin vê os 4 manuais, as Novidades e Módulos e revisões', ['Manual do Usuário', 'Manual do Admin da Empresa', 'Manual do Super Admin', 'Manual do Desenvolvedor', 'Novidades (versões)', 'Módulos e revisões'].every((m) => sa.includes(m)), sa.join(', '));
+  await p.goto(BASE + '/ajuda/modulos'); await espera(500);
+  const quadro = await p.locator('.manual').innerText().catch(() => '');
+  ok('Módulos e revisões: tabela com os 12 módulos e o status', (await p.locator('.manual table').first().locator('tbody tr').count()) === 12 && /Sem revisão|Em revisão|Revisado/.test(quadro));
+  await p.screenshot({ path: OUT + '/ajuda-modulos.png', fullPage: true });
   await p.goto(BASE + '/ajuda/novidades'); await espera(500);
   ok('Novidades mostra a versão atual', (await p.locator('.manual').innerText()).includes(VERSAO));
   await p.goto(BASE + '/ajuda/super-admin'); await espera(500);

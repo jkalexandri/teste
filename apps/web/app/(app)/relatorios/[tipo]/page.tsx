@@ -6,6 +6,7 @@ import Cabecalho from "@/components/app/Cabecalho";
 import BarraRelatorio, { AutoImprimir } from "@/components/relatorios/BarraRelatorio";
 import { obterSessao } from "@/lib/auth/session";
 import { contasDoRelatorio, gerarRelatorio, TIPOS, type Parametros, type TipoRelatorio } from "@/lib/relatorios";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const ROTULO_CONTA: Record<TipoRelatorio, string> = {
 };
 
 export default async function RelatorioPage({ params, searchParams }: { params: Promise<{ tipo: string }>; searchParams: Promise<Parametros & { imprimir?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const { tipo } = await params;
   if (!(tipo in TIPOS)) notFound();
   const s = await obterSessao();

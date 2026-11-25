@@ -5,10 +5,12 @@ import { prisma, Cargo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoUsuarios from "./GestaoUsuarios";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function UsuariosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const sessao = await obterSessao();
   if (!sessao?.usuario.empresa) redirect("/dashboard");
   const empresa = sessao.usuario.empresa;

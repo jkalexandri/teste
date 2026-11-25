@@ -6,10 +6,12 @@ import { AutoImprimir } from "@/components/relatorios/BarraRelatorio";
 import { obterSessao } from "@/lib/auth/session";
 import { lerManual, manuaisDoPerfil, type IdManual } from "@/lib/ajuda";
 import { VERSAO_CURTA, VERSAO_DATA } from "@/lib/versao";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function ManualPage({ params, searchParams }: { params: Promise<{ manual: string }>; searchParams: Promise<{ imprimir?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const { manual } = await params;

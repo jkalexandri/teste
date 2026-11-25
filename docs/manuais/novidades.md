@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.3 — segurança em todas as telas e quadro de revisão dos módulos (25/11/2026)
+
+- Correção de segurança: todas as telas passam a conferir, por conta própria, se o seu perfil pode abri-las.
+  Antes, em um caso específico de navegação, telas do Super Admin podiam ser lidas por outros usuários.
+- **Super Admin:** em **Ajuda → Módulos e revisões**, o quadro dos 12 módulos com o status da revisão de cada um
+  (Revisado, Em revisão ou Sem revisão), a data, a hora e a versão da revisão e o histórico de ajustes.
+
 ## v1.41.2 — respostas chegam aos contatos do WhatsApp novo (25/11/2026)
 
 - Alguns contatos escrevem pelo formato novo do WhatsApp, que esconde o número. Agora a IA e as suas mensagens

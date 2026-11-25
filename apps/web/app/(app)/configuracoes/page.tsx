@@ -5,10 +5,12 @@ import { prisma, minParaHora } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import FormJanela from "@/components/envio/FormJanela";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s?.usuario.empresa) redirect("/dashboard");
   const e = s.usuario.empresa;

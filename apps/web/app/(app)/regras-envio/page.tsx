@@ -2,6 +2,7 @@
 import { prisma, minParaHora } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import FormRegras from "./FormRegras";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ function feriadoTexto(f: string) {
 }
 
 export default async function RegrasEnvioPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const g = await prisma.configEnvio.upsert({ where: { id: "config" }, update: {}, create: { id: "config" } });
   return (
     <section className="flex-1 flex flex-col">

@@ -7,6 +7,7 @@ import { disparosRestantes, janelaDe, numerosParaCampanha } from "@/lib/campanha
 import NovaCampanha, { type Rascunho } from "./NovaCampanha";
 import ListaCampanhas, { type CampanhaLinha } from "./ListaCampanhas";
 import AbasCampanhas from "./AbasCampanhas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ const STATUS_DA_ABA: Record<Exclude<Aba, "nova">, StatusCampanha[]> = {
 };
 
 export default async function CampanhasPage({ searchParams }: { searchParams: Promise<{ aba?: string; editar?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   const u = s.usuario;

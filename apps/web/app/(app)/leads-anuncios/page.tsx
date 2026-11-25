@@ -5,11 +5,13 @@ import Cabecalho from "@/components/app/Cabecalho";
 import { obterSessao } from "@/lib/auth/session";
 import { formatarTelefone } from "@/lib/telefone";
 import TelaAnuncios from "./TelaAnuncios";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 
 export default async function LeadsAnunciosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s || s.usuario.cargo === Cargo.ADMIN_EMPRESA) redirect("/dashboard");
   const u = s.usuario;

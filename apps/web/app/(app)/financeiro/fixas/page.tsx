@@ -8,10 +8,12 @@ import BotaoFin from "@/components/financeiro/BotaoFin";
 import { obterSessao } from "@/lib/auth/session";
 import { reais, sincronizarFinanceiro } from "@/lib/financeiro";
 import { alternarFixa, salvarFixa } from "../actions";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function FixasPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

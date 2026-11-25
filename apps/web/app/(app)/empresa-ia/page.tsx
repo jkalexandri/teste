@@ -6,10 +6,12 @@ import { atorEmpresaIA, mesAtual } from "@/lib/empresa-ia";
 import { workerConfigurado } from "@/lib/worker";
 import TelaEmpresaIA from "./TelaEmpresaIA";
 import { MAX_COMO_QUALIFICAR, sugestaoQualificar } from "@/lib/sugestao-qualificar";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmpresaIAPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const a = await atorEmpresaIA().catch(() => null);
   if (!a) redirect("/dashboard");
   const materiais = await prisma.materialIA.findMany({ where: { fichaId: a.ficha.id }, orderBy: { criadoEm: "desc" } });

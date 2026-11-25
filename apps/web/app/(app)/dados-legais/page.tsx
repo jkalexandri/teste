@@ -3,10 +3,12 @@ import Link from "next/link";
 import { prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import FormDadosLegais from "./FormDadosLegais";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function DadosLegaisPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const c = await prisma.configLegal.findUnique({ where: { id: "config" } });
   const vazio = !c || [c.responsavel, c.documento, c.endereco, c.emailPrivacidade, c.encarregadoNome, c.encarregadoEmail, c.foro].some((x) => !x.trim());
   return (

@@ -4,10 +4,12 @@ import { prisma, Cargo, ANEXOS } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoArquivos from "./GestaoArquivos";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function ArquivosPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s || s.usuario.cargo === Cargo.ADMIN_EMPRESA) redirect("/dashboard");
   const arquivos = await prisma.arquivo.findMany({

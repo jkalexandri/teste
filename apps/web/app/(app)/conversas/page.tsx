@@ -7,12 +7,14 @@ import { formatarTelefone } from "@/lib/telefone";
 import { numerosParaCampanha } from "@/lib/campanhas";
 import { LISTA_STATUS } from "@/lib/leads-status";
 import TelaConversas from "./TelaConversas";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 type Busca = { lead?: string; status?: string; temp?: string; q?: string };
 
 export default async function ConversasPage({ searchParams }: { searchParams: Promise<Busca> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const a = await atorConversas().catch(() => null);
   if (!a) redirect("/dashboard");
   const sp = await searchParams;

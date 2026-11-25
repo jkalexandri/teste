@@ -6,10 +6,12 @@ import AbasFinanceiro from "@/components/financeiro/AbasFinanceiro";
 import AcoesLancamento from "@/components/financeiro/AcoesLancamento";
 import { obterSessao } from "@/lib/auth/session";
 import { diaBR, reais, sincronizarFinanceiro } from "@/lib/financeiro";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContasPage({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const s = await obterSessao();
   if (!s) redirect("/login");
   if (s.usuario.cargo !== Cargo.SUPERADMIN) redirect("/dashboard");

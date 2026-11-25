@@ -1,27 +1,67 @@
-# Módulos do FilaPro Leads — quadro de revisão
+# Módulos e revisões
 
-A plataforma é revisada **por módulo** (combinado com o dono em 25/11/2026). Cada revisão segue o mesmo roteiro:
+A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro aparece também no sistema, em
+**Ajuda → Módulos e revisões** (só para o Super Admin), e é atualizado em toda entrega.
+
+**Status:**
+- 🟢 **Revisado** — revisão completa concluída (data, hora e versão) e nenhum ajuste depois dela.
+- 🟡 **Em revisão** — auditoria feita ou iniciada, correções em andamento.
+- 🔴 **Sem revisão** — nunca teve revisão completa, **ou** foi ajustado depois da última revisão completa
+  (veja a coluna "Último ajuste").
+
+## Quadro
+
+| # | Módulo | Status | Revisão (data e hora) | Versão da revisão | Último ajuste |
+|---|---|---|---|---|---|
+| 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
+| 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.40.2 — 25/11/2026 01:26 (menu do usuário) |
+| 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
+| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.3 — 25/11/2026 15:50 (Número da plataforma só para o Super Admin) |
+| 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
+| 6 | Campanhas e envio | 🟡 Em revisão | auditoria em 25/11/2026 (hora não registrada) | v1.41.0 | v1.41.1 — 25/11/2026 12:02 (trava contra disparo duplicado) |
+| 7 | IA de mensagens | 🔴 Sem revisão | nunca | — | v1.38.0 — 24/11/2026 18:52 (Texto sugestão no Como qualificar) |
+| 8 | Conversas IA (atendimento) | 🟡 Em revisão | iniciada em 25/11/2026 13:31 (auditoria a fazer) | v1.41.2 | v1.41.2 — 25/11/2026 13:31 (resposta no endereço LID) |
+| 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
+| 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
+| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (Ajuda → Módulos e revisões) |
+| 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
+
+Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
+
+## O que cada módulo cobre
+
+| # | Módulo | O que cobre | Telas | Serviço 24/7 | Testes |
+|---|---|---|---|---|---|
+| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração, trava das telas | Login, Primeiro acesso, Verificação, Segurança | — | login-regras, 15, 16b, 21 |
+| 2 | Contas e usuários | Empresas, usuários, individuais, menu por perfil | Empresas, Usuários, Usuários Individuais, Conta | — | 3, 4c, 5, 18b |
+| 3 | Planos, venda e pagamento | Planos, compra, Asaas, pedidos, renovação, upgrade, financeiro | Planos, Pagamento, Pedidos, Renovar, Financeiro | — | 4a, 4b, 4d, 16, 17, 18, 19a–d, 20 |
+| 4 | WhatsApp (conexão) | QR Code, reconexão, vários números, número da plataforma | WhatsApp, Número da plataforma | sessões, queda, números | 6, 10c |
+| 5 | Leads | Cadastro, importação, status, pediu para sair, leads de anúncios | Leads, Leads de anúncios | — | 7, leads-unit |
+| 6 | Campanhas e envio | Criação, antibloqueio, fila, disparos, painéis | Campanhas, Arquivos, Regras de envio, Disparos | motor de disparos | 8a, 8b, 8c |
+| 7 | IA de mensagens | Gerar mensagem, Empresa \| IA, chaves e modelos, custos | Empresa \| IA, Inteligência Artificial, Despesas IA | aprendizado | 9a, 9b |
+| 8 | Conversas IA (atendimento) | Resposta automática, assumir/devolver, avisos ao usuário | Conversas IA | conversas, avisos, notificações | 10, 10b |
+| 9 | Interessados (site) | Chat do site, teste grátis, vendedor IA | Atendimento | interessados | 14b |
+| 10 | Relatórios e painéis | Dashboard, relatórios, logs, online | Dashboard, Relatórios, Logs, Online | — | 11, 12, 13 |
+| 11 | Comunicação | Avisos, comunicados, suporte, ajuda, app no celular | Avisos, Comunicados, Ajuda | notificações | 12b, 13, 17b |
+| 12 | Operação (VPS) | Atualizar, manutenção, backup, voltar versão | — (terminal da VPS) | manutenção | 14 |
+
+## Histórico de ajustes
+
+Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca também" lista os outros módulos mexidos.
+
+| Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
+|---|---|---|---|---|---|
+| v1.41.3 | 25/11/2026 15:50 | 11 Comunicação | Ajuda → Módulos e revisões (só Super Admin) | — | não |
+| v1.41.3 | 25/11/2026 15:50 | 1 Acesso e segurança | Cada tela confere quem pode abrir (falha C1 da auditoria do Módulo 4) | todos (trava em todas as telas); 4 em especial | não |
+| v1.41.2 | 25/11/2026 13:31 | 8 Conversas IA | Resposta no endereço de onde o lead escreveu (contatos LID) | 4 WhatsApp | não |
+| v1.41.1 | 25/11/2026 12:02 | 6 Campanhas e envio | A mesma campanha nunca sai duas vezes; abre Em andamento depois de iniciar | — | não |
+| v1.41.0 | 25/11/2026 02:31 | 8 Conversas IA | IA responde sempre e mais rápido; tentativas, texto reserva, "não sei" não pausa | 4 WhatsApp, 5 Leads | não |
+
+## Como cada módulo é revisado
 
 1. **Mapa** — o que o módulo faz, telas, botões e regras (com as decisões aprovadas), em linguagem simples.
-2. **Auditoria** — código comparado com as decisões; falhas classificadas em CRÍTICA / MÉDIA / BAIXA.
+2. **Auditoria** — código comparado com as decisões; falhas classificadas em CRÍTICA / ALTA / MÉDIA / BAIXA.
 3. **Respostas do dono** — perguntas com sugestão.
 4. **Correções** — um passo por vez, com prévia, teste e versão.
 5. **Ficha do módulo** (`docs/modulos/<nome>.md`) — funcionamento, regras, testes e pendências; base da próxima revisão.
-
-| # | Módulo | O que cobre | Telas | Serviço 24/7 | Testes | Estado |
-|---|---|---|---|---|---|---|
-| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração | login, primeiro-acesso, verificacao, seguranca | — | login-regras, 15, 16b | não revisado |
-| 2 | Contas e usuários | Empresas, usuários, individuais, menu por perfil | empresas, usuarios, usuarios-individuais, conta | — | 3, 4c, 5, 18b | não revisado |
-| 3 | Planos, venda e pagamento | Planos, compra, Asaas, pedidos, renovação, upgrade, financeiro | planos, pagamento, pedidos, renovar, financeiro | — | 4a, 4b, 4d, 16, 17, 18, 19a–d, 20 | não revisado |
-| 4 | WhatsApp (conexão) | QR Code, reconexão, vários números, número da plataforma | whatsapp, numero-plataforma | sessoes, queda, numeros | 6, 10c | **em revisão** |
-| 5 | Leads | Cadastro, importação, status, pediu para sair, leads de anúncios | leads, leads-anuncios | — | 7, leads-unit | não revisado |
-| 6 | Campanhas e envio | Criação, antibloqueio, fila, disparos, painéis | campanhas, arquivos, regras-envio, disparos | disparos | 8a, 8b, 8c | **em revisão** (decisão #128, passo 1 feito) |
-| 7 | IA de mensagens | Gerar mensagem, Empresa \| IA, chaves e modelos, custos | empresa-ia, inteligencia-artificial, despesas-ia | aprender | 9a, 9b | não revisado |
-| 8 | Conversas IA (atendimento) | Resposta automática, assumir/devolver, avisos ao usuário | conversas | conversas, avisos, push | 10, 10b | **em revisão** (decisões #127 e #129) |
-| 9 | Interessados (site) | Chat do site, teste grátis, vendedor IA | atendimento | interessados | 14b | não revisado |
-| 10 | Relatórios e painéis | Dashboard, relatórios, logs, online | dashboard, relatorios, logs, online | — | 11, 12, 13 | não revisado |
-| 11 | Comunicação | Avisos, comunicados, suporte, ajuda, app no celular | avisos, comunicados, ajuda | push | 12b, 13, 17b | não revisado |
-| 12 | Operação (VPS) | Atualizar, manutenção, backup, voltar versão | — | manutencao, api | 14 | não revisado |
-
-Ordem combinada: **4 e 8** → **6** (passos 2–6 da #128) → **5** → **3** → demais.
-Estados: *não revisado → em revisão → revisado em DD/MM/AAAA*.
+6. **Encerramento** — revisão completa concluída: status 🟢 Revisado com data, hora e versão.

@@ -6,6 +6,7 @@ import { obterSessao } from "@/lib/auth/session";
 import Cabecalho from "@/components/app/Cabecalho";
 import GestaoEmpresas, { type EmpresaLinha } from "./GestaoEmpresas";
 import { INCLUIR_FICHA, treinoDaConta } from "@/lib/treino-ia";
+import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ function dias(d: Date) {
 }
 
 export default async function EmpresasPage() {
+  await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const sessao = await obterSessao();
   if (!sessao) redirect("/login");
   const souSuper = sessao.usuario.cargo === Cargo.SUPERADMIN;
