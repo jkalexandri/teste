@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.40.2 — quadro do menu de volta (25/11/2026)
+
+- O quadro **Espaço individual** no fim do menu do usuário voltou (só com o título); saiu apenas o texto dele.
+
 ## v1.40.1 — menu fixo e telas mais limpas (25/11/2026)
 
 - **Menu lateral:** o nome e o perfil (em cima) e o botão Sair e a versão (embaixo) ficam fixos; só a lista do menu rola.

@@ -142,12 +142,11 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
               })}
             </nav>
 
-            {/* Rodapé fixo do menu (decisão #126). O quadro "Espaço individual" do usuário e o texto do Super Admin saíram (decisão #126) */}
+            {/* Rodapé fixo do menu (decisão #126). O quadro continua para todos; saíram só os textos do Usuário e do Super Admin */}
             <div className="shrink-0 pt-2 flex flex-col">
-            {admin && (
               <div className="rounded-xl p-3" style={{ background: "var(--surface-2)" }}>
                 <div className="flex items-center gap-1.5 font-bold text-[12px]">
-                  <ShieldCheck size={14} style={{ color: "var(--primary)" }} /> Visão agregada
+                  <ShieldCheck size={14} style={{ color: "var(--primary)" }} /> {admin ? "Visão agregada" : "Espaço individual"}
                 </div>
                 {cargo === "ADMIN_EMPRESA" && (
                   <p className="text-[11px] leading-relaxed mt-1.5" style={{ color: "var(--muted)" }}>
@@ -155,7 +154,6 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                   </p>
                 )}
               </div>
-            )}
             <button onClick={sair} className="btn-ghost mt-2 w-full justify-center">
               <Repeat size={14} /> Sair
             </button>
