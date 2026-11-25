@@ -44,6 +44,8 @@ export default async function EmpresasPage() {
     limite: e.limiteUsuarios,
     pacotes: e.pacotes,
     ativa: e.ativa,
+    // Cobrança automática no cartão ligada (decisão #124)
+    automatica: !!e.asaasAssinaturaId,
     expiraEm: e.expiraEm.toISOString(),
     dias: dias(e.expiraEm),
     // O Admin da Empresa não conta no limite (decisão #23).

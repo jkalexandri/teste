@@ -4,10 +4,11 @@
 // Usada na compra (popup Planos) e na renovação. Com o Asaas desligado não aparece (o pedido sai no PIX manual).
 import { useEffect, useState } from "react";
 import { mascaraDocumento } from "@/lib/documento";
-import { ACRESCIMO_BOLETO, formatarReais, MAX_PARCELAS, parcelamento, podeParcelar, valorDaForma, type FormaPagamento } from "@/lib/planos";
+import { ACRESCIMO_BOLETO, cicloAutomatico, formatarReais, MAX_PARCELAS, NOME_CICLO, parcelamento, podeParcelar, valorDaForma, type FormaPagamento } from "@/lib/planos";
 
 export type Formas = { asaas: boolean; jurosMes: number | null };
-export type Pagamento = { forma: FormaPagamento; parcelas: number; cpfCnpj: string };
+/** "automatica": cobrança automática no cartão (decisão #124), marcada por padrão (item a) */
+export type Pagamento = { forma: FormaPagamento; parcelas: number; cpfCnpj: string; automatica: boolean };
 
 /** Lê as formas ligadas (uma vez por tela). */
 export function useFormas() {
@@ -36,7 +37,10 @@ export default function EscolhaPagamento({ formas, valor, prazoDias, periodo, va
   if (!formas.asaas) return null;
   const { forma, parcelas, cpfCnpj } = valorPagamento;
   const mudar = (p: Partial<Pagamento>) => onChange({ ...valorPagamento, ...p });
-  const parcelavel = podeParcelar({ prazoDias }) && formas.jurosMes != null;
+  // Cobrança automática (decisão #124): só no cartão e em plano de período fixo (item c); marcada, não parcela (item a)
+  const ciclo = cicloAutomatico(prazoDias);
+  const automatica = forma === "CARTAO" && !!ciclo && valorPagamento.automatica;
+  const parcelavel = podeParcelar({ prazoDias }) && formas.jurosMes != null && !automatica;
   const total = valorDaForma(valor, forma, parcelas, formas.jurosMes);
   const opcoes: { id: FormaPagamento; titulo: string; detalhe: string }[] = [
     { id: "PIX", titulo: "PIX", detalhe: "Aprovação na hora" },
@@ -68,6 +72,16 @@ export default function EscolhaPagamento({ formas, valor, prazoDias, periodo, va
           ))}
         </div>
       </div>
+      {forma === "CARTAO" && ciclo && (
+        <label className="flex gap-2 items-start cursor-pointer rounded-xl p-2" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)" }}>
+          <input type="checkbox" className="mt-0.5 w-4 h-4 accent-emerald-500 shrink-0" checked={valorPagamento.automatica} data-testid="cobranca-automatica"
+            onChange={(e) => mudar({ automatica: e.target.checked, parcelas: 1 })} />
+          <span>
+            <span className="block text-[12.5px] font-bold text-[#eaf6ff]">Cobrar automaticamente a cada período</span>
+            <span className="block text-[11px] text-slate-400 leading-snug">Seu cartão será cobrado sozinho a cada {NOME_CICLO[ciclo]}, sempre à vista. Você pode desligar quando quiser.</span>
+          </span>
+        </label>
+      )}
       {forma === "CARTAO" && parcelavel && (
         <div>
           <label className="login-label" htmlFor="ck-parcelas">Parcelas</label>

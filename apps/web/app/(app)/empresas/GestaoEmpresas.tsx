@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Building2, Plus, X } from "@/components/icons";
-import { alterarPacote, alternarEmpresaAtiva, alternarLeadsAnuncios, criarEmpresa, definirLimiteLeads, prorrogarEmpresa } from "./actions";
+import { alterarPacote, alternarEmpresaAtiva, alternarLeadsAnuncios, criarEmpresa, definirLimiteLeads, desligarCobrancaAutomaticaSA, prorrogarEmpresa } from "./actions";
 import CampoLimite from "@/components/app/CampoLimite";
 import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 
 export type EmpresaLinha = {
-  id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean; pacotes: number;
+  id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean; pacotes: number; automatica: boolean;
   expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null; treino: TreinoIA; leadsAnuncios: boolean;
   usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
 };
@@ -132,6 +132,11 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                   <span className="chip self-start" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>
                     Leads: {e.leads.toLocaleString("pt-BR")} / {e.limiteLeads == null ? "ilimitado" : e.limiteLeads.toLocaleString("pt-BR")}
                   </span>
+                  {e.automatica && (
+                    <span className="chip self-start" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)" }} data-testid="cobranca-automatica-ligada">
+                      Cobrança automática: ligada
+                    </span>
+                  )}
                 </div>
 
                 {podeEditar && (
@@ -149,6 +154,12 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                       Anúncios: {e.leadsAnuncios ? "ligado" : "desligado"}
                     </button>
                     <button className="btn-ghost !py-1.5" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(e.id))}>Prorrogar</button>
+                    {e.automatica && (
+                      <button className="btn-ghost !py-1.5" disabled={pendente} data-testid="desligar-automatica"
+                        onClick={() => window.confirm(`Desligar a cobrança automática no cartão de ${e.nome}? O acesso continua até ${data(e.expiraEm)}; depois, a renovação volta a ser pelo link.`) && agir(() => desligarCobrancaAutomaticaSA(e.id))}>
+                        Desligar cobrança automática
+                      </button>
+                    )}
                     <button
                       className="btn-ghost !py-1.5"
                       disabled={pendente}

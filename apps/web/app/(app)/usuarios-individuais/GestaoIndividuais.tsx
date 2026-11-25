@@ -5,14 +5,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Plus, X } from "@/components/icons";
-import { alternarLeadsAnuncios, definirExtras, definirLimiteLeads, prorrogarEmpresa } from "../empresas/actions";
+import { alternarLeadsAnuncios, definirExtras, definirLimiteLeads, desligarCobrancaAutomaticaSA, prorrogarEmpresa } from "../empresas/actions";
 import CampoLimite from "@/components/app/CampoLimite";
 import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 import { alternarBloqueio, criarIndividual, reenviarAcesso } from "./actions";
 
 type Linha = {
   id: string; codigo: string; leads: number; limiteLeads: number | null; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
-  expiraEm: string; dias: number; ativo: boolean; primeiroAcesso: boolean; treino: TreinoIA; leadsAnuncios: boolean; whatsappsExtras: number;
+  expiraEm: string; dias: number; automatica: boolean; ativo: boolean; primeiroAcesso: boolean; treino: TreinoIA; leadsAnuncios: boolean; whatsappsExtras: number;
 };
 type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number; aba: AbaPlanos; disparos: number | null };
 
@@ -130,6 +130,7 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                       <span className="chip" style={u.dias < 0 ? { background: "#ffeef0", color: "#9e1d2f" } : u.dias <= 10 ? { background: "#fff7e0", color: "#8a5a00" } : { background: "var(--surface-3)", color: "var(--muted)" }}>
                         {u.dias < 0 ? "Expirado" : u.dias === 0 ? "Expira hoje" : `${u.dias} ${u.dias === 1 ? "dia" : "dias"}`}
                       </span>
+                      {u.automatica && <span className="block text-[11px] mt-0.5 font-bold" style={{ color: "var(--primary-dark)" }} data-testid="cobranca-automatica-ligada">Cobrança automática: ligada</span>}
                     </td>
                     <td>
                       <span className="chip" style={u.ativo ? { background: "var(--primary-soft)", color: "#087a44" } : { background: "#ffeef0", color: "#9e1d2f" }}>
@@ -140,6 +141,12 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                     <td>
                       <div className="flex gap-1 flex-wrap">
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => agir(() => prorrogarEmpresa(u.empresaId))}>Prorrogar</button>
+                        {u.automatica && (
+                          <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} data-testid="desligar-automatica"
+                            onClick={() => window.confirm(`Desligar a cobrança automática no cartão de ${u.nome}? O acesso continua até ${new Date(u.expiraEm).toLocaleDateString("pt-BR")}; depois, a renovação volta a ser pelo link.`) && agir(() => desligarCobrancaAutomaticaSA(u.empresaId))}>
+                            Desligar cobrança automática
+                          </button>
+                        )}
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => setLimitando(u)}>Limite de leads</button>
                         <ControleTreinoIA empresaId={u.empresaId} nome={u.nome} t={u.treino} />
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} data-testid="anuncios-conta"

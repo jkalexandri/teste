@@ -6,6 +6,7 @@ import { prisma, Cargo, Modulo } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { lerLimite } from "@/lib/limite";
 import { criarConta, enviarEmailBoasVindas, novoVencimento, validarComprador } from "@/lib/contas";
+import { desligarAssinatura, sincronizarAssinatura } from "@/lib/assinatura";
 
 type R = { ok: boolean; mensagem: string };
 const t = (f: FormData, k: string, max = 120) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -76,6 +77,8 @@ export async function alterarPacote(empresaId: string, form: FormData): Promise<
       }),
     },
   });
+  // Cobrança automática (decisão #124, item d): o valor do próximo período acompanha o pacote
+  await sincronizarAssinatura(empresaId);
   const usuarios = await prisma.usuario.count({ where: { empresaId, cargo: Cargo.USUARIO } });
   revalidatePath("/empresas");
   return {
@@ -98,6 +101,8 @@ export async function prorrogarEmpresa(empresaId: string): Promise<R> {
     where: { id: empresaId },
     data: { expiraEm: nova, tokenRenovacao: null, avisoRenovacao10Em: null, avisoRenovacao3Em: null },
   });
+  // Cobrança automática (decisão #124, item b): a próxima cobrança passa para o novo vencimento
+  await sincronizarAssinatura(empresaId);
   revalidatePath("/empresas");
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: prorrogado por ${dias} dias, até ${nova.toLocaleDateString("pt-BR")}.` };
@@ -167,4 +172,13 @@ export async function definirExtras(empresaId: string, quantidade: number): Prom
   await sincronizarExtrasDaConta(empresaId);
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: ${1 + n} WhatsApp${n ? "s" : ""} (${n} extra${n === 1 ? "" : "s"}).` };
+}
+
+/** Desliga a cobrança automática no cartão da conta (decisão #124, itens e e i): empresas e contas individuais. */
+export async function desligarCobrancaAutomaticaSA(empresaId: string): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const r = await desligarAssinatura(empresaId, s.usuario);
+  revalidatePath("/empresas");
+  revalidatePath("/usuarios-individuais");
+  return r;
 }
