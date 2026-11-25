@@ -1,5 +1,7 @@
 "use client";
 
+// Renovação pelo link (decisões #42–#44) e, com modo "upgrade", o upgrade dentro do sistema (decisão #125):
+// mesmos passos (plano → números que ficam → forma de pagamento), com a conta identificada pela sessão e um resumo antes de pagar.
 import { useState } from "react";
 import { TriangleAlert } from "@/components/icons";
 import { formatarReais, precoComQuantidade, rotuloQuantidade, type PlanoPublico } from "@/lib/planos";
@@ -15,9 +17,21 @@ type Conta = {
   modulo: "INDIVIDUAL" | "EMPRESARIAL"; pacotes: number;
   /** Final do CPF/CNPJ já guardado na conta (decisão #115) */
   documentoFinal?: string | null;
+  /** Upgrade (decisão #125): conta no Free (começa hoje) e disparos que sobraram (plano por disparo) */
+  gratis?: boolean;
+  sobraDisparos?: number | null;
 };
 
-export default function RenovarCliente({ token, conta, planos }: { token: string; conta: Conta; planos: PlanoPublico[] }) {
+/** Novo vencimento do upgrade (decisão #125): soma os dias que faltavam; vindo do Free, começa hoje. */
+function vencimentoUpgrade(conta: Conta, prazoDias: number) {
+  const venc = new Date(conta.expiraEm);
+  const base = !conta.gratis && venc > new Date() ? venc : new Date();
+  base.setDate(base.getDate() + prazoDias);
+  return base;
+}
+
+export default function RenovarCliente({ token, conta, planos, modo = "renovar" }: { token?: string; conta: Conta; planos: PlanoPublico[]; modo?: "renovar" | "upgrade" }) {
+  const upgrade = modo === "upgrade";
   const [pix, setPix] = useState<DadosPix | null>(null);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -45,8 +59,8 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
       setManter(manterIds);
       return;
     }
-    // Com o Asaas ligado, escolhe a forma de pagamento antes de gerar
-    if (formas?.asaas) {
+    // Com o Asaas ligado (ou no upgrade, que mostra o resumo antes de pagar), escolhe a forma de pagamento antes de gerar
+    if (formas?.asaas || upgrade) {
       setEscolhido(p);
       setQtd(quantidade);
       setManter(manterIds);
@@ -59,10 +73,10 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   async function gerar(p: PlanoPublico, quantidade: number, manterIds: string[]) {
     setErro("");
     setEnviando(true);
-    const r = await fetch("/api/renovacao", {
+    const r = await fetch(upgrade ? "/api/upgrade" : "/api/renovacao", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, planoId: p.id, quantidade, manter: manterIds, ...(formas?.asaas ? pagamento : {}) }),
+      body: JSON.stringify({ ...(upgrade ? {} : { token }), planoId: p.id, quantidade, manter: manterIds, ...(formas?.asaas ? pagamento : {}) }),
     });
     const d = await r.json().catch(() => ({}));
     setEnviando(false);
@@ -76,14 +90,16 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
   return (
     <>
       <div className="login-glass rounded-[18px] p-4 max-w-[640px] mx-auto text-[#eaf6ff]">
-        <h1 className="font-display text-[22px] font-extrabold text-white">Renovar acesso</h1>
+        <h1 className="font-display text-[22px] font-extrabold text-white">{upgrade ? "Fazer upgrade" : "Renovar acesso"}</h1>
         <p className="text-[13px] text-slate-300 mt-1">
           Conta <b className="text-white">{conta.nome}</b> • plano atual <b className="text-white">{conta.pacote}</b> •{" "}
           {vencido ? "venceu em " : "vence em "}
           <b className="text-white">{venc.toLocaleDateString("pt-BR")}</b>
         </p>
         <p className="text-[12px] text-slate-400 mt-1">
-          Escolha o plano para renovar. Você pode manter o atual ou trocar. Usuários, leads e histórico continuam.
+          {upgrade
+            ? "Escolha um plano igual ou maior. Você paga o valor cheio do plano e os dias que faltavam são somados. Usuários, leads e histórico continuam."
+            : "Escolha o plano para renovar. Você pode manter o atual ou trocar. Usuários, leads e histórico continuam."}
         </p>
         {erro && (
           <div className="flex gap-2 text-[12px] font-semibold text-rose-200 bg-rose-500/15 border border-rose-400/30 rounded-xl p-2 mt-3">
@@ -94,12 +110,22 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
         {!pix && escolhido && passoForma && formas && (
           <div className="mt-3 space-y-2.5" data-testid="passo-forma">
             <p className="text-[13px] font-bold text-white">Plano {escolhido.nome}: {rotuloQuantidade(escolhido, qtd)}</p>
+            {upgrade && (
+              <div className="rounded-xl p-2.5 text-[12px] text-slate-200 leading-relaxed" style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.30)" }} data-testid="resumo-upgrade">
+                Você paga <b className="text-white">{formatarReais(precoComQuantidade(escolhido.precoAtual ?? 0, escolhido.descontos, qtd))}</b>.
+                {" "}Seu novo vencimento será <b className="text-white">{vencimentoUpgrade(conta, escolhido.prazoDias).toLocaleDateString("pt-BR")}</b>
+                {conta.gratis ? " (o plano começa hoje)." : venc > new Date() ? ` (os ${Math.ceil((venc.getTime() - Date.now()) / 86_400_000)} dias que faltavam foram somados).` : "."}
+                {conta.sobraDisparos != null && escolhido.disparosPorPeriodo != null && conta.sobraDisparos > 0 && (
+                  <> Os <b className="text-white">{conta.sobraDisparos.toLocaleString("pt-BR")} disparos</b> que sobraram passam para o novo período.</>
+                )}
+              </div>
+            )}
             <EscolhaPagamento formas={formas} valor={precoComQuantidade(escolhido.precoAtual ?? 0, escolhido.descontos, qtd)}
               prazoDias={escolhido.prazoDias} periodo={escolhido.periodo} valorPagamento={pagamento} onChange={setPagamento}
               documentoGuardado={conta.documentoFinal} />
             <div className="flex gap-2">
               <button type="button" className="login-ghost-btn !px-3" onClick={() => { setPassoForma(false); setEscolhido(null); }}>Voltar</button>
-              <button type="button" className="login-cta !py-2.5" disabled={enviando} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : textoBotaoPagar(pagamento, true)}</button>
+              <button type="button" className="login-cta !py-2.5" disabled={enviando} onClick={() => void gerar(escolhido, qtd, manter)}>{enviando ? "Gerando…" : textoBotaoPagar(pagamento, !!formas.asaas)}</button>
             </div>
           </div>
         )}
@@ -120,7 +146,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
             </p>
             <div className="flex gap-2 mt-3">
               <button type="button" className="login-ghost-btn !px-3" onClick={() => setEscolhido(null)}>Voltar</button>
-              <button type="button" className="login-cta !py-2.5" disabled={enviando || manter.length !== qtd - 1} onClick={() => (formas?.asaas ? setPassoForma(true) : void gerar(escolhido, qtd, manter))}>{enviando ? "Gerando…" : formas?.asaas ? "Continuar" : "Gerar PIX"}</button>
+              <button type="button" className="login-cta !py-2.5" disabled={enviando || manter.length !== qtd - 1} onClick={() => (formas?.asaas || upgrade ? setPassoForma(true) : void gerar(escolhido, qtd, manter))}>{enviando ? "Gerando…" : formas?.asaas || upgrade ? "Continuar" : "Gerar PIX"}</button>
             </div>
           </div>
         )}
@@ -133,7 +159,7 @@ export default function RenovarCliente({ token, conta, planos }: { token: string
             <div style={{ opacity: enviando ? 0.6 : 1, pointerEvents: enviando ? "none" : undefined }}>
               <PlanosComAbas
                 quantidadeInicial={quantidadeAtual}
-                planos={planos.map((p) => ({ ...p, selo: p.id === conta.planoId ? "Seu plano atual" : p.selo, textoBotao: "Renovar com este plano" }))}
+                planos={planos.map((p) => ({ ...p, selo: p.id === conta.planoId ? (upgrade ? "Seu plano" : "Seu plano atual") : p.selo, textoBotao: upgrade ? "Escolher este plano" : "Renovar com este plano" }))}
                 onEscolher={escolher}
               />
             </div>

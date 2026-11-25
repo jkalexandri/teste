@@ -12,7 +12,7 @@ function hojeISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function AvisoExpiracao({ dias, expiraEm, souAdmin }: { dias: number; expiraEm: string; souAdmin?: boolean }) {
+export default function AvisoExpiracao({ dias, expiraEm, souAdmin, onUpgrade }: { dias: number; expiraEm: string; souAdmin?: boolean; onUpgrade?: () => void }) {
   const [visivel, setVisivel] = useState(false);
   const [restante, setRestante] = useState(DURACAO_MS);
 
@@ -76,9 +76,16 @@ export default function AvisoExpiracao({ dias, expiraEm, souAdmin }: { dias: num
               <X size={14} />
             </button>
           </div>
-          <p className="text-[12px] mt-0.5 leading-relaxed" style={{ color: "var(--muted)" }}>
-            {souAdmin ? "Renove pelo link enviado para o seu e-mail." : "Fale com o administrador para renovar."}
-          </p>
+          {/* Dono da conta: faz o upgrade ou renova aqui mesmo (decisão #125) */}
+          {onUpgrade ? (
+            <button className="btn-primary !py-1 !px-2.5 text-[11px] mt-1.5" onClick={() => { setVisivel(false); onUpgrade(); }} data-testid="aviso-upgrade">
+              Fazer upgrade ou renovar
+            </button>
+          ) : (
+            <p className="text-[12px] mt-0.5 leading-relaxed" style={{ color: "var(--muted)" }}>
+              {souAdmin ? "Renove pelo link enviado para o seu e-mail." : "Fale com o administrador para renovar."}
+            </p>
+          )}
         </div>
       </div>
       <div className="h-1 rounded-full mt-2 overflow-hidden" style={{ background: "var(--border)" }}>

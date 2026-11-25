@@ -123,6 +123,9 @@ param e continuam depois, sem perder nem repetir envios.
 - Se renovar com **menos usuários** do que tem, os mais recentes ficam **bloqueados**; você escolhe em Usuários quem reativar,
   dentro do limite.
 - Também dá para renovar pelo botão **Planos** da tela de login, usando o seu e-mail de acesso.
+- **Fazer upgrade quando quiser:** toque no selo **Expira em X dias** no topo → **Fazer upgrade**. Escolha um plano igual ou maior
+  (ou mais usuários) e pague ali mesmo. Você paga o valor cheio; os dias que faltavam são somados e, entre planos por disparo, os
+  disparos que sobraram passam para o novo período. Plano menor, só na renovação.
 - **Cobrança automática no cartão:** ao pagar com **Cartão**, a opção **Cobrar automaticamente a cada período** vem marcada (planos
   mensais, trimestrais, semestrais e anuais; sempre à vista). O cartão fica guardado no Asaas e é cobrado sozinho no dia do vencimento;
   o acesso renova sem você fazer nada. Com ela ligada, o selo do topo mostra **Renova em X dias**: toque nele para ver a data e, se

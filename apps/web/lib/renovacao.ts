@@ -1,7 +1,7 @@
 // Renovação de pacotes (decisões #36, #40, #42–#44).
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { prisma, Cargo, Modulo, StatusUsuario, type Empresa, type Pedido, type Prisma } from "@filapro/db";
+import { prisma, Cargo, Modulo, StatusUsuario, saldoDisparos, type Empresa, type Pedido, type Prisma } from "@filapro/db";
 import { enviarEmail } from "@/lib/email";
 import { novoVencimento } from "@/lib/contas";
 import { formatarReais } from "@/lib/planos";
@@ -68,6 +68,13 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
   const e = await tx.empresa.findUnique({ where: { id: pedido.empresaId } });
   if (!e) throw new Error("Conta da renovação não encontrada.");
   const plano = await tx.plano.findUnique({ where: { id: pedido.planoId } });
+  // Upgrade feito pelo dono (decisão #125): vindo do Free, começa hoje (os dias do teste não somam — item d);
+  // entre dois planos por disparo, os disparos que sobraram passam para o novo período (item c)
+  const anterior = pedido.upgrade && e.planoId ? await tx.plano.findUnique({ where: { id: e.planoId } }) : null;
+  const doFree = pedido.upgrade && !!anterior?.gratis;
+  const sobra = pedido.upgrade && anterior && !anterior.gratis && e.limiteDisparos != null && plano?.disparosPorPeriodo != null
+    ? (await saldoDisparos(tx, e))?.restantes ?? 0
+    : 0;
   // Novo período do plano: o contador de materiais da IA zera (decisão #91)
   await tx.fichaEmpresa.updateMany({ where: { empresaId: e.id }, data: { materiaisPeriodo: 0 } });
   // Pacotes de usuários (decisão #113): disparos e leads acompanham a quantidade de pacotes
@@ -81,13 +88,14 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       // Individual: sempre 1. Empresarial: usuários do novo plano (existentes continuam — decisão #24).
       limiteUsuarios: e.modulo === Modulo.INDIVIDUAL ? 1 : pedido.usuarios ?? e.limiteUsuarios,
       prazoDias: pedido.prazoDias,
-      expiraEm: novoVencimento(e.expiraEm, pedido.prazoDias),
+      expiraEm: novoVencimento(doFree ? new Date() : e.expiraEm, pedido.prazoDias),
       // Plano pago não tem limite de disparos do teste grátis.
       limiteDisparos: plano?.gratis ? e.limiteDisparos : plano?.disparosPorPeriodo != null ? plano.disparosPorPeriodo * pacotes : null,
       pacotes,
-      // Novo período de disparos: o saldo e os pacotes extras não passam para o período seguinte (decisão #102)
+      // Novo período de disparos: o saldo e os pacotes extras não passam para o período seguinte (decisão #102),
+      // exceto no upgrade entre planos por disparo, que leva as sobras (decisão #125)
       inicioPeriodo: new Date(),
-      disparosExtras: 0,
+      disparosExtras: sobra,
       // Trocou de plano: passa a valer o limite de leads do novo plano (decisão #58).
       // Trocou de plano: também os limites de treinamento da IA (decisão #77).
       // Mudou o plano ou a quantidade de pacotes: leads = plano × pacotes (decisão #113)

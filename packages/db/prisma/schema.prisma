@@ -307,6 +307,9 @@ model Pedido {
   automatica      Boolean      @default(false)
   /// Assinatura no Asaas criada por este pedido (1º pagamento) ou da qual ele faz parte
   asaasAssinaturaId String?
+  /// Upgrade feito pelo dono dentro do sistema (decisão #125): soma os dias (e os disparos que sobraram, entre planos por disparo);
+  /// vindo do Free, começa hoje
+  upgrade         Boolean      @default(false)
   linkPagamento   String?
   boletoLinha     String?
   /// Receita e estorno na gestão financeira (decisão #106)

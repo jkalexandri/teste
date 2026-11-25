@@ -39,6 +39,8 @@ export async function criarPedidoPix(opts: {
   /** Forma de pagamento, parcelas e CPF/CNPJ (decisão #115). Sem isso: PIX (do Asaas, se ligado; senão manual).
    *  "automatica": cobrança automática no cartão (decisão #124) — só cartão, plano de período fixo, compra de plano. */
   pagamento?: { forma?: FormaPagamento; parcelas?: number; cpfCnpj?: string; automatica?: boolean };
+  /** Upgrade feito pelo dono dentro do sistema (decisão #125) */
+  upgrade?: boolean;
 }): Promise<{ erro: string } | RespostaPix> {
   const { plano } = opts;
   if (plano.precoAtual == null) return { erro: "Plano indisponível." };
@@ -91,6 +93,7 @@ export async function criarPedidoPix(opts: {
     data: {
       codigo,
       renovacao: !!opts.renovarEmpresaId,
+      upgrade: !!opts.upgrade && !!opts.renovarEmpresaId,
       empresaId: opts.renovarEmpresaId ?? opts.somenteExtras?.empresaId ?? null,
       whatsappsExtras: extras,
       pacotes,

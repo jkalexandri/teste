@@ -194,6 +194,14 @@ em até 10 minutos, chegam juntos.
 
 ![Avisos](prints/u-avisos.png)
 
+### Fazer upgrade (plano Individual)
+
+- Toque no selo **Expira em X dias** no topo → **Fazer upgrade** (ou, no aviso de vencimento, **Fazer upgrade ou renovar**).
+- Escolha um plano igual ou maior, ou mais números de WhatsApp, e pague ali mesmo. Você paga o valor cheio; os dias que faltavam
+  são somados (vindo do teste grátis, o plano começa hoje) e, entre planos por disparo, os disparos que sobraram passam.
+- Antes de pagar aparece o resumo com o novo vencimento. Plano menor, só na renovação.
+- Usuário de empresa: quem faz o upgrade é o administrador.
+
 ### Renovação automática no cartão (plano Individual)
 
 - Ao pagar com **Cartão**, a opção **Cobrar automaticamente a cada período** vem marcada: o cartão é cobrado sozinho no dia do

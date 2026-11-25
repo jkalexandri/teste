@@ -170,6 +170,8 @@ export async function definirExtras(empresaId: string, quantidade: number): Prom
   // Diminuiu: saem os mais recentes; aumentou: os números aparecem na tela WhatsApp do usuário
   const { sincronizarExtrasDaConta } = await import("@/lib/whatsapp-extra");
   await sincronizarExtrasDaConta(empresaId);
+  // Cobrança automática (decisão #124, item k da #125): os extras entram no valor do próximo período
+  await sincronizarAssinatura(empresaId);
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${e.nome}: ${1 + n} WhatsApp${n ? "s" : ""} (${n} extra${n === 1 ? "" : "s"}).` };
 }

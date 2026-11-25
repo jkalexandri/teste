@@ -5,7 +5,7 @@
 // menu em "pílulas" no celular e aviso de expiração.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import {
   Bot, Building2, ChartColumn, ChevronRight, Clock3, FolderOpen, MessageCircle,
   Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, Tag, TriangleAlert, Users, Wallet, CircleHelp,
@@ -15,6 +15,7 @@ import type { CargoMenu, IconeMenu, ItemMenu } from "@/lib/menu";
 import { VERSAO_CURTA, VERSAO_DATA } from "@/lib/versao";
 import AvisoExpiracao from "./AvisoExpiracao";
 import ChipRenovacao from "./ChipRenovacao";
+import PopupUpgrade from "./PopupUpgrade";
 import { ToastProvider } from "./Toast";
 
 const ICONES: Record<IconeMenu, (p: { size?: number }) => ReactNode> = {
@@ -47,6 +48,8 @@ export type DadosShell = {
   expiraEm: string | null;
   /** Cobrança automática no cartão ligada (decisão #124): o selo vira "Renova em X dias"; o dono pode desligar */
   renovacaoAutomatica?: { podeDesligar: boolean } | null;
+  /** Dono da conta (usuário Individual ou Admin da Empresa): pode fazer upgrade (decisão #125) */
+  dono?: boolean;
   menu: ItemMenu[];
   contadores?: Record<string, number>;
 };
@@ -65,6 +68,8 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
   const maisEspecifico = menu.filter(casa).sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const ativo = (i: ItemMenu) => i.href === maisEspecifico;
   const admin = cargo !== "USUARIO";
+  // Popup "Fazer upgrade" (decisão #125)
+  const [upgrade, setUpgrade] = useState(false);
 
   return (
     <ToastProvider>
@@ -173,22 +178,9 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
                 <div className="font-bold text-[12px] [overflow-wrap:anywhere]">{dados.email}</div>
               </div>
               <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
-                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && dados.renovacaoAutomatica && dados.expiraEm && (
-                  <ChipRenovacao dias={dias} expiraEm={dados.expiraEm} podeDesligar={dados.renovacaoAutomatica.podeDesligar} />
-                )}
-                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && !dados.renovacaoAutomatica && (
-                  <span
-                    className="chip"
-                    style={
-                      dias <= 3
-                        ? { background: "#ffeef0", color: "#9e1d2f" }
-                        : dias <= 10
-                          ? { background: "#fff7e0", color: "#8a5a00" }
-                          : { background: "var(--surface-3)", color: "var(--muted)" }
-                    }
-                  >
-                    <Clock3 size={12} /> {dias === 0 ? "Expira hoje" : `Expira em ${dias} ${dias === 1 ? "dia" : "dias"}`}
-                  </span>
+                {/* Selo do vencimento: ao tocar, mostra a data e "Fazer upgrade" para o dono (decisões #124 e #125) */}
+                {cargo !== "SUPERADMIN" && dias !== null && dias >= 0 && dados.expiraEm && (
+                  <ChipRenovacao dias={dias} expiraEm={dados.expiraEm} automatica={!!dados.renovacaoAutomatica} dono={!!dados.dono} onUpgrade={() => setUpgrade(true)} />
                 )}
                 {cargo !== "SUPERADMIN" && dias !== null && dias < 0 && (
                   <span className="chip" style={{ background: "#ffeef0", color: "#9e1d2f" }}>
@@ -250,7 +242,8 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
         </div>
 
         {/* Com cobrança automática, o aviso "renove pelo link" não aparece (decisão #124, item g): o selo do topo mostra a renovação */}
-        {cargo !== "SUPERADMIN" && dias !== null && dados.expiraEm && !dados.renovacaoAutomatica && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} souAdmin={cargo === "ADMIN_EMPRESA"} />}
+        {cargo !== "SUPERADMIN" && dias !== null && dados.expiraEm && !dados.renovacaoAutomatica && <AvisoExpiracao dias={dias} expiraEm={dados.expiraEm} souAdmin={cargo === "ADMIN_EMPRESA"} onUpgrade={dados.dono ? () => setUpgrade(true) : undefined} />}
+        {upgrade && <PopupUpgrade onFechar={() => setUpgrade(false)} />}
       </div>
     </ToastProvider>
   );

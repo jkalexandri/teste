@@ -8,6 +8,7 @@ import { prisma, Cargo, Modulo, StatusPedido } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { diasRestantes, motivoSemAcesso } from "@/lib/auth/acesso";
 import { menuDoCargo, rotaPermitida } from "@/lib/menu";
+import { ehDonoDaConta } from "@/lib/upgrade";
 import AppShell from "@/components/app/AppShell";
 import Presenca from "@/components/app/Presenca";
 import { Suspense } from "react";
@@ -55,9 +56,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         dias: diasRestantes(sessao),
         expiraEm: u.empresa ? u.empresa.expiraEm.toISOString() : null,
         // Cobrança automática no cartão (decisão #124, item h): só o dono da conta desliga
-        renovacaoAutomatica: u.empresa?.asaasAssinaturaId
-          ? { podeDesligar: (u.empresa.modulo === Modulo.INDIVIDUAL && u.cargo === Cargo.USUARIO) || (u.empresa.modulo === Modulo.EMPRESARIAL && u.cargo === Cargo.ADMIN_EMPRESA) }
-          : null,
+        renovacaoAutomatica: u.empresa?.asaasAssinaturaId ? { podeDesligar: ehDonoDaConta(u) } : null,
+        // Upgrade dentro do sistema (decisão #125): só o dono da conta
+        dono: ehDonoDaConta(u),
         menu: menuDoCargo(u.cargo, permissoes),
         contadores,
       }}

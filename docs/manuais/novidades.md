@@ -2,6 +2,16 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.40.0 — fazer upgrade quando quiser (25/11/2026)
+
+### Para o dono da conta (usuário Individual ou Admin da Empresa)
+- Toque no selo **Expira em X dias** (ou **Renova em X dias**) no topo e em **Fazer upgrade**: escolha um plano igual ou maior,
+  ou mais números de WhatsApp / mais usuários, e pague ali mesmo — sem esperar o link de renovação.
+- Você paga o valor cheio do plano e **os dias que faltavam são somados**. Entre planos por disparo, **os disparos que sobraram
+  passam** para o novo período. Vindo do teste grátis, o plano começa hoje.
+- Antes de pagar aparece o resumo: valor, novo vencimento e o que passa para o novo período.
+- Plano menor: só na renovação.
+
 ## v1.39.0 — cobrança automática no cartão (25/11/2026)
 
 ### Para quem compra ou renova
