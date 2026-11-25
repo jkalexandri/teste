@@ -11,7 +11,7 @@ import { formatarTelefone } from "@/lib/telefone";
 import { ErroIA, gerarMensagens } from "@filapro/ia";
 import { fichaParaIA } from "@/lib/empresa-ia";
 
-type R = { ok: boolean; mensagem: string; id?: string };
+type R = { ok: boolean; mensagem: string; id?: string; /** A campanha já tinha sido iniciada/agendada (decisão #128) */ jaSaiu?: boolean };
 
 async function minhaCampanha(id: string) {
   const u = await atorCampanhas();
@@ -110,12 +110,11 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
   const ordem = unicos.map((_, i) => i);
   if (dados.randomizar) for (let i = ordem.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ordem[i], ordem[j]] = [ordem[j]!, ordem[i]!]; }
 
+  // Trava contra disparo duplicado (decisão #128): só sai uma campanha que ainda é RASCUNHO.
+  // A tela sempre salva o rascunho antes; sem o número do rascunho, nada é criado.
+  if (!d.id) return { ok: false, mensagem: "Não foi possível salvar a campanha antes de iniciar. Tente de novo." };
+  const campanhaId = d.id;
   const id = await prisma.$transaction(async (tx) => {
-    let campanhaId = d.id ?? null;
-    if (campanhaId) {
-      const c = await tx.campanha.findUnique({ where: { id: campanhaId } });
-      if (!c || c.usuarioId !== u.id || c.status !== StatusCampanha.RASCUNHO) campanhaId = null;
-    }
     const comum: Prisma.CampanhaUncheckedUpdateInput = {
       ...dados,
       status: quando ? StatusCampanha.AGENDADA : StatusCampanha.EM_ANDAMENTO,
@@ -126,9 +125,10 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
       avisarSempre: !!avisarSempre,
       ultimoAviso: null,
     };
-    const c = campanhaId
-      ? await tx.campanha.update({ where: { id: campanhaId }, data: comum })
-      : await tx.campanha.create({ data: { ...(comum as Prisma.CampanhaUncheckedCreateInput), usuarioId: u.id, empresaId: u.empresaId } });
+    // Troca o estado e confere ao mesmo tempo: se outra aba ou outro clique já iniciou, nada muda
+    const troca = await tx.campanha.updateMany({ where: { id: campanhaId, usuarioId: u.id, status: StatusCampanha.RASCUNHO }, data: comum as Prisma.CampanhaUncheckedUpdateManyInput });
+    if (troca.count === 0) return null;
+    const c = { id: campanhaId };
     for (let i = 0; i < unicos.length; i += 1000) {
       await tx.envio.createMany({
         data: unicos.slice(i, i + 1000).map((l, j) => ({ campanhaId: c.id, leadId: l.id, telefone: l.telefone, nome: l.nome, ordem: ordem[i + j]!, status: StatusEnvio.PENDENTE })),
@@ -137,6 +137,7 @@ export async function iniciarCampanha(d: DadosCampanha, agendarPara: string | nu
     }
     return c.id;
   }, { timeout: 60_000 });
+  if (!id) return { ok: false, jaSaiu: true, mensagem: "Esta campanha já foi iniciada ou agendada. Veja na aba Em andamento." };
 
   await logDaSessao("CAMPANHAS", quando ? `Campanha agendada: "${dados.assunto}" (${unicos.length} leads)` : `Campanha iniciada: "${dados.assunto}" (${unicos.length} leads)`);
   revalidatePath("/campanhas");

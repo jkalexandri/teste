@@ -2,7 +2,7 @@
 
 // Aba "Nova" de Campanhas (prompt seções 8 e 9; decisões #57, #64–#68).
 // Passos: Mensagem → Leads → Antibloqueio → Prévia|envio. Salvar rascunho nas 3 primeiras;
-// Agendar e Iniciar (nessa ordem) só na Prévia|envio. Depois de iniciar/agendar, o formulário é limpo.
+// Agendar e Iniciar (nessa ordem) só na Prévia|envio. Depois de iniciar/agendar, vai para a aba Em andamento (decisão #128).
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -109,10 +109,19 @@ export default function NovaCampanha({ rascunho, whatsappConectado, totalLeadsAt
           voltar={() => setPasso(0)}
           enviar={(agendar, avisarSempre) =>
             iniciar(async () => {
-              const r = await iniciarCampanha(dados(), agendar, avisarSempre);
+              // Decisão #128: salva o rascunho antes, para a campanha ter sempre o próprio número
+              // (o servidor só inicia/agenda uma campanha que ainda é rascunho — sem disparo duplicado).
+              const s = await salvarRascunho(dados());
+              if (!s.ok || !s.id) {
+                const msg = s.mensagem === "Rascunho não encontrado." ? "Esta campanha já foi iniciada ou agendada. Veja na aba Em andamento." : s.mensagem;
+                toast(msg, "erro"); setAviso(msg); return;
+              }
+              setId(s.id);
+              const r = await iniciarCampanha({ ...dados(), id: s.id }, agendar, avisarSempre);
               toast(r.mensagem, r.ok ? "ok" : "erro");
               setAviso(r.mensagem);
-              if (r.ok) limpar(); // Após Iniciar ou Agendar, a tela é limpa (prompt seção 8)
+              // Depois de iniciar ou agendar, vai para a aba Em andamento (decisão #128 (a))
+              if (r.ok) router.push("/campanhas?aba=em-andamento");
             })
           }
         />
@@ -596,7 +605,7 @@ function PassoPrevia({ d, arquivo, pendente, voltar, enviar }: { d: Dados; arqui
             <button className="btn-ghost" disabled={pendente} onClick={() => setAgendando(true)}>Agendar envio</button>
             <button className="btn-primary" disabled={pendente} onClick={() => setPerguntar({ agendar: null })}><Play size={14} /> Iniciar disparo</button>
           </div>
-          <p className="help">Após Iniciar ou Agendar, o formulário é limpo e já fica livre para uma nova campanha.</p>
+          <p className="help">Após Iniciar ou Agendar, a campanha aparece na aba Em andamento.</p>
         </div>
       </div>
 

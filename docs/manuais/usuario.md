@@ -135,7 +135,8 @@ Os envios acontecem de **segunda a sábado**, sem feriados, dentro da **janela d
 ### 4. Prévia e envio
 
 Confira o resumo e escolha **Agendar** (data e hora) ou **Iniciar**. O sistema pergunta se você quer ser avisado **sempre** que houver
-problema na campanha ou só uma vez por dia de cada tipo.
+problema na campanha ou só uma vez por dia de cada tipo. Depois, a tela abre na aba **Em andamento**. A mesma campanha nunca sai
+duas vezes: se ela já tiver sido iniciada (outra aba, clique repetido), aparece "Esta campanha já foi iniciada ou agendada".
 
 ### Acompanhar
 

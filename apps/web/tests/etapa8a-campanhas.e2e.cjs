@@ -101,8 +101,33 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
   ok('Iniciar: campanha em andamento com a fila criada', await ate(() => camp(`assunto='Campanha Teste 8a'`) === 'EM_ANDAMENTO|3'));
   ok('Escolha "avisar sempre" gravada na campanha', sql(`select "avisarSempre" from "Campanha" where assunto='Campanha Teste 8a'`) === 't');
   ok('Fila com 3 envios pendentes (sem o inativo e sem quem saiu há < 45 dias)', sql(`select count(*) from "Envio" e join "Campanha" c on c.id=e."campanhaId" where c.assunto='Campanha Teste 8a' and e.status='PENDENTE'`) === '3');
-  await espera(800);
-  ok('Formulário limpo depois de iniciar', (await p.inputValue('#assunto')) === '');
+  // Decisão #128 (a): depois de iniciar, vai para a aba Em andamento
+  ok('Depois de iniciar, abre a aba Em andamento', await p.waitForURL('**aba=em-andamento', { timeout: 10000 }).then(() => true, () => false));
+  ok('Iniciar cria uma campanha só', sql(`select count(*) from "Campanha" where assunto='Campanha Teste 8a'`) === '1');
+
+  // Decisão #128: trava contra disparo duplicado — o mesmo rascunho aberto em 2 abas
+  const RID = 'tc8-duas-abas';
+  sql(`insert into "Campanha"(id,"usuarioId","empresaId",assunto,mensagem,"atualizadoEm") select '${RID}','${ANA}',"empresaId",'Duas abas 8a','Olá {nome}',now() from "Usuario" where id='${ANA}'`);
+  const p2 = await c.newPage();
+  for (const x of [p, p2]) { await x.goto(BASE + '/campanhas?aba=nova&editar=' + RID); await espera(800); }
+  await passo(p, 'Prévia|envio'); await passo(p2, 'Prévia|envio'); await espera(500);
+  await p.click('button:has-text("Iniciar disparo")'); await p.click('button:has-text("Não, no máximo 1 aviso por dia")');
+  ok('1ª aba inicia a campanha', await ate(() => camp(`id='${RID}'`).startsWith('EM_ANDAMENTO|')));
+  const totalRID = camp(`id='${RID}'`).split('|')[1];
+  await p2.click('button:has-text("Iniciar disparo")'); await p2.click('button:has-text("Não, no máximo 1 aviso por dia")');
+  ok('2ª aba recebe o aviso "já foi iniciada"', await p2.locator('[data-testid=aviso-campanha]:has-text("já foi iniciada ou agendada")').waitFor({ timeout: 10000 }).then(() => true, () => false));
+  ok('Sem campanha duplicada nem envio dobrado', sql(`select count(*) from "Campanha" where assunto='Duas abas 8a'`) === '1' && sql(`select count(*) from "Envio" where "campanhaId"='${RID}'`) === totalRID, totalRID);
+  // Clique repetido no mesmo rascunho (ex.: internet oscilou): o servidor recusa o 2º pedido
+  sql(`update "Campanha" set status='RASCUNHO' where id='${RID}'`);
+  await p2.goto(BASE + '/campanhas?aba=nova&editar=' + RID); await espera(800);
+  sql(`update "Campanha" set status='EM_ANDAMENTO' where id='${RID}'`);
+  await passo(p2, 'Prévia|envio'); await p2.click('button:has-text("Agendar envio")');
+  const am = new Date(Date.now() + 86400000 + 3 * 3600000);
+  await p2.fill('#agendar-em', am.toISOString().slice(0, 10) + 'T10:00'); await p2.click('button:has-text("Confirmar agendamento")'); await p2.click('button:has-text("Não, no máximo 1 aviso por dia")');
+  ok('Agendar campanha que já saiu também é recusado', await p2.locator('[data-testid=aviso-campanha]:has-text("já foi iniciada ou agendada")').waitFor({ timeout: 10000 }).then(() => true, () => false)
+    && sql(`select count(*) from "Campanha" where assunto='Duas abas 8a'`) === '1' && camp(`id='${RID}'`) === 'EM_ANDAMENTO|' + totalRID && sql(`select count(*) from "Envio" where "campanhaId"='${RID}'`) === totalRID);
+  await p2.close();
+  sql(`delete from "Campanha" where id='${RID}'`);
 
   // Em andamento: pausar, retomar, cancelar
   await p.goto(BASE + '/campanhas?aba=em-andamento'); await espera(800);

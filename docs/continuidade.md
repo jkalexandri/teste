@@ -103,6 +103,11 @@ Testes do Asaas usam o **Asaas de mentira** (`apps/web/tests/asaas-falso.cjs`, s
 Resposta pendente no banco + varredura, 8–15 s (teto 30 s), 3 tentativas e texto reserva, "não sei" não pausa, saída estruturada.
 Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: responder no mesmo endereço (jid/LID) de onde veio a mensagem.
 
+### Criação de campanha — decisão #128 (em andamento, um passo por vez com prévia)
+- Passo 1 FEITO (v1.41.1): trava contra disparo duplicado + ir para Em andamento.
+- Próximos: 2 salvamento automático · 3 painel "Adicionar leads" sem sair da tela · 4 Cancelar campanha · 5 IA com confirmação e validação no Avançar · 6 menores.
+- **Lembrar o dono** (resposta (e)): oferecer "Enviar teste para meu número" quando a Prévia|envio for revisada.
+
 ### Pendências da publicação (`docs/publicacao-vps.md`)
 - Parte 6.1 — backup diário e rotinas (crontab).
 - Parte 6.2 — proteção da VPS (`deploy/seguranca-vps.sh`, depois de cadastrar a chave SSH).

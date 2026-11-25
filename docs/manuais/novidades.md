@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.1 — campanha nunca sai duas vezes (25/11/2026)
+
+- Se a mesma campanha estiver aberta em duas abas, ou o botão for clicado de novo, ela **não é enviada duas vezes**:
+  aparece "Esta campanha já foi iniciada ou agendada. Veja na aba Em andamento."
+- Depois de **Iniciar disparo** ou **Agendar**, a tela abre direto na aba **Em andamento**.
+
 ## v1.41.0 — IA do WhatsApp responde sempre e mais rápido (25/11/2026)
 
 - A IA responde **8 a 15 segundos** depois da última mensagem do lead (no máximo 30 s, mesmo que ele mande várias seguidas).
