@@ -54,8 +54,21 @@ mv apps/web/.next-novo apps/web/.next
 pm2 restart filapro-web filapro-worker --update-env
 pm2 save
 # Caddyfile mudou nesta versão? Aplica (HTTPS continua no ar)
+# Trava (decisão #134): o Caddyfile fecha a API do serviço 24/7 para a internet; só aplica se o site já fala
+# com o serviço por dentro da VPS. E só troca a configuração se a nova estiver válida.
 if ! cmp -s deploy/Caddyfile /etc/caddy/Caddyfile; then
-  cp deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy && echo "Caddy: configuração atualizada"
+  case "${WORKER_URL:-}" in
+    http://127.0.0.1:*|http://localhost:*)
+      if caddy validate --config deploy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
+        cp deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy && echo "Caddy: configuração atualizada"
+      else
+        echo "ATENÇÃO: o novo Caddyfile não passou na conferência; a configuração antiga continua. Avise o desenvolvedor."
+      fi ;;
+    *)
+      echo "ATENÇÃO: Caddy NÃO atualizado — o site ainda usa WORKER_URL=${WORKER_URL:-(vazio)}."
+      echo "  Troque para o endereço interno e rode a atualização de novo:"
+      echo "  sed -i 's#^WORKER_URL=.*#WORKER_URL=\"http://127.0.0.1:4000\"#' /opt/filapro/app/apps/web/.env.production" ;;
+  esac
 fi
 sleep 5
 curl -fsS http://127.0.0.1:3000/login -o /dev/null && echo "Site: OK"

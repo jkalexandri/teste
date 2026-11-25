@@ -258,7 +258,8 @@ Depois aponte o DNS (`@`, `www`, `api`) para o IP novo. Com a mesma `CHAVE_CRIPT
 - **Encapsulamento (decisão #132):** cada assunto sensível tem **uma porta única** e um **teste vigia**. Não acesse dados,
   segredos ou o WhatsApp "por fora" da porta do assunto. Portas existentes: `protegerTela()` (telas), `packages/ia` (IA),
   serviço 24/7 (login e envio do WhatsApp). Portas novas entram módulo a módulo, nas revisões (lista na decisão #132).
-- Todas as rotas do serviço 24/7 exigem o `WORKER_TOKEN`; ele escuta só em `127.0.0.1`.
+- Todas as rotas do serviço 24/7 exigem o `WORKER_TOKEN`; ele escuta só em `127.0.0.1`. Pela internet (`api.filaproleads.com.br`)
+  o Caddy libera **só `/saude`** (decisão #134): o site usa `WORKER_URL=http://127.0.0.1:4000`.
 - O leitor de sites do Empresa | IA bloqueia endereços internos (proteção contra SSRF).
 - Senhas com scrypt (sal aleatório por senha), bloqueio de 15 min após 5 erros, sessão em cookie `httpOnly`.
 - Dados pessoais seguem a LGPD (Política de Privacidade): conversas 365 dias, logs 90 dias, "Esquecer" apaga materiais.

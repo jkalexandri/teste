@@ -161,7 +161,7 @@ Variáveis do projeto na Vercel:
 
 | Variável | Valor |
 |---|---|
-| `WORKER_URL` | `https://api.filaproleads.com.br` |
+| `WORKER_URL` | `http://127.0.0.1:4000` (por dentro da VPS — decisão #134; o endereço público responde só `/saude`) |
 | `WORKER_TOKEN` | o mesmo da VPS |
 | `CHAVE_CRIPTO` | o mesmo da VPS (criptografa as chaves da IA) |
 

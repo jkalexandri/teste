@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.5 — serviço do WhatsApp fechado para a internet (25/11/2026)
+
+- Segurança: o endereço do serviço do WhatsApp (`api.filaproleads.com.br`) passa a responder pela internet só se está no ar;
+  enviar mensagens, conectar números e ler anexos só funcionam por dentro do servidor. Nada muda no uso do sistema.
+
 ## v1.41.4 — WhatsApp mais estável (25/11/2026)
 
 - Se, por engano, dois serviços do WhatsApp forem ligados ao mesmo tempo, o segundo espera e **nenhum número cai**.

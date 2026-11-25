@@ -23,7 +23,14 @@ www.filaproleads.com.br {
 	redir https://filaproleads.com.br{uri} permanent
 }
 
-# Serviço 24/7 (já existia)
+# Serviço 24/7 (decisão #134): o site fala com ele POR DENTRO da VPS (WORKER_URL=http://127.0.0.1:4000).
+# Pela internet, este endereço responde só "/saude" (está no ar?); o resto é negado, mesmo com o token.
 api.filaproleads.com.br {
-	reverse_proxy 127.0.0.1:4000
+	@saude path /saude
+	handle @saude {
+		reverse_proxy 127.0.0.1:4000
+	}
+	handle {
+		respond "Acesso negado." 403
+	}
 }
