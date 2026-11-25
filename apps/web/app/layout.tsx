@@ -18,6 +18,11 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#050d18" };
 
+// Guarda o pedido de instalação do Chrome (Android) logo no início da página, antes do React (decisão #123):
+// o Chrome avisa uma vez por página, às vezes antes de o app carregar — sem isso o botão "Instalar app" perdia o aviso.
+// No login, o nosso botão oferece a instalação (preventDefault); nas outras telas o Chrome mostra o aviso dele.
+const instalarScript = `window.__filaproInstalar=null;window.addEventListener("beforeinstallprompt",function(e){if(location.pathname==="/login")e.preventDefault();window.__filaproInstalar=e;window.dispatchEvent(new Event("filapro-instalavel"))});window.addEventListener("appinstalled",function(){window.__filaproInstalar=null;window.dispatchEvent(new Event("filapro-instalado"))});`;
+
 // Aplica o tema salvo antes da página aparecer (evita piscar claro/escuro).
 const themeScript = `try{var t=localStorage.getItem("${THEME_KEY}");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}`;
 
@@ -26,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: instalarScript }} />
         {/* Fontes da prévia: Plus Jakarta Sans (texto) e Sora (títulos) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

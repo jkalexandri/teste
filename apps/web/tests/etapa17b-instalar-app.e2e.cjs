@@ -1,4 +1,5 @@
-// Teste de ponta a ponta da decisão #112: botão "Instalar app" no login, só no celular.
+// Teste de ponta a ponta das decisões #112 e #123: botão "Instalar app" no login, só no celular.
+// Android: só aparece quando o Chrome libera a instalação e instala direto. iPhone/apps internos: passo a passo.
 // Uso: node apps/web/tests/etapa17b-instalar-app.e2e.cjs <pasta-prints>
 const { chromium, devices } = require('playwright');
 const BASE = 'http://localhost:3005';
@@ -22,7 +23,9 @@ const AND_UA = devices['Pixel 7'].userAgent;
     ok('iPhone: mostra o botão Instalar app', (await p.locator('[data-testid=botao-instalar-app]').count()) === 1);
     await p.screenshot({ path: OUT + '/instalar-iphone-botao.png' });
     await p.click('[data-testid=botao-instalar-app]'); await espera(400);
-    ok('iPhone: passo a passo do Safari', (await p.locator('[data-testid=ajuda-instalar]').innerText()).includes('Adicionar à Tela de Início'));
+    const ajudaIos = await p.locator('[data-testid=ajuda-instalar]').innerText();
+    ok('iPhone: passo a passo do Safari', ajudaIos.includes('Adicionar à Tela de Início'));
+    ok('iPhone: desenho do botão Compartilhar e "Já instalou?"', (await p.locator('[data-testid=ajuda-instalar] .lucide-share').count()) >= 1 && ajudaIos.includes('Já instalou?'));
     await p.screenshot({ path: OUT + '/instalar-iphone-ajuda.png' });
     await c.close();
     // iPhone com Chrome: orienta abrir no Safari
@@ -35,6 +38,20 @@ const AND_UA = devices['Pixel 7'].userAgent;
     await p.click('[data-testid=botao-instalar-app]'); await espera(400);
     ok('Dentro do Instagram/WhatsApp: "Abra no navegador"', (await p.locator('[data-testid=ajuda-instalar]').innerText()).includes('Abra no navegador do celular'));
     await c.close();
+    // Android/Chrome sem a liberação do Chrome (ex.: app já instalado): o botão não aparece (decisão #123, item a)
+    [c, p] = await abrir({ ...devices['Pixel 7'] });
+    ok('Android sem liberação do Chrome (ou app já instalado): sem o botão', (await p.locator('[data-testid=botao-instalar-app]').count()) === 0);
+    // Aviso do Chrome que chega antes de a página carregar não se perde (script no início da página)
+    await p.addInitScript(() => {
+      window.addEventListener('DOMContentLoaded', () => {
+        const e = new Event('beforeinstallprompt', { cancelable: true });
+        e.prompt = async () => {}; e.userChoice = Promise.resolve({ outcome: 'dismissed' });
+        window.dispatchEvent(e);
+      });
+    });
+    await p.reload({ waitUntil: 'networkidle' }); await espera(800);
+    ok('Aviso do Chrome que chega cedo não se perde: botão aparece', (await p.locator('[data-testid=botao-instalar-app]').count()) === 1);
+    await c.close();
     // Android/Chrome: usa a janela de instalação do Chrome
     [c, p] = await abrir({ ...devices['Pixel 7'] });
     await p.evaluate(() => {
@@ -44,13 +61,8 @@ const AND_UA = devices['Pixel 7'].userAgent;
     });
     await espera(300);
     await p.click('[data-testid=botao-instalar-app]'); await espera(600);
-    ok('Android: abre a janela de instalação do Chrome', await p.evaluate(() => window.__abriuJanela === true));
+    ok('Android: abre a janela de instalação do Chrome (instala direto, sem passo a passo)', await p.evaluate(() => window.__abriuJanela === true) && (await p.locator('[data-testid=ajuda-instalar]').count()) === 0);
     ok('Android: depois de instalar, o botão some', (await p.locator('[data-testid=botao-instalar-app]').count()) === 0);
-    await c.close();
-    // Android sem o pedido do Chrome: passo a passo do menu ⋮
-    [c, p] = await abrir({ ...devices['Pixel 7'] });
-    await p.click('[data-testid=botao-instalar-app]'); await espera(400);
-    ok('Android sem a janela do Chrome: passo a passo do menu', (await p.locator('[data-testid=ajuda-instalar]').innerText()).includes('três pontinhos'));
     await c.close();
     // App já instalado (aberto pelo ícone): sem botão
     [c, p] = await abrir({ ...devices['Pixel 7'] });

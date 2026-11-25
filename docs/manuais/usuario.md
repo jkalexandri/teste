@@ -198,7 +198,8 @@ em até 10 minutos, chegam juntos.
 
 O jeito mais fácil: abra **filaproleads.com.br** no celular e toque em **Instalar app**, ao lado de **Planos**, na tela de login.
 
-- **Android (Chrome):** abra filaproleads.com.br → menu ⋮ → **Instalar app**.
+- **Android (Chrome):** o botão **Instalar app** instala direto, na janela do Chrome. Se o botão não aparecer, o app já está
+  instalado (abra pelo ícone) ou o Chrome ainda não liberou a instalação; nesse caso use o menu ⋮ → **Instalar app**.
 - **iPhone (Safari):** **Compartilhar** → **Adicionar à Tela de Início**, e abra pelo ícone (iOS 16.4 ou mais novo para notificações).
 
 Depois, em **Avisos**, marque **Receber também no celular (app)** e toque em **Ativar notificações neste aparelho**.

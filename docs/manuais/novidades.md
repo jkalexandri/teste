@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.38.3 — botão "Instalar app" instala direto no Android (25/11/2026)
+
+- **Android:** o botão **Instalar app** do login agora só aparece quando dá para instalar direto, e instala na hora pela janela
+  do Chrome, sem passo a passo. Quem já tem o app instalado não vê mais o botão no navegador.
+- **iPhone:** a Apple não permite instalar direto; o passo a passo ficou mais curto, com o desenho do botão Compartilhar.
+
 ## v1.38.2 — login inteiro em celular pequeno (25/11/2026)
 
 - Em celulares de tela bem baixa (ex.: iPhone SE antigo), a frase "Envios com ritmo…" do login não aparece, para o quadro de
