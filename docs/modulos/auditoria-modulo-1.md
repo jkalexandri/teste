@@ -41,8 +41,19 @@ Teste: sessão aberta de um usuário de empresa; depois a empresa foi inativada,
 `arquivos/[id]`, `suporte`, `push`, `comunicados/[id]`, `presenca`. Conta vencida/bloqueada ainda baixa os próprios arquivos
 e usa o suporte. Em parte é desejado (o bloqueado precisa falar com o suporte); definir a regra por rota.
 
-### S4 — Login e recuperação: enumeração de e-mail e diferença de tempo ❓
-Conferir se "e-mail não existe" e "senha errada" respondem igual e no mesmo tempo (hash falso quando o usuário não existe).
+### S4 — Dá para descobrir quais e-mails têm conta ✅ (reproduzido em 26/11/2026)
+Medido no site de teste, com e-mail existente e inexistente:
+- **S4a — tempo do login:** senha errada leva **73 ms** para e-mail existente e **15 ms** para inexistente (o sistema só calcula o hash da
+  senha quando a conta existe). Quem tem senha temporária pendente leva ainda mais (dois hashes): revela até quem pediu recuperação.
+- **S4b — bloqueio por tentativas:** a 6ª senha errada devolve "Muitas tentativas erradas. Tente novamente em 15 minutos." para e-mail
+  existente e "E-mail ou senha incorretos." para inexistente. Com 6 tentativas, qualquer um descobre se a conta existe.
+- **S4c — tempo da recuperação:** a resposta é igual, mas existente leva **52 ms** e inexistente **7 ms** (aqui sem o envio real do
+  e-mail; na VPS o envio pelo Resend soma centenas de ms, tornando a diferença bem maior).
+- **S4d — compra e teste grátis:** `/api/pedidos` responde 409 "Este e-mail já tem acesso…" e `/api/teste-gratis` responde 409 "já usou o
+  teste grátis ou já tem acesso…". Sem login, quem quiser lista e-mails cadastrados (dado pessoal, LGPD). Há uma necessidade de negócio
+  (não deixar a pessoa pagar por uma conta que não pode ser criada), por isso é decisão de produto.
+- Conferido e correto: os botões de demonstração do login só aparecem fora de produção (#3); a recuperação responde igual para e-mail
+  existente ou não; as mensagens "módulo errado/expirado/inativa" só aparecem depois de acertar a senha.
 
 ### S5 — Limite só por IP; falta limite por e-mail ❓
 Atacante com vários IPs pode tentar a mesma conta. O bloqueio de 5 tentativas/15 min por conta existe, mas também permite
