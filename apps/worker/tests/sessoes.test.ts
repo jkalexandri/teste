@@ -12,6 +12,7 @@ import { Instancia } from "../src/instancia.js";
 
 const ID = "tst-ses-1";
 const ORFA = "tst-ses-orfa";
+const BLQ = "tst-ses-blq";
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
 async function ate(cond: () => boolean | Promise<boolean>) { for (let i = 0; i < 150; i++) { if (await cond()) return true; await espera(20); } return false; }
@@ -52,12 +53,12 @@ beforeEach(async () => {
   apagados = [];
   g?.encerrarTudo();
   g = novoGerenciador();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA, BLQ] } } });
 });
 
 after(async () => {
   g?.encerrarTudo();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA, BLQ] } } });
   await prisma.servicoInstancia.deleteMany({ where: { id: "teste-servico" } });
   await prisma.$disconnect();
 });
@@ -176,4 +177,25 @@ test("queda comum: grava 'Reconectando' com quando caiu, tentativa e próxima; a
   assert.ok(await ate(async () => (await status()) === "CONECTADO"));
   const d = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
   assert.equal(d.quedaEm, null); assert.equal(d.tentativaReconexao, 0); assert.equal(d.proximaTentativaEm, null);
+});
+
+test("ao ligar, número bloqueado (saiu do plano) com login salvo sai do WhatsApp; o registro e as conversas ficam (decisão #140)", async () => {
+  const dono = (await prisma.usuario.findFirstOrThrow({ select: { id: true } })).id;
+  await prisma.whatsappSessao.create({ data: { id: BLQ, usuarioId: dono, bloqueada: true, creds: "v1:x:y:z", status: "CONECTADO" } });
+  await g.iniciarTodas();
+  for (const k of sockets) k.abrir();
+  assert.ok(await ate(() => apagados.includes(BLQ)), "login apagado");
+  const s = await prisma.whatsappSessao.findUnique({ where: { id: BLQ } });
+  assert.ok(s, "o registro continua (conversas e apelido guardados)");
+  assert.equal(s!.bloqueada, true);
+  assert.equal(s!.status, "DESCONECTADO");
+  assert.equal(g.conectado(BLQ), false);
+});
+
+test("o serviço recusa conectar número bloqueado, venha o pedido de onde vier (decisão #140)", async () => {
+  const dono = (await prisma.usuario.findFirstOrThrow({ select: { id: true } })).id;
+  await prisma.whatsappSessao.create({ data: { id: BLQ, usuarioId: dono, bloqueada: true } });
+  await g.conectar(BLQ);
+  assert.equal(sockets.length, 0, "nenhuma conexão aberta");
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: BLQ } })).status, "DESCONECTADO");
 });

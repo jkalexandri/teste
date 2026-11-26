@@ -45,8 +45,19 @@ export async function sincronizarExtras(usuarioId: string, contratados: number, 
   }
   for (const id of sair) {
     await prisma.whatsappSessao.update({ where: { id }, data: { bloqueada: true } });
-    await chamarWorker(`/sessoes/${encodeURIComponent(id)}/desconectar`);
+    const r = await chamarWorker(`/sessoes/${encodeURIComponent(id)}/desconectar`);
     await prisma.whatsappSessao.update({ where: { id }, data: { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null } });
+    // Logs (decisão #140): desconectado na hora ou, com o serviço fora do ar, quando ele voltar
+    const dono = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { nome: true, email: true, empresaId: true } });
+    const x = extras.find((e) => e.id === id);
+    const nome = x?.apelido || (x?.numero ? `+${x.numero}` : `WhatsApp ${x?.ordem != null ? x.ordem + 1 : "extra"}`);
+    await prisma.log.create({
+      data: {
+        empresaId: dono?.empresaId ?? null, usuarioId, quem: dono ? `${dono.nome} (${dono.email})` : "Sistema", tipo: "WHATSAPP",
+        texto: r.ok ? `Número extra "${nome}" saiu do plano: WhatsApp desconectado`
+          : `Número extra "${nome}" saiu do plano: serviço do WhatsApp fora do ar; será desconectado quando ele voltar`,
+      },
+    }).catch(() => undefined);
   }
   let faltam = contratados - ativos.length;
   for (const s of extras.filter((x) => x.bloqueada && !sair.includes(x.id))) {

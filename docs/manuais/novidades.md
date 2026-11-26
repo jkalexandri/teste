@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.10 — número que saiu do plano fica desligado (26/11/2026)
+
+- Número extra que saiu do plano não volta a funcionar sozinho depois de uma atualização do sistema.
+  As conversas dele continuam guardadas, e a saída fica registrada em **Logs**.
+
 ## v1.41.9 — WhatsApp mostra quando está voltando sozinho (26/11/2026)
 
 - Se a conexão do WhatsApp cair, a tela mostra **"Reconectando…"**: quando caiu, a tentativa e quanto falta para a próxima.

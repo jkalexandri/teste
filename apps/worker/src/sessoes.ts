@@ -39,8 +39,9 @@ export class GerenciadorSessoes implements Remetente {
   private geracoes = new Map<string, number>();
   /** Fila de cada número: as operações do mesmo número acontecem uma de cada vez */
   private filas = new Map<string, Promise<void>>();
-  /** Números sem dono encontrados ao ligar: conectam só para sair (logout) e são apagados (decisão #138) */
-  private orfas = new Set<string>();
+  /** Números que conectam só para SAIR do WhatsApp (logout) — decisões #138 e #140:
+   *  "apagar" = sem dono (usuário excluído): o registro some; "manter" = bloqueado (saiu do plano): conversas e apelido ficam */
+  private paraSair = new Map<string, "apagar" | "manter">();
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
@@ -79,25 +80,40 @@ export class GerenciadorSessoes implements Remetente {
 
   /** Ao ligar o serviço: reconecta todas as sessões que têm login salvo. */
   async iniciarTodas() {
-    const salvas = await prisma.whatsappSessao.findMany({ where: { creds: { not: null } }, select: { id: true, usuarioId: true } });
+    const salvas = await prisma.whatsappSessao.findMany({ where: { creds: { not: null } }, select: { id: true, usuarioId: true, bloqueada: true } });
     this.log.info({ total: salvas.length }, "reconectando sessões salvas");
     for (const s of salvas) {
-      // Número sem dono (usuário excluído — decisão #138): não volta a funcionar; conecta só para sair e é apagado
       if (!s.usuarioId && s.id !== SESSAO_PLATAFORMA) {
-        this.orfas.add(s.id);
+        // Número sem dono (usuário excluído — decisão #138): conecta só para sair e é apagado
         this.log.warn({ id: s.id }, "número sem dono: será desconectado e apagado");
+        await this.sairDoWhatsapp(s.id, "apagar");
+      } else if (s.bloqueada) {
+        // Número que saiu do plano (decisão #140): não volta a funcionar; sai do WhatsApp e o registro fica
+        this.log.warn({ id: s.id }, "número bloqueado com login salvo: será desconectado");
+        await this.sairDoWhatsapp(s.id, "manter");
+      } else {
+        await this.conectar(s.id).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
       }
-      await this.conectar(s.id).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
     }
   }
 
-  /** O registro do número sumiu (usuário excluído) ou ele não tem dono: sai do WhatsApp e apaga tudo. */
+  /** Abre a conexão só para sair do WhatsApp (o FilaPro some de "Dispositivos conectados" do celular). */
+  private sairDoWhatsapp(id: string, registro: "apagar" | "manter") {
+    this.paraSair.set(id, registro);
+    return this.emFila(id, async () => {
+      if (this.conexoes.has(id)) return;
+      await this.abrirSocket(id, 0);
+    }).catch((e) => this.log.error({ e, id }, "falha ao abrir para sair"));
+  }
+
+  /** Termina a saída: desconecta (apaga o login) e, se for número sem dono, apaga o registro. */
   private encerrarSemDono(id: string) {
-    this.orfas.delete(id);
+    const registro = this.paraSair.get(id) ?? "apagar";
+    this.paraSair.delete(id);
     return this.desconectar(id)
-      .then(() => prisma.whatsappSessao.deleteMany({ where: { id } }))
-      .then(() => this.log.warn({ id }, "número sem dono desconectado e apagado"))
-      .catch((e) => this.log.error({ e, id }, "falha ao encerrar número sem dono"));
+      .then(() => (registro === "apagar" ? prisma.whatsappSessao.deleteMany({ where: { id } }) : undefined))
+      .then(() => this.log.warn({ id, registro }, registro === "apagar" ? "número sem dono desconectado e apagado" : "número bloqueado desconectado (conversas mantidas)"))
+      .catch((e) => this.log.error({ e, id }, "falha ao encerrar número"));
   }
 
   /** Inicia (ou retoma) a conexão. Sem login salvo, o WhatsApp gera o QR Code. */
@@ -108,7 +124,12 @@ export class GerenciadorSessoes implements Remetente {
       if (this.conexoes.has(id)) return; // já está conectando/conectada
       // Com login salvo é uma RECONEXÃO (decisão #139): a tela mostra "Reconectando…" e "Tentar agora",
       // nunca o "Cancelar" da primeira conexão (que apagaria o login)
-      const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { creds: true, quedaEm: true } });
+      const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { creds: true, quedaEm: true, bloqueada: true } });
+      // Trava no próprio serviço (decisão #140): número bloqueado (saiu do plano) não conecta, venha o pedido de onde vier
+      if (antes?.bloqueada) {
+        this.log.warn({ id }, "conectar recusado: número bloqueado (saiu do plano)");
+        return;
+      }
       const reconexao = !!antes?.creds;
       await prisma.whatsappSessao.upsert({
         where: { id },
@@ -201,13 +222,15 @@ export class GerenciadorSessoes implements Remetente {
         return;
       }
       if (!atual()) return;
+      // Abriu só para sair e o login já não vale (pediu QR): não mostra QR, só encerra (decisões #138 e #140)
+      if (u.qr && this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
       if (u.qr) {
         conexao.qrGerado = true;
         await this.gravar(id, { status: StatusWhatsapp.AGUARDANDO_QR, qr: u.qr, qrEm: new Date(), erro: null });
       }
       if (u.connection === "open") {
         // Número sem dono (decisão #138): conectou só para sair do WhatsApp — some de "Dispositivos conectados" do celular
-        if (this.orfas.has(id)) { void this.encerrarSemDono(id); return; }
+        if (this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
         conexao.tentativas = 0;
         await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
         // Primeira conexão deste número: base do aquecimento (decisão #64)
@@ -226,7 +249,7 @@ export class GerenciadorSessoes implements Remetente {
 
     const d = decidirQueda(codigo, pareado, conexao.qrGerado, conexao.tentativas);
     // Número sem dono que nem chegou a conectar (ex.: já saiu pelo celular): só apaga (decisão #138)
-    if (this.orfas.has(id) && d.acao === "encerrar") { void this.encerrarSemDono(id); return; }
+    if (this.paraSair.has(id) && d.acao === "encerrar") { void this.encerrarSemDono(id); return; }
     if (d.acao === "encerrar") {
       if (d.apagarLogin) await (this.opcoes.apagarAuth ?? apagarAuth)(id);
       await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });

@@ -113,7 +113,8 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
   Item 5 do encapsulamento FEITO (v1.41.5, decisão #134: Caddy libera só /saude).
   A3 FEITA (v1.41.8, decisão #138). Para o Módulo 2: bloqueado/vencido continua com WhatsApp e IA (decidir); excluir usuário apaga as campanhas dele.
   A2 FEITA (v1.41.9, decisão #139).
-  Próximas, cada uma com prévia: A4, A5, A6 (avisar com 3 min / na volta / "com problema" após 2 h), A7;
+  A4 FEITA (v1.41.10, decisão #140).
+  Próximas, cada uma com prévia: A5, A6 (avisar com 3 min / na volta / "com problema" após 2 h), A7;
   Módulo 9 (quando chegar): decisão #135 — mensagens recebidas no número da plataforma (conhecido → conversa certa + aviso; desconhecido → só registrar, sem responder). depois A2, A4–A7; depois médias/baixas. A6: avisar com 3 min, avisar na volta, "com problema" após 2 h.
 - Quadro "Módulos e revisões" na Ajuda (só Super Admin, decisão #131) FEITO (v1.41.3). **Em toda entrega:** atualizar `docs/modulos/README.md` (último ajuste, histórico com data e hora; módulo "Revisado" que for ajustado sem revisão completa vira "Sem revisão").
 
