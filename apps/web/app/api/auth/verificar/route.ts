@@ -2,7 +2,7 @@
 // ou um código de recuperação. 5 erros: a tentativa é cancelada e é preciso entrar de novo com a senha.
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
-import { obterSessaoPendente2fa, encerrarSessao } from "@/lib/auth/session";
+import { obterSessaoPendente2fa, encerrarSessao, SESSAO_PRIMEIRO_ACESSO_MIN } from "@/lib/auth/session";
 import { conferirTotp, lerSegredo, usarCodigoRecuperacao } from "@/lib/auth/dois-fatores";
 import { registrarLog } from "@/lib/logs";
 import { alertarEntradaSuperAdmin } from "@/lib/alertas-seguranca";
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   }
 
   // Liberou: a sessão passa a valer o tempo normal
-  await prisma.sessao.update({ where: { id: s.id }, data: { pendente2fa: false, tentativas2fa: 0, expiraEm: new Date(Date.now() + 24 * 3600 * 1000) } });
+  await prisma.sessao.update({ where: { id: s.id }, data: { pendente2fa: false, tentativas2fa: 0, expiraEm: new Date(Date.now() + (s.precisaTrocar ? SESSAO_PRIMEIRO_ACESSO_MIN * 60 * 1000 : 24 * 3600 * 1000)) } });
   await registrarLog(u, "ENTRADA", recuperacao ? `Entrou no sistema (código de recuperação; restam ${restantes})` : "Entrou no sistema (verificação em duas etapas)");
   await alertarEntradaSuperAdmin(u.id, u.cargo).catch(() => undefined);
   return NextResponse.json({ destino: s.precisaTrocar ? "/primeiro-acesso" : "/dashboard", restantes });

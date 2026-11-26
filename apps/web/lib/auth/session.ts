@@ -11,6 +11,8 @@ import { prisma } from "@filapro/db";
 
 export const COOKIE_SESSAO = "filapro_sessao";
 export const SESSAO_MAX_HORAS = 24;
+/** Sessão de primeiro acesso (senha temporária ainda não trocada): vale só 30 minutos (decisão #157). */
+export const SESSAO_PRIMEIRO_ACESSO_MIN = 30;
 
 const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
@@ -22,8 +24,8 @@ export async function criarSessao(usuarioId: string, precisaTrocar: boolean, pen
       usuarioId,
       precisaTrocar,
       pendente2fa,
-      // Aguardando o código da verificação em duas etapas: vale só 10 minutos
-      expiraEm: new Date(Date.now() + (pendente2fa ? 10 * 60 * 1000 : SESSAO_MAX_HORAS * 3600 * 1000)),
+      // Aguardando o código da verificação em duas etapas: vale só 10 minutos; primeiro acesso: 30 minutos
+      expiraEm: new Date(Date.now() + (pendente2fa ? 10 * 60 * 1000 : precisaTrocar ? SESSAO_PRIMEIRO_ACESSO_MIN * 60 * 1000 : SESSAO_MAX_HORAS * 3600 * 1000)),
     },
   });
   const jar = await cookies();
@@ -66,8 +68,11 @@ export async function encerrarSessao() {
   jar.delete(COOKIE_SESSAO);
 }
 
-export async function atualizarSessaoTrocaFeita() {
-  const jar = await cookies();
-  const token = jar.get(COOKIE_SESSAO)?.value;
-  if (token) await prisma.sessao.updateMany({ where: { tokenHash: hashToken(token) }, data: { precisaTrocar: false } });
+/**
+ * Senha definida no primeiro acesso (decisão #157): apaga TODAS as sessões da conta (inclusive a atual)
+ * e abre uma nova, com token novo. Um token que tenha vazado antes da troca deixa de valer.
+ */
+export async function renovarSessoesAposNovaSenha(usuarioId: string) {
+  await prisma.sessao.deleteMany({ where: { usuarioId } });
+  await criarSessao(usuarioId, false);
 }

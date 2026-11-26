@@ -42,3 +42,18 @@ export function emailSenhaTemporaria(nome: string, senha: string, horas: number)
     `<p style="color:#5b6b62">Se você não pediu esta senha, ignore este e-mail. Sua senha atual continua valendo.</p>`;
   return { texto, html };
 }
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** Aviso de senha alterada (decisão #157): nunca leva a senha; mostra quando e de onde, para o dono notar uma tomada de conta. */
+export function emailSenhaAlterada(nome: string, quando: string, ip: string) {
+  const texto =
+    `Olá, ${nome}.\n\nA senha da sua conta no FilaPro Leads foi definida em ${quando} (endereço de internet: ${ip}).\n\n` +
+    `Foi você? Então não precisa fazer nada. Os outros aparelhos conectados foram desconectados por segurança.\n\n` +
+    `Não reconhece? Use "Esqueci minha senha" na tela de login agora mesmo e avise o suporte.`;
+  const html =
+    `<p>Olá, ${esc(nome)}.</p><p>A senha da sua conta no <b>FilaPro Leads</b> foi definida em <b>${esc(quando)}</b> (endereço de internet: ${esc(ip)}).</p>` +
+    `<p>Foi você? Então não precisa fazer nada. Os outros aparelhos conectados foram desconectados por segurança.</p>` +
+    `<p style="color:#b42318"><b>Não reconhece?</b> Use “Esqueci minha senha” na tela de login agora mesmo e avise o suporte.</p>`;
+  return { texto, html };
+}

@@ -17,7 +17,7 @@ Legenda: ✅ confirmado lendo o código · ❓ suspeita que ainda preciso reprod
 - Desativar usuário apaga as sessões dele (`usuarios/actions.ts`).
 
 ## Médias
-### S1 — "Trocar senha" não confere se é mesmo o primeiro acesso ✅
+### S1 — "Trocar senha" não confere se é mesmo o primeiro acesso ✅ — **FEITA na v1.46.1 (decisão #157)**
 `/api/auth/trocar-senha` só exige estar logado. Não checa `precisaTrocar` nem pede a senha atual. Quem estiver com uma
 sessão aberta (computador emprestado, cookie roubado) troca a senha da conta e a tranca para o dono.
 Também **não encerra as outras sessões** ao trocar. Correção: só aceitar quando `precisaTrocar` for verdadeiro; apagar as demais sessões.
@@ -52,7 +52,7 @@ Reiniciar o site zera os contadores. Aceitável com uma só instância; registra
 pode invalidar a senha temporária que a vítima acabou de receber (negação de acesso) e lotar a caixa dela. Melhor: link de uso único
 com validade curta (30–60 min). Decisão de produto: prévia própria.
 
-### S10 — A nova senha pode ser igual à temporária ✅
+### S10 — A nova senha pode ser igual à temporária ✅ — **FEITA na v1.46.1 junto com a S1 (#157)**
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias

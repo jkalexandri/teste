@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.1 — segurança: trocar a senha só no primeiro acesso (26/11/2026)
+
+- A troca de senha da tela de **primeiro acesso** passou a valer **somente** para quem entrou com a senha temporária. Quem já tem senha definitiva não consegue mais trocá-la por essa porta.
+- A nova senha **não pode ser igual à temporária** enviada por e-mail.
+- Ao definir a senha, **todos os outros aparelhos conectados na conta são desconectados** e a sessão é renovada.
+- Você recebe um **e-mail "Sua senha foi alterada"** com data, hora e endereço de internet (sem a senha). Se não foi você, use "Esqueci minha senha" e avise o suporte.
+- A sessão de primeiro acesso vale **30 minutos**; passou disso, é só entrar de novo com a senha temporária.
+- A troca aparece nos **Logs** (Entradas).
+
 ## v1.46.0 — atendimento do suporte encerrado por inatividade (26/11/2026)
 
 - Se, depois da resposta do suporte (ou da IA), o **cliente ficar 10 minutos sem escrever**, o atendimento é **encerrado** automaticamente, com a mensagem
