@@ -140,6 +140,7 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
                 style={{ background: x.id === p.cliente ? "var(--surface-2, rgba(0,0,0,.05))" : undefined }}>
                 <div className="flex items-center justify-between gap-1">
                   <b className="truncate"><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ background: online(x) ? "#16a34a" : "#9ca3af" }} />{x.nome}</b>
+                  {c.encerradaEm && <span className="chip" style={{ background: "#f1f3f2", color: "#5b6b62", fontSize: "9px" }} data-testid="selo-encerrada">Encerrada</span>}
                   {c.naoLidasSuporte > 0 && <span className="rounded-full px-1.5 text-[11px] font-extrabold" style={{ background: "#e5484d", color: "#fff" }} data-testid="nao-lidas-atendimento">{c.naoLidasSuporte}</span>}
                 </div>
                 <p className="truncate" style={{ color: "var(--muted)" }}>{CARGOS[x.cargo]} • {conta(x)}</p>
@@ -152,7 +153,7 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
           {atual ? (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-                <div className="text-[12px]"><b className="text-[14px]" data-testid="cliente-atual">{atual.nome}</b> <span style={{ color: online(atual) ? "#16a34a" : "var(--muted)" }}>{online(atual) ? "• online" : "• offline"}</span><br /><span style={{ color: "var(--muted)" }}>{atual.email} • {CARGOS[atual.cargo]} • {conta(atual)}</span></div>
+                <div className="text-[12px]"><b className="text-[14px]" data-testid="cliente-atual">{atual.nome}</b> <span style={{ color: online(atual) ? "#16a34a" : "var(--muted)" }}>{online(atual) ? "• online" : "• offline"}</span> {convAtual?.encerradaEm && <span className="chip" style={{ background: "#f1f3f2", color: "#5b6b62", fontSize: "9px" }} data-testid="selo-encerrada-chat">Encerrada por inatividade</span>}<br /><span style={{ color: "var(--muted)" }}>{atual.email} • {CARGOS[atual.cargo]} • {conta(atual)}</span></div>
                 <div className="flex items-center gap-2">
                   {iaSuporteLigada && convAtual && (
                     <>

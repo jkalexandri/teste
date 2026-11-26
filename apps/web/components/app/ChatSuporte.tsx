@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/app/Toast";
 
-type Msg = { id: string; autor: "CLIENTE" | "SUPORTE" | "VISITANTE" | "IA"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
+type Msg = { id: string; autor: "CLIENTE" | "SUPORTE" | "VISITANTE" | "IA" | "SISTEMA"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
 // cliente/suporte: suporte dos clientes (decisão #102). visitante/interessado: chat de quem ainda não é cliente (decisão #104).
 type Modo = "cliente" | "suporte" | "visitante" | "interessado";
 
@@ -77,7 +77,10 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360, preencher =
     <div ref={raiz} className={preencher ? "flex flex-col flex-1 min-h-0" : "flex flex-col"} data-testid="chat-suporte">
       <div className={preencher ? "overflow-y-auto p-3 space-y-2 flex-1 min-h-0" : "overflow-y-auto p-3 space-y-2"} style={{ ...(preencher ? {} : { height: altura }), background: "var(--surface-2, rgba(0,0,0,.03))" }} data-testid="chat-mensagens" ref={lista}>
         {msgs.length === 0 && <p className="text-[12px] text-center mt-6" style={{ color: "var(--muted)" }}>{modo === "cliente" ? "Escreva sua dúvida. O suporte responde por aqui." : modo === "visitante" ? "Escreva sua dúvida sobre os planos." : "Nenhuma mensagem ainda."}</p>}
-        {msgs.map((m) => (
+        {msgs.map((m) => m.autor === "SISTEMA" ? (
+          // Mensagem do sistema (ex.: atendimento encerrado por inatividade — decisão #156): centralizada, sem balão
+          <div key={m.id} className="text-center text-[11px] py-1" style={{ color: "var(--muted)" }} data-testid="msg-sistema">{m.texto}</div>
+        ) : (
           <div key={m.id} className={`flex ${minha(m) ? "justify-end" : "justify-start"}`}>
             <div className="max-w-[82%] rounded-xl px-3 py-2 text-[13px] shadow-sm" data-autor={m.autor}
               style={{ background: minha(m) ? "#dcf8c6" : "var(--surface, #fff)", color: "#13221a" }}>

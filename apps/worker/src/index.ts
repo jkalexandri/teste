@@ -15,6 +15,7 @@ import { AtendenteSuporte } from "./suporte-ia.js";
 import { VigiaIA } from "./vigia-ia.js";
 import { registrarNumerosRepetidos } from "./numero-unico.js";
 import { VigiaChaves } from "./chaves-whatsapp.js";
+import { EncerradorSuporte } from "./encerrar-suporte.js";
 import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
@@ -52,6 +53,8 @@ const interessados = new AtendenteInteressados(log.child({ modulo: "interessados
 const suporteIA = new AtendenteSuporte(log.child({ modulo: "suporte-ia" }), { avisarSuporte: avisarSuperAdmin });
 // Tamanho das chaves do WhatsApp (decisão #155 — B3): resumo semanal e aviso nos Logs do Super Admin; não apaga nada
 const vigiaChaves = new VigiaChaves(log.child({ modulo: "chaves-whatsapp" }));
+// Atendimento do suporte encerrado por inatividade do cliente (10 min — decisão #156)
+const encerradorSuporte = new EncerradorSuporte(log.child({ modulo: "encerrar-suporte" }));
 // Uptime medido para a pílula de status do login (decisão #109)
 const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
 // Vigia do atendimento por IA (decisão #149): avisa o Super Admin quando um dos 4 pontos muda de cor
@@ -64,7 +67,7 @@ const vigiaIA = new VigiaIA(log.child({ modulo: "vigia-ia" }), {
     else if (ponto === "SUPORTE") await suporteIA.religou();
   },
 });
-const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma, suporteIA, vigiaIA);
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma, suporteIA, vigiaIA, encerradorSuporte);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,
@@ -107,6 +110,7 @@ async function iniciar() {
   filaPlataforma.iniciar();
   vigiaIA.iniciar();
   vigiaChaves.iniciar();
+  encerradorSuporte.iniciar();
   disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
@@ -122,6 +126,7 @@ async function desligar(sinal: string) {
   filaPlataforma.parar();
   vigiaIA.parar();
   vigiaChaves.parar();
+  encerradorSuporte.parar();
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);

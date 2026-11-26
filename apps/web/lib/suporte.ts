@@ -8,7 +8,7 @@ export const ONLINE_MS = 2 * 60_000;
 export const MAX_ANEXO_SUPORTE = 15 * 1024 * 1024;
 const TIPOS_ANEXO: Record<string, string> = { "image/jpeg": "imagem", "image/png": "imagem", "application/pdf": "documento" };
 
-export type MsgSuporte = { id: string; autor: "CLIENTE" | "SUPORTE" | "IA"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
+export type MsgSuporte = { id: string; autor: "CLIENTE" | "SUPORTE" | "IA" | "SISTEMA"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
 
 export async function mensagensDaConversa(usuarioId: string, desde?: string | null) {
   const c = await prisma.suporteConversa.findUnique({ where: { usuarioId } });
@@ -34,6 +34,12 @@ export async function gravarMensagem(usuarioId: string, autor: "CLIENTE" | "SUPO
     if (arquivo.size > MAX_ANEXO_SUPORTE) return { ok: false as const, mensagem: "Arquivo muito grande (máximo 15 MB)." };
   }
   const agora = new Date();
+  // Reabre o atendimento encerrado por inatividade (decisão #156): a mensagem do cliente (ou do Super Admin) começa um novo atendimento;
+  // para o cliente a IA volta a atender (sem pausa antiga)
+  await prisma.suporteConversa.updateMany({
+    where: { usuarioId, encerradaEm: { not: null } },
+    data: autor === "CLIENTE" ? { encerradaEm: null, iaPausada: false, iaPausaMotivo: null, ultimoAvisoEm: null } : { encerradaEm: null },
+  });
   const conversa = await prisma.suporteConversa.upsert({
     where: { usuarioId },
     create: { usuarioId, ultimaMensagemEm: agora },

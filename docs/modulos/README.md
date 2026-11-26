@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.46.0 | 27/11/2026 00:30 | 11 Comunicação | Suporte: atendimento encerrado após 10 min de inatividade do cliente (selo "Encerrada", reabre ao escrever; nunca encerra com o cliente esperando o atendente) (#156) | 9 Interessados (Atendimento) | não |
 | v1.45.4 | 26/11/2026 23:59 | 4 WhatsApp (conexão) | Revisão concluída (B1–B5): tela só consulta com a aba visível; "Conectado desde" mantém a data e mostra "Última reconexão"; chaves do WhatsApp medidas por semana; guardar o login com 3 tentativas; intervalo mínimo no Conectar/Tentar agora (#155) | 10 Relatórios e painéis (Logs) | **sim** |
 | v1.45.3 | 26/11/2026 23:00 | 4 WhatsApp (conexão) | Porteiro das aberturas automáticas (2 por vez, 1,5 s entre elas), ordem plataforma → campanha em andamento → demais, variação de ±25% no intervalo e serviço que sobe na hora (M5) | 12 Operação (VPS) | não |
 | v1.45.2 | 26/11/2026 22:00 | 4 WhatsApp (conexão) | Logs: uma linha por queda na volta (hora, motivo com código, tempo fora, tentativas), linhas extras aos 3 min e 2 h, e "reconectado depois do reinício do serviço" separado (M4) | 10 Relatórios e painéis (Logs) | não |

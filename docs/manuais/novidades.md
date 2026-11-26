@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.0 — atendimento do suporte encerrado por inatividade (26/11/2026)
+
+- Se, depois da resposta do suporte (ou da IA), o **cliente ficar 10 minutos sem escrever**, o atendimento é **encerrado** automaticamente, com a mensagem
+  "Atendimento encerrado por inatividade. Se precisar, é só escrever de novo." No **Atendimento** (Super Admin) a conversa ganha o selo **"Encerrada"**; o histórico continua lá.
+- Se o cliente escrever de novo, o atendimento **reabre sozinho** e a IA volta a atender (se estiver ligada).
+- **Nunca** encerra enquanto o cliente espera o atendente. Conversas antigas não são encerradas em massa na atualização.
+
 ## v1.45.4 — ajustes finais do WhatsApp; Módulo 4 revisado (26/11/2026)
 
 - A tela do **WhatsApp** só atualiza sozinha com a aba **visível** (economiza o servidor) e atualiza na hora quando você volta para ela.

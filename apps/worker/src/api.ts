@@ -41,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, vigiaIA?: { verificar(): Promise<unknown> }) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, vigiaIA?: { verificar(): Promise<unknown> }, encerradorSuporte?: { verificar(): Promise<number> }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -159,6 +159,12 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (!vigiaIA) return res.code(503).send({ ok: false, mensagem: "Vigia indisponível." });
     await vigiaIA.verificar();
     return { ok: true, mensagem: "Conferido." };
+  });
+
+  // Atendimento do suporte encerrado por inatividade (decisão #156): confere já (o relógio do serviço confere a cada minuto; usado nos testes)
+  app.post("/suporte/encerrar-inativos", async (_req, res) => {
+    if (!encerradorSuporte) return res.code(503).send({ ok: false, mensagem: "Indisponível." });
+    return { ok: true, mensagem: "Conferido.", encerrados: await encerradorSuporte.verificar() };
   });
 
   // Teste da tela Empresa | IA (decisão #148): o que a IA do suporte responderia a esta pergunta

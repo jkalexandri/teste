@@ -830,6 +830,8 @@ model SuporteConversa {
   iaPausaMotivo    String?
   /// Último aviso ao Super Admin enquanto a IA atendia (no máximo 1 a cada 30 min)
   ultimoAvisoEm    DateTime?
+  /// Atendimento encerrado por inatividade do cliente (decisão #156); a próxima mensagem do cliente (ou do Super Admin) reabre
+  encerradaEm      DateTime?
   /// O Super Admin chamou o cliente: o chat abre sozinho na tela dele
   chamadoEm        DateTime?
   mensagens        SuporteMensagem[]
