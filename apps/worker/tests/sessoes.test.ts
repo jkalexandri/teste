@@ -224,3 +224,33 @@ test("aquecimento por chip: o mesmo chip mantém a idade; chip diferente ou sem 
   assert.ok(await ate(async () => (await idade()) > Date.now() - 60_000), "sem como comparar: recomeça");
   await prisma.log.deleteMany({ where: { texto: { contains: "aquecimento recomeça" } } });
 });
+
+test("aviso de queda (decisão #142): ao voltar chama o aviso 'voltou' e limpa as marcas; desconexão de vez avisa na hora com o motivo", async () => {
+  const voltas: string[] = [];
+  const desconexoes: string[] = [];
+  g.aoVoltar = async (s) => { voltas.push(s.id); };
+  g.aoDesconectarDeVez = async (s, motivo) => { desconexoes.push(`${s.id}|${motivo}`); };
+  await g.conectar(ID);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  sockets[0]!.cair(428); assert.ok(await ate(async () => (await status()) === "RECONECTANDO"));
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { creds: "v1:x:y:z", avisoQuedaEm: new Date(), avisoProblemaEm: new Date() } }); // com login salvo, como em produção
+  await g.conectar(ID); // tentar agora
+  sockets[1]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  assert.ok(await ate(() => voltas.length === 1), "avisou que voltou");
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.avisoQuedaEm, null); assert.equal(s.avisoProblemaEm, null);
+  // Queda comum que volta sem ter avisado: não chama "voltou"
+  sockets[1]!.cair(428); assert.ok(await ate(async () => (await status()) === "RECONECTANDO"));
+  await g.conectar(ID); sockets[2]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await espera(100);
+  assert.equal(voltas.length, 1, "queda sem aviso não gera 'voltou'");
+  // Desconectado pelo celular (401): avisa na hora
+  sockets[2]!.cair(401);
+  assert.ok(await ate(() => desconexoes.length === 1));
+  assert.match(desconexoes[0]!, /^tst-ses-1\|O WhatsApp foi desconectado pelo celular/);
+  // Cancelar pelo usuário NÃO avisa
+  await g.conectar(ID); sockets[3]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await g.desconectar(ID);
+  await espera(100);
+  assert.equal(desconexoes.length, 1);
+});

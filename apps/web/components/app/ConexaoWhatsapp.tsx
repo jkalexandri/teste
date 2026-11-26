@@ -69,7 +69,9 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
     await atualizar();
   }
 
-  const chip = CHIP[estado.status];
+  // Fora há mais de 2 h (decisão #142): selo vermelho "Com problema"
+  const comProblema = estado.status === "RECONECTANDO" && !!estado.quedaEm && agora - new Date(estado.quedaEm).getTime() >= 2 * 60 * 60_000;
+  const chip = comProblema ? { texto: "Com problema", estilo: { background: "#ffeef0", color: "#9e1d2f" } as React.CSSProperties } : CHIP[estado.status];
   const conectado = estado.status === "CONECTADO";
   const emAndamento = estado.status === "CONECTANDO" || estado.status === "AGUARDANDO_QR";
   const reconectando = estado.status === "RECONECTANDO";
@@ -130,6 +132,11 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
               {(estado.tentativaReconexao ?? 0) > 0 ? `Tentativa ${estado.tentativaReconexao} — ` : ""}
               {faltam > 0 ? `próxima em ${faltam >= 60 ? `${Math.ceil(faltam / 60)} min` : `${faltam} s`}.` : "tentando agora…"}
             </p>
+            {comProblema && (
+              <p className="mt-0.5 font-bold" style={{ color: "#9e1d2f" }} data-testid="com-problema">
+                Está fora há mais de 2 horas. Toque em Tentar agora; se não voltar, confira o celular (internet ligada e WhatsApp aberto).
+              </p>
+            )}
             <p className="mt-0.5" style={{ color: "var(--muted)" }}>
               Não precisa ler o QR Code: o login continua salvo. Campanhas e respostas da IA esperam e continuam quando voltar.
             </p>

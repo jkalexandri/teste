@@ -47,6 +47,18 @@ export class Avisador {
     for (const d of destinos) await this.entregar(d.u, d.texto);
   }
 
+  /** Aviso do sistema sobre o número do dono (decisão #142): sempre ligado e na hora (sem resumo).
+   *  Vai para o dono e, com "[Nome]", para os Admins da Empresa dele. */
+  async avisarSempre(donoId: string, texto: string) {
+    const dono = await prisma.usuario.findUnique({ where: { id: donoId } });
+    if (!dono || dono.status !== "ATIVO") return;
+    if (dono.cargo !== Cargo.ADMIN_EMPRESA) await this.enviar(dono, texto);
+    if (dono.empresaId && dono.cargo === Cargo.USUARIO) {
+      const admins = await prisma.usuario.findMany({ where: { empresaId: dono.empresaId, cargo: Cargo.ADMIN_EMPRESA, status: "ATIVO" } });
+      for (const a of admins) await this.enviar(a, `[${dono.nome}] ${texto}`);
+    }
+  }
+
   private async entregar(u: Destino & { ultimoAvisoEm: Date | null }, texto: string) {
     const agora = this.agora();
     const pendentes = await prisma.avisoPendente.count({ where: { usuarioId: u.id } });

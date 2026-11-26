@@ -72,15 +72,9 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
 3. Se der problema: `bash /opt/filapro/app/deploy/voltar-versao.sh`.
 
 ### >>> ONDE PARAMOS (26/11/2026) — ler primeiro ao continuar
-- Versão no GitHub: v1.41.11. Revisão do **Módulo 4 (WhatsApp)**: feitas C1, C2, A1, A2, A3, A4, A5 e M5 (decisões #130–#141).
-- **Aguardando o dono:** respostas (a), (b), (c) e "pode implementar" da **prévia da A6** (aviso de número caído), que já foi mostrada:
-  - 3 min fora (ainda "Reconectando") → aviso: "⚠️ FilaPro Leads: seu WhatsApp "<nome>" caiu às HH:MM e ainda não voltou. O sistema continua tentando sozinho; campanhas e respostas da IA esperam."
-  - voltou (depois de ter avisado) → "✅ FilaPro Leads: seu WhatsApp "<nome>" voltou às HH:MM (ficou N min fora)."
-  - 2 h fora → selo vermelho **"Com problema"** na tela WhatsApp + "🔴 FilaPro Leads: seu WhatsApp "<nome>" está fora há 2 horas. Abra FilaPro Leads → WhatsApp e toque em Tentar agora. Se não voltar, confira o celular (internet ligada e WhatsApp aberto)."
-  - Quedas < 3 min não avisam; cada aviso uma vez por queda (gravado no banco, não repete após reinício); continua tentando a cada 5 min; número da plataforma fica de fora (é a A7). Canal: o mesmo do `Avisador` (notificação no celular + WhatsApp pelo número da plataforma no número de avisos).
-  - Perguntas: **(a)** avisar NA HORA quando desconecta de vez (pelo celular 401, bloqueado 403, aberto em outro lugar 440, sessão inválida) com o motivo e o que fazer? sugestão sim. **(b)** Admin da Empresa recebe cópia "[Nome] …"? sugestão sim. **(c)** avisos sempre ligados (sem opção na tela Avisos)? sugestão sim.
-  - Plano: campos "avisou da queda"/"avisou do problema" em `WhatsappSessao` (migração); verificador a cada 30 s no serviço 24/7; selo "Com problema" (RECONECTANDO com `quedaEm` > 2 h) no `ConexaoWhatsapp.tsx`; testes vigia; decisão **#142**, versão **v1.41.12**, quadro dos módulos.
-- Depois da A6: **A7** (número da plataforma: limite/cadência de envio e alerta de queda ao Super Admin); depois médias M1–M4, M6, M7 e baixas B1–B6 do relatório da auditoria (resumo na decisão #130); então marcar o Módulo 4 como 🟢 Revisado.
+- Versão no GitHub: v1.41.12. Revisão do **Módulo 4 (WhatsApp)**: feitas C1, C2, A1–A6 e M5 (decisões #130–#142).
+- **A6 FEITA** (decisão #142): aviso de número caído (3 min, na volta, 2 h "Com problema", desconexão de vez com o motivo; cópia ao Admin; sempre ligado). Código em `apps/worker/src/aviso-queda.ts`; teste `tests/aviso-queda.test.ts` + 1 em `sessoes.test.ts`. Falta o dono atualizar a VPS (`atualizar.sh`) e conferir com uma queda real.
+- Próxima: **A7** (número da plataforma: limite/cadência de envio e alerta de queda ao Super Admin); depois médias M1–M4, M6, M7 e baixas B1–B6 do relatório da auditoria (resumo na decisão #130); então marcar o Módulo 4 como 🟢 Revisado.
 - Na fila: Módulo 6 (Campanhas, decisão #128, passos 2–6: salvamento automático com prévia aprovada, painel "Adicionar leads", Cancelar campanha…); Módulo 9 (decisão #135); Módulo 2 (bloqueado/vencido com WhatsApp e IA; excluir usuário apaga campanhas); lembrar o "Enviar teste para meu número" na Prévia da campanha.
 - Ambiente de teste: o banco de teste para entre as conversas — antes dos testes, subir Postgres (porta 5433, socket /var/tmp), site (porta 3005) e serviço 24/7 (`DISPAROS=desligado`), como na seção "Ambiente de teste" abaixo. `etapa6` precisa da porta 4000 livre; `etapa8b` precisa do serviço com disparos ligados.
 

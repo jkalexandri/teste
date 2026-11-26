@@ -47,6 +47,10 @@ export class GerenciadorSessoes implements Remetente {
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
   /** WhatsApp conectou (etapa 10b): atende quem ficou esperando enquanto estava desconectado. */
   aoConectar: ((sessaoId: string) => Promise<void>) | null = null;
+  /** Número voltou depois de uma queda (decisão #142): recebe o estado de ANTES de limpar as marcas. */
+  aoVoltar: ((s: { id: string; usuarioId: string | null; apelido: string; numero: string | null; quedaEm: Date | null; avisoQuedaEm: Date | null }) => Promise<void>) | null = null;
+  /** Número desconectou de vez, sem pedido do usuário (decisão #142): avisa na hora, com o motivo. */
+  aoDesconectarDeVez: ((s: { id: string; usuarioId: string | null; apelido: string; numero: string | null }, motivo: string) => Promise<void>) | null = null;
 
   constructor(private chave: Buffer, private log: Logger, private opcoes: OpcoesSessoes = {}) {
     this.versao = opcoes.versao;
@@ -136,7 +140,7 @@ export class GerenciadorSessoes implements Remetente {
         create: { id, usuarioId: usuarioId ?? null, status: StatusWhatsapp.CONECTANDO },
         update: reconexao
           ? { status: StatusWhatsapp.RECONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: antes?.quedaEm ?? new Date(), proximaTentativaEm: null }
-          : { status: StatusWhatsapp.CONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null },
+          : { status: StatusWhatsapp.CONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null },
       });
       await this.abrirSocket(id, 0);
     });
@@ -232,9 +236,12 @@ export class GerenciadorSessoes implements Remetente {
         // Número sem dono (decisão #138): conectou só para sair do WhatsApp — some de "Dispositivos conectados" do celular
         if (this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
         conexao.tentativas = 0;
-        await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
+        // Estado de antes de limpar as marcas: se avisou da queda, avisa que voltou (decisão #142)
+        const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true, quedaEm: true, avisoQuedaEm: true } });
+        await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
         // Aquecimento por CHIP (decisões #64 e #141): a idade é do telefone conectado, não do espaço.
         await this.conferirAquecimento(id, numeroDoJid(sock.user?.id));
+        if (antes?.avisoQuedaEm) void this.aoVoltar?.({ ...antes, numero: numeroDoJid(sock.user?.id) ?? antes.numero }).catch((e) => this.log.error({ e, id }, "falha ao avisar que voltou"));
         void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
         void registrarLogSessao(id, `WhatsApp conectado (+${numeroDoJid(sock.user?.id) ?? ""})`);
         this.log.info({ id }, "WhatsApp conectado");
@@ -251,9 +258,12 @@ export class GerenciadorSessoes implements Remetente {
     // Número sem dono que nem chegou a conectar (ex.: já saiu pelo celular): só apaga (decisão #138)
     if (this.paraSair.has(id) && d.acao === "encerrar") { void this.encerrarSemDono(id); return; }
     if (d.acao === "encerrar") {
+      // Avisa na hora só quem já estava conectado (decisão #142); QR expirado de quem ainda conectava não avisa
+      const antes = pareado ? await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true } }) : null;
       if (d.apagarLogin) await (this.opcoes.apagarAuth ?? apagarAuth)(id);
-      await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
+      await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
       void registrarLogSessao(id, `WhatsApp desconectado${d.erro ? `: ${d.erro}` : ""}`);
+      if (antes) void this.aoDesconectarDeVez?.(antes, d.erro).catch((e) => this.log.error({ e, id }, "falha ao avisar a desconexão"));
       return;
     }
     await gravacoes();
@@ -311,7 +321,7 @@ export class GerenciadorSessoes implements Remetente {
         await c.sock.logout().catch(() => c.sock.end(undefined));
       }
       await (this.opcoes.apagarAuth ?? apagarAuth)(id);
-      await prisma.whatsappSessao.updateMany({ where: { id }, data: { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null } });
+      await prisma.whatsappSessao.updateMany({ where: { id }, data: { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null } });
       esquecerDono(id); // o próximo aviso deste número busca o dono de novo no banco
     });
   }

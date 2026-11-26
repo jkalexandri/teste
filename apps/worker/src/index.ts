@@ -9,6 +9,7 @@ import { MotorDisparos } from "./disparos.js";
 import { Aprendizado } from "./aprender.js";
 import { Atendente } from "./conversas.js";
 import { Avisador } from "./avisos.js";
+import { AvisoQueda } from "./aviso-queda.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
 import { enviarPush } from "./push.js";
@@ -50,6 +51,10 @@ sessoes.aoReceber = async (sessaoId, telefone, texto, extra) => {
   await motor.registrarResposta(dono, telefone, texto);
   await atendente.receber(sessaoId, dono, telefone, extra);
 };
+// Aviso de número caído (decisão #142): 3 min fora, na volta, 2 h fora e desconexão de vez
+const avisoQueda = new AvisoQueda(log.child({ modulo: "aviso-queda" }), (donoId, texto) => avisador.avisarSempre(donoId, texto));
+sessoes.aoVoltar = (s) => avisoQueda.voltou(s);
+sessoes.aoDesconectarDeVez = (s, motivo) => avisoQueda.desconectou(s, motivo);
 sessoes.aoConectar = async (sessaoId) => {
   const dono = await donoDaSessao(sessaoId);
   if (dono) await atendente.aoConectar(dono);
@@ -67,6 +72,7 @@ async function iniciar() {
   await sessoes.iniciarTodas();
   atendente.iniciar();
   avisador.iniciar();
+  avisoQueda.iniciar();
   disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
@@ -78,6 +84,7 @@ async function desligar(sinal: string) {
   motor.parar();
   atendente.parar();
   avisador.parar();
+  avisoQueda.parar();
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);

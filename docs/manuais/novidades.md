@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.12 — aviso quando seu WhatsApp cai (26/11/2026)
+
+- Se o seu WhatsApp ficar **3 minutos** fora, você recebe um aviso (no celular e no WhatsApp de avisos). Quando voltar,
+  avisamos de novo, dizendo quanto tempo ficou fora. Quedas mais curtas não geram aviso.
+- Se ficar **2 horas** fora, a tela WhatsApp mostra o selo vermelho **"Com problema"** e você recebe um aviso com o que fazer.
+- Se o WhatsApp for **desconectado de vez** (pelo celular, bloqueio ou aberto em outro lugar), o aviso sai na hora, com o motivo.
+- O Admin da Empresa recebe uma cópia dos avisos dos usuários dele. Estes avisos ficam sempre ligados.
+
 ## v1.41.11 — chip novo começa devagar (26/11/2026)
 
 - Se você trocar o chip de um dos seus WhatsApps, o número novo **recomeça o aquecimento** (20 envios por dia nos

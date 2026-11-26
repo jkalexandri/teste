@@ -367,6 +367,9 @@ model WhatsappSessao {
   quedaEm            DateTime?
   tentativaReconexao Int       @default(0)
   proximaTentativaEm DateTime?
+  /// Aviso de número caído (decisão #142): quando avisou da queda (3 min) e do problema (2 h). Um aviso de cada por queda.
+  avisoQuedaEm       DateTime?
+  avisoProblemaEm    DateTime?
   atualizadoEm  DateTime       @updatedAt
   chaves        WhatsappChave[]
 
