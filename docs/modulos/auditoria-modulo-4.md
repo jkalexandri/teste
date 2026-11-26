@@ -31,7 +31,7 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
   conectar o número de outra pessoa.
 - **Onde:** `apps/worker/src/sessoes.ts` (evento `open`).
 
-### M4 — A tela Logs não registra as quedas, e cada reconexão vira "conectado"
+### M4 — A tela Logs não registra as quedas, e cada reconexão vira "conectado" — ✅ FEITA na v1.45.2 (decisão #153)
 - **O problema:** `aoFechar` só escreve nos Logs quando encerra de vez. Uma queda comum que volta gera apenas "WhatsApp conectado"
   de novo, sem dizer que caiu, por quê (código) nem quanto tempo ficou fora; e quedas repetidas enchem os Logs de "conectado".
 - **Onde:** `apps/worker/src/sessoes.ts` (`aoFechar`, `registrarLogSessao`).
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → ~~M4~~ (feita) → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.

@@ -16,7 +16,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.44.0 — 26/11/2026 18:30 (semáforo e chaves da IA em 4 pontos) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
-| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.45.1 — 26/11/2026 21:00 (mesmo número só em um espaço: M3) |
+| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.45.2 — 26/11/2026 22:00 (Logs contam as quedas: M4) |
 | 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
 | 6 | Campanhas e envio | 🟡 Em revisão | auditoria em 25/11/2026 (hora não registrada) | v1.41.0 | v1.41.1 — 25/11/2026 12:02 (trava contra disparo duplicado) |
 | 7 | IA de mensagens | 🔴 Sem revisão | nunca | — | v1.38.0 — 24/11/2026 18:52 (Texto sugestão no Como qualificar) |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.45.2 | 26/11/2026 22:00 | 4 WhatsApp (conexão) | Logs: uma linha por queda na volta (hora, motivo com código, tempo fora, tentativas), linhas extras aos 3 min e 2 h, e "reconectado depois do reinício do serviço" separado (M4) | 10 Relatórios e painéis (Logs) | não |
 | v1.45.1 | 26/11/2026 21:00 | 4 WhatsApp (conexão) | Número já conectado em outro espaço: a conexão nova é recusada (a antiga segue); números já repetidos só nos Logs do Super Admin (M3) | 2 Contas e usuários, 10 Relatórios e painéis (Logs) | não |
 | v1.45.0 | 26/11/2026 20:00 | 4 WhatsApp (conexão) | Serviço 24/7 fora do ar: selo "Serviço fora do ar" na tela (botões e QR desativados) e e-mail ao Super Admin (3 min sem sinal e na volta), vigia a cada 5 min na VPS (M2) | 12 Operação (VPS) | não |
 | v1.44.1 | 26/11/2026 19:10 | 12 Operação (VPS) | `atualizar.sh` e `voltar-versao.sh`: apagam os tipos velhos antes do build; tentativa repetida mantém o ponto de volta e o backup da 1ª (#150) | — | não |

@@ -7,9 +7,10 @@ import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
 import { numeroDoJid, paraJid } from "./numero.js";
-import { decidirQueda, motivoDaFalha } from "./queda.js";
+import { decidirQueda, descreverQueda, motivoDaFalha } from "./queda.js";
 import { esquecerDono } from "./numeros.js";
 import { reservarNumero, type Conflito } from "./numero-unico.js";
+import { registrarLogSessao, textoVolta } from "./log-sessao.js";
 import type { Conteudo, Remetente } from "./disparos.js";
 
 /** Id fixo da sessão do número da plataforma (decisão #51). */
@@ -48,6 +49,10 @@ export class GerenciadorSessoes implements Remetente {
   /** Números que estão lendo o QR agora (decisão #152): ao abrir, é um pareamento NOVO e o número não pode estar em outro espaço.
    *  Fica entre as conexões (o WhatsApp reinicia a conexão depois da leitura). Reconexão de login salvo nunca entra aqui. */
   private pareando = new Set<string>();
+  /** Última queda de cada número (decisão #153 — M4): o motivo e a hora, para a linha dos Logs quando ele voltar */
+  private ultimaQueda = new Map<string, { codigo: number; em: Date }>();
+  /** Números reconectados por causa do reinício do serviço (decisão #153): a volta não é uma queda e o Log diz isso */
+  private aposReinicio = new Set<string>();
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
@@ -102,6 +107,7 @@ export class GerenciadorSessoes implements Remetente {
         this.log.warn({ id: s.id }, "número bloqueado com login salvo: será desconectado");
         await this.sairDoWhatsapp(s.id, "manter");
       } else {
+        this.aposReinicio.add(s.id);
         await this.conectar(s.id).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
       }
     }
@@ -295,6 +301,7 @@ export class GerenciadorSessoes implements Remetente {
         if (u.connection === "open") {
           // Número sem dono (decisão #138): conectou só para sair do WhatsApp — some de "Dispositivos conectados" do celular
           if (this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
+          const tentativasAteVoltar = conexao.tentativas;
           // Pareamento novo (acabou de ler o QR): o número não pode estar em outro espaço (decisão #152 — M3)
           if (this.pareando.delete(id)) {
             const numeroNovo = numeroDoJid(sock.user?.id);
@@ -309,9 +316,16 @@ export class GerenciadorSessoes implements Remetente {
           await this.conferirAquecimento(id, numeroDoJid(sock.user?.id));
           if (antes?.avisoQuedaEm) void this.aoVoltar?.({ ...antes, numero: numeroDoJid(sock.user?.id) ?? antes.numero }).catch((e) => this.log.error({ e, id }, "falha ao avisar que voltou"));
           void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
-          const falhou = this.falhas.get(id);
+          // Linha dos Logs (decisão #153 — M4): reinício do serviço, volta de queda (uma linha com motivo, tempo e tentativas)
+          // ou primeira conexão ("conectado")
+          const falhou = this.falhas.get(id) ?? 0;
           this.falhas.delete(id);
-          void registrarLogSessao(id, falhou ? `WhatsApp voltou depois de ${falhou} ${falhou === 1 ? "tentativa" : "tentativas"} com falha (+${numeroDoJid(sock.user?.id) ?? ""})` : `WhatsApp conectado (+${numeroDoJid(sock.user?.id) ?? ""})`);
+          const numeroAgora = numeroDoJid(sock.user?.id) ?? "";
+          const queda = this.ultimaQueda.get(id);
+          this.ultimaQueda.delete(id);
+          if (this.aposReinicio.delete(id)) void registrarLogSessao(id, `WhatsApp reconectado depois do reinício do serviço (+${numeroAgora})`);
+          else if (queda) void registrarLogSessao(id, textoVolta({ voltouEm: new Date(), caiuEm: queda.em, motivo: descreverQueda(queda.codigo), tentativas: tentativasAteVoltar, falhasAoAbrir: falhou }));
+          else void registrarLogSessao(id, `WhatsApp conectado (+${numeroAgora})`);
           this.log.info({ id }, "WhatsApp conectado");
         }
       } catch (e) {
@@ -333,6 +347,7 @@ export class GerenciadorSessoes implements Remetente {
       // Avisa na hora só quem já estava conectado (decisão #142); QR expirado de quem ainda conectava não avisa
       const antes = pareado ? await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true } }) : null;
       this.pareando.delete(id);
+      this.ultimaQueda.delete(id);
       if (d.apagarLogin) await (this.opcoes.apagarAuth ?? apagarAuth)(id);
       await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
       void registrarLogSessao(id, `WhatsApp desconectado${d.erro ? `: ${d.erro}` : ""}`);
@@ -343,6 +358,7 @@ export class GerenciadorSessoes implements Remetente {
     if (pareado && d.esperaMs > 0) {
       // Queda comum com login salvo: a tela mostra quando caiu, a tentativa e a próxima (decisão #139)
       const agora = new Date();
+      if (conexao.tentativas === 0) this.ultimaQueda.set(id, { codigo, em: agora }); // para a linha dos Logs na volta (decisão #153)
       await this.gravar(id, {
         status: StatusWhatsapp.RECONECTANDO, qr: null, qrEm: null, erro: null,
         ...(conexao.tentativas === 0 ? { quedaEm: agora } : {}),
@@ -397,6 +413,8 @@ export class GerenciadorSessoes implements Remetente {
       this.pararRelogio(id);
       this.falhas.delete(id);
       this.pareando.delete(id);
+      this.ultimaQueda.delete(id);
+      this.aposReinicio.delete(id);
       this.geracoes.set(id, (this.geracoes.get(id) ?? 0) + 1);
       const c = this.conexoes.get(id);
       if (c) {
@@ -476,15 +494,4 @@ export class GerenciadorSessoes implements Remetente {
     }
     this.conexoes.clear();
   }
-}
-
-/** Tela Logs (decisão #99): conexões e quedas do WhatsApp, na conta do dono do número. */
-async function registrarLogSessao(sessaoId: string, texto: string) {
-  try {
-    const s = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId }, include: { usuario: { select: { id: true, nome: true, email: true, empresaId: true } } } });
-    const u = s?.usuario;
-    await prisma.log.create({
-      data: { empresaId: u?.empresaId ?? null, usuarioId: u?.id ?? null, quem: u ? `${u.nome} (${u.email})` : "Número da plataforma", tipo: "WHATSAPP", texto: sessaoId === "plataforma" ? `Número da plataforma: ${texto}` : texto },
-    });
-  } catch { /* o log nunca interrompe a conexão */ }
 }

@@ -9,6 +9,7 @@
 import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { SESSAO_PLATAFORMA } from "./sessoes.js";
+import { registrarLogSessao, textoProblema, textoQuedaLonga } from "./log-sessao.js";
 
 export const AVISO_QUEDA_MS = 3 * 60_000;
 export const AVISO_PROBLEMA_MS = 2 * 60 * 60_000;
@@ -74,6 +75,7 @@ export class AvisoQueda {
       // 2 h fora: o aviso de problema já diz tudo; a marca da queda também é gravada (o "voltou" sai depois)
       if (fora >= AVISO_PROBLEMA_MS && !s.avisoProblemaEm) {
         if (!(await this.marcar(s.id, { avisoProblemaEm: null }, { avisoProblemaEm: agora, avisoQuedaEm: s.avisoQuedaEm ?? agora }))) continue;
+        void registrarLogSessao(s.id, textoProblema(s.quedaEm!)); // também nos Logs (decisão #153 — M4)
         await this.avisar(s, plataforma(s)
           ? `🔴 FilaPro Leads: o ${nome} está fora há 2 horas. Pedidos, renovações e avisos ficam na fila e expiram em 6 h. Abra Número da plataforma e toque em Tentar agora; se não voltar, confira o celular dele.`
           : `🔴 FilaPro Leads: seu WhatsApp "${nome}" está fora há 2 horas. Abra FilaPro Leads → WhatsApp e toque em Tentar agora. Se não voltar, confira o celular (internet ligada e WhatsApp aberto).`);
@@ -81,6 +83,7 @@ export class AvisoQueda {
       }
       if (!s.avisoQuedaEm && fora < AVISO_PROBLEMA_MS) {
         if (!(await this.marcar(s.id, { avisoQuedaEm: null }, { avisoQuedaEm: agora }))) continue;
+        void registrarLogSessao(s.id, textoQuedaLonga(s.quedaEm!)); // também nos Logs (decisão #153 — M4)
         await this.avisar(s, plataforma(s)
           ? `⚠️ FilaPro Leads: o ${nome} caiu às ${horaBrasilia(s.quedaEm!)} e ainda não voltou. O sistema continua tentando sozinho; os avisos ficam na fila e saem quando voltar.`
           : `⚠️ FilaPro Leads: seu WhatsApp "${nome}" caiu às ${horaBrasilia(s.quedaEm!)} e ainda não voltou. O sistema continua tentando sozinho; campanhas e respostas da IA esperam.`);

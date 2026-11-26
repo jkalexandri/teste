@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.45.2 — Logs mostram as quedas do WhatsApp (26/11/2026)
+
+- Na tela **Logs** (tipo WhatsApp), cada queda agora vira **uma linha**: quando voltou, quando e por que caiu (com o código), quanto tempo ficou fora e quantas tentativas foram.
+- Quedas longas geram uma linha extra aos **3 minutos** ("ainda não voltou") e às **2 horas** ("está com problema").
+- Quando o serviço é reiniciado, a linha diz **"reconectado depois do reinício do serviço"**, separada de uma queda. "WhatsApp conectado" passa a valer só para a primeira conexão.
+
 ## v1.45.1 — o mesmo número só em um WhatsApp (26/11/2026)
 
 - Um número de WhatsApp agora só pode estar conectado em **um** lugar. Se você ler o QR Code de um chip que já está em outro dos seus WhatsApps (ou em outra conta),

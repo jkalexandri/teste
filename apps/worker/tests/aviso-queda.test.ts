@@ -114,3 +114,19 @@ test("textos auxiliares", () => {
   assert.equal(nomeDoNumero({ id: "u", usuarioId: "u", apelido: "", numero: null }), "principal");
   assert.equal(nomeDoNumero({ id: "x", usuarioId: "u", apelido: "", numero: null }), "extra");
 });
+
+test("M4: a queda longa também vai para os Logs aos 3 min e às 2 h, uma vez cada (decisão #153)", async () => {
+  const inicio = new Date();
+  await cair(3);
+  await aq.verificar(); await aq.verificar();
+  /** Os Logs são gravados em segundo plano: espera até aparecer (no máximo 2 s) */
+  const logs = async (trecho: string) => { for (let i = 0; i < 100; i++) { const r = await prisma.log.findMany({ where: { tipo: "WHATSAPP", usuarioId: donoId, criadoEm: { gte: inicio }, texto: { contains: trecho } } }); if (r.length) { await new Promise((x) => setTimeout(x, 100)); return prisma.log.findMany({ where: { tipo: "WHATSAPP", usuarioId: donoId, criadoEm: { gte: inicio }, texto: { contains: trecho } } }); } await new Promise((x) => setTimeout(x, 20)); } return []; };
+  const l3 = await logs("ainda não voltou (3 min sem conexão)");
+  assert.equal(l3.length, 1);
+  assert.match(l3[0]!.texto, /^WhatsApp caiu às \d\d:\d\d e ainda não voltou \(3 min sem conexão\)$/);
+  agora = new Date(agora.getTime() + 117 * MIN); await aq.verificar(); await aq.verificar();
+  const l2 = await logs("está com problema");
+  assert.equal(l2.length, 1);
+  assert.match(l2[0]!.texto, /^WhatsApp está com problema: fora desde \d\d:\d\d \(2 h sem conexão\)$/);
+  await prisma.log.deleteMany({ where: { usuarioId: donoId, criadoEm: { gte: inicio } } });
+});

@@ -62,3 +62,17 @@ export function motivoDaFalha(e: unknown): string {
   if (/^P10\d\d$/.test(codigo) || /PrismaClientInitializationError/.test(nome) || /Can't reach database|ECONNREFUSED|ECONNRESET|Connection terminated|timed out fetching a new connection/i.test(msg)) return "Banco de dados indisponível.";
   return "Falha ao abrir a conexão.";
 }
+
+/**
+ * Motivo da queda para a tela Logs (decisão #153 — M4): texto em português com o código entre parênteses (ajuda o suporte).
+ * Códigos do WhatsApp: 428 conexão fechada, 408 conexão perdida/tempo esgotado, 503 serviço indisponível, 500 sessão ruim.
+ */
+export function descreverQueda(codigo: number): string {
+  const texto =
+    codigo === DisconnectReason.connectionClosed ? "conexão perdida"
+    : codigo === DisconnectReason.connectionLost ? "conexão perdida (tempo esgotado)"
+    : codigo === DisconnectReason.unavailableService ? "WhatsApp indisponível"
+    : codigo === DisconnectReason.badSession ? "sessão inválida"
+    : "motivo não informado";
+  return codigo ? `${texto} (código ${codigo})` : `${texto} (sem código)`;
+}

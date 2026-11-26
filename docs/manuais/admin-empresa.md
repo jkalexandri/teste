@@ -100,6 +100,8 @@ Menu **Logs**: o histórico dos últimos 90 dias da empresa — entradas no sist
 alterados, leads cadastrados ou alterados, campanhas iniciadas, pausadas ou canceladas, e WhatsApp conectado ou desconectado.
 Filtre por usuário, tipo e período.
 
+No tipo **WhatsApp**, cada queda de um número vira uma linha (quando voltou, quando e por que caiu, quanto ficou fora e as tentativas); quedas longas ganham uma linha extra aos 3 minutos e às 2 horas, e o reinício do serviço aparece como "reconectado depois do reinício do serviço".
+
 ![Logs](prints/a-logs.png)
 
 ## Suporte e mensagens do FilaPro Leads

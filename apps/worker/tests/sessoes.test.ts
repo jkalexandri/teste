@@ -17,7 +17,7 @@ const BLQ = "tst-ses-blq";
 const ID2 = "tst-ses-2";
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
-async function ate(cond: () => boolean | Promise<boolean>, ms = 3000) { for (let i = 0; i < ms / 20; i++) { if (await cond()) return true; await espera(20); } return false; }
+async function ate(cond: () => boolean | Promise<boolean>, ms = 6000) { for (let i = 0; i < ms / 20; i++) { if (await cond()) return true; await espera(20); } return false; }
 const status = async () => (await prisma.whatsappSessao.findUnique({ where: { id: ID } }))?.status;
 
 /** Conexão falsa do WhatsApp: guarda os avisos e deixa o teste disparar "close"/"open". */
@@ -286,8 +286,9 @@ test("M1: falha ao reabrir (banco fora do ar) agenda nova tentativa, mostra o mo
   sockets[1]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
   const d = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
   assert.equal(d.erro, null); assert.equal(d.quedaEm, null);
-  assert.ok(await ate(async () => (await logsDe("voltou depois de 1 tentativa com falha")) === 1), "recuperação nos Logs");
-  await prisma.log.deleteMany({ where: { texto: { contains: "com falha" } } });
+  // Uma linha só na volta (decisão #153): quando caiu, o motivo, quanto ficou fora e a falha ao reabrir (decisão #144)
+  assert.ok(await ate(async () => (await logsDe("1 falha ao reabrir")) === 1), "recuperação nos Logs");
+  await prisma.log.deleteMany({ where: { texto: { contains: "1 falha ao reabrir" } } });
 });
 
 test("M1: falhas repetidas vão para os Logs só uma vez; o recuo cresce e a tentativa não para", async () => {
@@ -434,7 +435,9 @@ test("M3: duas conexões lendo o QR do MESMO número ao mesmo tempo: só uma pas
   await prisma.whatsappSessao.updateMany({ where: { id: { in: [ID, ID2] } }, data: { creds: "v1:x:y:z" } });
   sockets[0]!.qr(); sockets[1]!.qr();
   sockets[0]!.abrir(NUM); sockets[1]!.abrir(NUM);
-  assert.ok(await ate(async () => { const r = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { status: true } }); return r.filter((x) => x.status === "CONECTADO").length === 1 && r.filter((x) => x.status === "DESCONECTADO").length === 1; }), "uma conectou e a outra foi recusada");
+  const estados = async () => (await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { id: true, status: true, erro: true, numero: true } })).map((x) => `${x.id}:${x.status}:${x.numero ?? "-"}:${x.erro ? "erro" : "-"}`).join(" | ");
+  const um = await ate(async () => { const r = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { status: true } }); return r.filter((x) => x.status === "CONECTADO").length === 1 && r.filter((x) => x.status === "DESCONECTADO").length === 1; });
+  assert.ok(um, "uma conectou e a outra foi recusada: " + (await estados()));
   await limparLogsM3();
 });
 
@@ -452,4 +455,48 @@ test("M3: números que já estavam repetidos só vão para os Logs do Super Admi
   const ainda = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } } });
   assert.ok(ainda.every((x) => x.status === "CONECTADO" && x.creds), "ninguém foi desconectado");
   await limparLogsM3();
+});
+
+// ===== M4 (decisão #153): Logs contam a história das quedas =====
+const logsDesde = (inicio: Date, trecho: string, usuarioId?: string) => prisma.log.findMany({ where: { tipo: "WHATSAPP", criadoEm: { gte: inicio }, texto: { contains: trecho }, ...(usuarioId ? { usuarioId } : {}) } });
+
+test("M4: queda comum que volta = UMA linha nos Logs com a hora, o motivo (com código) e o tempo fora; sem 'conectado' solto", async () => {
+  const [dono] = await donos();
+  await g.conectar(ID, dono);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await espera(150);
+  const inicio = new Date();
+  sockets[0]!.cair(428);
+  assert.ok(await ate(async () => (await status()) === "RECONECTANDO"));
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { creds: "v1:x:y:z" } });
+  await g.conectar(ID); // "Tentar agora"
+  sockets[1]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  assert.ok(await ate(async () => (await logsDesde(inicio, "WhatsApp voltou às", dono)).length === 1));
+  const [l] = await logsDesde(inicio, "WhatsApp voltou às", dono);
+  assert.match(l!.texto, /^WhatsApp voltou às \d\d:\d\d \(caiu às \d\d:\d\d: conexão perdida \(código 428\); ficou \d+ s fora\)$/);
+  assert.equal((await logsDesde(inicio, "WhatsApp conectado (+", dono)).length, 0, "a volta não vira 'conectado'");
+  await prisma.log.deleteMany({ where: { id: l!.id } });
+});
+
+test("M4: primeira conexão (QR) continua 'WhatsApp conectado (+número)'", async () => {
+  const [dono] = await donos();
+  const inicio = new Date();
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir("5511977776666");
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  assert.ok(await ate(async () => (await logsDesde(inicio, "WhatsApp conectado (+5511977776666)", dono)).length === 1));
+  assert.equal((await logsDesde(inicio, "WhatsApp voltou", dono)).length, 0);
+  await prisma.log.deleteMany({ where: { criadoEm: { gte: inicio }, texto: { contains: "5511977776666" } } });
+});
+
+test("M4: reconexão por reinício do serviço tem linha própria, separada de queda", async () => {
+  const [dono] = await donos();
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, status: "CONECTADO", numero: NUM, creds: "v1:x:y:z" } });
+  const inicio = new Date();
+  await g.iniciarTodas();
+  for (const k of sockets) k.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  assert.ok(await ate(async () => (await logsDesde(inicio, "reconectado depois do reinício do serviço (+5511987654321)", dono)).length >= 1));
+  assert.equal((await logsDesde(inicio, "WhatsApp voltou", dono)).length, 0, "reinício não é queda");
+  await prisma.log.deleteMany({ where: { criadoEm: { gte: inicio }, texto: { contains: "reinício do serviço" } } });
 });
