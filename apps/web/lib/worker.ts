@@ -28,6 +28,24 @@ export async function chamarWorker(caminho: string, corpo?: unknown): Promise<Re
   }
 }
 
+/** Chamada ao serviço que devolve o JSON inteiro da resposta (teste da IA do suporte — decisão #148). */
+export async function chamarWorkerJson<T extends { ok: boolean }>(caminho: string, corpo: unknown, tempoMs = 30_000): Promise<T | { ok: false; mensagem: string }> {
+  if (!workerConfigurado()) return { ok: false, mensagem: FORA_DO_AR };
+  try {
+    const r = await fetch(new URL(caminho, process.env.WORKER_URL), {
+      method: "POST",
+      headers: { authorization: `Bearer ${process.env.WORKER_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify(corpo ?? {}),
+      cache: "no-store",
+      signal: AbortSignal.timeout(tempoMs),
+    });
+    const j = (await r.json().catch(() => null)) as T | null;
+    return j && typeof j.ok === "boolean" ? j : { ok: false, mensagem: FORA_DO_AR };
+  } catch {
+    return { ok: false, mensagem: FORA_DO_AR };
+  }
+}
+
 /** Serviço respondendo? (rota /saude, sem token) */
 export async function workerNoAr(): Promise<boolean> {
   if (!workerConfigurado()) return false;

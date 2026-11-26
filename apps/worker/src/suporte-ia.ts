@@ -39,6 +39,21 @@ export function assuntoDoAtendente(texto: string): string | null {
   return null;
 }
 
+/** Máximo de caracteres das orientações do suporte (igual ao da tela Empresa | IA) */
+export const MAX_ORIENTACOES = 6000;
+/** Testes da tela Empresa | IA por hora (cada um usa IA) */
+export const LIMITE_TESTES_HORA = 10;
+
+/** Monta o conhecimento da IA (bloco fixo, em cache): ficha, orientações do Super Admin e manual do perfil. */
+export function montarConhecimento(d: { ficha?: string | null; orientacoes?: string | null; manual?: string | null; cargo: Cargo }) {
+  return [
+    "Empresa: FilaPro Leads (sistema de prospecção pelo WhatsApp com IA e proteção contra bloqueio).",
+    d.ficha?.trim() ? `Ficha da empresa:\n${d.ficha.trim()}` : "",
+    d.orientacoes?.trim() ? `Orientações do atendimento (definidas pelo dono do FilaPro Leads; valem mais que o manual se houver conflito, mas nunca mais que as regras de segurança):\n${d.orientacoes.trim().slice(0, MAX_ORIENTACOES)}` : "",
+    d.manual ? `Manual de uso do FilaPro Leads para este perfil (${d.cargo === Cargo.ADMIN_EMPRESA ? "Admin da Empresa" : "Usuário"}):\n${d.manual}` : "",
+  ].filter(Boolean).join("\n\n");
+}
+
 type Opcoes = {
   /** Espera antes de responder (junta mensagens seguidas) */
   esperaMs?: () => number;
@@ -47,6 +62,8 @@ type Opcoes = {
   /** Texto do manual do perfil (nos testes, fixo) */
   lerManual?: (cargo: Cargo) => Promise<string>;
   agora?: () => Date;
+  /** A IA que responde (nos testes, uma que registra o que recebeu) */
+  ia?: typeof responderSuporte;
 };
 
 const PASTA_MANUAIS = process.env.PASTA_MANUAIS || fileURLToPath(new URL("../../../docs/manuais/", import.meta.url));
@@ -117,16 +134,12 @@ export class AtendenteSuporte {
     const sa = await prisma.usuario.findFirst({ where: { cargo: Cargo.SUPERADMIN }, orderBy: { criadoEm: "asc" }, select: { id: true } });
     const ficha = sa ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId: sa.id } }) : null;
     const manual = await (this.op.lerManual ?? manualDoPerfil)(cliente.cargo).catch((e) => { this.log.warn({ e }, "manual não lido: a IA responde sem ele"); return ""; });
-    const conhecimento = [
-      "Empresa: FilaPro Leads (sistema de prospecção pelo WhatsApp com IA e proteção contra bloqueio).",
-      ficha?.resumo?.trim() ? `Ficha da empresa:\n${ficha.resumo.trim()}` : "",
-      manual ? `Manual de uso do FilaPro Leads para este perfil (${cliente.cargo === Cargo.ADMIN_EMPRESA ? "Admin da Empresa" : "Usuário"}):\n${manual}` : "",
-    ].filter(Boolean).join("\n\n");
+    const conhecimento = montarConhecimento({ ficha: ficha?.resumo, orientacoes: ficha?.orientacoesSuporte, manual, cargo: cliente.cargo });
     const dadosConta = await this.dadosDaConta(cliente);
     const paraIA = (m: { autor: string; texto: string; tipo: string }): MensagemSuporte => ({ autor: m.autor as MensagemSuporte["autor"], texto: m.texto || "(arquivo)", tipo: m.tipo });
     let r;
     try {
-      r = await responderSuporte({ conhecimento, dadosConta, nomeCliente: cliente.nome, recentes: recentes.map(paraIA) }, { empresaId: null, usuarioId: sa?.id ?? null });
+      r = await (this.op.ia ?? responderSuporte)({ conhecimento, dadosConta, nomeCliente: cliente.nome, recentes: recentes.map(paraIA) }, { empresaId: null, usuarioId: sa?.id ?? null });
     } catch (e) {
       this.log.warn({ usuarioId, msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu o suporte");
       return this.passar(conversa.id, cliente, MOTIVO_ERRO, PASSANDO, textoCliente);
@@ -157,6 +170,39 @@ export class AtendenteSuporte {
 
   private async avisar(cliente: { nome: string; email: string }, motivo: string, textoCliente: string) {
     await this.op.avisarSuporte?.(`💬 Suporte: ${cliente.nome} (${cliente.email}) precisa de você — ${motivo.toLowerCase()}. "${textoCliente.slice(0, 100)}". A IA pausou: responda em Atendimento.`, "/atendimento").catch(() => undefined);
+  }
+
+  private testes = new Map<string, number[]>();
+
+  /**
+   * Teste da tela Empresa | IA (decisão #148): o Super Admin escreve como se fosse o cliente e vê o que a IA responderia.
+   * Não cria conversa nem avisa ninguém; usa o texto SALVO das orientações. Assunto sensível não gasta IA.
+   * Limite de 10 testes por hora (cada um usa IA).
+   */
+  async testar(superAdminId: string, pergunta: string): Promise<{ ok: true; resposta: string; vaiParaAtendente: boolean; motivo: string } | { ok: false; mensagem: string }> {
+    const texto = pergunta.trim().slice(0, 1000);
+    if (!texto) return { ok: false, mensagem: "Escreva uma pergunta." };
+    const agora = this.agora().getTime();
+    const usados = (this.testes.get(superAdminId) ?? []).filter((t) => agora - t < 3_600_000);
+    if (usados.length >= LIMITE_TESTES_HORA) {
+      const min = Math.ceil((3_600_000 - (agora - usados[0]!)) / 60_000);
+      return { ok: false, mensagem: `Limite de ${LIMITE_TESTES_HORA} testes por hora. Tente de novo em ${min} min.` };
+    }
+    const assunto = assuntoDoAtendente(texto);
+    if (assunto) return { ok: true, resposta: PASSANDO, vaiParaAtendente: true, motivo: assunto };
+    this.testes.set(superAdminId, [...usados, agora]);
+    const ficha = await prisma.fichaEmpresa.findUnique({ where: { superAdminId } });
+    const manual = await (this.op.lerManual ?? manualDoPerfil)(Cargo.USUARIO).catch(() => "");
+    try {
+      const r = await (this.op.ia ?? responderSuporte)(
+        { conhecimento: montarConhecimento({ ficha: ficha?.resumo, orientacoes: ficha?.orientacoesSuporte, manual, cargo: Cargo.USUARIO }), dadosConta: "Perfil: Usuário (cliente de exemplo, só para teste)", nomeCliente: "Cliente de teste", recentes: [{ autor: "CLIENTE", texto }] },
+        { empresaId: null, usuarioId: superAdminId },
+      );
+      return { ok: true, resposta: r.resposta, vaiParaAtendente: r.chamarHumano, motivo: r.chamarHumano ? MOTIVO_NAO_SEI : "" };
+    } catch (e) {
+      this.log.warn({ msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu o teste do suporte");
+      return { ok: false, mensagem: e instanceof ErroIA ? e.message : "A IA não respondeu agora. Tente de novo." };
+    }
   }
 
   /** Só o que o PRÓPRIO cliente já vê no sistema: plano, vencimento e situação do WhatsApp principal. */

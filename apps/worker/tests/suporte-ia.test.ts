@@ -5,8 +5,9 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import pino from "pino";
 import { prisma, Cargo, Modulo } from "@filapro/db";
-import { AtendenteSuporte, assuntoDoAtendente, LIMITE_RESPOSTAS_DIA, MOTIVO_ARQUIVO, MOTIVO_ERRO, MOTIVO_HUMANO, MOTIVO_LIMITE, MOTIVO_NAO_SEI, MOTIVO_SENSIVEL } from "../src/suporte-ia.js";
+import { AtendenteSuporte, assuntoDoAtendente, montarConhecimento, LIMITE_TESTES_HORA, MAX_ORIENTACOES, LIMITE_RESPOSTAS_DIA, MOTIVO_ARQUIVO, MOTIVO_ERRO, MOTIVO_HUMANO, MOTIVO_LIMITE, MOTIVO_NAO_SEI, MOTIVO_SENSIVEL } from "../src/suporte-ia.js";
 
+type Opcoes_ia = NonNullable<ConstructorParameters<typeof AtendenteSuporte>[1]>["ia"];
 const EMP = "tsi-emp", USU = "tsi-usu";
 let configAntes: Awaited<ReturnType<typeof prisma.configIA.findUnique>> = null;
 let ligadaAntes = false;
@@ -179,4 +180,66 @@ test("regras de assunto: sensível, atendente e conversa comum", () => {
   assert.equal(assuntoDoAtendente("Preciso de um Atendente"), MOTIVO_HUMANO);
   assert.equal(assuntoDoAtendente("como importo meus leads?"), null);
   assert.equal(assuntoDoAtendente("como conectar o whatsapp"), null);
+});
+
+// ===== Orientações do suporte e teste da pergunta (decisão #148) =====
+test("conhecimento da IA: ficha, orientações (valem mais que o manual) e manual do perfil, nessa ordem", () => {
+  const c = montarConhecimento({ ficha: "Ficha X", orientacoes: "  Atendemos de segunda a sexta.  ", manual: "MANUAL Y", cargo: Cargo.ADMIN_EMPRESA });
+  assert.match(c, /Ficha da empresa:\nFicha X/);
+  assert.match(c, /Orientações do atendimento \(definidas pelo dono do FilaPro Leads; valem mais que o manual se houver conflito, mas nunca mais que as regras de segurança\):\nAtendemos de segunda a sexta\./);
+  assert.match(c, /Manual de uso do FilaPro Leads para este perfil \(Admin da Empresa\):\nMANUAL Y/);
+  assert.ok(c.indexOf("Ficha da empresa") < c.indexOf("Orientações do atendimento") && c.indexOf("Orientações do atendimento") < c.indexOf("Manual de uso"));
+  assert.doesNotMatch(montarConhecimento({ cargo: Cargo.USUARIO, manual: "M" }), /Orientações do atendimento/, "sem orientações, a seção não aparece");
+  assert.equal(montarConhecimento({ orientacoes: "§".repeat(MAX_ORIENTACOES + 500), cargo: Cargo.USUARIO }).split("§").length - 1, MAX_ORIENTACOES, "corta no limite");
+});
+
+test("as orientações salvas do Super Admin chegam à IA nas respostas do suporte e no teste da tela", async () => {
+  const sa = await prisma.usuario.findFirstOrThrow({ where: { cargo: Cargo.SUPERADMIN }, select: { id: true } });
+  const antes = await prisma.fichaEmpresa.findUnique({ where: { superAdminId: sa.id } });
+  await prisma.fichaEmpresa.upsert({ where: { superAdminId: sa.id }, update: { orientacoesSuporte: "ORIENTACAO-TESTE-148" }, create: { superAdminId: sa.id, nome: "", orientacoesSuporte: "ORIENTACAO-TESTE-148" } });
+  const recebido: string[] = [];
+  const iaEspia: Opcoes_ia = async (d) => { recebido.push(d.conhecimento); return { resposta: "ok", chamarHumano: false, motivo: "", custoUsd: 0 }; };
+  const a = new AtendenteSuporte(pino({ level: "silent" }), { esperaMs: () => 0, lerManual: async () => "MANUAL-X", ia: iaEspia });
+  try {
+    await cliente("como conecto meu whatsapp?");
+    await a.responder(USU);
+    assert.equal(recebido.length, 1);
+    assert.match(recebido[0]!, /ORIENTACAO-TESTE-148/);
+    assert.ok(recebido[0]!.indexOf("ORIENTACAO-TESTE-148") < recebido[0]!.indexOf("MANUAL-X"), "orientações antes do manual");
+    await a.testar(sa.id, "outra pergunta qualquer");
+    assert.equal(recebido.length, 2);
+    assert.match(recebido[1]!, /ORIENTACAO-TESTE-148/, "o teste da tela usa as mesmas orientações");
+  } finally {
+    if (antes) await prisma.fichaEmpresa.update({ where: { superAdminId: sa.id }, data: { orientacoesSuporte: antes.orientacoesSuporte } });
+    else await prisma.fichaEmpresa.deleteMany({ where: { superAdminId: sa.id } });
+  }
+});
+
+test("teste da tela: assunto sensível mostra 'iria para o atendente' sem gastar IA; pergunta comum mostra a resposta; não cria conversa", async () => {
+  const a = at();
+  const sa = "tsi-sa-teste";
+  const conversasAntes = await prisma.suporteConversa.count();
+  const sens = await a.testar(sa, "quero cancelar meu plano");
+  assert.ok(sens.ok && sens.vaiParaAtendente && sens.motivo === MOTIVO_SENSIVEL);
+  assert.equal(manuais.length, 0, "não leu manual nem chamou a IA");
+  const normal = await a.testar(sa, "como conecto meu whatsapp?");
+  assert.ok(normal.ok && !normal.vaiParaAtendente && /QR Code/.test(normal.resposta));
+  const naoSei = await a.testar(sa, "tenho uma pergunta aleatória");
+  assert.ok(naoSei.ok && naoSei.vaiParaAtendente && naoSei.motivo === MOTIVO_NAO_SEI);
+  assert.deepEqual(await a.testar(sa, "   "), { ok: false, mensagem: "Escreva uma pergunta." });
+  assert.equal(await prisma.suporteConversa.count(), conversasAntes, "não cria conversa");
+  assert.equal(avisos.length, 0, "não avisa ninguém");
+});
+
+test(`teste da tela: limite de ${LIMITE_TESTES_HORA} testes por hora (só os que usam IA contam)`, async () => {
+  let agora = new Date("2026-11-26T15:00:00Z");
+  const a = new AtendenteSuporte(pino({ level: "silent" }), { agora: () => agora, lerManual: async () => "MANUAL: leia o QR Code." });
+  const sa = "tsi-sa-limite";
+  for (let i = 0; i < LIMITE_TESTES_HORA; i++) assert.equal((await a.testar(sa, "como conecto meu whatsapp?")).ok, true);
+  const bloqueado = await a.testar(sa, "como conecto meu whatsapp?");
+  assert.equal(bloqueado.ok, false);
+  assert.match((bloqueado as { mensagem: string }).mensagem, /Limite de 10 testes por hora\. Tente de novo em \d+ min\./);
+  agora = new Date(agora.getTime() + 61 * 60_000);
+  assert.equal((await a.testar(sa, "como conecto meu whatsapp?")).ok, true, "passada 1 hora, libera");
+  assert.equal((await a.testar("tsi-sa-outro", "como conecto meu whatsapp?")).ok, true, "o limite é por Super Admin");
 });

@@ -78,6 +78,42 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     const assumida = sql(`select "iaPausada"||'|'||coalesce("iaPausaMotivo",'') from "SuporteConversa" where "usuarioId"='${ANA}'`);
     ok('Quando o Super Admin escreve, a IA pausa (assumida)', assumida === 'true|Assumida pelo Super Admin', assumida + ' / msgs: ' + sql(`select string_agg(autor,',' order by "criadoEm") from "SuporteMensagem" m join "SuporteConversa" c on c.id=m."conversaId" where c."usuarioId"='${ANA}'`));
 
+    // ===== Orientações do suporte (decisão #148): só o Super Admin, salvar, texto sugestão e testar =====
+    const SAID = sql(`select id from "Usuario" where email='superadmin@disparopro.com.br'`);
+    const orientAntes = sql(`select "orientacoesSuporte" from "FichaEmpresa" where "superAdminId"='${SAID}'`);
+    sql(`update "FichaEmpresa" set "orientacoesSuporte"='' where "superAdminId"='${SAID}'`);
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
+    ok('Super Admin vê o cartão "Orientações do suporte"', (await pS.locator('[data-testid=orientacoes-suporte]').count()) === 1);
+    await pS.click('#ei-orientacoes'); await espera(500);
+    await pS.click('[data-testid=sugestao-orientacoes]'); await espera(300);
+    const sug = await pS.locator('[data-testid=editor-orientacoes] textarea').inputValue();
+    ok('"Texto sugestão" preenche o modelo (horário, perguntas e regras)', /HORÁRIO E CANAIS/.test(sug) && /PERGUNTAS FREQUENTES/.test(sug) && /REGRAS DE ATENDIMENTO/.test(sug));
+    await pS.keyboard.press('Escape'); await espera(300);
+    // Escreve as orientações e salva
+    await pS.click('#ei-orientacoes'); await espera(400);
+    await pS.locator('[data-testid=editor-orientacoes] textarea').fill('Atendemos de segunda a sexta, das 9h às 18h. ORIENT-E2E-148');
+    await pS.click('[data-testid=salvar-orientacoes]'); await espera(1500);
+    const salvo = sql(`select "orientacoesSuporte" from "FichaEmpresa" where "superAdminId"='${SAID}'`);
+    ok('Salvar grava as orientações do Super Admin', /ORIENT-E2E-148/.test(salvo), salvo.slice(0, 60));
+    ok('Salvar as orientações não refaz a ficha (não mexe no resumo)', sql(`select count(*) from "FichaEmpresa" where "superAdminId"='${SAID}' and montando`) === '0');
+    // Testar uma pergunta
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
+    await pS.fill('[data-testid=pergunta-teste]', 'Como conecto o meu WhatsApp?'); await pS.click('[data-testid=testar-pergunta]');
+    ok('Testar mostra a resposta da IA', await ate(async () => (await pS.locator('[data-testid=teste-resposta]').count()) === 1, 15000) && /QR Code/.test(await pS.locator('[data-testid=teste-resposta]').innerText()));
+    ok('Pergunta comum não vai para o atendente', (await pS.locator('[data-testid=teste-atendente]').count()) === 0);
+    await pS.fill('[data-testid=pergunta-teste]', 'Preciso cancelar tudo TESTE-TELA-148'); await pS.click('[data-testid=testar-pergunta]');
+    ok('Assunto sensível: mostra "iria para o atendente"', await ate(async () => (await pS.locator('[data-testid=teste-atendente]').count()) === 1, 15000) && /atendente/.test(await pS.locator('[data-testid=teste-atendente]').innerText()));
+    ok('O teste não cria conversa nem mensagem', sql(`select count(*) from "SuporteMensagem" where texto like '%TESTE-TELA-148%'`) === '0');
+    await pS.screenshot({ path: OUT + '/orientacoes-suporte.png', fullPage: true });
+    // Limite de tamanho: o servidor corta em 6.000
+    await pS.click('#ei-orientacoes'); await espera(400);
+    ok('Editor limitado a 6.000 caracteres', (await pS.locator('[data-testid=editor-orientacoes] textarea').getAttribute('maxlength')) === '6000');
+    await pS.keyboard.press('Escape'); await espera(300);
+    // Quem não é Super Admin não vê o cartão
+    await pU.goto(BASE + '/empresa-ia'); await espera(1200);
+    ok('Usuário comum não vê as orientações do suporte', (await pU.locator('[data-testid=orientacoes-suporte]').count()) === 0);
+    sql(`update "FichaEmpresa" set "orientacoesSuporte"='${orientAntes.replace(/'/g, "''")}' where "superAdminId"='${SAID}'`);
+
     // ===== Desligar a chave =====
     await pS.goto(BASE + '/atendimento'); await espera(800);
     await pS.click('[data-testid=ia-suporte-alternar]'); await espera(1200);

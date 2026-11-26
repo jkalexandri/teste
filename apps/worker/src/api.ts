@@ -41,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void }) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -152,6 +152,14 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (!suporteIA) return res.code(503).send({ ok: false, mensagem: "Suporte indisponível." });
     suporteIA.agendar(req.params.id);
     return { ok: true, mensagem: "A IA vai responder." };
+  });
+
+  // Teste da tela Empresa | IA (decisão #148): o que a IA do suporte responderia a esta pergunta
+  app.post<{ Body: { superAdminId?: string; pergunta?: string } | null }>("/suporte/testar", async (req, res) => {
+    if (!suporteIA) return res.code(503).send({ ok: false, mensagem: "Suporte indisponível." });
+    const id = String(req.body?.superAdminId ?? "");
+    if (!ID_VALIDO.test(id)) return res.code(400).send({ ok: false, mensagem: "Pedido inválido." });
+    return suporteIA.testar(id, String(req.body?.pergunta ?? ""));
   });
 
   // ===== Notificações no celular (decisão #99): teste a partir da tela Avisos =====

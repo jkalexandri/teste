@@ -1,10 +1,12 @@
 // Empresa | IA (etapa 9b — decisões #74, #75 e #77): o que a IA sabe sobre a empresa.
 import { redirect } from "next/navigation";
-import { prisma } from "@filapro/db";
+import { prisma, Cargo } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import { atorEmpresaIA, mesAtual } from "@/lib/empresa-ia";
 import { workerConfigurado } from "@/lib/worker";
 import TelaEmpresaIA from "./TelaEmpresaIA";
+import OrientacoesSuporte from "./OrientacoesSuporte";
+import { MAX_ORIENTACOES_SUPORTE, SUGESTAO_ORIENTACOES_SUPORTE, TESTES_POR_HORA } from "@/lib/sugestao-suporte";
 import { MAX_COMO_QUALIFICAR, sugestaoQualificar } from "@/lib/sugestao-qualificar";
 import { protegerTela } from "@/lib/auth/tela";
 
@@ -46,6 +48,10 @@ export default async function EmpresaIAPage() {
           criadoEm: m.criadoEm.toISOString(), lidoEm: m.lidoEm?.toISOString() ?? null,
         }))}
       />
+      {/* Orientações do suporte (decisão #148): só o Super Admin */}
+      {a.u.cargo === Cargo.SUPERADMIN && (
+        <OrientacoesSuporte inicial={f.orientacoesSuporte} sugestao={SUGESTAO_ORIENTACOES_SUPORTE} max={MAX_ORIENTACOES_SUPORTE} testesPorHora={TESTES_POR_HORA} />
+      )}
     </section>
   );
 }

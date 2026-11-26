@@ -3,10 +3,12 @@
 // Empresa | IA (etapa 9b — decisões #74, #75 e #77). A leitura pesada (sites, PDFs, imagens) e a
 // montagem da ficha acontecem no serviço 24/7; aqui só cadastramos e pedimos o processamento.
 import { MAX_COMO_QUALIFICAR } from "@/lib/sugestao-qualificar";
+import { MAX_ORIENTACOES_SUPORTE } from "@/lib/sugestao-suporte";
+import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { revalidatePath } from "next/cache";
 import { prisma, StatusMaterial, TipoMaterial } from "@filapro/db";
 import { atorEmpresaIA, LIMITES_MATERIAL, mesAtual } from "@/lib/empresa-ia";
-import { apagarArquivoDoWorker, chamarWorker, guardarArquivoNoWorker } from "@/lib/worker";
+import { apagarArquivoDoWorker, chamarWorker, chamarWorkerJson, guardarArquivoNoWorker } from "@/lib/worker";
 
 type R = { ok: boolean; mensagem: string };
 const txt = (v: FormDataEntryValue | null, max: number) => String(v ?? "").trim().slice(0, max);
@@ -183,4 +185,27 @@ export async function estadoEmpresaIA() {
     prisma.materialIA.count({ where: { fichaId: a.ficha.id, status: StatusMaterial.LENDO } }),
   ]);
   return { lendo, montando: !!ficha?.montando, resumoEm: ficha?.resumoEm?.toISOString() ?? null };
+}
+
+// ===== Orientações do suporte (decisão #148) — só o Super Admin =====
+
+/** Salva as orientações que só a IA do suporte dos clientes lê. Não refaz a ficha nem gasta IA. */
+export async function salvarOrientacoesSuporte(form: FormData): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const texto = String(form.get("orientacoes") ?? "").trim().slice(0, MAX_ORIENTACOES_SUPORTE);
+  await prisma.fichaEmpresa.upsert({
+    where: { superAdminId: s.usuario.id },
+    update: { orientacoesSuporte: texto },
+    create: { superAdminId: s.usuario.id, nome: "", orientacoesSuporte: texto },
+  });
+  revalidatePath("/empresa-ia");
+  return { ok: true, mensagem: texto ? "Orientações do suporte salvas." : "Orientações do suporte apagadas." };
+}
+
+export type TesteSuporte = { ok: true; resposta: string; vaiParaAtendente: boolean; motivo: string } | { ok: false; mensagem: string };
+
+/** Mostra o que a IA do suporte responderia a esta pergunta (usa o texto SALVO). Não cria conversa nem avisa ninguém. */
+export async function testarSuporteIA(pergunta: string): Promise<TesteSuporte> {
+  const s = await exigirSuperAdmin();
+  return chamarWorkerJson<{ ok: true; resposta: string; vaiParaAtendente: boolean; motivo: string }>("/suporte/testar", { superAdminId: s.usuario.id, pergunta: String(pergunta ?? "").slice(0, 1000) });
 }

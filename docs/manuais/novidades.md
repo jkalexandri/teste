@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.43.0 — orientações do suporte e teste da IA (26/11/2026)
+
+- **Super Admin:** em **Configurações → Empresa | IA** há o cartão **Orientações do suporte**: escreva horário, respostas prontas e regras de
+  atendimento que **só a IA do suporte dos clientes** lê. Vale mais que o manual do sistema, mas nunca mais que as regras de segurança
+  (pagamento, cobrança, cancelamento, bloqueio e reclamação continuam indo para você). Há um **Texto sugestão** para começar.
+- **Testar uma pergunta:** escreva como se fosse o cliente e veja o que a IA responderia (ou "isso iria para o atendente"). Não cria conversa
+  nem avisa ninguém; usa IA (10 testes por hora).
+
 ## v1.42.1 — quadrinho do vencimento fecha ao clicar fora (26/11/2026)
 
 - O quadrinho que abre ao tocar em **"Expira em X dias"** (com o botão **Fazer upgrade**) agora **fecha ao clicar fora** dele ou com a tecla **Esc**.

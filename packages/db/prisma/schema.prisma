@@ -687,6 +687,8 @@ model FichaEmpresa {
   telefone      String       @default("")
   whatsapp      String       @default("")
   atividade     String       @default("")
+  /// Orientações do suporte (decisão #148): texto do Super Admin lido só pela IA do suporte dos clientes
+  orientacoesSuporte String   @default("")
   /// Resumo compacto que a IA monta a partir dos campos e materiais (tamanho máximo fixo)
   resumo        String       @default("")
   resumoEm      DateTime?

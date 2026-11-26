@@ -54,6 +54,7 @@ também no menu. A caixa de escrever e o cabeçalho da conversa ficam **fixos**:
 
 **IA no suporte dos clientes:** no topo de Atendimento → Clientes há a chave **Ligar a IA** (começa desligada). Ligada, a IA responde primeiro, com o
 manual do perfil do cliente e os dados da conta dele. Quando você escreve, ela para naquela conversa; **Devolver para a IA** a reativa.
+Para ensinar a IA do suporte, use **Configurações → Empresa | IA → Orientações do suporte** (horário, respostas prontas, regras de atendimento) e teste com **Testar uma pergunta**.
 Pagamento, cobrança, cancelamento, conta bloqueada, reclamação, arquivos, pedido de atendente e dúvidas que ela não souber passam para você,
 com aviso no WhatsApp de avisos e no celular. Limite de 20 respostas da IA por conversa por dia; o custo aparece em Despesas com IA.
 
