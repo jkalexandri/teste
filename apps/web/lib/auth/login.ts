@@ -1,6 +1,7 @@
 // Regras de entrada no sistema (docs/decisoes.md #11 a #14).
 import "server-only";
-import { prisma, conferirSenha, Cargo, Modulo, StatusUsuario } from "@filapro/db";
+import { randomBytes } from "node:crypto";
+import { prisma, conferirSenha, gerarHash, Cargo, Modulo, StatusUsuario } from "@filapro/db";
 
 export const MAX_TENTATIVAS = 5;
 export const BLOQUEIO_MINUTOS = 15;
@@ -9,6 +10,47 @@ export type ResultadoLogin =
   | { ok: true; usuarioId: string; precisaTrocar: boolean; cargo: Cargo }
   | { ok: false; erro: string };
 
+/**
+ * Contra a descoberta de e-mails cadastrados (decisão #159 — S4 do Módulo 1):
+ * - O tempo do login não pode depender de a conta existir: SEMPRE se calculam dois hashes (o da senha definitiva e o da temporária),
+ *   usando um hash falso quando a conta ou a senha temporária não existem.
+ * - O bloqueio por tentativas vale igual para e-mail que não existe (contado em memória, com a mesma mensagem).
+ */
+let hashFalso: Promise<string> | null = null;
+const obterHashFalso = () => (hashFalso ??= gerarHash(randomBytes(16).toString("hex")));
+
+type Desconhecido = { falhas: number; bloqueadoAte: number };
+const desconhecidos = new Map<string, Desconhecido>();
+const MAX_DESCONHECIDOS = 10_000;
+const msgBloqueio = (min: number) => `Muitas tentativas erradas. Tente novamente em ${min} ${min === 1 ? "minuto" : "minutos"}.`;
+
+/** Tentativa com e-mail sem conta: mesmo tempo, mesma contagem e mesmas mensagens de quem tem conta. */
+async function falhaDeDesconhecido(email: string, senha: string): Promise<ResultadoLogin> {
+  const agora = Date.now();
+  const d = desconhecidos.get(email) ?? { falhas: 0, bloqueadoAte: 0 };
+  if (d.bloqueadoAte > agora) return { ok: false, erro: msgBloqueio(Math.ceil((d.bloqueadoAte - agora) / 60000)) };
+  const falso = await obterHashFalso();
+  await conferirSenha(senha, falso); // mesmo custo de uma conta real (senha definitiva + temporária)
+  await conferirSenha(senha, falso);
+  d.falhas += 1;
+  let resposta: ResultadoLogin = { ok: false, erro: "E-mail ou senha incorretos." };
+  if (d.falhas >= MAX_TENTATIVAS) {
+    d.falhas = 0;
+    d.bloqueadoAte = agora + BLOQUEIO_MINUTOS * 60000;
+    resposta = { ok: false, erro: `Muitas tentativas erradas. Acesso bloqueado por ${BLOQUEIO_MINUTOS} minutos.` };
+  }
+  desconhecidos.delete(email); // reinsere no fim (ordem de chegada)
+  desconhecidos.set(email, d);
+  if (desconhecidos.size > MAX_DESCONHECIDOS) {
+    for (const [k, v] of desconhecidos) if (v.bloqueadoAte < agora && desconhecidos.size > MAX_DESCONHECIDOS * 0.8) desconhecidos.delete(k);
+    while (desconhecidos.size > MAX_DESCONHECIDOS) desconhecidos.delete(desconhecidos.keys().next().value as string);
+  }
+  return resposta;
+}
+
+/** Só para os testes: zera a memória dos e-mails sem conta. */
+export function _limparDesconhecidos() { desconhecidos.clear(); }
+
 const NOME_MODULO: Record<Modulo, string> = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" };
 
 export async function tentarLogin(emailBruto: string, senha: string, modulo: Modulo): Promise<ResultadoLogin> {
@@ -16,19 +58,22 @@ export async function tentarLogin(emailBruto: string, senha: string, modulo: Mod
   const erroGenerico = { ok: false as const, erro: "E-mail ou senha incorretos." };
 
   const usuario = await prisma.usuario.findUnique({ where: { email }, include: { empresa: true } });
-  if (!usuario) return erroGenerico;
+  if (!usuario) return falhaDeDesconhecido(email, senha);
 
   // Bloqueio por excesso de tentativas (#14)
   const agora = new Date();
   if (usuario.bloqueadoAte && usuario.bloqueadoAte > agora) {
     const min = Math.ceil((usuario.bloqueadoAte.getTime() - agora.getTime()) / 60000);
-    return { ok: false, erro: `Muitas tentativas erradas. Tente novamente em ${min} ${min === 1 ? "minuto" : "minutos"}.` };
+    return { ok: false, erro: msgBloqueio(min) };
   }
 
   // Confere a senha definitiva; se não bater, confere a temporária (ainda válida).
+  // Sempre dois hashes, tenha a conta senha temporária ou não (o tempo não pode revelar nada — decisão #159)
+  const falso = await obterHashFalso();
   const senhaDefinitivaOk = await conferirSenha(senha, usuario.senhaHash);
   const tempValida = !!usuario.senhaTempHash && (!usuario.senhaTempExpiraEm || usuario.senhaTempExpiraEm > agora);
-  const senhaTempOk = !senhaDefinitivaOk && tempValida && (await conferirSenha(senha, usuario.senhaTempHash));
+  const tempConfere = await conferirSenha(senha, tempValida ? usuario.senhaTempHash : falso);
+  const senhaTempOk = !senhaDefinitivaOk && tempValida && tempConfere;
 
   if (!senhaDefinitivaOk && !senhaTempOk) {
     const tentativas = usuario.tentativasFalhas + 1;

@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.3 — segurança: ninguém descobre quais e-mails têm conta (26/11/2026)
+
+- O **login** leva o mesmo tempo e dá as mesmas respostas, o e-mail tenha conta ou não. O bloqueio por tentativas (5 erros, 15 minutos) agora é igual para qualquer e-mail, então não dá mais para descobrir contas errando a senha.
+- A **recuperação de senha** responde na hora e sempre igual; a senha temporária é enviada logo depois, só para quem tem conta.
+- Na **compra de plano**, quem insistir com e-mails que já têm conta é limitado a 5 respostas por hora (por endereço de internet). A mensagem clara continua para o cliente de verdade.
+- Para você, que tem conta, nada muda: o login, a senha temporária e a recuperação funcionam como antes.
+
 ## v1.46.2 — segurança: conta vencida, inativa ou bloqueada para de verdade (26/11/2026)
 
 - **Campanhas:** se o plano vencer, a empresa for inativada (por exemplo, estorno) ou o usuário for bloqueado, as campanhas em andamento **pausam sozinhas** e **voltam sozinhas** quando o acesso voltar (renovação, ativação ou desbloqueio). Nada é enviado nesse meio-tempo.

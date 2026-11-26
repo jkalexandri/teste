@@ -42,6 +42,9 @@ export async function POST(req: Request) {
       ((existente.cargo === Cargo.ADMIN_EMPRESA && existente.empresa.modulo === Modulo.EMPRESARIAL) ||
         (existente.cargo === Cargo.USUARIO && existente.empresa.modulo === Modulo.INDIVIDUAL));
     if (!responsavel || !existente.empresa) {
+      // Respostas "e-mail já existe": limite próprio e mais apertado, contra quem lista e-mails cadastrados (decisão #159)
+      const apertado = await limitarPorIp("pedidos-existente", 5, 3600_000);
+      if (apertado) return apertado;
       return NextResponse.json(
         { erro: "Este e-mail já tem acesso ao FilaPro Leads. A renovação é feita pelo administrador da sua empresa." },
         { status: 409 },
@@ -49,6 +52,8 @@ export async function POST(req: Request) {
     }
     if (existente.empresa.modulo !== plano.modulo) {
       const m = NOME_MODULO[existente.empresa.modulo];
+      const apertado = await limitarPorIp("pedidos-existente", 5, 3600_000);
+      if (apertado) return apertado;
       return NextResponse.json({ erro: `Sua conta é do módulo ${m}. Para renovar, escolha um plano ${m}.` }, { status: 409 });
     }
     renovarEmpresaId = existente.empresa.id;

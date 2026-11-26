@@ -41,7 +41,7 @@ Teste: sessão aberta de um usuário de empresa; depois a empresa foi inativada,
 `arquivos/[id]`, `suporte`, `push`, `comunicados/[id]`, `presenca`. Conta vencida/bloqueada ainda baixa os próprios arquivos
 e usa o suporte. Em parte é desejado (o bloqueado precisa falar com o suporte); definir a regra por rota.
 
-### S4 — Dá para descobrir quais e-mails têm conta ✅ (reproduzido em 26/11/2026)
+### S4 — Dá para descobrir quais e-mails têm conta ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.3 (decisão #159)**
 Medido no site de teste, com e-mail existente e inexistente:
 - **S4a — tempo do login:** senha errada leva **73 ms** para e-mail existente e **15 ms** para inexistente (o sistema só calcula o hash da
   senha quando a conta existe). Quem tem senha temporária pendente leva ainda mais (dois hashes): revela até quem pediu recuperação.
@@ -77,4 +77,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 ✅ → S4 → S5 → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 ✅ → S5 → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
