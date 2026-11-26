@@ -52,6 +52,18 @@ const ate = async (fn, vezes = 60) => { for (let i = 0; i < vezes; i++) { if (aw
     await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', true);
     await p.click('[data-testid=chip-expira]');
     ok('Usuário comum: selo mostra a data e "Fale com o administrador", sem "Fazer upgrade"', (await p.locator('[data-testid=quadro-renovacao]').innerText()).includes('Fale com o administrador') && (await p.locator('[data-testid=botao-upgrade]').count()) === 0);
+    // O quadrinho do selo fecha ao clicar fora e com Esc (antes só fechava tocando de novo no selo)
+    await p.click('[data-testid=quadro-renovacao]', { position: { x: 20, y: 10 } });
+    ok('Clicar DENTRO do quadrinho não fecha', (await p.locator('[data-testid=quadro-renovacao]').count()) === 1);
+    await p.mouse.click(400, 500);
+    ok('Clicar fora fecha o quadrinho', (await p.locator('[data-testid=quadro-renovacao]').count()) === 0);
+    await p.click('[data-testid=chip-expira]');
+    ok('Tocar no selo abre de novo', (await p.locator('[data-testid=quadro-renovacao]').count()) === 1);
+    await p.keyboard.press('Escape');
+    ok('Esc fecha o quadrinho', (await p.locator('[data-testid=quadro-renovacao]').count()) === 0);
+    await p.click('[data-testid=chip-expira]'); await p.click('[data-testid=chip-expira]');
+    ok('Tocar de novo no selo também fecha', (await p.locator('[data-testid=quadro-renovacao]').count()) === 0);
+    await p.click('[data-testid=chip-expira]');
     const r403 = await p.evaluate(async () => (await fetch('/api/upgrade')).status);
     ok('Usuário comum: servidor recusa o upgrade', r403 === 403);
     await c.close();

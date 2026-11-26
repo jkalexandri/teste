@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.42.1 — quadrinho do vencimento fecha ao clicar fora (26/11/2026)
+
+- O quadrinho que abre ao tocar em **"Expira em X dias"** (com o botão **Fazer upgrade**) agora **fecha ao clicar fora** dele ou com a tecla **Esc**.
+  Antes ele ficava na tela até você tocar de novo no selo.
+
 ## v1.42.0 — IA no suporte dos clientes (26/11/2026)
 
 - **Super Admin:** a IA pode responder primeiro quem escreve pelo botão **Suporte**. A chave fica no topo de **Atendimento → Clientes**

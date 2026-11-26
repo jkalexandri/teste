@@ -4,7 +4,7 @@
 // - "Expira em X dias": a data e, para o dono da conta, "Fazer upgrade" (os outros: falar com o administrador);
 // - "Renova em X dias" (cobrança automática no cartão): a data da renovação e, para o dono, "Fazer upgrade" e
 //   "Desligar cobrança automática".
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Clock3 } from "@/components/icons";
 import { useToast } from "./Toast";
@@ -14,10 +14,21 @@ export default function ChipRenovacao({ dias, expiraEm, automatica, dono, onUpgr
   dias: number; expiraEm: string; automatica: boolean; dono: boolean; onUpgrade: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
+  const raiz = useRef<HTMLSpanElement>(null);
   const [pendente, iniciar] = useTransition();
   const toast = useToast();
   const router = useRouter();
   const data = new Date(expiraEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  // O quadrinho fecha ao clicar/tocar fora dele e com a tecla Esc (antes só fechava tocando de novo no selo)
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: PointerEvent) => { if (raiz.current && !raiz.current.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("pointerdown", fora);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", fora); document.removeEventListener("keydown", esc); };
+  }, [aberto]);
 
   function desligar() {
     if (!window.confirm(`Desligar a cobrança automática? Seu acesso continua até ${data}; depois, a renovação volta a ser pelo link.`)) return;
@@ -37,7 +48,7 @@ export default function ChipRenovacao({ dias, expiraEm, automatica, dono, onUpgr
     : (dias === 0 ? "Expira hoje" : `Expira em ${dias} ${dias === 1 ? "dia" : "dias"}`);
 
   return (
-    <span className="relative">
+    <span className="relative" ref={raiz}>
       <button type="button" className="chip" style={cor} onClick={() => setAberto((a) => !a)} aria-expanded={aberto}
         data-testid={automatica ? "chip-renovacao" : "chip-expira"}>
         <Clock3 size={12} /> {texto}

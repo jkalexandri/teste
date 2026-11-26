@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.42.1 | 26/11/2026 16:00 | 2 Contas e usuários | Quadrinho do selo de vencimento fecha ao clicar fora ou com Esc (#147) | 3 Planos (upgrade) | não |
 | v1.42.0 | 26/11/2026 15:30 | 11 Comunicação | IA responde o suporte dos clientes (chave geral desligada por padrão); passa para o atendente em assunto sensível, arquivo, pedido ou dúvida; limite de 20/dia (#146) | 7 IA de mensagens, 9 Interessados (Atendimento) | não |
 | v1.41.15 | 26/11/2026 14:50 | 11 Comunicação | Atendimento (suporte): cabeçalho da conversa e caixa de escrever fixos; só as mensagens rolam; abre na mais recente | 9 Interessados (aba do Atendimento) | não |
 | v1.41.14 | 26/11/2026 14:20 | 4 WhatsApp (conexão) | Falha ao abrir a conexão agenda nova tentativa, mostra o motivo e nunca apaga o login; Logs só com a 1ª falha e a recuperação (M1) | — | não |
