@@ -27,7 +27,7 @@ class SocketFalso {
   end() { this.fechada = true; }
   atualizarLogin() { this.ev.emit("creds.update", {}); }
   cair(codigo: number) { this.ev.emit("connection.update", { connection: "close", lastDisconnect: { error: { output: { statusCode: codigo } } } }); }
-  abrir() { this.user = { id: "5511900001111:1@s.whatsapp.net" }; this.ev.emit("connection.update", { connection: "open" }); }
+  abrir(numero = "5511900001111") { this.user = { id: `${numero}:1@s.whatsapp.net` }; this.ev.emit("connection.update", { connection: "open" }); }
 }
 
 let sockets: SocketFalso[] = [];
@@ -198,4 +198,29 @@ test("o serviço recusa conectar número bloqueado, venha o pedido de onde vier 
   await g.conectar(BLQ);
   assert.equal(sockets.length, 0, "nenhuma conexão aberta");
   assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: BLQ } })).status, "DESCONECTADO");
+});
+
+test("aquecimento por chip: o mesmo chip mantém a idade; chip diferente ou sem como comparar recomeça (decisão #141)", async () => {
+  const antigo = new Date("2026-10-01T12:00:00Z");
+  const idade = async () => (await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).primeiraConexaoEm!.getTime();
+  // 1) Mesmo chip reconectado: mantém
+  await prisma.whatsappSessao.create({ data: { id: ID, primeiraConexaoEm: antigo, numeroAquecimento: "5511900001111" } });
+  await g.conectar(ID);
+  sockets[0]!.abrir("5511900001111"); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await espera(150);
+  assert.equal(await idade(), antigo.getTime(), "mesmo chip continua com a idade");
+  // 2) Outro chip no mesmo espaço: recomeça e registra nos Logs
+  await g.desconectar(ID);
+  await g.conectar(ID);
+  sockets[1]!.abrir("5511977772222");
+  assert.ok(await ate(async () => (await idade()) > Date.now() - 60_000), "chip novo recomeça o aquecimento");
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).numeroAquecimento, "5511977772222");
+  assert.ok(await ate(async () => (await prisma.log.count({ where: { texto: { contains: "+5511977772222): aquecimento recomeça" } } })) > 0), "fica nos Logs");
+  // 3) Espaço de antes da regra (sem número para comparar): recomeça por segurança
+  await g.desconectar(ID);
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { primeiraConexaoEm: antigo, numeroAquecimento: null } });
+  await g.conectar(ID);
+  sockets[2]!.abrir("5511977772222");
+  assert.ok(await ate(async () => (await idade()) > Date.now() - 60_000), "sem como comparar: recomeça");
+  await prisma.log.deleteMany({ where: { texto: { contains: "aquecimento recomeça" } } });
 });

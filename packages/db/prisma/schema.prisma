@@ -361,6 +361,8 @@ model WhatsappSessao {
   conectadoEm   DateTime?
   /// Primeira conexão deste número (aquecimento de número novo — decisão #64)
   primeiraConexaoEm DateTime?
+  /// De qual telefone é a idade do aquecimento (decisão #141): chip diferente no mesmo espaço recomeça o aquecimento
+  numeroAquecimento String?
   /// Reconexão automática (decisão #139): quando caiu, qual tentativa e quando é a próxima
   quedaEm            DateTime?
   tentativaReconexao Int       @default(0)

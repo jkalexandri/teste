@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.11 — chip novo começa devagar (26/11/2026)
+
+- Se você trocar o chip de um dos seus WhatsApps, o número novo **recomeça o aquecimento** (20 envios por dia nos
+  primeiros dias, aumentando aos poucos), para reduzir o risco de bloqueio. O mesmo chip reconectado não muda nada.
+
 ## v1.41.10 — número que saiu do plano fica desligado (26/11/2026)
 
 - Número extra que saiu do plano não volta a funcionar sozinho depois de uma atualização do sistema.

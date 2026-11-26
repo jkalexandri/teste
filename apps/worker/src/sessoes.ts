@@ -233,8 +233,8 @@ export class GerenciadorSessoes implements Remetente {
         if (this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
         conexao.tentativas = 0;
         await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
-        // Primeira conexão deste número: base do aquecimento (decisão #64)
-        await prisma.whatsappSessao.updateMany({ where: { id, primeiraConexaoEm: null }, data: { primeiraConexaoEm: new Date() } });
+        // Aquecimento por CHIP (decisões #64 e #141): a idade é do telefone conectado, não do espaço.
+        await this.conferirAquecimento(id, numeroDoJid(sock.user?.id));
         void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
         void registrarLogSessao(id, `WhatsApp conectado (+${numeroDoJid(sock.user?.id) ?? ""})`);
         this.log.info({ id }, "WhatsApp conectado");
@@ -279,6 +279,23 @@ export class GerenciadorSessoes implements Remetente {
         await this.abrirSocket(id, conexao.tentativas + 1);
       }).catch((e) => this.log.error({ e, id }, "falha ao reconectar"));
     }, d.esperaMs));
+  }
+
+  /**
+   * Chip diferente no mesmo espaço recomeça o aquecimento (decisão #141): número novo disparando no volume
+   * cheio é a principal causa de bloqueio. O mesmo chip reconectado mantém a idade. Sem número guardado
+   * para comparar (espaços de antes desta regra), recomeça por segurança (opção aprovada pelo dono).
+   */
+  private async conferirAquecimento(id: string, numero: string | null) {
+    if (!numero) return;
+    const s = await prisma.whatsappSessao.findUnique({ where: { id }, select: { primeiraConexaoEm: true, numeroAquecimento: true } });
+    if (!s || (s.primeiraConexaoEm && s.numeroAquecimento === numero)) return;
+    await prisma.whatsappSessao.update({ where: { id }, data: { primeiraConexaoEm: new Date(), numeroAquecimento: numero } });
+    // Primeira conexão do espaço não precisa de aviso; troca de chip (ou sem como comparar) fica nos Logs
+    if (s.primeiraConexaoEm) {
+      this.log.info({ id }, "chip diferente: aquecimento recomeça");
+      void registrarLogSessao(id, `Número novo conectado (+${numero}): aquecimento recomeça (20 envios/dia nos primeiros dias)`);
+    }
   }
 
   /** Desconecta e apaga o login salvo (o aparelho some da lista do celular). */
