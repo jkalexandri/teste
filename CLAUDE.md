@@ -10,6 +10,7 @@
 - Mostrar o plano de arquivos antes de criar algo grande.
 - Corrigir só o item pedido, sem mudar o resto.
 - Código comentado em português.
+- **Comandos para a VPS:** sempre em bloco de código (```bash), um bloco por etapa, na ordem, para o dono copiar com o botão; sem texto misturado dentro do bloco.
 
 ## Login (regra máxima)
 - A tela de login deve ficar **idêntica** à prévia (`docs/login-referencia.md`): fundo, cores, circuitos, feixes, animações, fontes, tamanhos e posições.
