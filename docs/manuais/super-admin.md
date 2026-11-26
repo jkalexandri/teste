@@ -52,6 +52,11 @@ celular ou App no celular). A tela atualiza sozinha a cada 20 segundos.
 Os clientes (Usuários e Admins da Empresa) chamam pelo botão **Suporte**. As conversas chegam aqui, com o número de mensagens novas
 também no menu. A caixa de escrever e o cabeçalho da conversa ficam **fixos**: só a lista de mensagens rola.
 
+**IA no suporte dos clientes:** no topo de Atendimento → Clientes há a chave **Ligar a IA** (começa desligada). Ligada, a IA responde primeiro, com o
+manual do perfil do cliente e os dados da conta dele. Quando você escreve, ela para naquela conversa; **Devolver para a IA** a reativa.
+Pagamento, cobrança, cancelamento, conta bloqueada, reclamação, arquivos, pedido de atendente e dúvidas que ela não souber passam para você,
+com aviso no WhatsApp de avisos e no celular. Limite de 20 respostas da IA por conversa por dia; o custo aparece em Despesas com IA.
+
 ![Atendimento](prints/s-atendimento.png)
 
 - Escolha a conversa à esquerda e responda; pode anexar **imagem (JPG/PNG) ou PDF** até 15 MB.

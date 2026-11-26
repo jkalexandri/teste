@@ -41,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -144,6 +144,13 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
   app.post<{ Params: { id: string } }>("/interessados/:id/responder", async (req, res) => {
     if (!interessados) return res.code(503).send({ ok: false, mensagem: "Chat indisponível." });
     interessados.agendar(req.params.id);
+    return { ok: true, mensagem: "A IA vai responder." };
+  });
+
+  // ===== IA no suporte dos clientes (decisão #146): a IA responde quem escreveu pelo botão Suporte =====
+  app.post<{ Params: { id: string } }>("/suporte/:id/responder", async (req, res) => {
+    if (!suporteIA) return res.code(503).send({ ok: false, mensagem: "Suporte indisponível." });
+    suporteIA.agendar(req.params.id);
     return { ok: true, mensagem: "A IA vai responder." };
   });
 

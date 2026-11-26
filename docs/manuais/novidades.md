@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.42.0 — IA no suporte dos clientes (26/11/2026)
+
+- **Super Admin:** a IA pode responder primeiro quem escreve pelo botão **Suporte**. A chave fica no topo de **Atendimento → Clientes**
+  e **começa desligada**: ligue depois de testar. Ela usa a ficha do Empresa | IA, o manual do perfil do cliente e os dados da própria conta dele.
+- Quando **você escreve**, a IA para naquela conversa (botão **Devolver para a IA** para reativar). Pagamento, cobrança, cancelamento, conta
+  bloqueada, reclamação, arquivo, pedido de atendente e dúvidas que ela não souber **passam para você**, com aviso no WhatsApp e no celular.
+- Limite de 20 respostas da IA por conversa por dia. As respostas dela aparecem como "Assistente virtual (IA)".
+- **Cliente:** pode ser respondido por um assistente virtual; para falar com uma pessoa, é só pedir um atendente.
+
 ## v1.41.15 — caixa de escrever fixa no Atendimento (26/11/2026)
 
 - **Super Admin:** na tela **Atendimento** (Clientes e Interessados) a caixa de escrever (texto, arquivo e Enviar) e o cabeçalho da

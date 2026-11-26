@@ -11,6 +11,7 @@ import { Atendente } from "./conversas.js";
 import { Avisador } from "./avisos.js";
 import { AvisoQueda } from "./aviso-queda.js";
 import { FilaPlataforma } from "./fila-plataforma.js";
+import { AtendenteSuporte } from "./suporte-ia.js";
 import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
@@ -34,17 +35,21 @@ const notificarSuperAdmin = (para: string, texto: string) => filaPlataforma.enfi
 const avisador = new Avisador(log.child({ modulo: "avisos" }), { notificar });
 const atendente = new Atendente(sessoes, log.child({ modulo: "conversas" }), { pastaArquivos: config.pastaArquivos, notificar, avisos: avisador });
 // Chat para interessados (decisão #104): a IA responde quem ainda não é cliente; se não souber, avisa o Super Admin
+// Avisa o Super Admin (WhatsApp de avisos, prioridade alta, e notificação no celular)
+const avisarSuperAdmin = async (texto: string, url: string) => {
+  const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
+  if (cfg?.numeroAvisos) await notificarSuperAdmin(cfg.numeroAvisos, texto).catch(() => undefined);
+  const sas = await prisma.usuario.findMany({ where: { cargo: "SUPERADMIN", status: "ATIVO" }, select: { id: true } });
+  for (const s of sas) await enviarPush(s.id, texto, url).catch(() => undefined);
+};
 const interessados = new AtendenteInteressados(log.child({ modulo: "interessados" }), {
-  avisarSuporte: async (texto) => {
-    const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
-    if (cfg?.numeroAvisos) await notificarSuperAdmin(cfg.numeroAvisos, texto).catch(() => undefined);
-    const sas = await prisma.usuario.findMany({ where: { cargo: "SUPERADMIN", status: "ATIVO" }, select: { id: true } });
-    for (const s of sas) await enviarPush(s.id, texto, "/atendimento?aba=interessados").catch(() => undefined);
-  },
+  avisarSuporte: (texto) => avisarSuperAdmin(texto, "/atendimento?aba=interessados"),
 });
+// IA no suporte dos clientes (decisão #146): responde pelo botão Suporte; passa para o atendente quando preciso
+const suporteIA = new AtendenteSuporte(log.child({ modulo: "suporte-ia" }), { avisarSuporte: avisarSuperAdmin });
 // Uptime medido para a pílula de status do login (decisão #109)
 const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
-const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma);
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma, suporteIA);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,

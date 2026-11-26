@@ -49,6 +49,7 @@ Mantenha o celular com internet de vez em quando. Se ficar muitos dias desligado
 Se aparecer "Este WhatsApp foi aberto em outro lugar", clique em **Conectar**: ele volta sem precisar ler o QR Code.
 Se você **trocar o chip** de um número, o novo recomeça o aquecimento (20 envios por dia nos primeiros dias), para não ser bloqueado.
 Se aparecer **"Reconectando…"**, a conexão caiu e está voltando sozinha (não precisa ler o QR Code). Para tentar na hora, toque em **Tentar agora**.
+O **Suporte** (ícone do atendente) pode ser respondido primeiro por um assistente virtual (IA). Para falar com uma pessoa, escreva que quer um **atendente**; pagamento, cobrança, cancelamento e reclamações também são encaminhados ao atendente.
 Se a reconexão falhar ao ser reaberta, a tela mostra **"Última falha: …"** e o sistema continua tentando sozinho (seu login não é apagado); se não resolver, toque em **Desconectar** e leia o QR Code de novo.
 Se o WhatsApp ficar 3 minutos fora, você recebe um aviso; quando volta, outro. Com **2 horas** fora aparece o selo vermelho **"Com problema"**: toque em **Tentar agora** e, se não voltar, confira o celular (internet ligada e WhatsApp aberto). Se for desconectado de vez, o aviso chega na hora com o motivo.
 

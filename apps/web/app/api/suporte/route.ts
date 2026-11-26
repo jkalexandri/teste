@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
-import { avisarSuporteOffline, gravarMensagem, mensagensDaConversa } from "@/lib/suporte";
+import { acionarIASuporte, avisarSuporteOffline, gravarMensagem, mensagensDaConversa } from "@/lib/suporte";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,10 @@ export async function POST(req: Request) {
   const arquivo = form.get("arquivo");
   const texto = String(form.get("texto") ?? "");
   const r = await gravarMensagem(u.id, "CLIENTE", u.id, texto, arquivo instanceof File && arquivo.size > 0 ? arquivo : null);
-  if (r.ok) await avisarSuporteOffline(u, texto);
+  if (r.ok) {
+    // IA do suporte (decisão #146): responde se estiver ligada e a conversa não estiver pausada
+    const iaAtendendo = await acionarIASuporte(u.id);
+    await avisarSuporteOffline(u, texto, iaAtendendo);
+  }
   return NextResponse.json(r, { status: r.ok ? 200 : 400 });
 }

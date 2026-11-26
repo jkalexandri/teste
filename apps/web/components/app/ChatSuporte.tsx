@@ -69,7 +69,7 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360, preencher =
   }
 
   const minha = (m: Msg) =>
-    modo === "cliente" ? m.autor === "CLIENTE" : modo === "visitante" ? m.autor === "VISITANTE" : modo === "interessado" ? m.autor === "SUPORTE" || m.autor === "IA" : m.autor === "SUPORTE";
+    modo === "cliente" ? m.autor === "CLIENTE" : modo === "visitante" ? m.autor === "VISITANTE" : modo === "interessado" || modo === "suporte" ? m.autor === "SUPORTE" || m.autor === "IA" : m.autor === "SUPORTE";
   const nomeAutor = (a: Msg["autor"]) =>
     a === "SUPORTE" ? (modo === "interessado" ? "Você" : "Suporte FilaPro Leads") : a === "IA" ? "Assistente virtual (IA)" : a === "VISITANTE" ? "Visitante" : "Cliente";
   const linkArquivo = (id: string) => (modo === "visitante" || modo === "interessado" ? `/api/interessados/arquivo/${id}` : `/api/suporte/arquivo/${id}`);

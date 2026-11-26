@@ -115,3 +115,62 @@ export async function resumirConversa(resumoAtual: string, mensagens: MensagemCo
   const r = await chamarIA("conversar", { sistema: SISTEMA_RESUMO_CONVERSA, mensagens: [{ papel: "usuario", texto: texto.slice(0, 30_000) }], maxTokens: 300 }, quem);
   return r.texto.trim().slice(0, 2000);
 }
+
+// ===== Suporte dos clientes (decisão #146): a IA responde pelo botão Suporte =====
+const SISTEMA_SUPORTE = `ATENDENTE DE SUPORTE. Você é o assistente virtual de suporte do FilaPro Leads e atende um CLIENTE que já usa o sistema.
+Escreva em português do Brasil, mensagens curtas, cordiais e objetivas. Uma resposta por vez, em passos simples quando for explicar como fazer algo.
+Use SOMENTE o manual, a ficha e os dados da conta de quem está perguntando. NUNCA invente telas, botões, prazos, preços ou regras.
+Você NÃO altera nada na conta, NÃO fala de outros clientes e NÃO promete reembolso, desconto, prazo ou exceção.
+Marque "chamarHumano": true (e diga, em uma frase, que um atendente vai responder por aqui) quando:
+- a dúvida não está no manual ou você não tem certeza da resposta;
+- o assunto é pagamento, cobrança, cancelamento, conta bloqueada ou vencida, reclamação ou erro técnico que o manual não resolve;
+- o cliente pede para falar com uma pessoa.
+Caso contrário, responda a dúvida e deixe "chamarHumano": false.
+Responda SOMENTE com JSON: {"resposta": "...", "chamarHumano": false, "motivo": "frase curta explicando se chamou o atendente"}.`;
+
+export type MensagemSuporte = { autor: "CLIENTE" | "SUPORTE" | "IA"; texto: string; tipo?: string };
+export type RespostaSuporte = { resposta: string; chamarHumano: boolean; motivo: string };
+
+export const ESQUEMA_SUPORTE = {
+  type: "object",
+  properties: { resposta: { type: "string" }, chamarHumano: { type: "boolean" }, motivo: { type: "string" } },
+  required: ["resposta", "chamarHumano", "motivo"],
+  additionalProperties: false,
+};
+
+/** Extrai e valida o JSON da resposta do suporte (tolerante a texto em volta). */
+export function lerJsonSuporte(texto: string): RespostaSuporte | null {
+  const i = texto.indexOf("{"), f = texto.lastIndexOf("}");
+  if (i < 0 || f <= i) return null;
+  try {
+    const j = JSON.parse(texto.slice(i, f + 1)) as Record<string, unknown>;
+    const resposta = typeof j.resposta === "string" ? j.resposta.trim() : "";
+    if (!resposta) return null;
+    return { resposta: resposta.slice(0, 1500), chamarHumano: j.chamarHumano === true, motivo: typeof j.motivo === "string" ? j.motivo.trim().slice(0, 300) : "" };
+  } catch {
+    return null;
+  }
+}
+
+const linhaSuporte = (m: MensagemSuporte) => `${m.autor === "CLIENTE" ? "Cliente" : "Suporte"}: ${m.tipo && m.tipo !== "texto" ? `[${m.tipo}] ` : ""}${m.texto}`.trim();
+
+export async function responderSuporte(
+  d: { conhecimento: string; dadosConta: string; nomeCliente: string; recentes: MensagemSuporte[] },
+  quem: QuemUsa,
+) {
+  // Manual e ficha no bloco fixo (cache); os dados da conta e a conversa vão no corpo
+  const corpo = [
+    d.nomeCliente ? `Nome do cliente: ${d.nomeCliente}` : "",
+    d.dadosConta ? `Dados da conta deste cliente:\n${d.dadosConta}` : "",
+    d.recentes.length ? `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linhaSuporte).join("\n")}` : "",
+    "Escreva a próxima resposta do Suporte.",
+  ].filter(Boolean).join("\n\n");
+  const r = await chamarIA(
+    "conversar",
+    { sistema: SISTEMA_SUPORTE, contexto: d.conhecimento || undefined, mensagens: [{ papel: "usuario", texto: corpo }], maxTokens: 1500, esquemaJson: ESQUEMA_SUPORTE },
+    quem,
+  );
+  const j = lerJsonSuporte(r.texto);
+  if (!j) throw new ErroIA("A IA respondeu num formato inesperado.", true, r.texto.slice(0, 300));
+  return { ...j, custoUsd: r.custoUsd };
+}

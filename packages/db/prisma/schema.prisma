@@ -241,6 +241,8 @@ model ConfigVenda {
   /// Último teste de conexão que deu certo: nome da conta no Asaas e quando
   asaasConta            String?
   asaasTestadoEm        DateTime?
+  /// IA responde o suporte dos clientes pelo botão Suporte (decisão #146). Começa desligada.
+  iaSuporteLigada       Boolean  @default(false)
   /// Texto sugestão do "Como qualificar os leads" (decisão #121), editado pelo Super Admin; vazio = texto padrão do sistema
   sugestaoQualificar    String?
   /// Último aviso (webhook) que chegou do Asaas: quando, qual evento e se o token conferiu — para conferir na tela Pagamento
@@ -815,6 +817,11 @@ model SuporteConversa {
   /// Não lidas por quem atende (Super Admin) e pelo cliente
   naoLidasSuporte  Int      @default(0)
   naoLidasCliente  Int      @default(0)
+  /// IA no suporte dos clientes (decisão #146): pausada quando o Super Admin assume ou a IA passa para o atendente
+  iaPausada        Boolean  @default(false)
+  iaPausaMotivo    String?
+  /// Último aviso ao Super Admin enquanto a IA atendia (no máximo 1 a cada 30 min)
+  ultimoAvisoEm    DateTime?
   /// O Super Admin chamou o cliente: o chat abre sozinho na tela dele
   chamadoEm        DateTime?
   mensagens        SuporteMensagem[]
