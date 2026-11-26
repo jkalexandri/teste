@@ -55,9 +55,18 @@ Medido no site de teste, com e-mail existente e inexistente:
 - Conferido e correto: os botões de demonstração do login só aparecem fora de produção (#3); a recuperação responde igual para e-mail
   existente ou não; as mensagens "módulo errado/expirado/inativa" só aparecem depois de acertar a senha.
 
-### S5 — Limite só por IP; falta limite por e-mail ❓
-Atacante com vários IPs pode tentar a mesma conta. O bloqueio de 5 tentativas/15 min por conta existe, mas também permite
-**trancar a conta de outra pessoa** de propósito (negação de acesso).
+### S5 — Qualquer pessoa consegue trancar a conta de outra e lotar a caixa de e-mail dela ✅ (reproduzido em 26/11/2026)
+Teste no site de teste, com endereços de internet diferentes:
+- **S5a — bloqueio como arma:** um atacante errou 5 vezes de um endereço; a vítima, **de outro endereço e com a senha certa**, recebeu
+  "Muitas tentativas erradas. Tente novamente em 15 minutos." O bloqueio é da conta inteira, não de quem errou.
+- **S5b — sem saída:** a vítima pediu recuperação e tentou entrar com a **senha temporária** durante o bloqueio: também recusada.
+- **S5c — alcance:** **um único endereço** trancou as **4 contas testadas em menos de 25 tentativas, inclusive o Super Admin**
+  (limite por endereço: 20 tentativas a cada 10 minutos). Repetindo a cada 15 minutos, a conta fica fora do ar para sempre.
+  Hoje o dono da conta nem é avisado (o alerta só existe para o Super Admin e para 3 bloqueios por hora na plataforma).
+- **S5d — recuperação repetida:** 6 pedidos de 6 endereços diferentes contra a mesma vítima = **6 e-mails** e **6 senhas temporárias
+  diferentes**; cada uma invalida a anterior (a vítima pode estar digitando a do e-mail anterior).
+- Sobre a preocupação original ("vários endereços tentando a mesma conta"): o bloqueio da conta limita a 5 tentativas a cada 15 minutos
+  e as senhas exigem 12+ caracteres com 4 tipos; o risco de adivinhar é baixo. O problema real é o bloqueio ser usado contra o dono.
 
 ### S6 — TOTP do Super Admin sem anti-reuso do código ❓
 Um código válido pode ser usado de novo dentro da janela de validade.
