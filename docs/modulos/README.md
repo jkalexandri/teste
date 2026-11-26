@@ -23,7 +23,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 8 | Conversas IA (atendimento) | 🟡 Em revisão | iniciada em 25/11/2026 13:31 (auditoria a fazer) | v1.41.2 | v1.41.6 — 25/11/2026 19:08 (rolagem da tela: cabeçalho e caixa de escrever fixos) |
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
-| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.42.0 — 26/11/2026 15:30 (IA no suporte dos clientes) |
+| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.46.0 — 27/11/2026 00:30 (suporte encerrado por inatividade do cliente) |
 | 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | v1.44.1 — 26/11/2026 19:10 (atualização à prova de rota removida e de tentativa repetida) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
