@@ -9,10 +9,12 @@ import { prisma } from "@filapro/db";
 import { GerenciadorSessoes } from "../src/sessoes.js";
 import { ERRO_OUTRO_LUGAR } from "../src/queda.js";
 import { Instancia } from "../src/instancia.js";
+import { chaveDoNumero, registrarNumerosRepetidos } from "../src/numero-unico.js";
 
 const ID = "tst-ses-1";
 const ORFA = "tst-ses-orfa";
 const BLQ = "tst-ses-blq";
+const ID2 = "tst-ses-2";
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
 async function ate(cond: () => boolean | Promise<boolean>, ms = 3000) { for (let i = 0; i < ms / 20; i++) { if (await cond()) return true; await espera(20); } return false; }
@@ -27,6 +29,7 @@ class SocketFalso {
   end() { this.fechada = true; }
   atualizarLogin() { this.ev.emit("creds.update", {}); }
   cair(codigo: number) { this.ev.emit("connection.update", { connection: "close", lastDisconnect: { error: { output: { statusCode: codigo } } } }); }
+  qr() { this.ev.emit("connection.update", { qr: "qr-teste" }); }
   abrir(numero = "5511900001111") { this.user = { id: `${numero}:1@s.whatsapp.net` }; this.ev.emit("connection.update", { connection: "open" }); }
 }
 
@@ -57,12 +60,12 @@ beforeEach(async () => {
   falharAuth = null; falharApagar = false;
   g?.encerrarTudo();
   g = novoGerenciador();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA, BLQ] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ] } } });
 });
 
 after(async () => {
   g?.encerrarTudo();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA, BLQ] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ] } } });
   await prisma.servicoInstancia.deleteMany({ where: { id: "teste-servico" } });
   await prisma.$disconnect();
 });
@@ -352,4 +355,101 @@ test("M1: a frase mostrada na tela é curta e fixa (sem detalhe técnico)", asyn
   assert.equal(motivoDaFalha(new Error("Unsupported state or unable to authenticate data")), "Não foi possível ler o login salvo.");
   assert.equal(motivoDaFalha(new Error("senha=abc123 vazou")), "Falha ao abrir a conexão.");
   assert.equal(motivoDaFalha("qualquer coisa"), "Falha ao abrir a conexão.");
+});
+
+// ===== M3 (decisão #152): um número de WhatsApp só em UM espaço =====
+const NUM = "5511987654321";
+const donos = async () => (await prisma.usuario.findMany({ take: 2, select: { id: true }, orderBy: { id: "asc" } })).map((u) => u.id);
+/** Espaço que já tem o número conectado (com login salvo) */
+const ocupar = (id: string, usuarioId: string | null, numero = NUM, extra: Record<string, unknown> = {}) =>
+  prisma.whatsappSessao.create({ data: { id, usuarioId, status: "CONECTADO", numero, creds: "v1:x:y:z", conectadoEm: new Date(Date.now() - 3600_000), ...extra } });
+const limparLogsM3 = () => prisma.log.deleteMany({ where: { OR: [{ texto: { contains: "Número recusado" } }, { texto: { contains: "Tentativa de conectar este número" } }, { texto: { contains: "Número repetido" } }] } });
+
+test("M3: mesmo usuário lendo o QR de um número que já está em outro dos seus WhatsApps é recusado; o antigo segue", async () => {
+  const [dono] = await donos();
+  await ocupar(ID2, dono!, NUM, { apelido: "Vendas 2" });
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "DESCONECTADO"), "a conexão nova foi recusada");
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.erro, 'Este número já está conectado em outro dos seus WhatsApps (WhatsApp "Vendas 2").');
+  assert.equal(s.numero, null); assert.equal(sockets[0]!.fechada, true, "saiu do celular");
+  assert.ok(apagados.includes(ID), "login novo apagado");
+  assert.equal(g.conectado(ID), false);
+  const antigo = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID2 } });
+  assert.equal(antigo.status, "CONECTADO"); assert.equal(antigo.creds, "v1:x:y:z", "o espaço que já tinha o número continua intacto");
+  assert.ok(await ate(async () => (await prisma.log.count({ where: { usuarioId: dono, texto: { contains: "Número recusado (+5511987654321): já está conectado em outro dos seus WhatsApps" } } })) === 1));
+  await limparLogsM3();
+});
+
+test("M3: número que está em OUTRA conta é recusado sem dizer de quem; o dono dele vê a tentativa nos Logs", async () => {
+  const [a, b] = await donos();
+  await ocupar(ID2, b!);
+  await g.conectar(ID, a);
+  sockets[0]!.qr(); sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "DESCONECTADO"));
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).erro, "Este número já está em uso em outra conta do FilaPro Leads. Se ele é seu, fale com o suporte.");
+  assert.ok(await ate(async () => (await prisma.log.count({ where: { usuarioId: b, texto: { contains: "Tentativa de conectar este número (+5511987654321) em outra conta foi recusada" } } })) === 1), "o dono vê a tentativa");
+  const log = await prisma.log.findFirstOrThrow({ where: { usuarioId: b, texto: { contains: "Tentativa de conectar" } } });
+  assert.doesNotMatch(log.texto, new RegExp(String(a)), "sem dizer quem tentou");
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID2 } })).status, "CONECTADO");
+  await limparLogsM3();
+});
+
+test("M3: o 9º dígito não conta (com e sem ele é o mesmo número) e a plataforma também entra na regra", async () => {
+  assert.equal(chaveDoNumero("5511987654321"), chaveDoNumero("551187654321"));
+  assert.notEqual(chaveDoNumero("5511987654321"), chaveDoNumero("5511987654322"));
+  const [dono] = await donos();
+  await ocupar(ID2, null, "551187654321"); // outro espaço (sem dono, como a plataforma) com a forma antiga, sem o 9
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir("5511987654321");
+  assert.ok(await ate(async () => (await status()) === "DESCONECTADO"), "recusou mesmo com o formato diferente");
+  await limparLogsM3();
+});
+
+test("M3: reconexão de login salvo NUNCA é recusada (mesmo com número repetido de antes)", async () => {
+  const [dono] = await donos();
+  await ocupar(ID2, dono!);
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, status: "RECONECTANDO", numero: NUM, creds: "v1:x:y:z", quedaEm: new Date() } });
+  await g.conectar(ID, dono); // reconexão: tem login salvo, não lê QR
+  sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"), "reconectou normalmente");
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).erro, null);
+  assert.deepEqual(apagados, [], "nada foi apagado");
+});
+
+test("M3: número diferente (troca de chip) e espaço livre funcionam normalmente", async () => {
+  const [dono] = await donos();
+  await ocupar(ID2, dono!, "5511911112222");
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  assert.equal((await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).numero, NUM);
+});
+
+test("M3: duas conexões lendo o QR do MESMO número ao mesmo tempo: só uma passa", async () => {
+  const [a, b] = await donos();
+  await g.conectar(ID, a); await g.conectar(ID2, b);
+  // Depois de ler o QR o login já está gravado (o login falso do teste não grava): simula isso nas duas
+  await prisma.whatsappSessao.updateMany({ where: { id: { in: [ID, ID2] } }, data: { creds: "v1:x:y:z" } });
+  sockets[0]!.qr(); sockets[1]!.qr();
+  sockets[0]!.abrir(NUM); sockets[1]!.abrir(NUM);
+  assert.ok(await ate(async () => { const r = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { status: true } }); return r.filter((x) => x.status === "CONECTADO").length === 1 && r.filter((x) => x.status === "DESCONECTADO").length === 1; }), "uma conectou e a outra foi recusada");
+  await limparLogsM3();
+});
+
+test("M3: números que já estavam repetidos só vão para os Logs do Super Admin, sem desconectar ninguém, e sem repetir em 24 h", async () => {
+  const [a, b] = await donos();
+  await ocupar(ID, a!); await ocupar(ID2, b!);
+  await limparLogsM3();
+  const n = await registrarNumerosRepetidos();
+  assert.ok(n >= 1);
+  const logs = await prisma.log.findMany({ where: { texto: { contains: "Número repetido: +5511987654321" } } });
+  assert.equal(logs.length, 1); assert.equal(logs[0]!.empresaId, null); assert.equal(logs[0]!.quem, "Sistema");
+  assert.match(logs[0]!.texto, /está conectado em 2 espaços/); assert.match(logs[0]!.texto, /Nenhum foi desconectado/);
+  await registrarNumerosRepetidos();
+  assert.equal(await prisma.log.count({ where: { texto: { contains: "Número repetido: +5511987654321" } } }), 1, "não repete no mesmo dia");
+  const ainda = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } } });
+  assert.ok(ainda.every((x) => x.status === "CONECTADO" && x.creds), "ninguém foi desconectado");
+  await limparLogsM3();
 });

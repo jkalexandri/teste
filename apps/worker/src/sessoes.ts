@@ -9,6 +9,7 @@ import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
 import { numeroDoJid, paraJid } from "./numero.js";
 import { decidirQueda, motivoDaFalha } from "./queda.js";
 import { esquecerDono } from "./numeros.js";
+import { reservarNumero, type Conflito } from "./numero-unico.js";
 import type { Conteudo, Remetente } from "./disparos.js";
 
 /** Id fixo da sessão do número da plataforma (decisão #51). */
@@ -44,6 +45,9 @@ export class GerenciadorSessoes implements Remetente {
   private paraSair = new Map<string, "apagar" | "manter">();
   /** Falhas seguidas ao ABRIR a conexão de cada número (decisão #144): só a 1ª vai para os Logs; ao voltar, registra a recuperação */
   private falhas = new Map<string, number>();
+  /** Números que estão lendo o QR agora (decisão #152): ao abrir, é um pareamento NOVO e o número não pode estar em outro espaço.
+   *  Fica entre as conexões (o WhatsApp reinicia a conexão depois da leitura). Reconexão de login salvo nunca entra aqui. */
+  private pareando = new Set<string>();
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
@@ -285,11 +289,18 @@ export class GerenciadorSessoes implements Remetente {
         if (u.qr && this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
         if (u.qr) {
           conexao.qrGerado = true;
+          this.pareando.add(id);
           await this.gravar(id, { status: StatusWhatsapp.AGUARDANDO_QR, qr: u.qr, qrEm: new Date(), erro: null });
         }
         if (u.connection === "open") {
           // Número sem dono (decisão #138): conectou só para sair do WhatsApp — some de "Dispositivos conectados" do celular
           if (this.paraSair.has(id)) { void this.encerrarSemDono(id); return; }
+          // Pareamento novo (acabou de ler o QR): o número não pode estar em outro espaço (decisão #152 — M3)
+          if (this.pareando.delete(id)) {
+            const numeroNovo = numeroDoJid(sock.user?.id);
+            const conflito = numeroNovo ? await reservarNumero(id, numeroNovo).catch((e) => { this.log.error({ e, id }, "falha ao conferir número repetido"); return null; }) : null;
+            if (conflito) { await this.recusarNumeroRepetido(id, numeroNovo!, conflito); return; }
+          }
           conexao.tentativas = 0;
           // Estado de antes de limpar as marcas: se avisou da queda, avisa que voltou (decisão #142)
           const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true, quedaEm: true, avisoQuedaEm: true } });
@@ -321,6 +332,7 @@ export class GerenciadorSessoes implements Remetente {
     if (d.acao === "encerrar") {
       // Avisa na hora só quem já estava conectado (decisão #142); QR expirado de quem ainda conectava não avisa
       const antes = pareado ? await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true } }) : null;
+      this.pareando.delete(id);
       if (d.apagarLogin) await (this.opcoes.apagarAuth ?? apagarAuth)(id);
       await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
       void registrarLogSessao(id, `WhatsApp desconectado${d.erro ? `: ${d.erro}` : ""}`);
@@ -340,6 +352,25 @@ export class GerenciadorSessoes implements Remetente {
       await this.gravar(id, { status: StatusWhatsapp.CONECTANDO, qr: null, qrEm: null });
     }
     this.agendarReabertura(id, d.esperaMs, conexao.tentativas + 1);
+  }
+
+  /**
+   * O número que acabou de ser pareado já está conectado em outro espaço (decisão #152 — M3): recusa a conexão NOVA
+   * (sai do celular e o login novo é apagado) e a que já existia continua intacta. Fica nos Logs; quando o número é de
+   * outra conta, o dono dele também vê nos Logs que houve uma tentativa (sem dizer de quem).
+   */
+  private async recusarNumeroRepetido(id: string, numero: string, conflito: Conflito) {
+    const eu = await prisma.whatsappSessao.findUnique({ where: { id }, select: { usuarioId: true } });
+    const mesmoUsuario = !!eu?.usuarioId && eu.usuarioId === conflito.usuarioId;
+    const onde = conflito.id === conflito.usuarioId ? "WhatsApp principal" : conflito.apelido ? `WhatsApp "${conflito.apelido}"` : "WhatsApp extra";
+    const mensagem = mesmoUsuario
+      ? `Este número já está conectado em outro dos seus WhatsApps (${onde}).`
+      : "Este número já está em uso em outra conta do FilaPro Leads. Se ele é seu, fale com o suporte.";
+    this.log.warn({ id, conflito: conflito.id, mesmoUsuario }, "número recusado: já conectado em outro espaço");
+    await this.desconectar(id); // sai do celular, apaga o login novo e para a conexão
+    await this.gravar(id, { erro: mensagem });
+    void registrarLogSessao(id, `Número recusado (+${numero}): já está conectado em ${mesmoUsuario ? `outro dos seus WhatsApps (${onde})` : "outra conta"}`);
+    if (!mesmoUsuario) void registrarLogSessao(conflito.id, `Tentativa de conectar este número (+${numero}) em outra conta foi recusada`);
   }
 
   /**
@@ -365,6 +396,7 @@ export class GerenciadorSessoes implements Remetente {
       // Cancela a reconexão agendada e invalida o nº de série: nada reabre depois (sem QR "fantasma")
       this.pararRelogio(id);
       this.falhas.delete(id);
+      this.pareando.delete(id);
       this.geracoes.set(id, (this.geracoes.get(id) ?? 0) + 1);
       const c = this.conexoes.get(id);
       if (c) {

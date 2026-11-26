@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.45.1 — o mesmo número só em um WhatsApp (26/11/2026)
+
+- Um número de WhatsApp agora só pode estar conectado em **um** lugar. Se você ler o QR Code de um chip que já está em outro dos seus WhatsApps (ou em outra conta),
+  a conexão **nova é recusada** com uma mensagem na tela; a que já estava conectada continua funcionando.
+- **Super Admin:** números que **já estavam repetidos** não foram desconectados. Eles aparecem na tela **Logs** ("Número repetido: …") para você decidir qual manter.
+
 ## v1.45.0 — aviso quando o serviço do WhatsApp para (26/11/2026)
 
 - Se o serviço 24/7 parar, a tela **WhatsApp** (e o **Número da plataforma**) mostra o selo vermelho **"Serviço fora do ar"** com uma explicação, em vez de

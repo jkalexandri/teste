@@ -24,7 +24,7 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - **Onde:** `apps/web/lib/whatsapp.ts` (`lerEstado`) e `ConexaoWhatsapp.tsx`. O serviço já grava um batimento a cada 20 s em
   `ServicoInstancia.vistoEm` (decisão #133), que a tela não consulta.
 
-### M3 — O mesmo número de WhatsApp pode ficar conectado em dois espaços
+### M3 — O mesmo número de WhatsApp pode ficar conectado em dois espaços — ✅ FEITA na v1.45.1 (decisão #152)
 - **O problema:** nada impede ler o QR do mesmo chip no principal e num extra, ou em duas contas diferentes (`WhatsappSessao.numero`
   não é único e ninguém confere ao conectar). O WhatsApp aceita vários aparelhos ligados, então os dois funcionam: envios em
   duplicado, conversas misturadas, aquecimento e limites contados em separado (risco de bloqueio) e brecha para alguém
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-~~M1~~ (feita) → ~~M2~~ (feita) → M3 → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.

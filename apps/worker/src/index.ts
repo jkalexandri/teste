@@ -13,6 +13,7 @@ import { AvisoQueda } from "./aviso-queda.js";
 import { FilaPlataforma } from "./fila-plataforma.js";
 import { AtendenteSuporte } from "./suporte-ia.js";
 import { VigiaIA } from "./vigia-ia.js";
+import { registrarNumerosRepetidos } from "./numero-unico.js";
 import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
@@ -94,6 +95,8 @@ async function iniciar() {
   await api.listen({ port: config.porta, host: config.host });
   log.info(`Serviço no ar em http://${config.host}:${config.porta}`);
   await sessoes.iniciarTodas();
+  // Números que já estavam repetidos (decisão #152): só registra nos Logs do Super Admin, sem desconectar ninguém
+  void registrarNumerosRepetidos().catch((e) => log.error({ e }, "falha ao conferir números repetidos"));
   atendente.iniciar();
   avisador.iniciar();
   avisoQueda.iniciar();
