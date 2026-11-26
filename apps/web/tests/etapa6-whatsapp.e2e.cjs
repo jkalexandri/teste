@@ -31,6 +31,9 @@ const falso = http.createServer((req, resp) => {
 
 (async () => {
   await new Promise((r) => falso.listen(4000, '127.0.0.1', r));
+  // O serviço FALSO também dá sinal de vida, como o real faz a cada 20 s (decisão #151): sem ele a tela mostraria "Serviço fora do ar"
+  sql(`delete from "ServicoInstancia"`); sql(`insert into "ServicoInstancia"(id,dono,"vistoEm") values ('servico24h','teste-etapa6',now())`);
+  const sinal = setInterval(() => { try { sql(`update "ServicoInstancia" set "vistoEm"=now() where id='servico24h'`); } catch {} }, 10000);
   const ANA = sql(`select id from "Usuario" where email='ana@empresaexemplo.com.br'`);
   sql(`delete from "WhatsappSessao" where id in ('plataforma','${ANA}')`);
   sql(`update "ConfigVenda" set "numeroAvisos"='' where id='config'`);
@@ -157,6 +160,7 @@ const falso = http.createServer((req, resp) => {
   ok('Com o serviço fora do ar a compra continua funcionando', rp2.ok);
 
   // Limpeza
+  clearInterval(sinal); sql(`delete from "ServicoInstancia" where dono='teste-etapa6'`);
   sql(`delete from "Pedido" where email in ('${email}','b${email}')`);
   sql(`delete from "WhatsappSessao" where id in ('plataforma','${ANA}')`);
   sql(`update "ConfigVenda" set "numeroAvisos"='' where id='config'`);
@@ -164,3 +168,4 @@ const falso = http.createServer((req, resp) => {
   console.log(res.join('\n'));
   console.log(`\n${res.filter((r) => r.startsWith('PASSOU')).length}/${res.length} passaram`);
 })().catch((e) => { console.error(e); console.log(res.join('\n')); process.exit(1); });
+

@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.45.0 — aviso quando o serviço do WhatsApp para (26/11/2026)
+
+- Se o serviço 24/7 parar, a tela **WhatsApp** (e o **Número da plataforma**) mostra o selo vermelho **"Serviço fora do ar"** com uma explicação, em vez de
+  continuar mostrando "Conectado". Os botões ficam desativados e o QR Code antigo some. Quando o serviço volta, a tela atualiza sozinha.
+- **Super Admin:** você recebe um **e-mail** quando o serviço fica mais de 3 minutos sem sinal e outro quando ele volta (um por queda). Não avisa durante a atualização do sistema.
+  Para ligar o aviso, a VPS precisa da rotina a cada 5 minutos (passo na documentação de publicação).
+
 ## v1.44.1 — atualização da VPS mais segura (26/11/2026)
 
 - A atualização agora **limpa os tipos gerados do build anterior** antes de montar o site, o que evita o erro "Cannot find module … route.js"

@@ -1083,3 +1083,11 @@ model EstadoIAPonto {
   desde      DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
+
+/// Aviso de serviço 24/7 fora do ar (decisão #151): guarda se já avisou o Super Admin por e-mail desta queda (um e-mail por queda)
+model AlertaServico {
+  id           String    @id
+  foraDesde    DateTime?
+  avisouEm     DateTime?
+  atualizadoEm DateTime  @updatedAt
+}

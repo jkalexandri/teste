@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { prisma, Cargo, StatusWhatsapp } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { motivoSemAcesso } from "@/lib/auth/acesso";
+import { sinalDoServico } from "@/lib/servico-24h";
 
 export const SESSAO_PLATAFORMA = "plataforma";
 /** "proprio" = número principal; "plataforma" = número da plataforma; outro = id de um número extra do usuário (etapa 10c). */
@@ -25,6 +26,8 @@ export type EstadoWhatsapp = {
   quedaEm: string | null;
   tentativaReconexao: number;
   proximaTentativaEm: string | null;
+  /** Serviço 24/7 no ar? (decisão #151): sem sinal há mais de 90 s, a tela avisa em vez de mostrar o estado antigo do banco */
+  servico: { noAr: boolean; ultimoSinalEm: string | null };
 };
 
 /** Descobre qual sessão quem está logado pode controlar. null = sem permissão. */
@@ -43,8 +46,11 @@ export async function sessaoDoAlvo(alvo: AlvoWhatsapp): Promise<{ sessaoId: stri
 
 export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
   const w = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId } });
-  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null };
-  const qrNovo = w.qr && w.qrEm && Date.now() - w.qrEm.getTime() < QR_VALIDO_MS;
+  const sinal = await sinalDoServico();
+  const servico = { noAr: sinal.noAr, ultimoSinalEm: sinal.ultimoSinalEm?.toISOString() ?? null };
+  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, servico };
+  // Serviço parado: o QR guardado já não vale (ninguém o renova)
+  const qrNovo = sinal.noAr && w.qr && w.qrEm && Date.now() - w.qrEm.getTime() < QR_VALIDO_MS;
   return {
     status: w.status,
     numero: w.numero,
@@ -54,6 +60,7 @@ export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
     quedaEm: w.quedaEm?.toISOString() ?? null,
     tentativaReconexao: w.tentativaReconexao,
     proximaTentativaEm: w.proximaTentativaEm?.toISOString() ?? null,
+    servico,
   };
 }
 

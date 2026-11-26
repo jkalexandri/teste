@@ -18,7 +18,7 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - **Onde:** `apps/worker/src/sessoes.ts` (`conectar`, `aoFechar` → timer, `iniciarTodas`).
 - **Efeito no usuário:** WhatsApp parado sem aviso (a A6 avisa depois de 3 min, mas a recuperação nunca acontece sozinha).
 
-### M2 — A tela mostra "Conectado" com o serviço 24/7 parado
+### M2 — A tela mostra "Conectado" com o serviço 24/7 parado — ✅ FEITA na v1.45.0 (decisão #151)
 - **O problema:** o estado exibido vem só do banco. Se o serviço cair ou a VPS reiniciar, o banco continua dizendo "Conectado"
   (ou "Aguardando QR"/"Reconectando") até o serviço voltar. O usuário acha que está tudo bem e as campanhas não saem.
 - **Onde:** `apps/web/lib/whatsapp.ts` (`lerEstado`) e `ConexaoWhatsapp.tsx`. O serviço já grava um batimento a cada 20 s em
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-~~M1~~ (feita) → M2 → M3 → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → ~~M2~~ (feita) → M3 → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.

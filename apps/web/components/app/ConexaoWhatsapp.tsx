@@ -17,6 +17,8 @@ type Estado = {
   quedaEm?: string | null;
   tentativaReconexao?: number;
   proximaTentativaEm?: string | null;
+  /** Serviço 24/7 no ar? (decisão #151) */
+  servico?: { noAr: boolean; ultimoSinalEm: string | null };
 };
 
 const CHIP: Record<Estado["status"], { texto: string; estilo: React.CSSProperties }> = {
@@ -56,7 +58,11 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
     return () => window.clearInterval(t);
   }, [estado.status]);
 
+  // Serviço 24/7 parado (decisão #151): o banco ainda diz "Conectado", mas nada está funcionando
+  const foraDoAr = estado.servico ? !estado.servico.noAr : false;
+
   async function agir(acao: "conectar" | "desconectar") {
+    if (foraDoAr) return;
     if (acao === "desconectar" && !window.confirm(estado.status === "RECONECTANDO"
       ? "Desconectar este WhatsApp? Ele está voltando sozinho. Se desconectar, para usar de novo será preciso ler o QR Code."
       : "Desconectar este WhatsApp? Para usar de novo será preciso ler o QR Code.")) return;
@@ -71,10 +77,10 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
 
   // Fora há mais de 2 h (decisão #142): selo vermelho "Com problema"
   const comProblema = estado.status === "RECONECTANDO" && !!estado.quedaEm && agora - new Date(estado.quedaEm).getTime() >= 2 * 60 * 60_000;
-  const chip = comProblema ? { texto: "Com problema", estilo: { background: "#ffeef0", color: "#9e1d2f" } as React.CSSProperties } : CHIP[estado.status];
-  const conectado = estado.status === "CONECTADO";
-  const emAndamento = estado.status === "CONECTANDO" || estado.status === "AGUARDANDO_QR";
-  const reconectando = estado.status === "RECONECTANDO";
+  const chip = foraDoAr ? { texto: "Serviço fora do ar", estilo: { background: "#ffeef0", color: "#9e1d2f" } as React.CSSProperties } : comProblema ? { texto: "Com problema", estilo: { background: "#ffeef0", color: "#9e1d2f" } as React.CSSProperties } : CHIP[estado.status];
+  const conectado = estado.status === "CONECTADO" && !foraDoAr;
+  const emAndamento = (estado.status === "CONECTANDO" || estado.status === "AGUARDANDO_QR") && !foraDoAr;
+  const reconectando = estado.status === "RECONECTANDO" && !foraDoAr;
   const hora = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
   const faltam = estado.proximaTentativaEm ? Math.ceil((new Date(estado.proximaTentativaEm).getTime() - agora) / 1000) : 0;
 
@@ -101,7 +107,7 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
           </div>
         )}
 
-        {estado.status === "AGUARDANDO_QR" && estado.qrImagem && (
+        {!foraDoAr && estado.status === "AGUARDANDO_QR" && estado.qrImagem && (
           <div className="mt-3 flex flex-col sm:flex-row gap-4 items-start">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={estado.qrImagem} alt="QR Code para conectar o WhatsApp" width={264} height={264} className="rounded-xl bg-white p-2" style={{ border: "1px solid var(--border)" }} />
@@ -115,9 +121,25 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
           </div>
         )}
 
-        {(estado.status === "CONECTANDO" || (estado.status === "AGUARDANDO_QR" && !estado.qrImagem)) && (
+        {!foraDoAr && (estado.status === "CONECTANDO" || (estado.status === "AGUARDANDO_QR" && !estado.qrImagem)) && (
           <div className="mt-3 flex items-center gap-2 text-[12px]" style={{ color: "var(--muted)" }}>
             <CircleDashed size={16} className="animate-spin" /> Preparando a conexão…
+          </div>
+        )}
+
+        {/* Serviço 24/7 fora do ar (decisão #151): o estado do banco está desatualizado; nada funciona até ele voltar */}
+        {foraDoAr && (
+          <div className="mt-3 rounded-xl p-3 text-[12px] leading-relaxed" style={{ background: "#ffeef0", color: "#9e1d2f" }} data-testid="servico-fora">
+            <div className="flex items-center gap-2 font-bold">
+              <TriangleAlert size={16} className="shrink-0" />
+              O serviço do WhatsApp está fora do ar no momento{estado.servico?.ultimoSinalEm ? ` (último sinal às ${hora(estado.servico.ultimoSinalEm)})` : ""}.
+            </div>
+            <p className="mt-0.5">
+              {alvo === "plataforma"
+                ? "Os avisos do sistema ficam na fila e saem quando ele voltar."
+                : "Suas campanhas e respostas da IA estão paradas e continuam sozinhas quando ele voltar."}
+              {" "}Não precisa ler o QR Code: o login continua salvo. Esta tela atualiza sozinha quando ele voltar.
+            </p>
           </div>
         )}
 
@@ -149,7 +171,7 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
           </div>
         )}
 
-        {estado.status === "DESCONECTADO" && estado.erro && (
+        {!foraDoAr && estado.status === "DESCONECTADO" && estado.erro && (
           <div className="mt-3 flex gap-2 rounded-xl p-3 text-[12px]" style={{ background: "#ffeef0", color: "#9e1d2f" }}>
             <TriangleAlert size={16} className="shrink-0" /> {estado.erro}
           </div>
@@ -158,19 +180,19 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
         <div className="flex flex-wrap gap-2 mt-4">
           {reconectando && (
             <>
-              <button className="btn-primary" disabled={enviando} onClick={() => agir("conectar")} data-testid="tentar-agora">
+              <button className="btn-primary" disabled={enviando || foraDoAr} onClick={() => agir("conectar")} data-testid="tentar-agora">
                 {enviando ? "Aguarde…" : "Tentar agora"}
               </button>
-              <button className="btn-ghost" style={{ color: "#b42318" }} disabled={enviando} onClick={() => agir("desconectar")}>Desconectar</button>
+              <button className="btn-ghost" style={{ color: "#b42318" }} disabled={enviando || foraDoAr} onClick={() => agir("desconectar")}>Desconectar</button>
             </>
           )}
           {!conectado && !emAndamento && !reconectando && (
-            <button className="btn-primary" disabled={enviando} onClick={() => agir("conectar")}>
+            <button className="btn-primary" disabled={enviando || foraDoAr} onClick={() => agir("conectar")} data-testid="conectar-whatsapp">
               {enviando ? "Aguarde…" : "Conectar WhatsApp"}
             </button>
           )}
           {(conectado || emAndamento) && (
-            <button className="btn-ghost" style={{ color: "#b42318" }} disabled={enviando} onClick={() => agir("desconectar")}>
+            <button className="btn-ghost" style={{ color: "#b42318" }} disabled={enviando || foraDoAr} onClick={() => agir("desconectar")}>
               {emAndamento ? "Cancelar" : "Desconectar"}
             </button>
           )}

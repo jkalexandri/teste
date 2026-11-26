@@ -260,6 +260,13 @@ crontab -e
 0 12 * * * /opt/filapro/app/deploy/rotinas.sh >> /var/log/filapro-rotinas.log 2>&1
 ```
 
+- A cada 5 minutos: vigia do serviço 24/7 (decisão #151) — avisa os Super Admins por e-mail se ele ficar mais de 3 minutos sem sinal (e quando voltar).
+  Para ligar (uma vez; pode rodar de novo sem duplicar):
+
+```bash
+( crontab -l 2>/dev/null | grep -v vigia-servico.sh; echo '*/5 * * * * /opt/filapro/app/deploy/vigia-servico.sh >> /var/log/filapro-vigia.log 2>&1' ) | crontab -
+```
+
 - 03:30 (Brasília): backup do banco em `/opt/filapro/backups` (guarda 14 dias).
 - 09:00 (Brasília): avisos de renovação, despesas fixas do mês e contas vencendo.
 
