@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.14 — WhatsApp que não reconecta agora tenta de novo sozinho (26/11/2026)
+
+- Se a conexão do seu WhatsApp falhar **ao ser reaberta** (por exemplo, o sistema ficou sem acesso ao banco por alguns instantes),
+  o número continua "Reconectando…" e **tenta de novo sozinho**, em vez de ficar parado. A tela mostra "Última falha: …" com o motivo.
+- Seu login **nunca é apagado** por causa disso. Se a falha continuar, toque em **Desconectar** e leia o QR Code de novo.
+- A tela **Logs** registra só a primeira falha e a recuperação, sem encher a lista.
+
 ## v1.41.13 — fila e alerta do número da plataforma (26/11/2026)
 
 - **Super Admin:** as mensagens do número da plataforma agora saem em fila, com 5 a 10 segundos de intervalo e limite de

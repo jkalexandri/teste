@@ -47,3 +47,18 @@ export function decidirQueda(codigo: number, pareado: boolean, qrGerado: boolean
   // Queda comum (internet, servidor): reconecta com espera crescente, até 5 min.
   return { acao: "reconectar", esperaMs: Math.min(300_000, 2_000 * 2 ** tentativas) };
 }
+
+/**
+ * Frase curta e fixa para a tela quando a conexão não consegue ABRIR (decisão #144 — M1). Nunca mostra detalhe técnico
+ * (esse fica só no log do serviço).
+ */
+export function motivoDaFalha(e: unknown): string {
+  const msg = String((e as { message?: unknown } | null)?.message ?? e ?? "");
+  const codigo = String((e as { code?: unknown } | null)?.code ?? "");
+  const nome = String((e as { name?: unknown } | null)?.name ?? "");
+  // Login que não descriptografa (chave errada ou dado corrompido) — AES-GCM e formato do cripto.ts
+  if (/Formato criptografado inválido|unable to authenticate data|bad decrypt|Invalid authentication tag|Unsupported state/i.test(msg)) return "Não foi possível ler o login salvo.";
+  // Banco de dados (Prisma P1xxx = conexão) ou rede para o banco
+  if (/^P10\d\d$/.test(codigo) || /PrismaClientInitializationError/.test(nome) || /Can't reach database|ECONNREFUSED|ECONNRESET|Connection terminated|timed out fetching a new connection/i.test(msg)) return "Banco de dados indisponível.";
+  return "Falha ao abrir a conexão.";
+}

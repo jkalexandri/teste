@@ -8,7 +8,7 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 
 ## Médias
 
-### M1 — Reconexão que falha ao abrir não tenta de novo (CONFIRMADO em teste)
+### M1 — Reconexão que falha ao abrir não tenta de novo (CONFIRMADO em teste) — ✅ FEITA na v1.41.14 (decisão #144)
 - **O problema:** se, ao reabrir a conexão, algo falhar antes do socket existir (banco fora do ar por instantes, login que não
   descriptografa, erro ao ler o login), o serviço só escreve no log. **Nenhuma nova tentativa é agendada.** O número fica em
   "Reconectando… tentando agora…" para sempre, até alguém tocar em "Tentar agora" ou o serviço reiniciar. O mesmo vale para o
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-M1 → M2 → M3 → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → M2 → M3 → M4 → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.

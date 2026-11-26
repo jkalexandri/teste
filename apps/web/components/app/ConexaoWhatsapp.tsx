@@ -137,6 +137,12 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
                 Está fora há mais de 2 horas. Toque em Tentar agora; se não voltar, confira o celular (internet ligada e WhatsApp aberto).
               </p>
             )}
+            {/* Falha ao reabrir a conexão (decisão #144 — M1): o serviço continua tentando sozinho e mostra o motivo */}
+            {estado.erro && (
+              <p className="mt-0.5 font-bold" data-testid="ultima-falha">
+                Última falha: {estado.erro} O sistema continua tentando sozinho. Se não resolver, toque em Desconectar e leia o QR Code de novo.
+              </p>
+            )}
             <p className="mt-0.5" style={{ color: "var(--muted)" }}>
               Não precisa ler o QR Code: o login continua salvo. {alvo === "plataforma" ? "Os avisos do sistema ficam na fila e saem quando voltar." : "Campanhas e respostas da IA esperam e continuam quando voltar."}
             </p>

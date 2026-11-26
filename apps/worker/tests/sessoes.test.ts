@@ -15,7 +15,7 @@ const ORFA = "tst-ses-orfa";
 const BLQ = "tst-ses-blq";
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
-async function ate(cond: () => boolean | Promise<boolean>) { for (let i = 0; i < 150; i++) { if (await cond()) return true; await espera(20); } return false; }
+async function ate(cond: () => boolean | Promise<boolean>, ms = 3000) { for (let i = 0; i < ms / 20; i++) { if (await cond()) return true; await espera(20); } return false; }
 const status = async () => (await prisma.whatsappSessao.findUnique({ where: { id: ID } }))?.status;
 
 /** Conexão falsa do WhatsApp: guarda os avisos e deixa o teste disparar "close"/"open". */
@@ -30,6 +30,9 @@ class SocketFalso {
   abrir(numero = "5511900001111") { this.user = { id: `${numero}:1@s.whatsapp.net` }; this.ev.emit("connection.update", { connection: "open" }); }
 }
 
+/** Falhas simuladas (decisão #144 — M1): erro ao ler o login e erro ao apagar o login */
+let falharAuth: unknown = null;
+let falharApagar = false;
 let sockets: SocketFalso[] = [];
 let apagados: string[] = [];
 let g: GerenciadorSessoes;
@@ -39,18 +42,19 @@ function novoGerenciador() {
     versao: [2, 3000, 1],
     criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
     // Login falso "já pareado" (o celular já leu o QR antes)
-    usarAuth: async (idAtual: string) => ({
+    usarAuth: async (idAtual: string) => { if (falharAuth) throw falharAuth; return ({
       state: { creds: { me: { id: "5511900001111:1@s.whatsapp.net" } } as never, keys: { get: async () => ({}), set: async () => undefined } as never },
       // Como o real: só grava se o registro existir (decisão #138)
       salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0,
-    }),
-    apagarAuth: async (id: string) => { apagados.push(id); },
+    }); },
+    apagarAuth: async (id: string) => { if (falharApagar) throw new Error("banco fora do ar"); apagados.push(id); },
   });
 }
 
 beforeEach(async () => {
   sockets = [];
   apagados = [];
+  falharAuth = null; falharApagar = false;
   g?.encerrarTudo();
   g = novoGerenciador();
   await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA, BLQ] } } });
@@ -253,4 +257,99 @@ test("aviso de queda (decisão #142): ao voltar chama o aviso 'voltou' e limpa a
   await g.desconectar(ID);
   await espera(100);
   assert.equal(desconexoes.length, 1);
+});
+
+// ===== M1 (decisão #144): falha ao ABRIR a conexão não deixa o número parado =====
+const BANCO_FORA = Object.assign(new Error("Can't reach database server"), { code: "P1001" });
+const logsDe = async (trecho: string) => prisma.log.count({ where: { tipo: "WHATSAPP", texto: { contains: trecho } } });
+
+test("M1: falha ao reabrir (banco fora do ar) agenda nova tentativa, mostra o motivo e volta sozinho quando o problema passa", async () => {
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+  await g.conectar(ID);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { creds: "v1:x:y:z" } }); // login salvo, como depois de ler o QR
+  falharAuth = BANCO_FORA;
+  sockets[0]!.cair(428); // reconexão em 2 s — vai falhar ao ler o login
+  assert.ok(await ate(async () => (await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).erro === "Banco de dados indisponível.", 4000), "motivo curto na tela");
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.status, "RECONECTANDO");
+  assert.equal(s.tentativaReconexao, 2);
+  assert.ok(s.proximaTentativaEm && s.proximaTentativaEm.getTime() > Date.now(), "próxima tentativa marcada");
+  assert.equal(g.reconexaoAgendada(ID), true, "NÃO fica parado: há nova tentativa agendada");
+  assert.equal(await logsDe("Falha ao reabrir o WhatsApp (Banco de dados indisponível); tentando de novo sozinho"), 1, "1ª falha nos Logs");
+  // O problema passa: a próxima tentativa abre a conexão e o número volta sozinho
+  falharAuth = null;
+  assert.ok(await ate(() => sockets.length === 2, 6000), "reabriu sozinho");
+  sockets[1]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const d = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(d.erro, null); assert.equal(d.quedaEm, null);
+  assert.ok(await ate(async () => (await logsDe("voltou depois de 1 tentativa com falha")) === 1), "recuperação nos Logs");
+  await prisma.log.deleteMany({ where: { texto: { contains: "com falha" } } });
+});
+
+test("M1: falhas repetidas vão para os Logs só uma vez; o recuo cresce e a tentativa não para", async () => {
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+  await prisma.whatsappSessao.create({ data: { id: ID, creds: "v1:x:y:z", status: "CONECTADO" } });
+  falharAuth = BANCO_FORA;
+  await g.conectar(ID); // "Tentar agora" com o banco ainda fora
+  const um = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(um.status, "RECONECTANDO"); assert.equal(um.tentativaReconexao, 1);
+  await g.conectar(ID); // outra vez
+  const dois = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(dois.tentativaReconexao, 1, "'Tentar agora' recomeça o recuo");
+  assert.equal(g.reconexaoAgendada(ID), true);
+  assert.equal(await logsDe("Falha ao reabrir o WhatsApp"), 1, "só a 1ª falha da sequência");
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+});
+
+test("M1: login que não descriptografa NÃO é apagado; continua tentando e mostra o motivo", async () => {
+  await prisma.whatsappSessao.create({ data: { id: ID, creds: "v1:x:y:z", status: "CONECTADO" } });
+  falharAuth = new Error("Formato criptografado inválido");
+  await g.conectar(ID);
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.status, "RECONECTANDO");
+  assert.equal(s.erro, "Não foi possível ler o login salvo.");
+  assert.equal(s.creds, "v1:x:y:z", "o login continua guardado");
+  assert.deepEqual(apagados, [], "nada foi apagado");
+  assert.equal(g.reconexaoAgendada(ID), true);
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+});
+
+test("M1: primeira conexão (sem login) que falha ao abrir avisa e para, sem tentar sozinha", async () => {
+  falharAuth = BANCO_FORA;
+  await g.conectar(ID);
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.status, "DESCONECTADO");
+  assert.equal(s.erro, "Não foi possível conectar agora. Tente de novo em instantes.");
+  assert.equal(g.reconexaoAgendada(ID), false);
+});
+
+test("M1: ao ligar o serviço, número que falha ao abrir fica reconectando (sem derrubar os outros)", async () => {
+  const dono = (await prisma.usuario.findFirstOrThrow({ select: { id: true } })).id;
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, creds: "v1:x:y:z", status: "CONECTADO" } });
+  falharAuth = BANCO_FORA;
+  await g.iniciarTodas(); // não pode lançar erro
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.status, "RECONECTANDO"); assert.equal(g.reconexaoAgendada(ID), true);
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+});
+
+test("M1: erro ao tratar a queda (não conseguiu apagar o login) também agenda nova tentativa", async () => {
+  await g.conectar(ID);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { creds: "v1:x:y:z" } });
+  falharApagar = true;
+  sockets[0]!.cair(401); // desconectado pelo celular: apagar o login falha por causa do banco
+  assert.ok(await ate(() => g.reconexaoAgendada(ID)), "não ficou parado");
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.status, "RECONECTANDO"); assert.equal(s.erro, "Falha ao abrir a conexão.");
+  await prisma.log.deleteMany({ where: { texto: { contains: "reabrir o WhatsApp" } } });
+});
+
+test("M1: a frase mostrada na tela é curta e fixa (sem detalhe técnico)", async () => {
+  const { motivoDaFalha } = await import("../src/queda.js");
+  assert.equal(motivoDaFalha(BANCO_FORA), "Banco de dados indisponível.");
+  assert.equal(motivoDaFalha(new Error("Unsupported state or unable to authenticate data")), "Não foi possível ler o login salvo.");
+  assert.equal(motivoDaFalha(new Error("senha=abc123 vazou")), "Falha ao abrir a conexão.");
+  assert.equal(motivoDaFalha("qualquer coisa"), "Falha ao abrir a conexão.");
 });
