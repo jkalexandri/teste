@@ -21,6 +21,10 @@ export type EstadoWhatsapp = {
   qrImagem: string | null;
   erro: string | null;
   conectadoEm: string | null;
+  /** Reconexão automática (decisão #139) */
+  quedaEm: string | null;
+  tentativaReconexao: number;
+  proximaTentativaEm: string | null;
 };
 
 /** Descobre qual sessão quem está logado pode controlar. null = sem permissão. */
@@ -39,7 +43,7 @@ export async function sessaoDoAlvo(alvo: AlvoWhatsapp): Promise<{ sessaoId: stri
 
 export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
   const w = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId } });
-  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null };
+  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null };
   const qrNovo = w.qr && w.qrEm && Date.now() - w.qrEm.getTime() < QR_VALIDO_MS;
   return {
     status: w.status,
@@ -47,6 +51,9 @@ export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
     qrImagem: qrNovo ? await QRCode.toDataURL(w.qr!, { margin: 1, width: 264 }) : null,
     erro: w.erro,
     conectadoEm: w.conectadoEm?.toISOString() ?? null,
+    quedaEm: w.quedaEm?.toISOString() ?? null,
+    tentativaReconexao: w.tentativaReconexao,
+    proximaTentativaEm: w.proximaTentativaEm?.toISOString() ?? null,
   };
 }
 

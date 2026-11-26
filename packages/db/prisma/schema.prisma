@@ -333,6 +333,8 @@ enum StatusWhatsapp {
   CONECTANDO
   AGUARDANDO_QR
   CONECTADO
+  /// Caiu e está voltando sozinho, com o login salvo (decisão #139)
+  RECONECTANDO
 }
 
 /// Sessão do WhatsApp (API própria, conexão por QR Code — decisões #1 e #18).
@@ -359,6 +361,10 @@ model WhatsappSessao {
   conectadoEm   DateTime?
   /// Primeira conexão deste número (aquecimento de número novo — decisão #64)
   primeiraConexaoEm DateTime?
+  /// Reconexão automática (decisão #139): quando caiu, qual tentativa e quando é a próxima
+  quedaEm            DateTime?
+  tentativaReconexao Int       @default(0)
+  proximaTentativaEm DateTime?
   atualizadoEm  DateTime       @updatedAt
   chaves        WhatsappChave[]
 

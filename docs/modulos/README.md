@@ -16,7 +16,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.41.8 — 25/11/2026 23:13 (excluir usuário desconecta o WhatsApp dele) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
-| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.8 — 25/11/2026 23:13 (usuário excluído sai do WhatsApp: A3) |
+| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.9 — 25/11/2026 23:30 (tela "Reconectando…" com Tentar agora: A2) |
 | 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
 | 6 | Campanhas e envio | 🟡 Em revisão | auditoria em 25/11/2026 (hora não registrada) | v1.41.0 | v1.41.1 — 25/11/2026 12:02 (trava contra disparo duplicado) |
 | 7 | IA de mensagens | 🔴 Sem revisão | nunca | — | v1.38.0 — 24/11/2026 18:52 (Texto sugestão no Como qualificar) |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.41.9 | 25/11/2026 23:30 | 4 WhatsApp (conexão) | Estado "Reconectando…": quando caiu, tentativa, próxima; "Tentar agora" sem apagar o login (A2) | — | não |
 | v1.41.8 | 25/11/2026 23:13 | 4 WhatsApp (conexão) | Usuário excluído: WhatsApp desconectado; o serviço nunca recria nem religa número sem dono (A3) | 2 Contas e usuários | não |
 | v1.41.7 | 25/11/2026 19:27 | 11 Comunicação | Ícone do atendente (suporte) ao lado do Sair, que ficou menor | 2 Contas e usuários (menu), 8 Conversas IA | não |
 | v1.41.6 | 25/11/2026 19:08 | 8 Conversas IA | Tela: só a lista e as mensagens rolam; busca, cabeçalho da conversa e caixa de escrever fixos | — | não |

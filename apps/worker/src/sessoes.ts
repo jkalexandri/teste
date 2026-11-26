@@ -106,10 +106,16 @@ export class GerenciadorSessoes implements Remetente {
       // Com reconexão agendada, "Conectar" vira "tentar agora": desliga o relógio e abre na hora (sem duplicar)
       this.pararRelogio(id);
       if (this.conexoes.has(id)) return; // já está conectando/conectada
+      // Com login salvo é uma RECONEXÃO (decisão #139): a tela mostra "Reconectando…" e "Tentar agora",
+      // nunca o "Cancelar" da primeira conexão (que apagaria o login)
+      const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { creds: true, quedaEm: true } });
+      const reconexao = !!antes?.creds;
       await prisma.whatsappSessao.upsert({
         where: { id },
         create: { id, usuarioId: usuarioId ?? null, status: StatusWhatsapp.CONECTANDO },
-        update: { status: StatusWhatsapp.CONECTANDO, erro: null, qr: null, qrEm: null },
+        update: reconexao
+          ? { status: StatusWhatsapp.RECONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: antes?.quedaEm ?? new Date(), proximaTentativaEm: null }
+          : { status: StatusWhatsapp.CONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null },
       });
       await this.abrirSocket(id, 0);
     });
@@ -203,7 +209,7 @@ export class GerenciadorSessoes implements Remetente {
         // Número sem dono (decisão #138): conectou só para sair do WhatsApp — some de "Dispositivos conectados" do celular
         if (this.orfas.has(id)) { void this.encerrarSemDono(id); return; }
         conexao.tentativas = 0;
-        await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date() });
+        await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
         // Primeira conexão deste número: base do aquecimento (decisão #64)
         await prisma.whatsappSessao.updateMany({ where: { id, primeiraConexaoEm: null }, data: { primeiraConexaoEm: new Date() } });
         void this.aoConectar?.(id).catch((e) => this.log.error({ e, id }, "falha ao atender quem esperava a reconexão"));
@@ -223,12 +229,22 @@ export class GerenciadorSessoes implements Remetente {
     if (this.orfas.has(id) && d.acao === "encerrar") { void this.encerrarSemDono(id); return; }
     if (d.acao === "encerrar") {
       if (d.apagarLogin) await (this.opcoes.apagarAuth ?? apagarAuth)(id);
-      await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro });
+      await this.gravar(id, { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: d.erro, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null });
       void registrarLogSessao(id, `WhatsApp desconectado${d.erro ? `: ${d.erro}` : ""}`);
       return;
     }
     await gravacoes();
-    await this.gravar(id, { status: StatusWhatsapp.CONECTANDO, qr: null, qrEm: null });
+    if (pareado && d.esperaMs > 0) {
+      // Queda comum com login salvo: a tela mostra quando caiu, a tentativa e a próxima (decisão #139)
+      const agora = new Date();
+      await this.gravar(id, {
+        status: StatusWhatsapp.RECONECTANDO, qr: null, qrEm: null,
+        ...(conexao.tentativas === 0 ? { quedaEm: agora } : {}),
+        tentativaReconexao: conexao.tentativas + 1, proximaTentativaEm: new Date(agora.getTime() + d.esperaMs),
+      });
+    } else {
+      await this.gravar(id, { status: StatusWhatsapp.CONECTANDO, qr: null, qrEm: null });
+    }
     // Relógio guardado: "Desconectar" cancela e "Conectar" antecipa (decisão #133).
     // O nº de série confere que ninguém mexeu no número enquanto o relógio corria.
     const serie = this.geracoes.get(id);
@@ -255,7 +271,7 @@ export class GerenciadorSessoes implements Remetente {
         await c.sock.logout().catch(() => c.sock.end(undefined));
       }
       await (this.opcoes.apagarAuth ?? apagarAuth)(id);
-      await prisma.whatsappSessao.updateMany({ where: { id }, data: { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: null } });
+      await prisma.whatsappSessao.updateMany({ where: { id }, data: { status: StatusWhatsapp.DESCONECTADO, qr: null, qrEm: null, numero: null, erro: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null } });
       esquecerDono(id); // o próximo aviso deste número busca o dono de novo no banco
     });
   }

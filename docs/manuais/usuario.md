@@ -47,6 +47,7 @@ Planos vendidos só por prazo não têm esse limite: o cartão não aparece.
 
 Mantenha o celular com internet de vez em quando. Se ficar muitos dias desligado, o WhatsApp desconecta e é preciso ler o QR Code de novo.
 Se aparecer "Este WhatsApp foi aberto em outro lugar", clique em **Conectar**: ele volta sem precisar ler o QR Code.
+Se aparecer **"Reconectando…"**, a conexão caiu e está voltando sozinha (não precisa ler o QR Code). Para tentar na hora, toque em **Tentar agora**.
 
 ![Tela WhatsApp](prints/u-whatsapp.png)
 

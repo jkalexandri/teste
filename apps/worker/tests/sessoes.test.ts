@@ -159,3 +159,21 @@ test("ao ligar, número sem dono não volta a funcionar: conecta só para sair e
   assert.ok(apagados.includes(ORFA), "login apagado");
   assert.equal(g.conectado(ORFA), false);
 });
+
+test("queda comum: grava 'Reconectando' com quando caiu, tentativa e próxima; ao voltar, limpa (decisão #139)", async () => {
+  await g.conectar(ID);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const antes = Date.now();
+  sockets[0]!.cair(428);
+  assert.ok(await ate(async () => (await status()) === "RECONECTANDO"));
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.tentativaReconexao, 1);
+  assert.ok(s.quedaEm && s.quedaEm.getTime() >= antes - 1000, "quando caiu");
+  assert.ok(s.proximaTentativaEm && s.proximaTentativaEm.getTime() > Date.now(), "próxima tentativa no futuro");
+  // "Tentar agora" (Conectar) reconecta na hora; ao abrir, os dados da queda são limpos
+  await g.conectar(ID);
+  sockets[1]!.abrir();
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const d = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(d.quedaEm, null); assert.equal(d.tentativaReconexao, 0); assert.equal(d.proximaTentativaEm, null);
+});

@@ -78,6 +78,22 @@ const falso = http.createServer((req, resp) => {
   await p.click('button:has-text("Desconectar")'); await espera(800);
   ok('Desconectar chama o serviço', chamadas.some((x) => x.url === `/sessoes/${ANA}/desconectar`));
 
+  // Reconexão automática (decisão #139): quadro explicando, "Tentar agora" sem apagar o login, sem o "Cancelar"
+  sql(`update "WhatsappSessao" set status='RECONECTANDO', numero=null, "quedaEm"=now()-interval '2 minutes', "tentativaReconexao"=3, "proximaTentativaEm"=now()+interval '40 seconds' where id='${ANA}'`);
+  await espera(3800);
+  ok('Reconectando: selo e quadro "está voltando sozinha"', (await status(p)) === 'Reconectando…' && (await p.locator('[data-testid=reconectando] >> text=está voltando sozinha').count()) === 1 && (await p.locator('[data-testid=reconectando] >> text=/Tentativa 3 — próxima em \\d+ s/').count()) === 1, await status(p));
+  ok('Reconectando: sem o "Cancelar" que apagava o login', (await p.locator('button:has-text("Cancelar")').count()) === 0);
+  const antesTentar = chamadas.length;
+  await p.click('[data-testid=tentar-agora]'); await espera(800);
+  ok('"Tentar agora" pede para conectar (não desconecta)', chamadas.slice(antesTentar).some((x) => x.url === `/sessoes/${ANA}/conectar`) && !chamadas.slice(antesTentar).some((x) => x.url.endsWith('/desconectar')));
+  let perguntou = '';
+  p.removeAllListeners('dialog'); p.on('dialog', (d) => { perguntou = d.message(); d.dismiss(); });
+  const antesDesc = chamadas.length;
+  await p.click('button:has-text("Desconectar")'); await espera(600);
+  ok('"Desconectar" pede confirmação e, se recusar, nada acontece', perguntou.includes('ler o QR Code') && !chamadas.slice(antesDesc).some((x) => x.url.endsWith('/desconectar')), perguntou);
+  await p.screenshot({ path: OUT + '/whatsapp-reconectando.png' });
+  p.removeAllListeners('dialog'); p.on('dialog', (d) => d.accept());
+
   // Erro gravado pelo serviço aparece na tela
   sql(`update "WhatsappSessao" set status='DESCONECTADO', numero=null, erro='O WhatsApp foi desconectado pelo celular. Conecte de novo lendo o QR Code.' where id='${ANA}'`);
   await espera(3800);

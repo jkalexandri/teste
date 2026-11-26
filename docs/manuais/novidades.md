@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.9 — WhatsApp mostra quando está voltando sozinho (26/11/2026)
+
+- Se a conexão do WhatsApp cair, a tela mostra **"Reconectando…"**: quando caiu, a tentativa e quanto falta para a próxima.
+  Não precisa ler o QR Code. Use **Tentar agora** para reconectar na hora; **Desconectar** pede confirmação.
+
 ## v1.41.8 — usuário excluído sai do WhatsApp (26/11/2026)
 
 - Ao **excluir um usuário**, o WhatsApp dele é desconectado do FilaPro Leads na hora (o aparelho some da lista

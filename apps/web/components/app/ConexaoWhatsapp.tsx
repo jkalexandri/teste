@@ -8,17 +8,22 @@ import { CircleCheck, CircleDashed, MessageCircle, TriangleAlert } from "@/compo
 import { useToast } from "./Toast";
 
 type Estado = {
-  status: "DESCONECTADO" | "CONECTANDO" | "AGUARDANDO_QR" | "CONECTADO";
+  status: "DESCONECTADO" | "CONECTANDO" | "AGUARDANDO_QR" | "CONECTADO" | "RECONECTANDO";
   numero: string | null;
   qrImagem: string | null;
   erro: string | null;
   conectadoEm: string | null;
+  /** Reconexão automática (decisão #139) */
+  quedaEm?: string | null;
+  tentativaReconexao?: number;
+  proximaTentativaEm?: string | null;
 };
 
 const CHIP: Record<Estado["status"], { texto: string; estilo: React.CSSProperties }> = {
   CONECTADO: { texto: "Conectado", estilo: { background: "var(--primary-soft)", color: "#087a44" } },
   AGUARDANDO_QR: { texto: "Aguardando leitura do QR Code", estilo: { background: "#fff7e0", color: "#8a5a00" } },
   CONECTANDO: { texto: "Conectando…", estilo: { background: "#fff7e0", color: "#8a5a00" } },
+  RECONECTANDO: { texto: "Reconectando…", estilo: { background: "#fff7e0", color: "#8a5a00" } },
   DESCONECTADO: { texto: "Desconectado", estilo: { background: "#f1f3f2", color: "#5b6b62" } },
 };
 
@@ -43,8 +48,18 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
     return () => window.clearInterval(t);
   }, [atualizar]);
 
+  // Relógio da contagem "próxima em X s" da reconexão (decisão #139)
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    if (estado.status !== "RECONECTANDO") return;
+    const t = window.setInterval(() => setAgora(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [estado.status]);
+
   async function agir(acao: "conectar" | "desconectar") {
-    if (acao === "desconectar" && !window.confirm("Desconectar este WhatsApp? Para usar de novo será preciso ler o QR Code.")) return;
+    if (acao === "desconectar" && !window.confirm(estado.status === "RECONECTANDO"
+      ? "Desconectar este WhatsApp? Ele está voltando sozinho. Se desconectar, para usar de novo será preciso ler o QR Code."
+      : "Desconectar este WhatsApp? Para usar de novo será preciso ler o QR Code.")) return;
     setEnviando(true);
     const r = await fetch(`/api/whatsapp/${alvo}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ acao }) })
       .then((x) => x.json())
@@ -57,6 +72,9 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
   const chip = CHIP[estado.status];
   const conectado = estado.status === "CONECTADO";
   const emAndamento = estado.status === "CONECTANDO" || estado.status === "AGUARDANDO_QR";
+  const reconectando = estado.status === "RECONECTANDO";
+  const hora = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "";
+  const faltam = estado.proximaTentativaEm ? Math.ceil((new Date(estado.proximaTentativaEm).getTime() - agora) / 1000) : 0;
 
   return (
     <div className={semAjuda ? "grid gap-3 mt-3" : "grid lg:grid-cols-[1fr_320px] gap-3 mt-3"}>
@@ -101,6 +119,23 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
           </div>
         )}
 
+        {/* Reconexão automática (decisão #139): explica o que acontece; o login continua salvo */}
+        {reconectando && (
+          <div className="mt-3 rounded-xl p-3 text-[12px] leading-relaxed" style={{ background: "#fff7e0", color: "#8a5a00" }} data-testid="reconectando">
+            <div className="flex items-center gap-2 font-bold">
+              <CircleDashed size={16} className="animate-spin shrink-0" />
+              {estado.quedaEm ? `A conexão caiu às ${hora(estado.quedaEm)} e está voltando sozinha.` : "A conexão está voltando sozinha."}
+            </div>
+            <p className="mt-0.5">
+              {(estado.tentativaReconexao ?? 0) > 0 ? `Tentativa ${estado.tentativaReconexao} — ` : ""}
+              {faltam > 0 ? `próxima em ${faltam >= 60 ? `${Math.ceil(faltam / 60)} min` : `${faltam} s`}.` : "tentando agora…"}
+            </p>
+            <p className="mt-0.5" style={{ color: "var(--muted)" }}>
+              Não precisa ler o QR Code: o login continua salvo. Campanhas e respostas da IA esperam e continuam quando voltar.
+            </p>
+          </div>
+        )}
+
         {estado.status === "DESCONECTADO" && estado.erro && (
           <div className="mt-3 flex gap-2 rounded-xl p-3 text-[12px]" style={{ background: "#ffeef0", color: "#9e1d2f" }}>
             <TriangleAlert size={16} className="shrink-0" /> {estado.erro}
@@ -108,7 +143,15 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
         )}
 
         <div className="flex flex-wrap gap-2 mt-4">
-          {!conectado && !emAndamento && (
+          {reconectando && (
+            <>
+              <button className="btn-primary" disabled={enviando} onClick={() => agir("conectar")} data-testid="tentar-agora">
+                {enviando ? "Aguarde…" : "Tentar agora"}
+              </button>
+              <button className="btn-ghost" style={{ color: "#b42318" }} disabled={enviando} onClick={() => agir("desconectar")}>Desconectar</button>
+            </>
+          )}
+          {!conectado && !emAndamento && !reconectando && (
             <button className="btn-primary" disabled={enviando} onClick={() => agir("conectar")}>
               {enviando ? "Aguarde…" : "Conectar WhatsApp"}
             </button>
