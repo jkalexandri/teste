@@ -14,7 +14,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | # | Módulo | Status | Revisão (data e hora) | Versão da revisão | Último ajuste |
 |---|---|---|---|---|---|
 | 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
-| 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.41.8 — 25/11/2026 23:13 (excluir usuário desconecta o WhatsApp dele) |
+| 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.42.1 — 26/11/2026 16:00 (quadrinho do selo de vencimento fecha ao clicar fora) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
 | 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.14 — 26/11/2026 14:20 (reabertura que falha tenta de novo: M1) |
 | 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
