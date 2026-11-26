@@ -5,6 +5,7 @@ import { prisma, Cargo } from "@filapro/db";
 import { responderConversa, MENSAGENS_RECENTES, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
 import { emManutencao } from "./manutencao.js";
+import { pontoLigado } from "./ia-plataforma.js";
 
 export const MOTIVO_INTERESSADO_NAO_SEI = "A IA não soube responder";
 
@@ -35,7 +36,20 @@ export class AtendenteInteressados {
 
   pendentes() { return this.timers.size; }
 
+  /**
+   * O Super Admin religou o ponto Visitante (decisão #149): a IA responde quem escreveu e ficou esperando
+   * (conversas ativas nas últimas 48 h cujo último recado é do visitante).
+   */
+  async religou() {
+    if (!(await pontoLigado("VISITANTE"))) return;
+    const desde = new Date(Date.now() - 48 * 3600_000);
+    const its = await prisma.interessado.findMany({ where: { iaPausada: false, ultimaMensagemEm: { gte: desde } }, select: { id: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true } } } });
+    for (const i of its) if (i.mensagens[0]?.autor === "VISITANTE") this.agendar(i.id);
+  }
+
   async responder(id: string) {
+    // Ponto Visitante desligado pelo Super Admin (decisão #149): só o Super Admin responde; ao religar, a IA retoma quem esperou
+    if (!(await pontoLigado("VISITANTE"))) return;
     const it = await prisma.interessado.findUnique({ where: { id } });
     if (!it || it.iaPausada) return;
     const recentes = (await prisma.interessadoMensagem.findMany({ where: { interessadoId: id }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();

@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.44.0 — semáforo e chaves da IA em 4 pontos (26/11/2026)
+
+- **Super Admin:** o **Dashboard** mostra os 4 pontos onde a IA atende — **Leads, Campanhas, Suporte e Visitante não Cliente** — com bolinha
+  **verde** (ligado), **amarela** (atenção: manutenção, falta de chave ou falhas da IA) e **vermelha** (desligado).
+- As **chaves liga/desliga** ficam todas no menu **Inteligência Artificial → Atendimento por IA**. Desligada a IA de um ponto, ela para para a plataforma
+  toda; ao **religar**, a IA responde quem ficou esperando (últimas 48 horas).
+- Você recebe um **aviso** (WhatsApp de avisos e celular) quando um ponto **fica amarelo, é desligado ou volta ao normal**.
+- Usuários veem um aviso nas **Conversas IA** quando a IA dos leads está desligada pela plataforma.
+
 ## v1.43.0 — orientações do suporte e teste da IA (26/11/2026)
 
 - **Super Admin:** em **Configurações → Empresa | IA** há o cartão **Orientações do suporte**: escreva horário, respostas prontas e regras de

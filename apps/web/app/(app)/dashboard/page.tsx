@@ -7,6 +7,8 @@ import SaldoDisparos from "./SaldoDisparos";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { prisma, Cargo, Modulo } from "@filapro/db";
+import { statusAtendimentoIA } from "@filapro/ia";
+import StatusIA from "@/components/app/StatusIA";
 import { obterSessao } from "@/lib/auth/session";
 import { diasRestantes } from "@/lib/auth/acesso";
 import Cabecalho from "@/components/app/Cabecalho";
@@ -79,6 +81,7 @@ export default async function DashboardPage() {
     const m = await metricasPorUsuario([...empresas.flatMap((e) => e.usuarios.map((x) => x.id)), ...individuais.map((x) => x.id), u.id]);
     const geral = somar([...m.values()]);
     const daEmpresa = (e: (typeof empresas)[number]) => somar(e.usuarios.map((x) => m.get(x.id) ?? VAZIO));
+    const statusIA = await statusAtendimentoIA(); // semáforo do atendimento por IA (decisão #149)
     const cards = [
       { l: "Empresas", v: empresas.length },
       { l: "Usuários Individuais", v: individuais.length },
@@ -96,6 +99,7 @@ export default async function DashboardPage() {
           titulo="Visão geral"
           descricao="Total de todas as empresas + todos os usuários individuais, agrupados abaixo. Nunca misturado."
         />
+        <StatusIA status={statusIA} />
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mt-3 shrink-0">
           {cards.map((c) => (
             <div key={c.l} className="card p-3">

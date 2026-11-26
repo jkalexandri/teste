@@ -243,6 +243,10 @@ model ConfigVenda {
   asaasTestadoEm        DateTime?
   /// IA responde o suporte dos clientes pelo botão Suporte (decisão #146). Começa desligada.
   iaSuporteLigada       Boolean  @default(false)
+  /// Chaves gerais da IA (decisão #149). Ligadas por padrão: Leads (Conversas IA), Campanhas (gerar mensagens) e Visitante (chat da tela de Planos)
+  iaLeadsLigada         Boolean  @default(true)
+  iaCampanhasLigada     Boolean  @default(true)
+  iaVisitanteLigada     Boolean  @default(true)
   /// Texto sugestão do "Como qualificar os leads" (decisão #121), editado pelo Super Admin; vazio = texto padrão do sistema
   sugestaoQualificar    String?
   /// Último aviso (webhook) que chegou do Asaas: quando, qual evento e se o token conferiu — para conferir na tela Pagamento
@@ -1069,4 +1073,13 @@ model MensagemPlataforma {
 
   @@index([situacao, prioridade, criadoEm])
   @@index([enviadaEm])
+}
+
+/// Último estado (cor) de cada ponto de atendimento por IA já avisado ao Super Admin (decisão #149): LEADS, CAMPANHAS, SUPORTE, VISITANTE
+model EstadoIAPonto {
+  ponto      String   @id
+  /// VERDE | AMARELO | VERMELHO (manutenção conta como VERDE: não avisa a cada atualização)
+  estado     String
+  desde      DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
 }

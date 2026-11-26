@@ -1,8 +1,9 @@
 // Super Admin → Inteligência Artificial (decisões #72, #75 e #77).
 import { prisma } from "@filapro/db";
-import { CHAVE_GLOBAL, MODELOS_CLAUDE, PADRAO, TAREFAS } from "@filapro/ia";
+import { CHAVE_GLOBAL, MODELOS_CLAUDE, PADRAO, TAREFAS, statusAtendimentoIA } from "@filapro/ia";
 import Cabecalho from "@/components/app/Cabecalho";
 import { IS_PRODUCTION } from "@/lib/env";
+import AtendimentoIA from "./AtendimentoIA";
 import FormIA, { FormChaveGlobal, FormCotacao, FormSugestaoQualificar } from "./FormIA";
 import { MAX_COMO_QUALIFICAR, SUGESTAO_QUALIFICAR_PADRAO } from "@/lib/sugestao-qualificar";
 import { protegerTela } from "@/lib/auth/tela";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function InteligenciaArtificialPage() {
   await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
-  const [configs, venda] = await Promise.all([prisma.configIA.findMany(), prisma.configVenda.findUnique({ where: { id: "config" } })]);
+  const [configs, venda, status] = await Promise.all([prisma.configIA.findMany(), prisma.configVenda.findUnique({ where: { id: "config" } }), statusAtendimentoIA()]);
   return (
     <section className="flex-1 flex flex-col">
       <Cabecalho
@@ -19,6 +20,7 @@ export default async function InteligenciaArtificialPage() {
         titulo="Inteligência Artificial"
         descricao="Escolha a IA de cada tarefa sem mexer no código. Padrão: Claude Haiku 5.5, o mais barato. Teste antes de salvar."
       />
+      <AtendimentoIA status={status} />
       <FormChaveGlobal temChave={!!configs.find((x) => x.tarefa === CHAVE_GLOBAL)?.chave} />
       <div className="grid xl:grid-cols-2 gap-3 mt-3">
         {(Object.keys(TAREFAS) as (keyof typeof TAREFAS)[]).map((t) => {

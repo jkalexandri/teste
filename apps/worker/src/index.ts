@@ -12,6 +12,7 @@ import { Avisador } from "./avisos.js";
 import { AvisoQueda } from "./aviso-queda.js";
 import { FilaPlataforma } from "./fila-plataforma.js";
 import { AtendenteSuporte } from "./suporte-ia.js";
+import { VigiaIA } from "./vigia-ia.js";
 import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
@@ -49,7 +50,17 @@ const interessados = new AtendenteInteressados(log.child({ modulo: "interessados
 const suporteIA = new AtendenteSuporte(log.child({ modulo: "suporte-ia" }), { avisarSuporte: avisarSuperAdmin });
 // Uptime medido para a pílula de status do login (decisão #109)
 const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
-const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma, suporteIA);
+// Vigia do atendimento por IA (decisão #149): avisa o Super Admin quando um dos 4 pontos muda de cor
+// e, ao religar um ponto, a IA atende quem ficou esperando
+const vigiaIA = new VigiaIA(log.child({ modulo: "vigia-ia" }), {
+  avisar: (texto) => avisarSuperAdmin(texto, "/inteligencia-artificial"),
+  aoReligar: async (ponto) => {
+    if (ponto === "LEADS") await atendente.religouLeads();
+    else if (ponto === "VISITANTE") await interessados.religou();
+    else if (ponto === "SUPORTE") await suporteIA.religou();
+  },
+});
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma, suporteIA, vigiaIA);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,
@@ -87,6 +98,7 @@ async function iniciar() {
   avisador.iniciar();
   avisoQueda.iniciar();
   filaPlataforma.iniciar();
+  vigiaIA.iniciar();
   disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
@@ -100,6 +112,7 @@ async function desligar(sinal: string) {
   avisador.parar();
   avisoQueda.parar();
   filaPlataforma.parar();
+  vigiaIA.parar();
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);

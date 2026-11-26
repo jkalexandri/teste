@@ -41,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, vigiaIA?: { verificar(): Promise<unknown> }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -152,6 +152,13 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (!suporteIA) return res.code(503).send({ ok: false, mensagem: "Suporte indisponível." });
     suporteIA.agendar(req.params.id);
     return { ok: true, mensagem: "A IA vai responder." };
+  });
+
+  // Atendimento por IA (decisão #149): o site avisa que uma chave mudou; confere já (avisa e, ao religar, a IA atende quem esperou)
+  app.post("/ia/verificar", async (_req, res) => {
+    if (!vigiaIA) return res.code(503).send({ ok: false, mensagem: "Vigia indisponível." });
+    await vigiaIA.verificar();
+    return { ok: true, mensagem: "Conferido." };
   });
 
   // Teste da tela Empresa | IA (decisão #148): o que a IA do suporte responderia a esta pergunta

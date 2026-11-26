@@ -104,6 +104,18 @@ export class AtendenteSuporte {
 
   pendentes() { return this.timers.size + this.ocupados.size; }
 
+  /**
+   * O Super Admin religou o ponto Suporte (decisão #149): a IA responde quem escreveu e ficou esperando
+   * (conversas ativas nas últimas 48 h, não pausadas, cujo último recado é do cliente).
+   */
+  async religou() {
+    const cfg = await prisma.configVenda.findUnique({ where: { id: "config" }, select: { iaSuporteLigada: true } });
+    if (!cfg?.iaSuporteLigada) return;
+    const desde = new Date(this.agora().getTime() - 48 * 3600_000);
+    const cs = await prisma.suporteConversa.findMany({ where: { iaPausada: false, ultimaMensagemEm: { gte: desde } }, select: { usuarioId: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true } } } });
+    for (const c of cs) if (c.mensagens[0]?.autor === "CLIENTE") this.agendar(c.usuarioId);
+  }
+
   async responder(usuarioId: string) {
     const cfg = await prisma.configVenda.findUnique({ where: { id: "config" }, select: { iaSuporteLigada: true } });
     if (!cfg?.iaSuporteLigada) return;

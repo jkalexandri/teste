@@ -243,3 +243,34 @@ test(`teste da tela: limite de ${LIMITE_TESTES_HORA} testes por hora (só os que
   assert.equal((await a.testar(sa, "como conecto meu whatsapp?")).ok, true, "passada 1 hora, libera");
   assert.equal((await a.testar("tsi-sa-outro", "como conecto meu whatsapp?")).ok, true, "o limite é por Super Admin");
 });
+
+// ===== Religar o ponto Suporte (decisão #149) =====
+test("religar o Suporte: a IA responde quem esperou (último recado do cliente, não pausada, recente); não responde pausada nem antiga", async () => {
+  await ligar(false);
+  await cliente("como conecto meu whatsapp?");
+  const a = at();
+  await a.responder(USU);
+  assert.equal((await mensagens()).length, 1, "desligado: ninguém responde");
+  await a.religou(); // ainda desligado
+  for (let i = 0; i < 50 && a.pendentes(); i++) await new Promise((r) => setTimeout(r, 20));
+  assert.equal((await mensagens()).length, 1);
+  await ligar(true);
+  await a.religou();
+  for (let i = 0; i < 100 && a.pendentes(); i++) await new Promise((r) => setTimeout(r, 20));
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal((await mensagens()).filter((m) => m.autor === "IA").length, 1, "respondeu quem esperou");
+  // religar de novo não responde outra vez
+  await a.religou();
+  for (let i = 0; i < 50 && a.pendentes(); i++) await new Promise((r) => setTimeout(r, 20));
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal((await mensagens()).filter((m) => m.autor === "IA").length, 1);
+  // conversa pausada (assumida) e conversa antiga (mais de 48 h) não são respondidas
+  await prisma.suporteMensagem.deleteMany({ where: { conversaId } });
+  await cliente("outra dúvida");
+  await prisma.suporteConversa.update({ where: { id: conversaId }, data: { iaPausada: true, iaPausaMotivo: "Assumida pelo Super Admin" } });
+  await a.religou(); await new Promise((r) => setTimeout(r, 300));
+  assert.equal((await mensagens()).filter((m) => m.autor === "IA").length, 0, "pausada continua com o Super Admin");
+  await prisma.suporteConversa.update({ where: { id: conversaId }, data: { iaPausada: false, iaPausaMotivo: null, ultimaMensagemEm: new Date(Date.now() - 49 * 3600_000) } });
+  await a.religou(); await new Promise((r) => setTimeout(r, 300));
+  assert.equal((await mensagens()).filter((m) => m.autor === "IA").length, 0, "conversa antiga (>48 h) não recebe resposta atrasada");
+});

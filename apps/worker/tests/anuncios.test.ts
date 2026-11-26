@@ -6,6 +6,7 @@ import pino from "pino";
 import { prisma, AutorMensagem, Cargo, Modulo, StatusAnuncio, StatusLead } from "@filapro/db";
 import { Avisador, INTERVALO_RESUMO_MS } from "../src/avisos.js";
 import { Atendente } from "../src/conversas.js";
+import { ERRO_LEADS_PLATAFORMA, limparCacheIA } from "../src/ia-plataforma.js";
 import type { Conteudo, Remetente } from "../src/disparos.js";
 
 const EMP = "teste-anu-emp", USU = "teste-anu-usu", ADM = "teste-anu-adm", TEL = "5511990002222";
@@ -180,4 +181,28 @@ test("avisos de lead respondeu e de lead Quente nas conversas", async () => {
   await at.receber(USU, USU, TEL, { texto: "SAIR", tipo: "texto" });
   await avisador.enviarResumos();
   assert.equal(avisos.length, antes);
+});
+
+test("ponto Leads desligado: o lead de anúncio entra, fica com a marca da plataforma e é atendido ao religar (decisão #149)", async () => {
+  const antes = (await prisma.configVenda.findUnique({ where: { id: "config" } }))?.iaLeadsLigada ?? true;
+  const liga = async (v: boolean) => { await prisma.configVenda.upsert({ where: { id: "config" }, update: { iaLeadsLigada: v }, create: { id: "config", iaLeadsLigada: v } }); limparCacheIA(); };
+  try {
+    await liga(false);
+    const a = await anuncio();
+    await at.atenderAnuncio(a.id);
+    const r = await prisma.leadAnuncio.findUniqueOrThrow({ where: { id: a.id } });
+    assert.equal(r.status, StatusAnuncio.ERRO); assert.equal(r.erro, ERRO_LEADS_PLATAFORMA);
+    assert.equal(wa.enviados.length, 0, "a IA não escreveu");
+    assert.ok(r.leadId, "o lead foi cadastrado e o usuário avisado");
+    // Anúncio com erro de OUTRA causa não é mexido na religação
+    const outro = await anuncio({ status: StatusAnuncio.ERRO, erro: "IA desligada ou conversa assumida: responda pela tela Conversas IA." });
+    await liga(true);
+    await at.religouLeads(); await aguardar();
+    const depois = await prisma.leadAnuncio.findUniqueOrThrow({ where: { id: a.id } });
+    assert.equal(depois.status, StatusAnuncio.ATENDIDO, "atendido ao religar");
+    assert.equal(wa.enviados.length, 1);
+    assert.equal((await prisma.leadAnuncio.findUniqueOrThrow({ where: { id: outro.id } })).status, StatusAnuncio.ERRO);
+  } finally {
+    await liga(antes);
+  }
 });

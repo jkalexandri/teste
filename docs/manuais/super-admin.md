@@ -47,6 +47,13 @@ celular ou App no celular). A tela atualiza sozinha a cada 20 segundos.
   **último acesso**).
 - **Chamar:** abre o chat do suporte na tela do cliente. **Conversa:** abre o histórico em Atendimento.
 
+## Inteligência Artificial: atendimento em 4 pontos
+
+No **Dashboard** há o quadro **Inteligência Artificial** com 4 pontos: **Leads**, **Campanhas**, **Suporte** e **Visitante não Cliente**.
+🟢 verde = ligado e funcionando; 🟡 amarelo = ligado, mas com atenção (manutenção, falta de chave da IA ou falhas recentes);
+🔴 vermelho = desligado. As chaves **Ligar / Desligar** ficam em **Inteligência Artificial → Atendimento por IA**. Ao religar um ponto, a IA
+responde quem ficou esperando (últimas 48 horas). Você recebe aviso no WhatsApp de avisos e no celular quando um ponto fica amarelo, é desligado ou volta ao normal.
+
 ## Atendimento (suporte em tempo real)
 
 Os clientes (Usuários e Admins da Empresa) chamam pelo botão **Suporte**. As conversas chegam aqui, com o número de mensagens novas

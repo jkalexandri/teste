@@ -11,7 +11,8 @@ import { ONLINE_MS } from "@/lib/suporte";
 import BotaoChamar from "../online/BotaoChamar";
 import NovoAtendimento from "./NovoAtendimento";
 import BotaoIA from "./BotaoIA";
-import ChaveIASuporte from "./ChaveIASuporte";
+import { statusAtendimentoIA } from "@filapro/ia";
+import { Bolinha } from "@/components/app/StatusIA";
 import { protegerTela } from "@/lib/auth/tela";
 
 /**
@@ -103,7 +104,8 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
   const porId = new Map(pessoas.map((x) => [x.id, x]));
   const atual = p.cliente ? porId.get(p.cliente) : undefined;
   // IA no suporte dos clientes (decisão #146): chave geral e estado da conversa aberta
-  const iaSuporteLigada = (await prisma.configVenda.findUnique({ where: { id: "config" }, select: { iaSuporteLigada: true } }))?.iaSuporteLigada ?? false;
+  const statusSuporte = (await statusAtendimentoIA()).find((s) => s.ponto === "SUPORTE")!;
+  const iaSuporteLigada = statusSuporte.ligado;
   const convAtual = atual ? conversas.find((c) => c.usuarioId === atual.id) : undefined;
   const iaPausadaAtual = convAtual?.iaPausada ?? false;
   const clientes = await prisma.usuario.findMany({
@@ -120,7 +122,12 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
       <AtualizarSozinho segundos={10} />
       <Cabecalho rotulo="Principal • Atendimento" titulo="Atendimento" descricao="Conversas do suporte com os clientes, em tempo real. Imagens e PDF podem ser enviados. Histórico de 365 dias." />
       {abas}
-      <ChaveIASuporte ligada={iaSuporteLigada} />
+      {/* A chave da IA do suporte fica no menu Inteligência Artificial (decisão #149); aqui só o estado */}
+      <div className="card p-3 mt-3 flex flex-wrap items-center gap-2" data-testid="estado-ia-suporte">
+        <Bolinha cor={statusSuporte.cor} />
+        <span className="text-[13px]"><b>IA no suporte dos clientes:</b> <span data-testid="ia-suporte-estado">{statusSuporte.texto}</span></span>
+        <Link href="/inteligencia-artificial#atendimento" className="text-[12px] font-bold underline ml-auto" style={{ color: "var(--primary)" }}>Ligar / desligar</Link>
+      </div>
       <div className="card p-3 mt-3"><NovoAtendimento clientes={clientes.map((c) => ({ id: c.id, rotulo: `${c.nome} • ${c.email}${c.empresa ? ` • ${c.empresa.nome}` : ""}` }))} /></div>
       <div className="grid gap-3 mt-3 lg:grid-cols-[300px_1fr]">
         <div className="card p-2 max-h-[560px] overflow-y-auto" data-testid="lista-atendimentos">

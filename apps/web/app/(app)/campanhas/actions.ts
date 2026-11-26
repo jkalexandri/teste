@@ -239,6 +239,9 @@ export async function excluirArquivo(id: string): Promise<R> {
 /** "Atualizar prévia": a IA escreve a mensagem principal (editável) e 3 variações (usadas no envio, sem aparecer). */
 export async function gerarPrevia(referencia: string): Promise<R & { principal?: string; variacoes?: string[] }> {
   const u = await atorCampanhas();
+  // Ponto Campanhas desligado pelo Super Admin (decisão #149): não gasta IA
+  const venda = await prisma.configVenda.findUnique({ where: { id: "config" }, select: { iaCampanhasLigada: true } });
+  if (venda && !venda.iaCampanhasLigada) return { ok: false, mensagem: "A IA de campanhas está desligada pelo administrador. Escreva a mensagem manualmente." };
   const ref = String(referencia ?? "").trim().slice(0, 4000);
   if (ref.length < 10) return { ok: false, mensagem: "Escreva a Mensagem de Referência (pelo menos uma frase)." };
   // Ficha da empresa montada no Empresa | IA (etapa 9b)

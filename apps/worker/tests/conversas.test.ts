@@ -4,6 +4,7 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import pino from "pino";
 import { prisma, AutorMensagem, Cargo, Modulo, StatusLead } from "@filapro/db";
+import { limparCacheIA } from "../src/ia-plataforma.js";
 import { Atendente, MAX_IA_DIA, MOTIVO_ASSUMIDA, MOTIVO_LIMITE, TEXTO_AUDIO, TEXTO_RESERVA, TETO_ESPERA_MS } from "../src/conversas.js";
 import type { Conteudo, Remetente } from "../src/disparos.js";
 import { limparCacheManutencao } from "../src/manutencao.js";
@@ -337,4 +338,55 @@ test("contato LID: a resposta vai para o endereço de onde ele escreveu (decisã
   await at.receber(USU, USU, TEL, { texto: "Oi de novo", tipo: "texto" });
   await aguardar();
   assert.equal(wa.enviados[2]!.jid, `${TEL}@s.whatsapp.net`);
+});
+
+// ===== Ponto Leads ligado/desligado pelo Super Admin (decisão #149) =====
+async function leadsLigado(v: boolean) {
+  await prisma.configVenda.upsert({ where: { id: "config" }, update: { iaLeadsLigada: v }, create: { id: "config", iaLeadsLigada: v } });
+  limparCacheIA();
+}
+
+test("ponto Leads desligado pelo Super Admin: a IA não responde; ao religar responde quem ficou esperando, uma vez só (decisão #149)", async () => {
+  const antes = (await prisma.configVenda.findUnique({ where: { id: "config" } }))?.iaLeadsLigada ?? true;
+  const l = await novoLead({ status: StatusLead.EM_CONVERSA });
+  await leadsLigado(false);
+  try {
+    await at.receber(USU, USU, TEL, { texto: "Oi, quero saber mais", tipo: "texto" });
+    await aguardar();
+    assert.equal(wa.enviados.length, 0, "IA desligada pela plataforma");
+    assert.deepEqual((await msgs(l.id)).map((x) => x.autor), [AutorMensagem.LEAD]);
+    // enquanto está desligado, religar "à força" não responde
+    await at.religouLeads(); await aguardar();
+    assert.equal(wa.enviados.length, 0);
+    // o Super Admin liga: a IA responde quem ficou esperando
+    await leadsLigado(true);
+    await at.religouLeads(); await aguardar();
+    assert.equal(wa.enviados.length, 1, "respondeu quem ficou esperando");
+    assert.deepEqual((await msgs(l.id)).map((x) => x.autor), [AutorMensagem.LEAD, AutorMensagem.IA]);
+    // religar de novo não responde duas vezes (o último recado já é da IA)
+    await at.religouLeads(); await aguardar();
+    assert.equal(wa.enviados.length, 1);
+  } finally {
+    await leadsLigado(antes);
+  }
+});
+
+test("ao religar o ponto Leads, lead com a IA desligada na conta ou conversa assumida NÃO é respondido", async () => {
+  const antes = (await prisma.configVenda.findUnique({ where: { id: "config" } }))?.iaLeadsLigada ?? true;
+  const assumido = await novoLead({ status: StatusLead.EM_CONVERSA, iaPausada: true, iaPausaMotivo: MOTIVO_ASSUMIDA });
+  await leadsLigado(false);
+  try {
+    await at.receber(USU, USU, TEL, { texto: "Oi, tem alguém aí?", tipo: "texto" });
+    await aguardar();
+    await leadsLigado(true);
+    await at.religouLeads(); await aguardar();
+    assert.equal(wa.enviados.length, 0, "conversa assumida pelo usuário continua com ele");
+    assert.deepEqual((await msgs(assumido.id)).map((x) => x.autor), [AutorMensagem.LEAD]);
+    await prisma.lead.update({ where: { id: assumido.id }, data: { iaPausada: false, iaPausaMotivo: null } });
+    await prisma.usuario.update({ where: { id: USU }, data: { iaConversas: false } });
+    await at.religouLeads(); await aguardar();
+    assert.equal(wa.enviados.length, 0, "IA desligada na conta do usuário continua valendo");
+  } finally {
+    await leadsLigado(antes);
+  }
 });

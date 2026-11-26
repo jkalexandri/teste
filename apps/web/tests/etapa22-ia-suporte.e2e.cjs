@@ -19,6 +19,9 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
   if (configIA) sql(`update "ConfigIA" set provedor='simulado', modelo='simulado', chave=null where tarefa='conversar'`);
   else sql(`insert into "ConfigIA"(tarefa,provedor,modelo,"urlBase","precoEntrada","precoSaida","atualizadoEm") values ('conversar','simulado','simulado','',0,0,now())`);
   sql(`update "ConfigVenda" set "iaSuporteLigada"=false where id='config'`);
+  // Estado anterior dos 4 pontos (como o vigia do serviço já teria guardado): Suporte desligado, os outros ligados
+  sql(`delete from "EstadoIAPonto"`);
+  for (const [p, e] of [['LEADS', 'VERDE'], ['CAMPANHAS', 'VERDE'], ['SUPORTE', 'VERMELHO'], ['VISITANTE', 'VERDE']]) sql(`insert into "EstadoIAPonto"(ponto,estado,"atualizadoEm") values ('${p}','${e}',now())`);
 
   const b = await chromium.launch();
   const novo = async (vp = { width: 1440, height: 900 }) => { const c = await b.newContext({ viewport: vp }); const p = await c.newPage(); p.on('dialog', (d) => d.accept()); return [c, p]; };
@@ -35,20 +38,25 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
 
     // ===== Chave geral: começa desligada =====
     await pS.goto(BASE + '/atendimento'); await espera(800);
-    ok('Chave da IA no suporte começa desligada', (await pS.locator('[data-testid=ia-suporte-estado]').innerText()) === 'desligada');
+    ok('Chave da IA no suporte começa desligada (estado no Atendimento)', (await pS.locator('[data-testid=ia-suporte-estado]').innerText()) === 'Desligado');
     // Desligada: cliente escreve e a IA NÃO responde
     await pU.click('[data-testid=botao-suporte]');
     await escrever(pU, 'Como conecto o meu WhatsApp?'); await espera(6500);
     ok('Com a IA desligada, ninguém responde sozinho', ia() === 0);
 
     // ===== Liga a chave =====
-    await pS.click('[data-testid=ia-suporte-alternar]'); await espera(1500);
+    await pS.goto(BASE + '/inteligencia-artificial'); await espera(1200);
+    ok('No menu Inteligência Artificial o Suporte aparece vermelho (desligado)', (await pS.locator('[data-testid=ia-ponto-SUPORTE]').getAttribute('data-cor')) === 'VERMELHO');
+    await pS.click('[data-testid=ia-ponto-alternar-SUPORTE]'); await espera(2500);
     ok('Ligar a IA grava a chave geral', sql(`select "iaSuporteLigada" from "ConfigVenda" where id='config'`) === 't');
-    ok('A tela mostra "ligada"', (await pS.locator('[data-testid=ia-suporte-estado]').innerText()) === 'ligada');
+    ok('A tela mostra o Suporte verde (ligado)', (await pS.locator('[data-testid=ia-ponto-SUPORTE]').getAttribute('data-cor')) === 'VERDE');
+    // Ao ligar, a IA responde quem ficou esperando (a pergunta feita com a IA desligada)
+    ok('Ao ligar, a IA responde quem ficou esperando', await ate(() => ia() === 1, 12000));
+    ok('A conversa não recebeu resposta repetida', ia() === 1);
 
     // ===== IA responde =====
     await escrever(pU, 'Como conecto o meu WhatsApp?');
-    ok('A IA responde o cliente em poucos segundos', await ate(() => ia() === 1));
+    ok('A IA responde o cliente em poucos segundos', await ate(() => ia() === 2));
     ok('Cliente vê a resposta com o rótulo "Assistente virtual (IA)"', await ate(async () => (await pU.locator('[data-testid=janela-suporte] >> text=Assistente virtual (IA)').count()) >= 1, 8000));
     ok('A resposta usa o manual (QR Code)', (await pU.locator('[data-testid=janela-suporte] >> text=QR Code').count()) >= 1);
     ok('Conversa segue com a IA atendendo', sql(`select "iaPausada" from "SuporteConversa" where "usuarioId"='${ANA}'`) === 'f');
@@ -115,12 +123,12 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     sql(`update "FichaEmpresa" set "orientacoesSuporte"='${orientAntes.replace(/'/g, "''")}' where "superAdminId"='${SAID}'`);
 
     // ===== Desligar a chave =====
-    await pS.goto(BASE + '/atendimento'); await espera(800);
-    await pS.click('[data-testid=ia-suporte-alternar]'); await espera(1200);
+    await pS.goto(BASE + '/inteligencia-artificial'); await espera(1000);
+    await pS.click('[data-testid=ia-ponto-alternar-SUPORTE]'); await espera(1500);
     ok('Desligar a IA grava a chave geral', sql(`select "iaSuporteLigada" from "ConfigVenda" where id='config'`) === 'f');
 
     // ===== Controle de acesso: cliente não liga a IA =====
-    const r = await pU.evaluate(async () => (await fetch('/api/suporte/ia', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ligada: true }) })).status);
+    const r = await pU.evaluate(async () => (await fetch('/api/ia/pontos', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ponto: 'SUPORTE', ligada: true }) })).status);
     ok('Cliente não consegue ligar a chave geral', r !== 200 && sql(`select "iaSuporteLigada" from "ConfigVenda" where id='config'`) === 'f', String(r));
     await cS.close(); await cU.close();
   } finally {

@@ -10,6 +10,7 @@ import { numeroDeAvisos, type TipoAviso } from "./avisos.js";
 import { escolherNumero } from "./numeros.js";
 import { variantesTelefone } from "./numero.js";
 import { emManutencao } from "./manutencao.js";
+import { ERRO_LEADS_PLATAFORMA, pontoLigado } from "./ia-plataforma.js";
 import { enviarPush, urlDoAviso } from "./push.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
@@ -158,7 +159,7 @@ export class Atendente {
     // Aviso "lead respondeu" (decisão #81), exceto SAIR/PARAR/STOP/CANCELAR
     const trecho = r.texto.trim() ? `"${r.texto.trim().slice(0, 120)}"` : r.tipo === "audio" ? "(áudio)" : r.tipo === "imagem" ? "(imagem)" : `(${r.tipo})`;
     void this.avisar("RESPONDEU", lead.usuarioId, `💬 ${nomeDo(lead)} respondeu: ${trecho}`);
-    const motivo = !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
     if (motivo) { this.log.info({ leadId: lead.id, motivo }, "IA não chamada"); return; }
     if (!r.texto.trim() && r.tipo !== "imagem" && r.tipo !== "audio") { this.log.info({ leadId: lead.id, tipo: r.tipo }, "IA não chamada: mensagem sem texto"); return; }
     if (r.tipo === "imagem" && r.baixarImagem) this.imagens.set(lead.id, r.baixarImagem);
@@ -273,7 +274,7 @@ export class Atendente {
       this.programar(leadId, quando);
     };
 
-    const motivo = !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
     if (motivo) { this.log.info({ leadId, motivo }, "resposta pendente cancelada"); await fechar(); return; }
     // Atualização em andamento (decisão #103): a resposta fica guardada e sai depois
     if (await emManutencao()) { await reagendar(this.espera()); return; }
@@ -469,6 +470,11 @@ export class Atendente {
       void this.avisar("ANUNCIO", lead.usuarioId, `📣 Novo lead de anúncio: ${nomeDo(lead)}${a.assunto ? ` — ${a.assunto.split("\n")[0]!.slice(0, 100)}` : ""}`);
     }
     const dono = lead.usuario;
+    // Ponto Leads desligado pelo Super Admin (decisão #149): o lead fica com a marca que a religação procura
+    if (!(await pontoLigado("LEADS"))) {
+      await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: ERRO_LEADS_PLATAFORMA } });
+      return;
+    }
     if (!dono.iaConversas || lead.iaPausada) {
       await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: "IA desligada ou conversa assumida: responda pela tela Conversas IA." } });
       return;
@@ -565,7 +571,7 @@ export class Atendente {
     const meus = new Set((await prisma.lead.findMany({ where: { id: { in: ids }, usuarioId }, select: { id: true } })).map((l) => l.id));
     for (const p of esperando) if (p.leadId && meus.has(p.leadId)) await this.atenderAnuncio(p.id).catch(() => undefined);
     const u = await prisma.usuario.findUnique({ where: { id: usuarioId } });
-    if (!u?.iaConversas) return;
+    if (!u?.iaConversas || !(await pontoLigado("LEADS"))) return;
     const desde = new Date(this.agora().getTime() - HORAS_RECONEXAO * 3600_000);
     // Só quem ainda não tem resposta pendente: a reconexão não zera nem adia a espera de quem já aguarda (decisão #127)
     const leads = await prisma.lead.findMany({
@@ -584,6 +590,31 @@ export class Atendente {
       const falta = l.responderEm ? l.responderEm.getTime() - this.agora().getTime() : 0;
       this.programar(l.id, falta > 0 && falta <= ESPERA_MAX_MS ? l.responderEm! : this.agora());
     }
+  }
+
+  /**
+   * O Super Admin religou o ponto Leads (decisão #149): a IA responde o que ficou esperando enquanto esteve desligada
+   * — leads de anúncio que ficaram com a marca da plataforma e quem escreveu e ficou sem resposta (últimas 48 h).
+   * O WhatsApp desconectado e a manutenção seguem as regras de sempre (a resposta espera).
+   */
+  async religouLeads() {
+    if (!(await pontoLigado("LEADS"))) return;
+    const desde = new Date(this.agora().getTime() - HORAS_RECONEXAO * 3600_000);
+    const anuncios = await prisma.leadAnuncio.findMany({ where: { status: StatusAnuncio.ERRO, erro: ERRO_LEADS_PLATAFORMA, recebidoEm: { gte: desde } }, select: { id: true } });
+    for (const a of anuncios) {
+      await prisma.leadAnuncio.update({ where: { id: a.id }, data: { status: StatusAnuncio.RECEBIDO, erro: null } });
+      await this.atenderAnuncio(a.id).catch((e) => this.log.error({ e, id: a.id }, "falha ao atender anúncio na religação"));
+    }
+    // Só quem ainda não tem resposta pendente e cujo último recado é do lead (a IA nunca responde duas vezes)
+    const leads = await prisma.lead.findMany({
+      where: { usuario: { iaConversas: true }, iaPausada: false, status: { not: StatusLead.PEDIU_SAIR }, ultimaMensagemEm: { gte: desde }, respostaPendenteDesde: null },
+      select: { id: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true } } },
+    });
+    for (const l of leads) {
+      if (l.mensagens[0]?.autor !== AutorMensagem.LEAD) continue;
+      await this.marcarPendente(l.id);
+    }
+    this.log.info({ anuncios: anuncios.length, leads: leads.length }, "ponto Leads religado: atendendo quem ficou esperando");
   }
 }
 

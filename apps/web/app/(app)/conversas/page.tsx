@@ -52,6 +52,7 @@ export default async function ConversasPage({ searchParams }: { searchParams: Pr
   const numeros = aberto ? await numerosParaCampanha(aberto.usuarioId) : [];
   const numeroDaConversa = numeros.length > 1 ? numeros.find((n) => n.id === (aberto?.sessaoId ?? aberto?.usuarioId))?.rotulo ?? null : null;
 
+  const iaPlataformaDesligada = (await prisma.configVenda.findUnique({ where: { id: "config" }, select: { iaLeadsLigada: true } }))?.iaLeadsLigada === false;
   return (
     <section className="flex-1 flex flex-col min-h-0">
       <Cabecalho
@@ -61,6 +62,12 @@ export default async function ConversasPage({ searchParams }: { searchParams: Pr
           ? "A IA atende quem responde, qualifica (Quente, Morno, Frio) e trata objeções. Assuma a conversa quando quiser."
           : "Conversas dos usuários da empresa (somente leitura)."}
       />
+      {/* Ponto Leads desligado pelo Super Admin (decisão #149): a IA não responde ninguém; atenda na mão */}
+      {a.temIA && iaPlataformaDesligada && (
+        <div className="rounded-xl p-3 mt-3 text-[12px] font-bold shrink-0" style={{ background: "#fff7e0", color: "#8a5a00" }} data-testid="ia-desligada-plataforma">
+          A IA de atendimento dos leads está desligada pela plataforma no momento. Responda os leads por aqui; quando voltar, a IA responde quem ficou esperando.
+        </div>
+      )}
       <TelaConversas
         temIA={a.temIA}
         iaLigada={a.u.iaConversas}

@@ -87,8 +87,10 @@ export async function gravarDoVisitante(it: { id: string; nome: string; whatsapp
   const admins = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { id: true, vistoEm: true } });
   if (admins.some((a) => a.vistoEm && Date.now() - a.vistoEm.getTime() < ONLINE_MS)) return;
   await prisma.interessado.update({ where: { id: it.id }, data: { ultimoAvisoEm: new Date() } });
-  const aviso = `💬 Interessado no site: ${it.nome} (+${it.whatsapp}) escreveu: "${texto.slice(0, 120)}".${it.iaPausada ? "" : " A IA está respondendo."} Veja em Atendimento → Interessados.`;
   const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
+  // Ponto Visitante desligado (decisão #149): o aviso diz que só você responde
+  const ia = it.iaPausada ? "" : cfg?.iaVisitanteLigada === false ? " A IA está desligada: responda você." : " A IA está respondendo.";
+  const aviso = `💬 Interessado no site: ${it.nome} (+${it.whatsapp}) escreveu: "${texto.slice(0, 120)}".${ia} Veja em Atendimento → Interessados.`;
   if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, aviso, { prioridade: "alta" }).catch(() => undefined);
   for (const a of admins) await chamarWorker(`/push/${a.id}/enviar`, { texto: aviso, url: "/atendimento?aba=interessados" }).catch(() => undefined);
 }
