@@ -21,11 +21,15 @@ if [ "${BANCO,,}" = "s" ]; then
   gunzip -c "$ARQ" | sudo -u postgres psql -q filaproleads
   sudo -u postgres psql -q filaproleads -c "REASSIGN OWNED BY postgres TO filaproleads;"
 fi
+# Tipos gerados de versões mais novas apontam para rotas que o código antigo não tem: apagar antes do build (como no atualizar.sh)
+rm -rf apps/web/.next/types apps/web/.next-novo apps/web/.next-antigo/types
 pnpm --filter web build
 pm2 restart filapro-web filapro-worker --update-env
 pm2 save
 sleep 5
 # A versão antiga pode não ter o modo manutenção: desliga direto no banco
 sudo -u postgres psql -qtA filaproleads -c "update \"Manutencao\" set ligada=false, desde=null" >/dev/null 2>&1 || true
+# A atualização que parou foi desfeita: a próxima começa do zero (novo ponto de volta e novo backup)
+rm -f /opt/filapro/atualizacao-em-andamento
 echo "Sistema liberado."
 echo "Voltou para a versão v$(node -p "require('./package.json').version"). Para voltar a atualizar depois: git checkout main && bash deploy/atualizar.sh"

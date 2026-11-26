@@ -28,12 +28,22 @@ manut ligar || echo "(modo manutenção ainda não disponível nesta versão)"
 # Se algo falhar daqui para frente, o sistema continua em manutenção (seguro) até você resolver
 trap 'echo; echo "ERRO na atualização. O sistema continua em MANUTENÇÃO (clientes bloqueados)."; echo "Volte a versão: bash deploy/voltar-versao.sh   ou libere: bash deploy/manutencao.sh desligar"' ERR
 
-echo "==> Backup do banco antes de atualizar"
-bash deploy/backup-banco.sh
-ls -t /opt/filapro/backups/filapro-*.sql.gz | head -1 > /opt/filapro/backup-antes-da-atualizacao
-git rev-parse HEAD > /opt/filapro/versao-anterior
+# Marca "atualização em andamento": se ela parar no meio (ex.: erro no build) e você rodar de novo, o ponto de volta
+# (versão anterior) e o backup de ANTES da atualização continuam os da primeira tentativa, em vez de serem trocados pela versão nova.
+EM_ANDAMENTO=/opt/filapro/atualizacao-em-andamento
+if [ -f "$EM_ANDAMENTO" ]; then
+  echo "==> Continuando uma atualização que parou: o ponto de volta e o backup da primeira tentativa são mantidos"
+else
+  echo "==> Backup do banco antes de atualizar"
+  bash deploy/backup-banco.sh
+  ls -t /opt/filapro/backups/filapro-*.sql.gz | head -1 > /opt/filapro/backup-antes-da-atualizacao
+  git rev-parse HEAD > /opt/filapro/versao-anterior
+  echo "v$ANTES" > "$EM_ANDAMENTO"
+fi
 
 echo "==> Baixando a versão nova"
+# Um build que parou pode ter deixado este arquivo gerado alterado: volta ao original para o "git pull" não travar
+git checkout -- apps/web/next-env.d.ts 2>/dev/null || true
 git pull --ff-only
 echo "==> Instalando dependências"
 pnpm install --frozen-lockfile
@@ -43,6 +53,10 @@ pnpm --filter @filapro/db migrate:deploy
 # Liga de novo (caso a tabela tenha acabado de ser criada pela migração)
 bash deploy/manutencao.sh ligar
 echo "==> Montando o site (em pasta separada: o site atual continua mostrando a tela de atualização)"
+# O tsconfig confere também os tipos gerados do build anterior (.next/types). Se uma tela ou rota foi REMOVIDA nesta versão,
+# esses tipos velhos apontam para o arquivo que não existe mais e o build para ("Cannot find module ... route.js").
+# Os tipos são só da conferência (não são usados pelo site no ar): apagar é seguro, o build refaz.
+rm -rf apps/web/.next/types apps/web/.next-antigo/types
 rm -rf apps/web/.next-novo
 NEXT_DIST_DIR=.next-novo pnpm --filter web build
 # O build reescreve este arquivo gerado com o nome da pasta: volta ao original para o próximo "git pull" não travar
@@ -75,6 +89,7 @@ curl -fsS http://127.0.0.1:3000/login -o /dev/null && echo "Site: OK"
 curl -fsS http://127.0.0.1:4000/saude >/dev/null && echo "Serviço 24/7: OK"
 echo "==> Liberando o sistema"
 bash deploy/manutencao.sh desligar
+rm -f "$EM_ANDAMENTO"
 trap - ERR
 echo
 echo "Atualizado para a versão v$(versao) (antes: v$ANTES)"

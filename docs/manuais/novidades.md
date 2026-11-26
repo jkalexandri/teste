@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.44.1 — atualização da VPS mais segura (26/11/2026)
+
+- A atualização agora **limpa os tipos gerados do build anterior** antes de montar o site, o que evita o erro "Cannot find module … route.js"
+  quando uma tela ou rota é removida. O mesmo vale para **voltar a versão**.
+- Se uma atualização **parar no meio** e você rodar de novo, o **ponto de volta** e o **backup** de antes da atualização continuam os da primeira tentativa.
+
 ## v1.44.0 — semáforo e chaves da IA em 4 pontos (26/11/2026)
 
 - **Super Admin:** o **Dashboard** mostra os 4 pontos onde a IA atende — **Leads, Campanhas, Suporte e Visitante não Cliente** — com bolinha

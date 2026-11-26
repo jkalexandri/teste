@@ -24,7 +24,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.42.0 — 26/11/2026 15:30 (IA no suporte dos clientes) |
-| 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | v1.41.5 — 25/11/2026 18:28 (Caddy: só /saude pela internet) |
+| 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | v1.44.1 — 26/11/2026 19:10 (atualização à prova de rota removida e de tentativa repetida) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
 
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.44.1 | 26/11/2026 19:10 | 12 Operação (VPS) | `atualizar.sh` e `voltar-versao.sh`: apagam os tipos velhos antes do build; tentativa repetida mantém o ponto de volta e o backup da 1ª (#150) | — | não |
 | v1.44.0 | 26/11/2026 18:30 | 7 IA de mensagens | Semáforo (verde/amarelo/vermelho) e chaves liga/desliga dos 4 pontos de IA (Leads, Campanhas, Suporte, Visitante); avisos de mudança; religar atende quem esperou (#149) | 8 Conversas IA, 9 Interessados, 10 Relatórios e painéis (Dashboard), 11 Comunicação | não |
 | v1.43.0 | 26/11/2026 17:00 | 11 Comunicação | Orientações do suporte (texto do Super Admin lido só pela IA do suporte) e caixa "Testar uma pergunta" na tela Empresa \| IA (#148) | 7 IA de mensagens | não |
 | v1.42.1 | 26/11/2026 16:00 | 2 Contas e usuários | Quadrinho do selo de vencimento fecha ao clicar fora ou com Esc (#147) | 3 Planos (upgrade) | não |
