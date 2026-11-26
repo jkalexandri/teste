@@ -36,9 +36,14 @@ test("número: normaliza telefone brasileiro", () => {
 test("login do WhatsApp salvo no banco, criptografado, e apagado ao desconectar", async () => {
   const id = "teste-worker-" + Date.now();
   try {
+    // Sem registro, o login NÃO é criado (decisão #138: nunca recria um número apagado)
+    const sem = await usarAuthNoBanco(id, chave);
+    assert.equal(await sem.salvarCreds(), false);
+    assert.equal(await prisma.whatsappSessao.count({ where: { id } }), 0);
+    await prisma.whatsappSessao.create({ data: { id } }); // o "Conectar" cria o registro antes
     const a = await usarAuthNoBanco(id, chave);
     assert.equal(a.state.creds.registered, false);
-    await a.salvarCreds();
+    assert.equal(await a.salvarCreds(), true);
     await a.state.keys.set({ "pre-key": { "1": { public: Buffer.from([1, 2]), private: Buffer.from([3, 4]) } } });
 
     // Nada em texto puro no banco

@@ -11,6 +11,7 @@ import { ERRO_OUTRO_LUGAR } from "../src/queda.js";
 import { Instancia } from "../src/instancia.js";
 
 const ID = "tst-ses-1";
+const ORFA = "tst-ses-orfa";
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
 async function ate(cond: () => boolean | Promise<boolean>) { for (let i = 0; i < 150; i++) { if (await cond()) return true; await espera(20); } return false; }
@@ -23,6 +24,7 @@ class SocketFalso {
   fechada = false;
   async logout() { this.fechada = true; }
   end() { this.fechada = true; }
+  atualizarLogin() { this.ev.emit("creds.update", {}); }
   cair(codigo: number) { this.ev.emit("connection.update", { connection: "close", lastDisconnect: { error: { output: { statusCode: codigo } } } }); }
   abrir() { this.user = { id: "5511900001111:1@s.whatsapp.net" }; this.ev.emit("connection.update", { connection: "open" }); }
 }
@@ -36,9 +38,10 @@ function novoGerenciador() {
     versao: [2, 3000, 1],
     criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
     // Login falso "já pareado" (o celular já leu o QR antes)
-    usarAuth: async () => ({
+    usarAuth: async (idAtual: string) => ({
       state: { creds: { me: { id: "5511900001111:1@s.whatsapp.net" } } as never, keys: { get: async () => ({}), set: async () => undefined } as never },
-      salvarCreds: async () => undefined,
+      // Como o real: só grava se o registro existir (decisão #138)
+      salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0,
     }),
     apagarAuth: async (id: string) => { apagados.push(id); },
   });
@@ -49,12 +52,12 @@ beforeEach(async () => {
   apagados = [];
   g?.encerrarTudo();
   g = novoGerenciador();
-  await prisma.whatsappSessao.deleteMany({ where: { id: ID } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA] } } });
 });
 
 after(async () => {
   g?.encerrarTudo();
-  await prisma.whatsappSessao.deleteMany({ where: { id: ID } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ORFA] } } });
   await prisma.servicoInstancia.deleteMany({ where: { id: "teste-servico" } });
   await prisma.$disconnect();
 });
@@ -131,4 +134,28 @@ test("serviço único: o 2º não assume enquanto o 1º está no ar; assume quan
   await b.liberar();
   assert.equal(await a.tentarAssumir(), true);
   await a.liberar();
+});
+
+test("registro apagado com a conexão aberta (usuário excluído): encerra e NÃO recria (decisão #138)", async () => {
+  await g.conectar(ID);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  await prisma.whatsappSessao.delete({ where: { id: ID } }); // o site apagou junto com o usuário
+  sockets[0]!.atualizarLogin(); // o WhatsApp atualiza o login: antes isso recriava o registro
+  assert.ok(await ate(() => sockets[0]!.fechada), "a conexão foi encerrada (saiu do WhatsApp)");
+  assert.ok(await ate(() => apagados.includes(ID)), "o login foi apagado");
+  await espera(200);
+  assert.equal(await prisma.whatsappSessao.count({ where: { id: ID } }), 0, "o registro não voltou");
+  assert.equal(g.conectado(ID), false);
+});
+
+test("ao ligar, número sem dono não volta a funcionar: conecta só para sair e é apagado (decisão #138)", async () => {
+  await prisma.whatsappSessao.create({ data: { id: ORFA, usuarioId: null, creds: "v1:x:y:z" } });
+  await g.iniciarTodas();
+  const s = sockets.find((x) => x) ; // a conexão aberta para sair
+  assert.ok(s, "abriu a conexão para fazer a saída");
+  // o falso aceita qualquer id: acha a conexão do número sem dono
+  for (const k of sockets) k.abrir();
+  assert.ok(await ate(async () => (await prisma.whatsappSessao.count({ where: { id: ORFA } })) === 0), "registro sem dono apagado");
+  assert.ok(apagados.includes(ORFA), "login apagado");
+  assert.equal(g.conectado(ORFA), false);
 });

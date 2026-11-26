@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.8 — usuário excluído sai do WhatsApp (26/11/2026)
+
+- Ao **excluir um usuário**, o WhatsApp dele é desconectado do FilaPro Leads na hora (o aparelho some da lista
+  "Dispositivos conectados" do celular dele). Fica registrado em **Logs**.
+
 ## v1.41.7 — novo ícone do suporte (25/11/2026)
 
 - O botão **💬 Suporte** virou o **ícone do atendente** (verde): no computador fica ao lado do botão **Sair**, que ficou menor;

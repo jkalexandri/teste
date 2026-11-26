@@ -3,6 +3,7 @@
 // Admin da Empresa → Usuários (decisões #23, #24, #46–#50).
 // Tudo limitado à empresa do próprio Admin.
 import { revalidatePath } from "next/cache";
+import { chamarWorker } from "@/lib/worker";
 import { logDaSessao } from "@/lib/logs";
 import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, StatusUsuario } from "@filapro/db";
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
@@ -129,6 +130,9 @@ export async function excluirUsuario(id: string, destinoId: string | null): Prom
     if (!destino || destino.id === id) return { ok: false, mensagem: "Usuário de destino inválido." };
   }
 
+  // Números de WhatsApp do usuário (principal e extras): serão desconectados depois da exclusão (decisão #138)
+  const numeros = await prisma.whatsappSessao.findMany({ where: { usuarioId: id }, select: { id: true } });
+
   await prisma.$transaction(async (tx) => {
     // Leads: passam para o usuário escolhido (o código do dono acompanha — decisão #63).
     if (destino) await tx.lead.updateMany({ where: { usuarioId: id }, data: { usuarioId: destino.id, codigoUsuario: destino.codigo ?? "" } });
@@ -137,6 +141,14 @@ export async function excluirUsuario(id: string, destinoId: string | null): Prom
     await tx.usuario.delete({ where: { id } });
   });
   await logDaSessao("USUARIOS", destino ? `Usuário excluído: ${u.nome}; dados transferidos para ${destino.nome}` : `Usuário excluído: ${u.nome}`, u.empresaId);
+  // Desconecta o WhatsApp do usuário excluído: o FilaPro some de "Dispositivos conectados" no celular dele (decisão #138).
+  // Serviço fora do ar: a exclusão segue; o serviço desconecta sozinho quando voltar (número sem dono).
+  for (const n of numeros) {
+    const r = await chamarWorker(`/sessoes/${encodeURIComponent(n.id)}/desconectar`);
+    await logDaSessao("WHATSAPP", r.ok
+      ? `WhatsApp de ${u.nome} desconectado (usuário excluído)`
+      : `WhatsApp de ${u.nome}: serviço fora do ar; será desconectado quando ele voltar (usuário excluído)`, u.empresaId);
+  }
   revalidatePath("/usuarios");
   return {
     ok: true,

@@ -8,7 +8,7 @@ import { criptografar, descriptografar } from "./cripto.js";
 const paraTexto = (v: unknown) => JSON.stringify(v, BufferJSON.replacer);
 const deTexto = (t: string) => JSON.parse(t, BufferJSON.reviver);
 
-export async function usarAuthNoBanco(sessaoId: string, chave: Buffer): Promise<{ state: AuthenticationState; salvarCreds: () => Promise<void> }> {
+export async function usarAuthNoBanco(sessaoId: string, chave: Buffer): Promise<{ state: AuthenticationState; salvarCreds: () => Promise<boolean> }> {
   const sessao = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId } });
   const creds: AuthenticationCreds = sessao?.creds ? deTexto(descriptografar(sessao.creds, chave)) : initAuthCreds();
 
@@ -47,9 +47,12 @@ export async function usarAuthNoBanco(sessaoId: string, chave: Buffer): Promise<
         },
       },
     },
+    // Só atualiza: NUNCA recria um registro apagado (decisão #138 — usuário excluído virava sessão "órfã" conectada).
+    // false = o registro sumiu: quem chamou encerra a conexão.
     salvarCreds: async () => {
       const v = criptografar(paraTexto(creds), chave);
-      await prisma.whatsappSessao.upsert({ where: { id: sessaoId }, create: { id: sessaoId, creds: v }, update: { creds: v } });
+      const r = await prisma.whatsappSessao.updateMany({ where: { id: sessaoId }, data: { creds: v } });
+      return r.count > 0;
     },
   };
 }

@@ -136,6 +136,7 @@ param e continuam depois, sem perder nem repetir envios.
 
 **Um usuário saiu da empresa. O que faço?**
 Desative (libera a vaga) ou exclua transferindo os leads para outro usuário.
+- Ao excluir, o **WhatsApp do usuário é desconectado** do FilaPro Leads (fica registrado em Logs).
 
 **Por que não consigo enviar campanhas?**
 O Admin não envia: crie um usuário para você mesmo, se quiser enviar.

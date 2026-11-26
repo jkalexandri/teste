@@ -13,6 +13,11 @@ export async function donoDaSessao(sessaoId: string): Promise<string | null> {
   return dono;
 }
 
+/** Esquece o dono guardado (número desconectado ou usuário excluído — decisão #138). */
+export function esquecerDono(sessaoId: string) {
+  donos.delete(sessaoId);
+}
+
 /** Números do usuário que podem ser usados: o principal primeiro, depois os extras na ordem da tela. */
 export async function numerosDoUsuario(usuarioId: string): Promise<string[]> {
   const ss = await prisma.whatsappSessao.findMany({ where: { usuarioId, bloqueada: false }, orderBy: [{ ordem: "asc" }], select: { id: true } });

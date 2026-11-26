@@ -76,13 +76,19 @@ const senhaDe = (email) => {
   ok('Permissão nova vale sem precisar sair', (await p2.locator('aside nav').innerText()).includes('Campanhas'));
   await c2.close();
 
-  // Excluir com transferência
+  // Excluir com transferência (decisão #138: o WhatsApp do usuário excluído é desconectado)
+  const BRUNO = sql(`select id from "Usuario" where email='bruno${suf}@ex.com'`);
+  sql(`insert into "WhatsappSessao"(id,"usuarioId",status,"atualizadoEm") values ('${BRUNO}','${BRUNO}','DESCONECTADO',now()) on conflict (id) do nothing`);
   await p.click(`tr:has-text("bruno${suf}") >> button:has-text("Excluir")`);
   ok('Excluir exige escolher para quem transferir', await p.locator('button:has-text("Excluir definitivamente")').isDisabled());
   await p.selectOption('#destino', { label: 'Ana Souza — ana@empresaexemplo.com.br' });
   await p.click('button:has-text("Excluir definitivamente")'); await p.waitForTimeout(1500);
   ok('Usuário excluído após escolher o destino', sql(`select count(*) from "Usuario" where email='bruno${suf}@ex.com'`) === '0');
   ok('Mensagem confirma a transferência', (await p.locator('text=dados foram transferidos para Ana Souza').count()) >= 1);
+  const logWa = sql(`select texto from "Log" where tipo='WHATSAPP' and texto like 'WhatsApp de %(usuário excluído)' order by "criadoEm" desc limit 1`);
+  ok('WhatsApp do usuário excluído é desconectado e fica nos Logs (#138)', logWa.includes('desconectado (usuário excluído)'), logWa);
+  await p.waitForTimeout(1000);
+  ok('O registro do WhatsApp dele não volta', sql(`select count(*) from "WhatsappSessao" where id='${BRUNO}'`) === '0');
   await c.close();
 
   sql(`update "Empresa" set "expiraEm"=now()+interval '26 day' where id='${EMP}'`);
