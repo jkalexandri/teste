@@ -22,6 +22,8 @@ export type EstadoWhatsapp = {
   qrImagem: string | null;
   erro: string | null;
   conectadoEm: string | null;
+  /** Última reconexão depois de queda ou reinício (decisão #155 — B2) */
+  reconectadoEm: string | null;
   /** Reconexão automática (decisão #139) */
   quedaEm: string | null;
   tentativaReconexao: number;
@@ -48,7 +50,7 @@ export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
   const w = await prisma.whatsappSessao.findUnique({ where: { id: sessaoId } });
   const sinal = await sinalDoServico();
   const servico = { noAr: sinal.noAr, ultimoSinalEm: sinal.ultimoSinalEm?.toISOString() ?? null };
-  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, servico };
+  if (!w) return { status: StatusWhatsapp.DESCONECTADO, numero: null, qrImagem: null, erro: null, conectadoEm: null, reconectadoEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, servico };
   // Serviço parado: o QR guardado já não vale (ninguém o renova)
   const qrNovo = sinal.noAr && w.qr && w.qrEm && Date.now() - w.qrEm.getTime() < QR_VALIDO_MS;
   return {
@@ -57,6 +59,7 @@ export async function lerEstado(sessaoId: string): Promise<EstadoWhatsapp> {
     qrImagem: qrNovo ? await QRCode.toDataURL(w.qr!, { margin: 1, width: 264 }) : null,
     erro: w.erro,
     conectadoEm: w.conectadoEm?.toISOString() ?? null,
+    reconectadoEm: w.reconectadoEm?.toISOString() ?? null,
     quedaEm: w.quedaEm?.toISOString() ?? null,
     tentativaReconexao: w.tentativaReconexao,
     proximaTentativaEm: w.proximaTentativaEm?.toISOString() ?? null,

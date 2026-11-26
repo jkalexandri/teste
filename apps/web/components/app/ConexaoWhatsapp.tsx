@@ -13,6 +13,8 @@ type Estado = {
   qrImagem: string | null;
   erro: string | null;
   conectadoEm: string | null;
+  /** Última reconexão (decisão #155 — B2) */
+  reconectadoEm?: string | null;
   /** Reconexão automática (decisão #139) */
   quedaEm?: string | null;
   tentativaReconexao?: number;
@@ -45,16 +47,21 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
     if (r?.ok) setEstado(await r.json());
   }, [alvo]);
 
+  // Só consulta com a aba visível (decisão #155 — B1): em segundo plano não gasta servidor nem gera QR à toa;
+  // ao voltar para a aba, consulta na hora
   useEffect(() => {
-    const t = window.setInterval(atualizar, 3000);
-    return () => window.clearInterval(t);
+    const visivel = () => document.visibilityState === "visible";
+    const t = window.setInterval(() => { if (visivel()) void atualizar(); }, 3000);
+    const aoVoltar = () => { if (visivel()) void atualizar(); };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", aoVoltar); };
   }, [atualizar]);
 
   // Relógio da contagem "próxima em X s" da reconexão (decisão #139)
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
     if (estado.status !== "RECONECTANDO") return;
-    const t = window.setInterval(() => setAgora(Date.now()), 1000);
+    const t = window.setInterval(() => { if (document.visibilityState === "visible") setAgora(Date.now()); }, 1000);
     return () => window.clearInterval(t);
   }, [estado.status]);
 
@@ -101,6 +108,12 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
               {estado.conectadoEm && (
                 <div className="text-[11px]" style={{ color: "var(--muted)" }}>
                   Conectado desde {new Date(estado.conectadoEm).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              )}
+              {/* Depois de queda ou reinício do serviço o "desde" não muda: só aparece a última reconexão (decisão #155 — B2) */}
+              {estado.reconectadoEm && (
+                <div className="text-[11px]" style={{ color: "var(--muted)" }} data-testid="ultima-reconexao">
+                  Última reconexão: {new Date(estado.reconectadoEm).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })}
                 </div>
               )}
             </div>

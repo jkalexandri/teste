@@ -14,6 +14,7 @@ import { FilaPlataforma } from "./fila-plataforma.js";
 import { AtendenteSuporte } from "./suporte-ia.js";
 import { VigiaIA } from "./vigia-ia.js";
 import { registrarNumerosRepetidos } from "./numero-unico.js";
+import { VigiaChaves } from "./chaves-whatsapp.js";
 import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
@@ -49,6 +50,8 @@ const interessados = new AtendenteInteressados(log.child({ modulo: "interessados
 });
 // IA no suporte dos clientes (decisão #146): responde pelo botão Suporte; passa para o atendente quando preciso
 const suporteIA = new AtendenteSuporte(log.child({ modulo: "suporte-ia" }), { avisarSuporte: avisarSuperAdmin });
+// Tamanho das chaves do WhatsApp (decisão #155 — B3): resumo semanal e aviso nos Logs do Super Admin; não apaga nada
+const vigiaChaves = new VigiaChaves(log.child({ modulo: "chaves-whatsapp" }));
 // Uptime medido para a pílula de status do login (decisão #109)
 const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
 // Vigia do atendimento por IA (decisão #149): avisa o Super Admin quando um dos 4 pontos muda de cor
@@ -103,6 +106,7 @@ async function iniciar() {
   avisoQueda.iniciar();
   filaPlataforma.iniciar();
   vigiaIA.iniciar();
+  vigiaChaves.iniciar();
   disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
@@ -117,6 +121,7 @@ async function desligar(sinal: string) {
   avisoQueda.parar();
   filaPlataforma.parar();
   vigiaIA.parar();
+  vigiaChaves.parar();
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);

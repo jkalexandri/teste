@@ -30,6 +30,11 @@ export type OpcoesSessoes = {
   porteiro?: Porteiro;
   /** Sorteio 0 a 1 da variação do intervalo de reconexão (nos testes, fixo) */
   aleatorio?: () => number;
+  /** Intervalo mínimo entre dois "Conectar" (gerar QR) e entre dois "Tentar agora" do mesmo número (decisão #155 — B5); nos testes, 0 */
+  intervaloConectarMs?: number;
+  intervaloTentarAgoraMs?: number;
+  /** Espera entre as tentativas de guardar o login (decisão #155 — B4); nos testes, curta */
+  esperaSalvarMs?: number;
 };
 
 /** Mensagem recebida, com o tipo e (para imagens) como baixar a imagem — Conversas IA. */
@@ -58,6 +63,10 @@ export class GerenciadorSessoes implements Remetente {
   private ultimaQueda = new Map<string, { codigo: number; em: Date }>();
   /** Números reconectados por causa do reinício do serviço (decisão #153): a volta não é uma queda e o Log diz isso */
   private aposReinicio = new Set<string>();
+  /** Quando foi o último "Conectar"/"Tentar agora" de cada número (decisão #155 — B5): protege o IP da VPS de rajadas de QR */
+  private ultimaTentativa = new Map<string, number>();
+  /** Números cujo login não conseguiu ser guardado (decisão #155 — B4): avisa nos Logs uma vez e quando voltar a guardar */
+  private loginNaoSalvo = new Set<string>();
   private versao: [number, number, number] | undefined;
   /** Chamado a cada mensagem recebida de um contato (respostas dos leads — etapa 8b). */
   aoReceber: ((sessaoId: string, telefone: string, texto: string, extra: MensagemRecebida) => Promise<void>) | null = null;
@@ -77,10 +86,10 @@ export class GerenciadorSessoes implements Remetente {
   }
 
   /** Põe a operação na fila do número: nunca duas ao mesmo tempo para o mesmo número. */
-  private emFila(id: string, fn: () => Promise<void>): Promise<void> {
+  private emFila<T>(id: string, fn: () => Promise<T>): Promise<T> {
     const anterior = this.filas.get(id) ?? Promise.resolve();
     const atual = anterior.then(fn, fn);
-    const guardada = atual.catch(() => undefined);
+    const guardada = atual.then(() => undefined, () => undefined);
     this.filas.set(id, guardada);
     void guardada.then(() => { if (this.filas.get(id) === guardada) this.filas.delete(id); });
     return atual;
@@ -125,7 +134,7 @@ export class GerenciadorSessoes implements Remetente {
           await this.sairDoWhatsapp(s.id, "manter");
         } else {
           this.aposReinicio.add(s.id);
-          await this.conectar(s.id);
+          await this.conectar(s.id, undefined, true); // automático: sem o limite de frequência do usuário
         }
       }).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
     }));
@@ -150,21 +159,32 @@ export class GerenciadorSessoes implements Remetente {
       .catch((e) => this.log.error({ e, id }, "falha ao encerrar número"));
   }
 
-  /** Inicia (ou retoma) a conexão. Sem login salvo, o WhatsApp gera o QR Code. */
-  async conectar(id: string, usuarioId?: string) {
+  /**
+   * Inicia (ou retoma) a conexão. Sem login salvo, o WhatsApp gera o QR Code.
+   * Pedido do usuário (Conectar / Tentar agora) tem intervalo mínimo por número (decisão #155 — B5): 10 s entre dois "Conectar"
+   * (gerar QR) e 5 s entre dois "Tentar agora". `automatico` (ao ligar o serviço) não tem limite.
+   */
+  async conectar(id: string, usuarioId?: string, automatico = false): Promise<{ ok: boolean; mensagem: string }> {
     return this.emFila(id, async () => {
-      // Com reconexão agendada, "Conectar" vira "tentar agora": desliga o relógio e abre na hora (sem duplicar)
-      this.pararRelogio(id);
-      if (this.conexoes.has(id)) return; // já está conectando/conectada
       // Com login salvo é uma RECONEXÃO (decisão #139): a tela mostra "Reconectando…" e "Tentar agora",
       // nunca o "Cancelar" da primeira conexão (que apagaria o login)
       const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { creds: true, quedaEm: true, bloqueada: true } });
+      const reconexao = !!antes?.creds;
+      // Limite de frequência (B5): antes de mexer em qualquer coisa, para o pedido recusado não cancelar a reconexão agendada
+      if (!automatico && !this.conexoes.has(id)) {
+        const limite = reconexao ? this.opcoes.intervaloTentarAgoraMs ?? 5_000 : this.opcoes.intervaloConectarMs ?? 10_000;
+        const chave = `${id}|${reconexao ? "tentar" : "qr"}`;
+        if (Date.now() - (this.ultimaTentativa.get(chave) ?? 0) < limite) return { ok: false, mensagem: "Aguarde alguns segundos antes de tentar de novo." };
+        this.ultimaTentativa.set(chave, Date.now());
+      }
+      // Com reconexão agendada, "Conectar" vira "tentar agora": desliga o relógio e abre na hora (sem duplicar)
+      this.pararRelogio(id);
+      if (this.conexoes.has(id)) return { ok: true, mensagem: "Conectando…" }; // já está conectando/conectada
       // Trava no próprio serviço (decisão #140): número bloqueado (saiu do plano) não conecta, venha o pedido de onde vier
       if (antes?.bloqueada) {
         this.log.warn({ id }, "conectar recusado: número bloqueado (saiu do plano)");
-        return;
+        return { ok: false, mensagem: "Este número está fora do plano." };
       }
-      const reconexao = !!antes?.creds;
       await prisma.whatsappSessao.upsert({
         where: { id },
         create: { id, usuarioId: usuarioId ?? null, status: StatusWhatsapp.CONECTANDO },
@@ -173,6 +193,7 @@ export class GerenciadorSessoes implements Remetente {
           : { status: StatusWhatsapp.CONECTANDO, erro: null, qr: null, qrEm: null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null },
       });
       await this.abrirOuReagendar(id, 0);
+      return { ok: true, mensagem: "Conectando…" };
     });
   }
 
@@ -261,8 +282,24 @@ export class GerenciadorSessoes implements Remetente {
     let ultimaGravacao: Promise<void> = Promise.resolve();
     sock.ev.on("creds.update", () => {
       ultimaGravacao = ultimaGravacao.then(async () => {
-        // Registro apagado com a conexão aberta (usuário excluído): encerra em vez de recriar (decisão #138)
-        if (!(await salvarCreds()) && atual()) void this.encerrarSemDono(id);
+        // Guardar o login: 3 tentativas, 1 s uma da outra (decisão #155 — B4). Se o banco falhar, avisa nos Logs uma vez
+        let guardou = false;
+        for (let tentativa = 1; tentativa <= 3 && !guardou; tentativa++) {
+          try {
+            // Registro apagado com a conexão aberta (usuário excluído): encerra em vez de recriar (decisão #138)
+            if (!(await salvarCreds()) && atual()) void this.encerrarSemDono(id);
+            guardou = true;
+          } catch (e) {
+            this.log.error({ e, id, tentativa }, "falha ao salvar credenciais");
+            if (tentativa < 3) await new Promise((r) => setTimeout(r, this.opcoes.esperaSalvarMs ?? 1000));
+          }
+        }
+        if (!guardou && !this.loginNaoSalvo.has(id)) {
+          this.loginNaoSalvo.add(id);
+          void registrarLogSessao(id, "Não foi possível guardar o login do WhatsApp: se o serviço reiniciar, será preciso ler o QR Code de novo");
+        } else if (guardou && this.loginNaoSalvo.delete(id)) {
+          void registrarLogSessao(id, "Login do WhatsApp guardado de novo");
+        }
       }).catch((e) => this.log.error({ e, id }, "falha ao salvar credenciais"));
     });
 
@@ -331,8 +368,10 @@ export class GerenciadorSessoes implements Remetente {
           }
           conexao.tentativas = 0;
           // Estado de antes de limpar as marcas: se avisou da queda, avisa que voltou (decisão #142)
-          const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true, quedaEm: true, avisoQuedaEm: true } });
-          await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: new Date(), quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
+          const antes = await prisma.whatsappSessao.findUnique({ where: { id }, select: { id: true, usuarioId: true, apelido: true, numero: true, quedaEm: true, avisoQuedaEm: true, conectadoEm: true } });
+          // "Conectado desde" é a conexão de verdade (decisão #155 — B2): depois de queda ou reinício do serviço mantém a data e só marca a reconexão
+          const reconectou = this.ultimaQueda.has(id) || this.aposReinicio.has(id);
+          await this.gravar(id, { status: StatusWhatsapp.CONECTADO, qr: null, qrEm: null, erro: null, numero: numeroDoJid(sock.user?.id), conectadoEm: reconectou && antes?.conectadoEm ? antes.conectadoEm : new Date(), reconectadoEm: reconectou ? new Date() : null, quedaEm: null, tentativaReconexao: 0, proximaTentativaEm: null, avisoQuedaEm: null, avisoProblemaEm: null });
           // Aquecimento por CHIP (decisões #64 e #141): a idade é do telefone conectado, não do espaço.
           await this.conferirAquecimento(id, numeroDoJid(sock.user?.id));
           if (antes?.avisoQuedaEm) void this.aoVoltar?.({ ...antes, numero: numeroDoJid(sock.user?.id) ?? antes.numero }).catch((e) => this.log.error({ e, id }, "falha ao avisar que voltou"));

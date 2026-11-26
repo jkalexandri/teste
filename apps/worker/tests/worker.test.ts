@@ -77,7 +77,7 @@ test("login do WhatsApp salvo no banco, criptografado, e apagado ao desconectar"
 test("API: exige token, valida dados e chama o gerenciador", async () => {
   const chamadas: string[] = [];
   const falso: Sessoes = {
-    conectar: async (id, u) => void chamadas.push(`conectar:${id}:${u ?? ""}`),
+    conectar: async (id, u) => { chamadas.push(`conectar:${id}:${u ?? ""}`); return { ok: true, mensagem: "Conectando…" }; },
     desconectar: async (id) => void chamadas.push(`desconectar:${id}`),
     enviarTexto: async (id, para) => (para === "11900000000" ? { ok: true, mensagem: "Mensagem enviada." } : { ok: false, mensagem: "WhatsApp não conectado." }),
   };
@@ -102,7 +102,7 @@ test("API: exige token, valida dados e chama o gerenciador", async () => {
 
 test("API: envio pelo número da plataforma entra na fila com a prioridade certa; o de usuário continua direto (decisão #143)", async () => {
   const fila: string[] = [];
-  const falso: Sessoes = { conectar: async () => undefined, desconectar: async () => undefined, enviarTexto: async (id) => ({ ok: true, mensagem: `direto:${id}` }) };
+  const falso: Sessoes = { conectar: async () => ({ ok: true, mensagem: "Conectando…" }), desconectar: async () => undefined, enviarTexto: async (id) => ({ ok: true, mensagem: `direto:${id}` }) };
   const app = criarApi(falso, "tok", pino({ level: "silent" }), "./arquivos", undefined, undefined, undefined, {
     enfileirar: async (para, texto, prioridade) => { fila.push(`${para}|${texto}|${prioridade}`); return { ok: true, mensagem: "Mensagem na fila.", id: "m1" }; },
     aguardar: async () => ({ ok: false, mensagem: "Este número não tem WhatsApp." }),
@@ -119,12 +119,21 @@ test("API: envio pelo número da plataforma entra na fila com a prioridade certa
   await app.close();
 });
 
+test("API: 'Conectar' pedido cedo demais volta 429 com a mensagem (decisão #155 — B5)", async () => {
+  const falso: Sessoes = { conectar: async () => ({ ok: false, mensagem: "Aguarde alguns segundos antes de tentar de novo." }), desconectar: async () => undefined, enviarTexto: async () => ({ ok: true, mensagem: "" }) };
+  const app = criarApi(falso, "tok", pino({ level: "silent" }));
+  const r = await app.inject({ method: "POST", url: "/sessoes/abc/conectar", headers: { authorization: "Bearer tok" }, payload: {} });
+  assert.equal(r.statusCode, 429);
+  assert.equal(r.json().mensagem, "Aguarde alguns segundos antes de tentar de novo.");
+  await app.close();
+});
+
 test("API: guarda, devolve e apaga anexos (decisão #67)", async () => {
   const { mkdtemp } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
   const pasta = await mkdtemp(join(tmpdir(), "anexos-"));
-  const falso: Sessoes = { conectar: async () => {}, desconectar: async () => {}, enviarTexto: async () => ({ ok: true, mensagem: "" }) };
+  const falso: Sessoes = { conectar: async () => ({ ok: true, mensagem: "" }), desconectar: async () => {}, enviarTexto: async () => ({ ok: true, mensagem: "" }) };
   const app = criarApi(falso, "tok", pino({ level: "silent" }), pasta);
   const auth = { authorization: "Bearer tok" };
   const dados = Buffer.from([0x25, 0x50, 0x44, 0x46, 1, 2, 3]);

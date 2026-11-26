@@ -15,7 +15,7 @@ export type FilaDaPlataforma = {
 
 /** O que a API precisa do gerenciador (permite testar com um falso). */
 export type Sessoes = {
-  conectar(id: string, usuarioId?: string): Promise<void>;
+  conectar(id: string, usuarioId?: string): Promise<{ ok: boolean; mensagem: string }>;
   desconectar(id: string): Promise<void>;
   enviarTexto(id: string, para: string, texto: string): Promise<{ ok: boolean; mensagem: string }>;
 };
@@ -61,9 +61,9 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     if (id !== undefined && !ID_VALIDO.test(id)) return res.code(400).send({ ok: false, mensagem: "Sessão inválida." });
   });
 
-  app.post<{ Params: { id: string }; Body: { usuarioId?: string } | null }>("/sessoes/:id/conectar", async (req) => {
-    await sessoes.conectar(req.params.id, req.body?.usuarioId);
-    return { ok: true, mensagem: "Conectando…" };
+  app.post<{ Params: { id: string }; Body: { usuarioId?: string } | null }>("/sessoes/:id/conectar", async (req, res) => {
+    const r = await sessoes.conectar(req.params.id, req.body?.usuarioId);
+    return res.code(r.ok ? 200 : 429).send(r); // 429: pediu de novo cedo demais (decisão #155 — B5)
   });
 
   app.post<{ Params: { id: string } }>("/sessoes/:id/desconectar", async (req) => {

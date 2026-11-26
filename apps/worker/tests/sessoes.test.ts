@@ -39,6 +39,9 @@ class SocketFalso {
 /** Falhas simuladas (decisão #144 — M1): erro ao ler o login e erro ao apagar o login */
 let falharAuth: unknown = null;
 let falharApagar = false;
+/** B4: quantas gravações do login devem falhar, e quantas vezes tentou gravar */
+let falharSalvar = 0;
+let salvarChamadas = 0;
 let sockets: SocketFalso[] = [];
 let apagados: string[] = [];
 let g: GerenciadorSessoes;
@@ -52,12 +55,14 @@ function novoGerenciador(extra: { porteiro?: Porteiro } = {}) {
     // Nos testes antigos: sem espera no porteiro e sem variação no intervalo (tempos exatos)
     porteiro: extra.porteiro ?? new Porteiro({ concorrencia: 99, intervaloMs: 0 }),
     aleatorio: () => 0.5,
+    // Sem limite de frequência e com espera curta para guardar o login (decisão #155): os testes antigos usam o tempo exato
+    intervaloConectarMs: 0, intervaloTentarAgoraMs: 0, esperaSalvarMs: 5,
     criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
     // Login falso "já pareado" (o celular já leu o QR antes)
     usarAuth: async (idAtual: string) => { aberturas.push({ id: idAtual, t: Date.now() }); if (falharAuth) throw falharAuth; return ({
       state: { creds: { me: { id: "5511900001111:1@s.whatsapp.net" } } as never, keys: { get: async () => ({}), set: async () => undefined } as never },
       // Como o real: só grava se o registro existir (decisão #138)
-      salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0,
+      salvarCreds: async () => { salvarChamadas++; if (falharSalvar > 0) { falharSalvar--; throw new Error("banco fora do ar"); } return (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0; },
     }); },
     apagarAuth: async (id: string) => { if (falharApagar) throw new Error("banco fora do ar"); apagados.push(id); },
   });
@@ -67,7 +72,7 @@ beforeEach(async () => {
   sockets = [];
   apagados = [];
   aberturas = [];
-  falharAuth = null; falharApagar = false;
+  falharAuth = null; falharApagar = false; falharSalvar = 0; salvarChamadas = 0;
   g?.encerrarTudo();
   g = novoGerenciador();
   await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ, ...M5] } } });
@@ -446,7 +451,7 @@ test("M3: duas conexões lendo o QR do MESMO número ao mesmo tempo: só uma pas
   sockets[0]!.qr(); sockets[1]!.qr();
   sockets[0]!.abrir(NUM); sockets[1]!.abrir(NUM);
   const estados = async () => (await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { id: true, status: true, erro: true, numero: true } })).map((x) => `${x.id}:${x.status}:${x.numero ?? "-"}:${x.erro ? "erro" : "-"}`).join(" | ");
-  const um = await ate(async () => { const r = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { status: true } }); return r.filter((x) => x.status === "CONECTADO").length === 1 && r.filter((x) => x.status === "DESCONECTADO").length === 1; });
+  const um = await ate(async () => { const r = await prisma.whatsappSessao.findMany({ where: { id: { in: [ID, ID2] } }, select: { status: true } }); return r.filter((x) => x.status === "CONECTADO").length === 1 && r.filter((x) => x.status === "DESCONECTADO").length === 1; }, 12_000);
   assert.ok(um, "uma conectou e a outra foi recusada: " + (await estados()));
   await limparLogsM3();
 });
@@ -578,4 +583,123 @@ test("M5: prioridade de abertura: plataforma 0, campanha em andamento 1, demais 
   assert.equal(prioridadeDeAbertura({ id: "y", usuarioId: "u2", bloqueada: false }, com), 2);
   assert.equal(prioridadeDeAbertura({ id: "z", usuarioId: null, bloqueada: false }, com), 3, "sem dono só conecta para sair");
   assert.equal(prioridadeDeAbertura({ id: "w", usuarioId: "u1", bloqueada: true }, com), 3, "bloqueado só conecta para sair");
+});
+
+// ===== B2 (decisão #155): "Conectado desde" mantém a data da conexão de verdade =====
+test("B2: depois de queda o 'desde' NÃO muda e a reconexão fica em reconectadoEm; primeira conexão marca só o desde", async () => {
+  const [dono] = await donos();
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const primeira = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.ok(primeira.conectadoEm); assert.equal(primeira.reconectadoEm, null, "primeira conexão não é reconexão");
+  await prisma.whatsappSessao.update({ where: { id: ID }, data: { creds: "v1:x:y:z", conectadoEm: new Date(Date.now() - 2 * 86_400_000) } }); // conectado há 2 dias
+  const desde = (await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } })).conectadoEm!.getTime();
+  sockets[0]!.cair(428);
+  assert.ok(await ate(async () => (await status()) === "RECONECTANDO"));
+  await g.conectar(ID); // tentar agora
+  sockets[1]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const volta = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(volta.conectadoEm!.getTime(), desde, "o 'Conectado desde' continua o de 2 dias atrás");
+  assert.ok(volta.reconectadoEm && Date.now() - volta.reconectadoEm.getTime() < 10_000, "a reconexão foi marcada");
+  await prisma.log.deleteMany({ where: { texto: { contains: "WhatsApp voltou às" }, usuarioId: dono } });
+});
+
+test("B2: reinício do serviço também mantém o 'desde' e marca a reconexão", async () => {
+  const [dono] = await donos();
+  const antigo = new Date(Date.now() - 5 * 86_400_000);
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, status: "CONECTADO", numero: NUM, creds: "v1:x:y:z", conectadoEm: antigo } });
+  await g.iniciarTodas();
+  for (const k of sockets) k.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.equal(s.conectadoEm!.getTime(), antigo.getTime());
+  assert.ok(s.reconectadoEm);
+  await prisma.log.deleteMany({ where: { texto: { contains: "reinício do serviço" }, usuarioId: dono } });
+});
+
+test("B2: desconectar e conectar de novo é conexão NOVA (o 'desde' recomeça e a reconexão some)", async () => {
+  const [dono] = await donos();
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, status: "CONECTADO", numero: NUM, creds: "v1:x:y:z", conectadoEm: new Date(Date.now() - 86_400_000), reconectadoEm: new Date() } });
+  await g.desconectar(ID);
+  await g.conectar(ID, dono);
+  sockets[0]!.qr(); sockets[0]!.abrir(NUM);
+  assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const s = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
+  assert.ok(Date.now() - s.conectadoEm!.getTime() < 10_000, "recomeçou agora");
+  assert.equal(s.reconectadoEm, null);
+  await prisma.log.deleteMany({ where: { texto: { contains: "5511987654321" }, usuarioId: dono } });
+});
+
+// ===== B4 (decisão #155): guardar o login com 3 tentativas e avisar nos Logs =====
+const logsLogin = (inicio: Date, trecho: string) => prisma.log.findMany({ where: { tipo: "WHATSAPP", criadoEm: { gte: inicio }, texto: { contains: trecho } } });
+
+test("B4: se guardar o login falha 2 vezes, na 3ª tentativa guarda e não avisa", async () => {
+  const [dono] = await donos();
+  await g.conectar(ID, dono);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const inicio = new Date(); salvarChamadas = 0; falharSalvar = 2;
+  sockets[0]!.atualizarLogin();
+  assert.ok(await ate(() => salvarChamadas === 3), "tentou 3 vezes");
+  await espera(100);
+  assert.equal((await logsLogin(inicio, "guardar o login")).length, 0, "conseguiu na 3ª: sem aviso");
+});
+
+test("B4: se falha nas 3, avisa nos Logs UMA vez; quando volta a guardar, avisa que guardou", async () => {
+  const [dono] = await donos();
+  await g.conectar(ID, dono);
+  sockets[0]!.abrir(); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  const inicio = new Date(); salvarChamadas = 0; falharSalvar = 99;
+  sockets[0]!.atualizarLogin();
+  assert.ok(await ate(async () => (await logsLogin(inicio, "Não foi possível guardar o login do WhatsApp: se o serviço reiniciar, será preciso ler o QR Code de novo")).length === 1));
+  assert.equal(salvarChamadas, 3);
+  sockets[0]!.atualizarLogin(); // continua falhando: NÃO repete o aviso
+  assert.ok(await ate(() => salvarChamadas === 6));
+  await espera(100);
+  assert.equal((await logsLogin(inicio, "Não foi possível guardar o login")).length, 1, "um aviso só");
+  falharSalvar = 0; sockets[0]!.atualizarLogin(); // voltou
+  assert.ok(await ate(async () => (await logsLogin(inicio, "Login do WhatsApp guardado de novo")).length === 1));
+  await prisma.log.deleteMany({ where: { criadoEm: { gte: inicio }, OR: [{ texto: { contains: "guardar o login" } }, { texto: { contains: "guardado de novo" } }] } });
+});
+
+// ===== B5 (decisão #155): intervalo mínimo entre pedidos do usuário =====
+test("B5: dois 'Conectar' seguidos (gerar QR) — o segundo espera 10 s; o Desconectar nunca é limitado", async () => {
+  g.encerrarTudo();
+  g = new GerenciadorSessoes(randomBytes(32), pino({ level: "silent" }), {
+    versao: [2, 3000, 1], porteiro: new Porteiro({ concorrencia: 99, intervaloMs: 0 }), aleatorio: () => 0.5,
+    intervaloConectarMs: 400, intervaloTentarAgoraMs: 200,
+    criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
+    usarAuth: async (idAtual: string) => ({ state: { creds: { me: undefined } as never, keys: { get: async () => ({}), set: async () => undefined } as never }, salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0 }),
+    apagarAuth: async () => undefined,
+  });
+  const [dono] = await donos();
+  assert.deepEqual(await g.conectar(ID, dono), { ok: true, mensagem: "Conectando…" });
+  await g.desconectar(ID); // cancelar sempre pode
+  const cedo = await g.conectar(ID, dono);
+  assert.equal(cedo.ok, false); assert.equal(cedo.mensagem, "Aguarde alguns segundos antes de tentar de novo.");
+  assert.equal(sockets.length, 1, "o pedido recusado não abriu outra conexão");
+  await espera(450);
+  assert.equal((await g.conectar(ID, dono)).ok, true, "passado o intervalo, conecta");
+  assert.equal(sockets.length, 2);
+});
+
+test("B5: 'Tentar agora' tem intervalo próprio (5 s) e o pedido recusado NÃO cancela a reconexão agendada", async () => {
+  g.encerrarTudo();
+  g = new GerenciadorSessoes(randomBytes(32), pino({ level: "silent" }), {
+    versao: [2, 3000, 1], porteiro: new Porteiro({ concorrencia: 99, intervaloMs: 0 }), aleatorio: () => 0.5,
+    intervaloConectarMs: 0, intervaloTentarAgoraMs: 600,
+    criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
+    usarAuth: async (idAtual: string) => ({ state: { creds: { me: { id: "5511900001111:1@s.whatsapp.net" } } as never, keys: { get: async () => ({}), set: async () => undefined } as never }, salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0 }),
+    apagarAuth: async () => undefined,
+  });
+  const [dono] = await donos();
+  await prisma.whatsappSessao.create({ data: { id: ID, usuarioId: dono, status: "RECONECTANDO", numero: NUM, creds: "v1:x:y:z", quedaEm: new Date() } });
+  assert.equal((await g.conectar(ID)).ok, true, "1º 'Tentar agora'");
+  sockets[0]!.abrir(NUM); assert.ok(await ate(async () => (await status()) === "CONECTADO"));
+  sockets[0]!.cair(428); assert.ok(await ate(() => g.reconexaoAgendada(ID)), "reconexão agendada");
+  const cedo = await g.conectar(ID);
+  assert.equal(cedo.ok, false);
+  assert.equal(g.reconexaoAgendada(ID), true, "o pedido recusado não cancelou a reconexão automática");
+  await prisma.log.deleteMany({ where: { usuarioId: dono, texto: { contains: "reinício do serviço" } } });
 });

@@ -16,7 +16,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.44.0 — 26/11/2026 18:30 (semáforo e chaves da IA em 4 pontos) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
-| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.45.3 — 26/11/2026 23:00 (reconexão aos poucos: M5) |
+| 4 | WhatsApp (conexão) | 🟢 Revisado | 26/11/2026 23:59 | v1.45.4 | v1.45.4 — 26/11/2026 23:59 (revisão concluída: baixas B1–B5) |
 | 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
 | 6 | Campanhas e envio | 🟡 Em revisão | auditoria em 25/11/2026 (hora não registrada) | v1.41.0 | v1.41.1 — 25/11/2026 12:02 (trava contra disparo duplicado) |
 | 7 | IA de mensagens | 🔴 Sem revisão | nunca | — | v1.38.0 — 24/11/2026 18:52 (Texto sugestão no Como qualificar) |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.45.4 | 26/11/2026 23:59 | 4 WhatsApp (conexão) | Revisão concluída (B1–B5): tela só consulta com a aba visível; "Conectado desde" mantém a data e mostra "Última reconexão"; chaves do WhatsApp medidas por semana; guardar o login com 3 tentativas; intervalo mínimo no Conectar/Tentar agora (#155) | 10 Relatórios e painéis (Logs) | **sim** |
 | v1.45.3 | 26/11/2026 23:00 | 4 WhatsApp (conexão) | Porteiro das aberturas automáticas (2 por vez, 1,5 s entre elas), ordem plataforma → campanha em andamento → demais, variação de ±25% no intervalo e serviço que sobe na hora (M5) | 12 Operação (VPS) | não |
 | v1.45.2 | 26/11/2026 22:00 | 4 WhatsApp (conexão) | Logs: uma linha por queda na volta (hora, motivo com código, tempo fora, tentativas), linhas extras aos 3 min e 2 h, e "reconectado depois do reinício do serviço" separado (M4) | 10 Relatórios e painéis (Logs) | não |
 | v1.45.1 | 26/11/2026 21:00 | 4 WhatsApp (conexão) | Número já conectado em outro espaço: a conexão nova é recusada (a antiga segue); números já repetidos só nos Logs do Super Admin (M3) | 2 Contas e usuários, 10 Relatórios e painéis (Logs) | não |

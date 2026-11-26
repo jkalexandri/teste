@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.45.4 — ajustes finais do WhatsApp; Módulo 4 revisado (26/11/2026)
+
+- A tela do **WhatsApp** só atualiza sozinha com a aba **visível** (economiza o servidor) e atualiza na hora quando você volta para ela.
+- **"Conectado desde"** agora mostra a data da conexão de verdade; depois de uma queda aparece também **"Última reconexão"**.
+- Se você apertar **Conectar** ou **Tentar agora** várias vezes seguidas, a tela pede para **aguardar alguns segundos** (10 s para gerar o QR, 5 s para tentar de novo). Desconectar nunca é limitado.
+- O sistema tenta **3 vezes** guardar o login do WhatsApp; se não conseguir, avisa nos **Logs**.
+- **Super Admin:** nos Logs aparece, uma vez por semana, o **tamanho das chaves do WhatsApp** de cada número, com aviso se crescer demais.
+
 ## v1.45.3 — reconexão dos WhatsApps aos poucos (26/11/2026)
 
 - Ao **reiniciar o serviço** (por exemplo, a cada atualização) ou depois de uma queda geral, os números de WhatsApp agora **reconectam aos poucos** — no máximo 2 por vez,

@@ -44,15 +44,15 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 
 ## Baixas
 
-- **B1 — Atualização a cada 3 s mesmo com a aba escondida:** a tela continua consultando o servidor (e gerando a imagem do QR)
+- **B1 — Atualização a cada 3 s mesmo com a aba escondida:** ✅ FEITA (#155) — a tela continua consultando o servidor (e gerando a imagem do QR)
   em aba em segundo plano. Pausar quando a aba não está visível. (`ConexaoWhatsapp.tsx`)
-- **B2 — "Conectado desde" reinicia em cada reconexão curta:** uma oscilação de segundos mostra um horário novo. Melhor mostrar
+- **B2 — "Conectado desde" reinicia em cada reconexão curta:** ✅ FEITA (#155) — uma oscilação de segundos mostra um horário novo. Melhor mostrar
   desde quando está estável, ou "reconectou às HH:MM". (`sessoes.ts`: `conectadoEm` gravado a cada `open`)
-- **B3 — Chaves do WhatsApp sem acompanhamento de tamanho:** `WhatsappChave` cresce com o uso (uma linha por contato/sessão) e
+- **B3 — Chaves do WhatsApp sem acompanhamento de tamanho:** ✅ FEITA (#155) — `WhatsappChave` cresce com o uso (uma linha por contato/sessão) e
   não há contagem nem limpeza de lixo; vale medir e, se preciso, limpar. (`auth-banco.ts`)
-- **B4 — Falha ao salvar o login só vai para o log:** se a gravação do login falhar (ex.: banco fora do ar logo após ler o QR),
+- **B4 — Falha ao salvar o login só vai para o log:** ✅ FEITA (#155) — se a gravação do login falhar (ex.: banco fora do ar logo após ler o QR),
   o número parece conectado mas perde o login no próximo reinício, sem aviso. (`sessoes.ts`: `creds.update`)
-- **B5 — Sem limite de frequência no "Conectar":** apertar Conectar/Cancelar repetidamente abre várias tentativas de QR do mesmo
+- **B5 — Sem limite de frequência no "Conectar":** ✅ FEITA (#155) — apertar Conectar/Cancelar repetidamente abre várias tentativas de QR do mesmo
   IP em sequência. Um intervalo mínimo entre tentativas protege o IP da VPS. (`api.ts` / `sessoes.ts: conectar`)
 
 ## Não é falha (conferido)
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → ~~M4~~ (feita) → ~~M5~~ (feita) → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → ~~M4~~ (feita) → ~~M5~~ (feita) → ~~B1–B5~~ (feitas, #155; agrupadas numa única prévia). **Módulo 4 revisado em 26/11/2026 (v1.45.4).**

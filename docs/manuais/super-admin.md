@@ -47,6 +47,10 @@ celular ou App no celular). A tela atualiza sozinha a cada 20 segundos.
   **último acesso**).
 - **Chamar:** abre o chat do suporte na tela do cliente. **Conversa:** abre o histórico em Atendimento.
 
+## Chaves do WhatsApp
+
+Uma vez por semana a tela **Logs** (tipo WhatsApp) mostra, para cada número, quantas chaves de criptografia ele guarda e o tamanho (por exemplo, "Chaves do WhatsApp (plataforma): 8.693 chaves, 0,8 MB; maior tipo: lid-mapping"). É só acompanhamento: nada é apagado. Se um número passar de 100 mil chaves ou 25 MB (ou o total de 150 MB), aparece "Atenção: chaves do WhatsApp … chegaram a …".
+
 ## Inteligência Artificial: atendimento em 4 pontos
 
 No **Dashboard** há o quadro **Inteligência Artificial** com 4 pontos: **Leads**, **Campanhas**, **Suporte** e **Visitante não Cliente**.
