@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { chamarWorker } from "@/lib/worker";
 import { logDaSessao } from "@/lib/logs";
 import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, StatusUsuario } from "@filapro/db";
+import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
 import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
 import { PERMISSOES } from "@/lib/menu";
@@ -96,7 +97,7 @@ export async function alternarAtivo(id: string): Promise<R> {
   if (!u) return { ok: false, mensagem: "Usuário não encontrado." };
   if (u.status === StatusUsuario.ATIVO) {
     await prisma.usuario.update({ where: { id }, data: { status: StatusUsuario.BLOQUEADO } });
-    await prisma.sessao.deleteMany({ where: { usuarioId: id } });
+    await encerrarAcessoDeUsuarios([id]);
     revalidatePath("/usuarios");
     await logDaSessao("USUARIOS", `Usuário desativado: ${u.nome}`);
     return { ok: true, mensagem: `${u.nome} desativado. A vaga foi liberada.` };

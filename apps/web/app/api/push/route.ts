@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
+import { motivoSemAcesso } from "@/lib/auth/acesso";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const s = await obterSessao();
-  if (!s || s.precisaTrocar) return NextResponse.json({ ok: false, mensagem: "Acesso negado." }, { status: 403 });
+  if (!s || s.precisaTrocar || motivoSemAcesso(s)) return NextResponse.json({ ok: false, mensagem: "Acesso negado." }, { status: 403 }); // conta barrada não cadastra aparelho (decisão #158)
   const c = (await req.json().catch(() => ({}))) as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
   const endpoint = String(c.endpoint ?? "");
   if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !c.keys?.p256dh || !c.keys?.auth) {

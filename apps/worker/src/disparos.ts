@@ -11,6 +11,7 @@ import { prisma, Cargo, StatusCampanha, StatusEnvio, StatusLead } from "@filapro
 import { numeroDeAvisos } from "./avisos.js";
 import { enviarPush } from "./push.js";
 import { emManutencao } from "./manutencao.js";
+import { MOTIVO_CONTA, motivoContaSemAcesso } from "./conta-acesso.js";
 import { MOTIVO_SEM_SALDO, saldoDisparos } from "@filapro/db/src/saldo.ts";
 import { MODOS, MAX_SEM_RESPOSTA_30D, PALAVRAS_SAIR, agoraSP, dentroDaJanela, limiteAquecimento, montarMensagem, saudacao } from "@filapro/db/src/envio.ts";
 
@@ -94,6 +95,11 @@ export class MotorDisparos {
       const numeros = c.sessoes.length ? c.sessoes : [c.usuarioId];
       if (numeros.some((n) => this.remetente.conectado(n))) await prisma.campanha.update({ where: { id: c.id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null } });
     }
+    // Pausadas por conta sem acesso voltam sozinhas quando o plano é renovado / a empresa ativada / o usuário desbloqueado (decisão #158)
+    const pausadasConta = await prisma.campanha.findMany({ where: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_CONTA }, select: { id: true, usuario: { select: { cargo: true, status: true, empresa: { select: { ativa: true, expiraEm: true } } } } } });
+    for (const c of pausadasConta) {
+      if (!motivoContaSemAcesso(c.usuario, agora)) await prisma.campanha.update({ where: { id: c.id }, data: { status: StatusCampanha.EM_ANDAMENTO, motivo: null } });
+    }
     const remetentes = await prisma.campanha.findMany({ where: { status: StatusCampanha.EM_ANDAMENTO }, select: { usuarioId: true }, distinct: ["usuarioId"] });
     for (const { usuarioId } of remetentes) if (!this.correndo.has(usuarioId)) void this.correr(usuarioId);
   }
@@ -125,6 +131,13 @@ export class MotorDisparos {
     });
     const c = campanhas[0];
     if (!c) return { acao: "nada", esperaMs: 0 };
+    // Conta sem acesso (plano vencido, empresa inativa, usuário bloqueado): pausa tudo, sem avisar (decisão #158)
+    const semAcesso = motivoContaSemAcesso(c.usuario, agora);
+    if (semAcesso) {
+      await prisma.campanha.updateMany({ where: { usuarioId, status: StatusCampanha.EM_ANDAMENTO }, data: { status: StatusCampanha.PAUSADA, motivo: MOTIVO_CONTA } });
+      this.log.warn({ usuarioId, semAcesso }, "campanhas pausadas: conta sem acesso");
+      return { acao: "nada", esperaMs: 0, motivo: "conta sem acesso" };
+    }
     const ids = campanhas.map((x) => x.id);
 
     // 1) Números da campanha (rodízio — decisão #79). Nenhum conectado: pausa e volta sozinha quando reconectar.

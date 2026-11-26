@@ -2,6 +2,16 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.2 — segurança: conta vencida, inativa ou bloqueada para de verdade (26/11/2026)
+
+- **Campanhas:** se o plano vencer, a empresa for inativada (por exemplo, estorno) ou o usuário for bloqueado, as campanhas em andamento **pausam sozinhas** e **voltam sozinhas** quando o acesso voltar (renovação, ativação ou desbloqueio). Nada é enviado nesse meio-tempo.
+- **IA:** a IA **não responde** mais conversas de contas sem acesso. As mensagens dos leads continuam sendo guardadas.
+- **Avisos:** contas sem acesso não recebem avisos de leads nem de queda do WhatsApp. Os avisos de renovação continuam.
+- O WhatsApp **continua conectado**: ao renovar, não precisa ler o QR Code de novo.
+- Ao inativar uma empresa ou bloquear um usuário, **as sessões abertas e as notificações do celular são encerradas** na hora.
+- Rotas de presença, suporte e notificações deixam de responder para contas sem acesso.
+- Sessões vencidas são **limpas automaticamente**.
+
 ## v1.46.1 — segurança: trocar a senha só no primeiro acesso (26/11/2026)
 
 - A troca de senha da tela de **primeiro acesso** passou a valer **somente** para quem entrou com a senha temporária. Quem já tem senha definitiva não consegue mais trocá-la por essa porta.

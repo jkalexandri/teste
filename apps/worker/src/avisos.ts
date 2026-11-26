@@ -5,6 +5,7 @@
 import type { Logger } from "pino";
 import { prisma, Cargo } from "@filapro/db";
 import { enviarPush, urlDoAviso } from "./push.js";
+import { motivoContaSemAcesso } from "./conta-acesso.js";
 
 export const INTERVALO_RESUMO_MS = 10 * 60_000;
 export type TipoAviso = "QUENTE" | "ANUNCIO" | "RESPONDEU";
@@ -36,12 +37,13 @@ export class Avisador {
 
   /** Aviso de um evento do lead de `donoId`: vai para o dono e para o Admin da Empresa dele (quem tiver o tipo ligado). */
   async avisar(tipo: TipoAviso, donoId: string, texto: string) {
-    const dono = await prisma.usuario.findUnique({ where: { id: donoId } });
+    const dono = await prisma.usuario.findUnique({ where: { id: donoId }, include: { empresa: true } });
     if (!dono) return;
+    if (motivoContaSemAcesso(dono, this.agora())) return; // conta sem acesso não recebe avisos (decisão #158)
     const destinos: { u: typeof dono; texto: string }[] = [];
     if (dono.cargo !== Cargo.ADMIN_EMPRESA && dono[CAMPO[tipo]]) destinos.push({ u: dono, texto });
     if (dono.empresaId && dono.cargo === Cargo.USUARIO) {
-      const admins = await prisma.usuario.findMany({ where: { empresaId: dono.empresaId, cargo: Cargo.ADMIN_EMPRESA, status: "ATIVO", [CAMPO[tipo]]: true } });
+      const admins = await prisma.usuario.findMany({ where: { empresaId: dono.empresaId, cargo: Cargo.ADMIN_EMPRESA, status: "ATIVO", [CAMPO[tipo]]: true }, include: { empresa: true } });
       for (const a of admins) destinos.push({ u: a, texto: `[${dono.nome}] ${texto}` });
     }
     for (const d of destinos) await this.entregar(d.u, d.texto);
@@ -50,8 +52,8 @@ export class Avisador {
   /** Aviso do sistema sobre o número do dono (decisão #142): sempre ligado e na hora (sem resumo).
    *  Vai para o dono e, com "[Nome]", para os Admins da Empresa dele. */
   async avisarSempre(donoId: string, texto: string) {
-    const dono = await prisma.usuario.findUnique({ where: { id: donoId } });
-    if (!dono || dono.status !== "ATIVO") return;
+    const dono = await prisma.usuario.findUnique({ where: { id: donoId }, include: { empresa: true } });
+    if (!dono || dono.status !== "ATIVO" || motivoContaSemAcesso(dono, this.agora())) return; // conta sem acesso não recebe avisos (decisão #158)
     if (dono.cargo !== Cargo.ADMIN_EMPRESA) await this.enviar(dono, texto);
     if (dono.empresaId && dono.cargo === Cargo.USUARIO) {
       const admins = await prisma.usuario.findMany({ where: { empresaId: dono.empresaId, cargo: Cargo.ADMIN_EMPRESA, status: "ATIVO" } });

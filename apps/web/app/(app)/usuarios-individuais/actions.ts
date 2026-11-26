@@ -3,6 +3,7 @@
 // Super Admin → Usuários Individuais (decisões #31 e #40).
 import { revalidatePath } from "next/cache";
 import { prisma, gerarHash, gerarSenhaTemporaria, Modulo, StatusUsuario } from "@filapro/db";
+import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
 
@@ -48,7 +49,7 @@ export async function alternarBloqueio(usuarioId: string): Promise<R> {
   if (!u) return { ok: false, mensagem: "Usuário não encontrado." };
   const novo = u.status === StatusUsuario.ATIVO ? StatusUsuario.BLOQUEADO : StatusUsuario.ATIVO;
   await prisma.usuario.update({ where: { id: usuarioId }, data: { status: novo } });
-  if (novo === StatusUsuario.BLOQUEADO) await prisma.sessao.deleteMany({ where: { usuarioId } });
+  if (novo === StatusUsuario.BLOQUEADO) await encerrarAcessoDeUsuarios([usuarioId]);
   revalidatePath("/usuarios-individuais");
   return { ok: true, mensagem: `${u.nome} ${novo === StatusUsuario.BLOQUEADO ? "bloqueado" : "desbloqueado"}.` };
 }

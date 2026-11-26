@@ -22,7 +22,7 @@ Legenda: ✅ confirmado lendo o código · ❓ suspeita que ainda preciso reprod
 sessão aberta (computador emprestado, cookie roubado) troca a senha da conta e a tranca para o dono.
 Também **não encerra as outras sessões** ao trocar. Correção: só aceitar quando `precisaTrocar` for verdadeiro; apagar as demais sessões.
 
-### S2 — Conta inativa, vencida ou bloqueada: o que continua funcionando ✅ (reproduzido em 26/11/2026)
+### S2 — Conta inativa, vencida ou bloqueada: o que continua funcionando ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.2 (decisão #158)**
 Teste: sessão aberta de um usuário de empresa; depois a empresa foi inativada, vencida e o usuário bloqueado.
 - **Telas e ações do servidor: corretas.** A checagem é feita ao vivo a cada clique (`obterSessao` lê usuário e empresa do banco e
   `motivoSemAcesso` confere); a sessão antiga cai na hora ("Empresa inativa", "Acesso expirado", "Acesso bloqueado").
@@ -66,4 +66,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 (a, b, c) → S4 → S5 → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 → S5 → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.

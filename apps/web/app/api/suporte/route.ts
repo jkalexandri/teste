@@ -2,13 +2,14 @@
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
+import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { acionarIASuporte, avisarSuporteOffline, gravarMensagem, mensagensDaConversa } from "@/lib/suporte";
 
 export const dynamic = "force-dynamic";
 
 async function cliente() {
   const s = await obterSessao();
-  if (!s || s.precisaTrocar || s.usuario.cargo === Cargo.SUPERADMIN) return null;
+  if (!s || s.precisaTrocar || motivoSemAcesso(s) || s.usuario.cargo === Cargo.SUPERADMIN) return null; // conta barrada (decisão #158)
   return s.usuario;
 }
 

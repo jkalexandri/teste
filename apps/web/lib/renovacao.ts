@@ -2,6 +2,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { prisma, Cargo, Modulo, StatusUsuario, saldoDisparos, type Empresa, type Pedido, type Prisma } from "@filapro/db";
+import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { enviarEmail } from "@/lib/email";
 import { novoVencimento } from "@/lib/contas";
 import { formatarReais } from "@/lib/planos";
@@ -114,7 +115,10 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
   if (e.modulo === Modulo.EMPRESARIAL) {
     const ativos = await tx.usuario.findMany({ where: { empresaId: e.id, cargo: Cargo.USUARIO, status: StatusUsuario.ATIVO }, orderBy: { criadoEm: "asc" }, select: { id: true } });
     const sobra = ativos.slice(atualizada.limiteUsuarios).map((u) => u.id);
-    if (sobra.length) await tx.usuario.updateMany({ where: { id: { in: sobra } }, data: { status: StatusUsuario.BLOQUEADO } });
+    if (sobra.length) {
+      await tx.usuario.updateMany({ where: { id: { in: sobra } }, data: { status: StatusUsuario.BLOQUEADO } });
+      await encerrarAcessoDeUsuarios(sobra, tx as never); // desativados pelo pacote menor: sem sessão nem notificação (decisão #158)
+    }
   }
   return atualizada;
 }

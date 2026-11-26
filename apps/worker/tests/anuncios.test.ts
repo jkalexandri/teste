@@ -206,3 +206,22 @@ test("ponto Leads desligado: o lead de anúncio entra, fica com a marca da plata
     await liga(antes);
   }
 });
+
+// ===== Conta sem acesso (decisão #158 — S2c do Módulo 1) =====
+test("conta sem acesso: lead de anúncio é cadastrado, mas a IA não escreve e ninguém é avisado; avisos também ficam parados", async () => {
+  await prisma.empresa.update({ where: { id: EMP }, data: { ativa: false } });
+  try {
+    const a = await anuncio();
+    await at.atenderAnuncio(a.id);
+    const r = await prisma.leadAnuncio.findUniqueOrThrow({ where: { id: a.id } });
+    assert.equal(r.status, StatusAnuncio.ERRO);
+    assert.match(r.erro ?? "", /Conta sem acesso/);
+    assert.equal(wa.enviados.length, 0, "a IA não escreve");
+    avisos = [];
+    await avisador.avisar("QUENTE", USU, "🔥 Quente");
+    await avisador.avisarSempre(USU, "⚠️ queda");
+    assert.equal(avisos.length, 0, "conta barrada não recebe aviso");
+  } finally {
+    await prisma.empresa.update({ where: { id: EMP }, data: { ativa: true } });
+  }
+});

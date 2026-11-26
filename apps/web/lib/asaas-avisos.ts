@@ -3,6 +3,7 @@
 // Tudo aqui pode rodar mais de uma vez para o mesmo aviso sem repetir nada (idempotente).
 import "server-only";
 import { prisma, StatusPedido, SituacaoLancamento, Prisma } from "@filapro/db";
+import { encerrarAcessoDaEmpresa } from "@/lib/auth/encerrar-acesso";
 import { confirmarPedido } from "@/lib/confirmar-pedido";
 import { sincronizarFinanceiro, garantirCategorias, RECEITA, DESPESA, CAT, reais } from "@/lib/financeiro";
 import { avisarSuperAdmins } from "@/lib/alertas-seguranca";
@@ -221,6 +222,7 @@ async function estorno(pedido: PedidoBD, cobranca: CobrancaAviso): Promise<strin
   if (pedido.empresaId) {
     const r = await prisma.empresa.updateMany({ where: { id: pedido.empresaId, ativa: true }, data: { ativa: false } });
     inativou = r.count > 0;
+    if (inativou) await encerrarAcessoDaEmpresa(pedido.empresaId); // estorno: derruba sessões e notificações (decisão #158)
     empresaNome = (await prisma.empresa.findUnique({ where: { id: pedido.empresaId }, select: { nome: true } }))?.nome ?? empresaNome;
   }
   // 3. Aviso e registro

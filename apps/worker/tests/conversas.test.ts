@@ -390,3 +390,31 @@ test("ao religar o ponto Leads, lead com a IA desligada na conta ou conversa ass
     await leadsLigado(antes);
   }
 });
+
+// ===== Conta sem acesso (decisão #158 — S2c do Módulo 1) =====
+const barrarConta: Record<string, () => Promise<unknown>> = {
+  "plano vencido": () => prisma.empresa.update({ where: { id: EMP }, data: { expiraEm: new Date("2026-01-01") } }),
+  "empresa inativa": () => prisma.empresa.update({ where: { id: EMP }, data: { ativa: false } }),
+  "usuário bloqueado": () => prisma.usuario.update({ where: { id: USU }, data: { status: "BLOQUEADO" } }),
+};
+const liberarConta = async () => {
+  await prisma.empresa.update({ where: { id: EMP }, data: { expiraEm: new Date("2030-01-01"), ativa: true } });
+  await prisma.usuario.update({ where: { id: USU }, data: { status: "ATIVO" } });
+};
+
+for (const [nome, barrar] of Object.entries(barrarConta)) {
+  test(`conta sem acesso (${nome}): a IA não responde e não avisa, mas o histórico é guardado; com o acesso de volta, responde`, async () => {
+    const l = await novoLead({ status: StatusLead.EM_CONVERSA });
+    await barrar();
+    await at.receber(USU, USU, TEL, { texto: "Oi, quero saber mais", tipo: "texto" });
+    await aguardar();
+    assert.equal(wa.enviados.length, 0, "a IA não pode responder");
+    assert.equal(avisos.length, 0, "conta barrada não recebe aviso");
+    assert.equal((await msgs(l.id)).filter((m) => m.autor === AutorMensagem.LEAD).length, 1, "o histórico do lead é guardado");
+    assert.equal((await msgs(l.id)).filter((m) => m.autor === AutorMensagem.IA).length, 0);
+    await liberarConta();
+    await at.receber(USU, USU, TEL, { texto: "Quero agendar para sábado", tipo: "texto" });
+    await aguardar();
+    assert.equal(wa.enviados.length, 1, "com o acesso de volta, a IA responde");
+  });
+}

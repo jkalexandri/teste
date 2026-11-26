@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
+import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { emManutencao } from "@/lib/manutencao";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function POST(req: Request) {
   const manutencao = await emManutencao();
   const s = await obterSessao();
   if (!s || s.precisaTrocar) return NextResponse.json({ ok: false }, { status: 401 });
+  if (motivoSemAcesso(s)) return NextResponse.json({ ok: false }, { status: 403 }); // conta barrada (decisão #158)
   const c = (await req.json().catch(() => ({}))) as { tela?: string; app?: boolean };
   const u = s.usuario;
   if (manutencao && u.cargo !== Cargo.SUPERADMIN) return NextResponse.json({ ok: true, manutencao: true, comunicado: null, suporte: { naoLidas: 0, chamado: false } });

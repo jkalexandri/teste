@@ -2,6 +2,7 @@
 // Avisa os Super Admins por e-mail quando o serviço 24/7 fica fora do ar (e quando volta). Protegido por CRON_SECRET.
 import { NextResponse } from "next/server";
 import { conferirServico } from "@/lib/alerta-servico";
+import { prisma } from "@filapro/db";
 
 export const dynamic = "force-dynamic";
 
@@ -10,5 +11,7 @@ export async function GET(req: Request) {
   if (!segredo || req.headers.get("authorization") !== `Bearer ${segredo}`) {
     return NextResponse.json({ erro: "Não autorizado." }, { status: 401 });
   }
-  return NextResponse.json(await conferirServico());
+  // Limpeza (decisão #158): sessões vencidas há mais de 1 dia não servem para nada (só o hash do token fica guardado)
+  const limpas = await prisma.sessao.deleteMany({ where: { expiraEm: { lt: new Date(Date.now() - 24 * 3600_000) } } }).then((r) => r.count).catch(() => 0);
+  return NextResponse.json({ ...(await conferirServico()), sessoesLimpas: limpas });
 }

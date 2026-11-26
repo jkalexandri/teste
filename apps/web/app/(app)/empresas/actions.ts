@@ -3,6 +3,7 @@
 // Super Admin → Empresas (decisões #22–#24, #30, #40).
 import { revalidatePath } from "next/cache";
 import { prisma, Cargo, Modulo } from "@filapro/db";
+import { encerrarAcessoDaEmpresa } from "@/lib/auth/encerrar-acesso";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { lerLimite } from "@/lib/limite";
 import { criarConta, enviarEmailBoasVindas, novoVencimento, validarComprador } from "@/lib/contas";
@@ -113,6 +114,7 @@ export async function alternarEmpresaAtiva(empresaId: string): Promise<R> {
   const e = await prisma.empresa.findUnique({ where: { id: empresaId } });
   if (!e) return { ok: false, mensagem: "Empresa não encontrada." };
   await prisma.empresa.update({ where: { id: empresaId }, data: { ativa: !e.ativa } });
+  if (e.ativa) await encerrarAcessoDaEmpresa(empresaId); // inativada: derruba as sessões e as notificações (decisão #158)
   revalidatePath("/empresas");
   return { ok: true, mensagem: `${e.nome} ${e.ativa ? "inativada: os usuários não entram mais" : "ativada"}.` };
 }

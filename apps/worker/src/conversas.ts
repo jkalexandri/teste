@@ -11,6 +11,7 @@ import { escolherNumero } from "./numeros.js";
 import { variantesTelefone } from "./numero.js";
 import { emManutencao } from "./manutencao.js";
 import { ERRO_LEADS_PLATAFORMA, pontoLigado } from "./ia-plataforma.js";
+import { ERRO_CONTA_SEM_ACESSO, motivoContaSemAcesso } from "./conta-acesso.js";
 import { enviarPush, urlDoAviso } from "./push.js";
 import { MENSAGENS_RECENTES, resumirConversa, responderConversa, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
@@ -140,7 +141,7 @@ export class Atendente {
    * O lead é achado também com ou sem o 9º dígito (decisão #127).
    */
   async receber(sessaoId: string, usuarioId: string, telefone: string, r: Recebida) {
-    const lead = await prisma.lead.findFirst({ where: { usuarioId, telefone: { in: variantesTelefone(telefone) } }, include: { usuario: true } });
+    const lead = await prisma.lead.findFirst({ where: { usuarioId, telefone: { in: variantesTelefone(telefone) } }, include: { usuario: { include: { empresa: true } } } });
     if (!lead) {
       this.log.info({ sessaoId, tel: mascarar(telefone) }, "mensagem de quem não é lead: ignorada");
       return;
@@ -159,7 +160,7 @@ export class Atendente {
     // Aviso "lead respondeu" (decisão #81), exceto SAIR/PARAR/STOP/CANCELAR
     const trecho = r.texto.trim() ? `"${r.texto.trim().slice(0, 120)}"` : r.tipo === "audio" ? "(áudio)" : r.tipo === "imagem" ? "(imagem)" : `(${r.tipo})`;
     void this.avisar("RESPONDEU", lead.usuarioId, `💬 ${nomeDo(lead)} respondeu: ${trecho}`);
-    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : motivoContaSemAcesso(lead.usuario, this.agora()) ? "conta sem acesso" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
     if (motivo) { this.log.info({ leadId: lead.id, motivo }, "IA não chamada"); return; }
     if (!r.texto.trim() && r.tipo !== "imagem" && r.tipo !== "audio") { this.log.info({ leadId: lead.id, tipo: r.tipo }, "IA não chamada: mensagem sem texto"); return; }
     if (r.tipo === "imagem" && r.baixarImagem) this.imagens.set(lead.id, r.baixarImagem);
@@ -274,7 +275,7 @@ export class Atendente {
       this.programar(leadId, quando);
     };
 
-    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
+    const motivo = !(await pontoLigado("LEADS")) ? "IA desligada pela plataforma" : motivoContaSemAcesso(lead.usuario, this.agora()) ? "conta sem acesso" : !lead.usuario.iaConversas ? "IA desligada na conta" : lead.iaPausada ? `conversa pausada (${lead.iaPausaMotivo ?? "sem motivo"})` : lead.status === StatusLead.PEDIU_SAIR ? "pediu para sair" : null;
     if (motivo) { this.log.info({ leadId, motivo }, "resposta pendente cancelada"); await fechar(); return; }
     // Atualização em andamento (decisão #103): a resposta fica guardada e sai depois
     if (await emManutencao()) { await reagendar(this.espera()); return; }
@@ -473,6 +474,10 @@ export class Atendente {
     // Ponto Leads desligado pelo Super Admin (decisão #149): o lead fica com a marca que a religação procura
     if (!(await pontoLigado("LEADS"))) {
       await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: ERRO_LEADS_PLATAFORMA } });
+      return;
+    }
+    if (motivoContaSemAcesso(dono, this.agora())) {
+      await prisma.leadAnuncio.update({ where: { id }, data: { status: StatusAnuncio.ERRO, erro: ERRO_CONTA_SEM_ACESSO } });
       return;
     }
     if (!dono.iaConversas || lead.iaPausada) {

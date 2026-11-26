@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import pino from "pino";
 import { prisma, StatusCampanha, StatusEnvio, StatusLead, Modulo, Cargo } from "@filapro/db";
 import { limparCacheManutencao } from "../src/manutencao.js";
+import { MOTIVO_CONTA, motivoContaSemAcesso } from "../src/conta-acesso.js";
 import { MotorDisparos, MOTIVO_DESCONECTADO, MOTIVO_JANELA, type Conteudo, type Remetente } from "../src/disparos.js";
 
 const EMP = "teste-motor-emp", USU = "teste-motor-usu";
@@ -307,4 +308,51 @@ test("avisos: padrão 1 por dia de cada tipo; com 'avisar sempre', cada problema
   await prisma.campanha.update({ where: { id: c2.id }, data: { status: StatusCampanha.EM_ANDAMENTO } });
   for (let i = 0; i < 5; i++) await motor.passo(USU);
   assert.equal(avisos.length, 3);
+});
+
+// ===== Conta sem acesso (decisão #158 — S2c do Módulo 1) =====
+const semAcesso = {
+  "plano vencido": async () => { await prisma.empresa.update({ where: { id: EMP }, data: { expiraEm: new Date("2026-11-01") } }); },
+  "empresa inativa": async () => { await prisma.empresa.update({ where: { id: EMP }, data: { ativa: false } }); },
+  "usuário bloqueado": async () => { await prisma.usuario.update({ where: { id: USU }, data: { status: "BLOQUEADO" } }); },
+} as const;
+const comAcesso = async () => {
+  await prisma.empresa.update({ where: { id: EMP }, data: { expiraEm: new Date("2030-01-01"), ativa: true } });
+  await prisma.usuario.update({ where: { id: USU }, data: { status: "ATIVO" } });
+};
+
+for (const [nome, barrar] of Object.entries(semAcesso)) {
+  test(`conta sem acesso (${nome}): campanha pausa sem enviar nem avisar, e volta sozinha com o acesso`, async () => {
+    const c = await campanha([await lead(1), await lead(2)]);
+    await barrar();
+    const r = await motor.passo(USU);
+    assert.equal(r.acao, "nada");
+    assert.equal((await status(c.id)).status, StatusCampanha.PAUSADA);
+    assert.equal((await status(c.id)).motivo, MOTIVO_CONTA);
+    assert.equal(wa.enviados.length, 0);
+    assert.equal(avisos.length, 0, "conta barrada não recebe aviso");
+    // Ainda barrada: o ciclo não retoma
+    await motor.ciclo();
+    await new Promise((r) => setTimeout(r, 200));
+    assert.equal((await status(c.id)).status, StatusCampanha.PAUSADA);
+    assert.equal(wa.enviados.length, 0);
+    // Acesso de volta (renovou / ativou / desbloqueou): volta sozinha
+    await comAcesso();
+    await motor.ciclo();
+    await new Promise((r) => setTimeout(r, 400));
+    assert.ok(wa.enviados.length >= 1, "voltou a enviar");
+    assert.notEqual((await status(c.id)).motivo, MOTIVO_CONTA);
+  });
+}
+
+test("conta sem acesso: regra pura (Super Admin nunca é barrado; sem empresa = barrado)", () => {
+  const agora0 = new Date("2026-11-23T14:00:00Z");
+  const ok = { ativa: true, expiraEm: new Date("2027-01-01") };
+  assert.equal(motivoContaSemAcesso({ cargo: "USUARIO", status: "ATIVO", empresa: ok }, agora0), null);
+  assert.equal(motivoContaSemAcesso({ cargo: "USUARIO", status: "BLOQUEADO", empresa: ok }, agora0), "bloqueado");
+  assert.equal(motivoContaSemAcesso({ cargo: "USUARIO", status: "ATIVO", empresa: { ativa: true, expiraEm: new Date("2026-11-01") } }, agora0), "expirado");
+  assert.equal(motivoContaSemAcesso({ cargo: "USUARIO", status: "ATIVO", empresa: { ativa: false, expiraEm: new Date("2027-01-01") } }, agora0), "inativa");
+  assert.equal(motivoContaSemAcesso({ cargo: "USUARIO", status: "ATIVO", empresa: null }, agora0), "bloqueado");
+  assert.equal(motivoContaSemAcesso({ cargo: "SUPERADMIN", status: "ATIVO", empresa: null }, agora0), null);
+  assert.equal(motivoContaSemAcesso({ cargo: "SUPERADMIN", status: "BLOQUEADO", empresa: null }, agora0), "bloqueado");
 });

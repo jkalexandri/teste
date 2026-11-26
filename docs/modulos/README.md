@@ -13,7 +13,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 
 | # | Módulo | Status | Revisão (data e hora) | Versão da revisão | Último ajuste |
 |---|---|---|---|---|---|
-| 1 | Acesso e segurança | 🟡 Em revisão | auditoria iniciada 26/11/2026 | — | v1.46.1 — 27/11/2026 01:15 (S1: trocar senha só no primeiro acesso) |
+| 1 | Acesso e segurança | 🟡 Em revisão | auditoria iniciada 26/11/2026 | — | v1.46.2 — 27/11/2026 02:10 (S2: conta vencida/inativa/bloqueada para de verdade) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.44.0 — 26/11/2026 18:30 (semáforo e chaves da IA em 4 pontos) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
 | 4 | WhatsApp (conexão) | 🟢 Revisado | 26/11/2026 23:59 | v1.45.4 | v1.45.4 — 26/11/2026 23:59 (revisão concluída: baixas B1–B5) |
@@ -32,7 +32,7 @@ Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** �
 
 | # | Módulo | O que cobre | Telas | Serviço 24/7 | Testes |
 |---|---|---|---|---|---|
-| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração, trava das telas | Login, Primeiro acesso, Verificação, Segurança | — | login-regras, 15, 16b, 21, 27 |
+| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração, trava das telas | Login, Primeiro acesso, Verificação, Segurança | — | login-regras, 15, 16b, 21, 27, 28 |
 | 2 | Contas e usuários | Empresas, usuários, individuais, menu por perfil | Empresas, Usuários, Usuários Individuais, Conta | — | 3, 4c, 5, 18b |
 | 3 | Planos, venda e pagamento | Planos, compra, Asaas, pedidos, renovação, upgrade, financeiro | Planos, Pagamento, Pedidos, Renovar, Financeiro | — | 4a, 4b, 4d, 16, 17, 18, 19a–d, 20 |
 | 4 | WhatsApp (conexão) | QR Code, reconexão, vários números, número da plataforma | WhatsApp, Número da plataforma | sessões, queda, números | 6, 10c |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.46.2 | 27/11/2026 02:10 | 1 Acesso e segurança | S2: conta vencida, inativa ou bloqueada pausa campanhas e IA no serviço 24/7 (volta sozinha); sem avisos; sessões e notificações encerradas ao inativar/bloquear; limpeza de sessões vencidas (#158) | 2 Contas e usuários, 6 Campanhas e envio, 8 Conversas IA, 3 Planos (estorno e renovação) | não |
 | v1.46.1 | 27/11/2026 01:15 | 1 Acesso e segurança | S1: trocar senha só no primeiro acesso; senha nova diferente da temporária; sessões antigas encerradas e token novo; e-mail de aviso e Logs; sessão de primeiro acesso de 30 min (#157) | 2 Contas e usuários (primeiro acesso) | não |
 | v1.46.0 | 27/11/2026 00:30 | 11 Comunicação | Suporte: atendimento encerrado após 10 min de inatividade do cliente (selo "Encerrada", reabre ao escrever; nunca encerra com o cliente esperando o atendente) (#156) | 9 Interessados (Atendimento) | não |
 | v1.45.4 | 26/11/2026 23:59 | 4 WhatsApp (conexão) | Revisão concluída (B1–B5): tela só consulta com a aba visível; "Conectado desde" mantém a data e mostra "Última reconexão"; chaves do WhatsApp medidas por semana; guardar o login com 3 tentativas; intervalo mínimo no Conectar/Tentar agora (#155) | 10 Relatórios e painéis (Logs) | **sim** |
