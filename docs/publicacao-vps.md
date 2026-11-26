@@ -143,9 +143,11 @@ WORKER_TOKEN="WORKER_TOKEN"
 CHAVE_CRIPTO="CHAVE_CRIPTO"
 VAPID_PUBLIC_KEY="VAPID_PUBLIC_KEY"
 VAPID_PRIVATE_KEY="VAPID_PRIVATE_KEY"
+RESEND_API_KEY="O MESMO do apps/web/.env.production"
+EMAIL_FROM="FilaPro Leads <nao-responda@filaproleads.com.br>"
 ```
 
-(As outras linhas — PORTA, HOST, NIVEL_LOG, PASTA_ARQUIVOS — ficam como estão.) Salve: **Ctrl+O, Enter, Ctrl+X**.
+(`RESEND_API_KEY` é para o alerta por e-mail quando o número da plataforma cair — decisão #143; sem ela, só a notificação no celular sai.) (As outras linhas — PORTA, HOST, NIVEL_LOG, PASTA_ARQUIVOS — ficam como estão.) Salve: **Ctrl+O, Enter, Ctrl+X**.
 
 ### 4.2 Site: `apps/web/.env.production`
 

@@ -138,7 +138,7 @@ export default function ConexaoWhatsapp({ alvo, inicial, titulo, semAjuda }: { a
               </p>
             )}
             <p className="mt-0.5" style={{ color: "var(--muted)" }}>
-              Não precisa ler o QR Code: o login continua salvo. Campanhas e respostas da IA esperam e continuam quando voltar.
+              Não precisa ler o QR Code: o login continua salvo. {alvo === "plataforma" ? "Os avisos do sistema ficam na fila e saem quando voltar." : "Campanhas e respostas da IA esperam e continuam quando voltar."}
             </p>
           </div>
         )}

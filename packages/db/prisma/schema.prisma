@@ -1041,3 +1041,23 @@ model ServicoInstancia {
   dono    String
   vistoEm DateTime
 }
+
+/// Fila de saída do número da plataforma (decisão #143): cadência, limite por dia, prioridade e validade.
+/// prioridade: ALTA (Super Admin, suporte, segurança — nunca espera o limite) | NORMAL (avisos aos usuários e links de renovação)
+/// situacao: PENDENTE | ENVIADA | EXPIRADA | FALHOU
+model MensagemPlataforma {
+  id        String    @id @default(cuid())
+  para      String
+  texto     String
+  prioridade String   @default("NORMAL")
+  situacao  String    @default("PENDENTE")
+  erro      String?
+  tentativas Int      @default(0)
+  criadoEm  DateTime  @default(now())
+  /// Passou disso e ainda não saiu: expira (ninguém recebe aviso velho)
+  expiraEm  DateTime
+  enviadaEm DateTime?
+
+  @@index([situacao, prioridade, criadoEm])
+  @@index([enviadaEm])
+}

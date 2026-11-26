@@ -23,6 +23,11 @@ Para as funções de envio (leads, campanhas, Conversas IA, WhatsApp), veja tamb
 4. **Inteligência Artificial:** cole a chave da Anthropic e clique em **Testar** e **Salvar chave**.
 5. **Número da plataforma:** conecte o WhatsApp que envia os avisos do sistema (pedidos, renovações, avisos aos usuários) e cadastre
    o seu WhatsApp para receber os avisos de novos pedidos.
+   As mensagens saem em **fila**: 5 a 10 segundos entre uma e outra e até **200 por dia**. Pedidos, segurança e suporte nunca esperam o
+   limite; avisos aos usuários e links de renovação esperam o dia seguinte se ele acabar. Com o número fora do ar, as mensagens ficam
+   guardadas e saem na volta (expiram em 6 horas). A tela mostra "Enviadas hoje", "Na fila" e "Expiradas hoje".
+   Se o número cair (3 minutos fora, na volta, 2 horas fora ou desconexão de vez), você recebe **notificação no celular e e-mail**
+   e a tela mostra o selo vermelho **"Com problema"**.
 6. **Regras de envio:** faixa global de horário e feriados.
 
 ## Dashboard

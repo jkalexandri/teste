@@ -16,7 +16,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 1 | Acesso e segurança | 🔴 Sem revisão | nunca | — | v1.41.3 — 25/11/2026 15:50 (trava de cada tela) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.41.8 — 25/11/2026 23:13 (excluir usuário desconecta o WhatsApp dele) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
-| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.12 — 26/11/2026 04:30 (aviso de número caído: A6) |
+| 4 | WhatsApp (conexão) | 🟡 Em revisão | auditoria em 25/11/2026 14:52 | v1.41.2 | v1.41.13 — 26/11/2026 05:40 (fila e alerta do número da plataforma: A7) |
 | 5 | Leads | 🔴 Sem revisão | nunca | — | v1.41.0 — 25/11/2026 02:31 (lead achado com ou sem o 9º dígito) |
 | 6 | Campanhas e envio | 🟡 Em revisão | auditoria em 25/11/2026 (hora não registrada) | v1.41.0 | v1.41.1 — 25/11/2026 12:02 (trava contra disparo duplicado) |
 | 7 | IA de mensagens | 🔴 Sem revisão | nunca | — | v1.38.0 — 24/11/2026 18:52 (Texto sugestão no Como qualificar) |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.41.13 | 26/11/2026 05:40 | 4 WhatsApp (conexão) | Número da plataforma: fila com cadência 5–10 s, limite de 200/dia, prioridade e validade de 6 h; alerta de queda ao Super Admin por celular e e-mail (A7) | 3 Planos (renovação), 9 Interessados, 11 Comunicação, 1 Acesso (alertas de segurança) | não |
 | v1.41.12 | 26/11/2026 04:30 | 4 WhatsApp (conexão) | Aviso de número caído: 3 min fora, na volta, 2 h (selo "Com problema") e desconexão de vez com o motivo; cópia ao Admin da Empresa (A6) | 9 Avisos | não |
 | v1.41.11 | 26/11/2026 01:03 | 4 WhatsApp (conexão) | Chip diferente no mesmo espaço recomeça o aquecimento; o mesmo chip mantém (A5) | 6 Campanhas e envio | não |
 | v1.41.10 | 26/11/2026 00:53 | 4 WhatsApp (conexão) | Número que saiu do plano: o serviço não religa nem conecta; sai do WhatsApp e mantém as conversas (A4) | 3 Planos (renovação) | não |

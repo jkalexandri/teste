@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.13 — fila e alerta do número da plataforma (26/11/2026)
+
+- **Super Admin:** as mensagens do número da plataforma agora saem em fila, com 5 a 10 segundos de intervalo e limite de
+  200 por dia. Pedidos, segurança e suporte nunca esperam o limite; avisos aos usuários e links de renovação esperam o dia
+  seguinte se o limite acabar. Com o número fora do ar, as mensagens ficam guardadas e saem quando ele voltar (expiram em 6 horas).
+- A tela **Número da plataforma** mostra "Enviadas hoje", "Na fila" e "Expiradas hoje".
+- Se o número da plataforma cair, você recebe o alerta por **notificação no celular e e-mail** (3 minutos fora, quando volta,
+  2 horas fora e desconexão de vez), e a tela mostra o selo **"Com problema"**.
+
 ## v1.41.12 — aviso quando seu WhatsApp cai (26/11/2026)
 
 - Se o seu WhatsApp ficar **3 minutos** fora, você recebe um aviso (no celular e no WhatsApp de avisos). Quando voltar,

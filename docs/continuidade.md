@@ -72,9 +72,10 @@ Os testes **nunca** rodam na VPS de produção (criam e apagam dados). A sessão
 3. Se der problema: `bash /opt/filapro/app/deploy/voltar-versao.sh`.
 
 ### >>> ONDE PARAMOS (26/11/2026) — ler primeiro ao continuar
-- Versão no GitHub: v1.41.12. Revisão do **Módulo 4 (WhatsApp)**: feitas C1, C2, A1–A6 e M5 (decisões #130–#142).
-- **A6 FEITA** (decisão #142): aviso de número caído (3 min, na volta, 2 h "Com problema", desconexão de vez com o motivo; cópia ao Admin; sempre ligado). Código em `apps/worker/src/aviso-queda.ts`; teste `tests/aviso-queda.test.ts` + 1 em `sessoes.test.ts`. Falta o dono atualizar a VPS (`atualizar.sh`) e conferir com uma queda real.
-- Próxima: **A7** (número da plataforma: limite/cadência de envio e alerta de queda ao Super Admin); depois médias M1–M4, M6, M7 e baixas B1–B6 do relatório da auditoria (resumo na decisão #130); então marcar o Módulo 4 como 🟢 Revisado.
+- Versão no GitHub: v1.41.13. Revisão do **Módulo 4 (WhatsApp)**: feitas C1, C2, A1–A7 e M5 (decisões #130–#143). **Todas as falhas altas estão feitas.**
+- **A6 FEITA** (#142, aviso de número caído) e **A7 FEITA** (#143, fila do número da plataforma: 5–10 s, 200/dia, prioridade alta/normal, validade 6 h; alerta de queda ao Super Admin por celular + e-mail + selo). Código: `apps/worker/src/aviso-queda.ts`, `fila-plataforma.ts`, `alerta-super.ts`; testes `aviso-queda`, `fila-plataforma`, `sessoes`, `worker`.
+- **Antes de atualizar a VPS (A7):** pôr `RESEND_API_KEY` e `EMAIL_FROM` (os mesmos do site) no `apps/worker/.env` para o alerta chegar por e-mail; sem isso só a notificação no celular sai. Depois `bash /opt/filapro/app/deploy/atualizar.sh` (aplica a migração da fila) e conferir a tela Número da plataforma.
+- Próximas: médias M1–M4, M6, M7 e baixas B1–B6 do relatório da auditoria (resumo na decisão #130); então marcar o Módulo 4 como 🟢 Revisado.
 - Na fila: Módulo 6 (Campanhas, decisão #128, passos 2–6: salvamento automático com prévia aprovada, painel "Adicionar leads", Cancelar campanha…); Módulo 9 (decisão #135); Módulo 2 (bloqueado/vencido com WhatsApp e IA; excluir usuário apaga campanhas); lembrar o "Enviar teste para meu número" na Prévia da campanha.
 - Ambiente de teste: o banco de teste para entre as conversas — antes dos testes, subir Postgres (porta 5433, socket /var/tmp), site (porta 3005) e serviço 24/7 (`DISPAROS=desligado`), como na seção "Ambiente de teste" abaixo. `etapa6` precisa da porta 4000 livre; `etapa8b` precisa do serviço com disparos ligados.
 

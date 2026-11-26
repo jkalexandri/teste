@@ -7,6 +7,12 @@ import { join } from "node:path";
 import Fastify, { type FastifyBaseLogger } from "fastify";
 import type { Logger } from "pino";
 
+/** Fila do número da plataforma (decisão #143): o que a API usa dela. */
+export type FilaDaPlataforma = {
+  enfileirar(para: string, texto: string, prioridade?: "ALTA" | "NORMAL"): Promise<{ ok: boolean; mensagem: string; id?: string }>;
+  aguardar(id: string, ateMs?: number): Promise<{ ok: boolean; mensagem: string }>;
+};
+
 /** O que a API precisa do gerenciador (permite testar com um falso). */
 export type Sessoes = {
   conectar(id: string, usuarioId?: string): Promise<void>;
@@ -35,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -65,11 +71,19 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     return { ok: true, mensagem: "WhatsApp desconectado." };
   });
 
-  app.post<{ Params: { id: string }; Body: { para?: string; texto?: string } | null }>("/sessoes/:id/enviar", async (req, res) => {
+  app.post<{ Params: { id: string }; Body: { para?: string; texto?: string; prioridade?: string; aguardar?: boolean } | null }>("/sessoes/:id/enviar", async (req, res) => {
     const para = String(req.body?.para ?? "");
     const texto = String(req.body?.texto ?? "").trim();
     if (!para || !texto) return res.code(400).send({ ok: false, mensagem: "Informe o número e o texto." });
     if (texto.length > 4000) return res.code(400).send({ ok: false, mensagem: "Texto muito longo." });
+    // Número da plataforma: tudo passa pela fila (cadência, limite por dia e validade — decisão #143).
+    // prioridade "alta" = Super Admin/suporte/segurança; o resto é "normal". "aguardar" devolve o resultado real (botões de teste).
+    if (req.params.id === "plataforma" && filaPlataforma) {
+      const f = await filaPlataforma.enfileirar(para, texto, req.body?.prioridade === "alta" ? "ALTA" : "NORMAL");
+      if (!f.ok || !f.id || !req.body?.aguardar) return res.code(f.ok ? 200 : 409).send(f);
+      const r = await filaPlataforma.aguardar(f.id, 12_000); // o site desiste em 15 s
+      return res.code(r.ok ? 200 : 409).send(r);
+    }
     const r = await sessoes.enviarTexto(req.params.id, para, texto);
     return res.code(r.ok ? 200 : 409).send(r);
   });

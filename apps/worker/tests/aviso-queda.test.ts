@@ -12,11 +12,12 @@ const MIN = 60_000;
 let agora = new Date("2026-11-26T15:00:00Z");
 let avisos: { dono: string; texto: string }[] = [];
 let donoId = "";
-const aq = new AvisoQueda(pino({ level: "silent" }), async (dono, texto) => { avisos.push({ dono, texto }); }, { agora: () => agora });
+let alertasSuper: string[] = [];
+const aq = new AvisoQueda(pino({ level: "silent" }), async (dono, texto) => { avisos.push({ dono, texto }); }, { agora: () => agora, enviarSuper: async (t) => { alertasSuper.push(t); } });
 const sessao = () => prisma.whatsappSessao.findUniqueOrThrow({ where: { id: ID } });
 
 beforeEach(async () => {
-  avisos = [];
+  avisos = []; alertasSuper = [];
   agora = new Date("2026-11-26T15:00:00Z");
   donoId = (await prisma.usuario.findFirstOrThrow({ select: { id: true } })).id;
   await prisma.whatsappSessao.deleteMany({ where: { id: ID } });
@@ -74,22 +75,36 @@ test("voltou: só avisa se já tinha avisado da queda; mostra quanto tempo ficou
   assert.equal(avisos.length, 0);
 });
 
-test("desconectou de vez: avisa na hora com o motivo; número da plataforma e sem dono ficam de fora", async () => {
+test("desconectou de vez: avisa na hora com o motivo; número sem dono não avisa ninguém", async () => {
   await aq.desconectou({ id: ID, usuarioId: donoId, apelido: "", numero: "5511987654321" }, "O WhatsApp foi desconectado pelo celular. Conecte de novo lendo o QR Code.");
   assert.equal(avisos.length, 1);
   assert.match(avisos[0]!.texto, /^⛔ FilaPro Leads: seu WhatsApp "\+55 \(11\) 98765-4321" foi desconectado às \d\d:\d\d\. O WhatsApp foi desconectado pelo celular\./);
-  await aq.desconectou({ id: PLAT, usuarioId: null, apelido: "", numero: null }, "x");
-  await aq.desconectou({ id: ID, usuarioId: null, apelido: "", numero: null }, "x");
+  await aq.desconectou({ id: ID, usuarioId: null, apelido: "", numero: null }, "x"); // sem dono: ninguém para avisar
   assert.equal(avisos.length, 1);
 });
 
-test("número da plataforma e número bloqueado nunca geram aviso de queda", async () => {
-  await prisma.whatsappSessao.deleteMany({ where: { id: PLAT } });
-  await prisma.whatsappSessao.create({ data: { id: PLAT, status: "RECONECTANDO", quedaEm: new Date(agora.getTime() - 200 * MIN) } });
+test("número bloqueado (saiu do plano) nunca gera aviso de queda", async () => {
   await cair(10, { bloqueada: true });
   await aq.verificar();
+  assert.equal(avisos.length, 0); assert.equal(alertasSuper.length, 0);
+});
+
+test("número da plataforma (A7): alerta ao Super Admin com 3 min, 2 h, na volta e ao desconectar — nunca ao dono/WhatsApp de usuário", async () => {
   await prisma.whatsappSessao.deleteMany({ where: { id: PLAT } });
-  assert.equal(avisos.length, 0);
+  await prisma.whatsappSessao.create({ data: { id: PLAT, status: "RECONECTANDO", quedaEm: new Date(agora.getTime() - 4 * MIN) } });
+  await aq.verificar(); await aq.verificar();
+  assert.equal(alertasSuper.length, 1, "uma vez só");
+  assert.match(alertasSuper[0]!, /^⚠️ FilaPro Leads: o número da plataforma caiu às \d\d:\d\d e ainda não voltou\. .*fila/);
+  agora = new Date(agora.getTime() + 117 * MIN); await aq.verificar();
+  assert.equal(alertasSuper.length, 2);
+  assert.match(alertasSuper[1]!, /^🔴 FilaPro Leads: o número da plataforma está fora há 2 horas\./);
+  const p = await prisma.whatsappSessao.findUniqueOrThrow({ where: { id: PLAT } });
+  await aq.voltou(p);
+  assert.match(alertasSuper[2]!, /^✅ FilaPro Leads: o número da plataforma voltou às \d\d:\d\d \(ficou 2 h \d+ min fora\)\./);
+  await aq.desconectou({ id: PLAT, usuarioId: null, apelido: "", numero: null }, "O WhatsApp foi desconectado pelo celular.");
+  assert.match(alertasSuper[3]!, /^⛔ FilaPro Leads: o número da plataforma foi desconectado/);
+  assert.equal(avisos.length, 0, "nada vai para dono de usuário");
+  await prisma.whatsappSessao.deleteMany({ where: { id: PLAT } });
 });
 
 test("textos auxiliares", () => {

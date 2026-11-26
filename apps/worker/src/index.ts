@@ -10,6 +10,8 @@ import { Aprendizado } from "./aprender.js";
 import { Atendente } from "./conversas.js";
 import { Avisador } from "./avisos.js";
 import { AvisoQueda } from "./aviso-queda.js";
+import { FilaPlataforma } from "./fila-plataforma.js";
+import { criarAlertaSuperAdmin } from "./alerta-super.js";
 import { donoDaSessao } from "./numeros.js";
 import { AtendenteInteressados } from "./interessados.js";
 import { enviarPush } from "./push.js";
@@ -20,7 +22,13 @@ const log = pino({ level: config.nivelLog });
 const sessoes = new GerenciadorSessoes(config.chaveCripto, log);
 // Empresa | IA (etapa 9b): lê sites, PDFs e imagens e monta a ficha da empresa
 const aprendizado = new Aprendizado(log.child({ modulo: "aprender" }), config.pastaArquivos);
-const notificar = (para: string, texto: string) => sessoes.enviarTexto(SESSAO_PLATAFORMA, para, texto);
+// Tudo pelo número da plataforma passa pela fila (decisão #143): cadência, limite por dia e validade
+const filaPlataforma = new FilaPlataforma(log.child({ modulo: "fila-plataforma" }), {
+  enviarTexto: (para, texto) => sessoes.enviarTexto(SESSAO_PLATAFORMA, para, texto),
+  conectado: () => sessoes.conectado(SESSAO_PLATAFORMA),
+});
+const notificar = (para: string, texto: string) => filaPlataforma.enfileirar(para, texto, "NORMAL");
+const notificarSuperAdmin = (para: string, texto: string) => filaPlataforma.enfileirar(para, texto, "ALTA");
 // Conversas IA (etapa 10): a IA atende quem responde
 // Avisos do usuário (etapa 10b): Quente, anúncio e respondeu, com resumo a cada 10 minutos
 const avisador = new Avisador(log.child({ modulo: "avisos" }), { notificar });
@@ -29,14 +37,14 @@ const atendente = new Atendente(sessoes, log.child({ modulo: "conversas" }), { p
 const interessados = new AtendenteInteressados(log.child({ modulo: "interessados" }), {
   avisarSuporte: async (texto) => {
     const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
-    if (cfg?.numeroAvisos) await notificar(cfg.numeroAvisos, texto).catch(() => undefined);
+    if (cfg?.numeroAvisos) await notificarSuperAdmin(cfg.numeroAvisos, texto).catch(() => undefined);
     const sas = await prisma.usuario.findMany({ where: { cargo: "SUPERADMIN", status: "ATIVO" }, select: { id: true } });
     for (const s of sas) await enviarPush(s.id, texto, "/atendimento?aba=interessados").catch(() => undefined);
   },
 });
 // Uptime medido para a pílula de status do login (decisão #109)
 const disponibilidade = new Disponibilidade(log.child({ modulo: "disponibilidade" }));
-const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados);
+const api = criarApi(sessoes, config.token, log, config.pastaArquivos, aprendizado, atendente, interessados, filaPlataforma);
 // Motor de disparos (etapa 8b): envia as campanhas seguindo o Antibloqueio, 24/7.
 const motor = new MotorDisparos(sessoes, log.child({ modulo: "disparos" }), {
   pastaArquivos: config.pastaArquivos,
@@ -52,7 +60,7 @@ sessoes.aoReceber = async (sessaoId, telefone, texto, extra) => {
   await atendente.receber(sessaoId, dono, telefone, extra);
 };
 // Aviso de número caído (decisão #142): 3 min fora, na volta, 2 h fora e desconexão de vez
-const avisoQueda = new AvisoQueda(log.child({ modulo: "aviso-queda" }), (donoId, texto) => avisador.avisarSempre(donoId, texto));
+const avisoQueda = new AvisoQueda(log.child({ modulo: "aviso-queda" }), (donoId, texto) => avisador.avisarSempre(donoId, texto), { enviarSuper: criarAlertaSuperAdmin(log) });
 sessoes.aoVoltar = (s) => avisoQueda.voltou(s);
 sessoes.aoDesconectarDeVez = (s, motivo) => avisoQueda.desconectou(s, motivo);
 sessoes.aoConectar = async (sessaoId) => {
@@ -73,6 +81,7 @@ async function iniciar() {
   atendente.iniciar();
   avisador.iniciar();
   avisoQueda.iniciar();
+  filaPlataforma.iniciar();
   disponibilidade.iniciar();
   if (config.disparos) motor.iniciar();
   else log.warn("Disparos desligados (DISPAROS=desligado) — use só em testes locais.");
@@ -85,6 +94,7 @@ async function desligar(sinal: string) {
   atendente.parar();
   avisador.parar();
   avisoQueda.parar();
+  filaPlataforma.parar();
   disponibilidade.parar();
   sessoes.encerrarTudo();
   await api.close().catch(() => undefined);

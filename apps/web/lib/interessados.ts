@@ -73,7 +73,7 @@ export async function responderComoSuporte(id: string, autorId: string, texto: s
   const online = it.vistoEm && Date.now() - it.vistoEm.getTime() < ONLINE_MS;
   if (!online) {
     const site = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
-    await enviarPelaPlataforma(it.whatsapp, `FilaPro Leads: ${texto || "(enviamos um arquivo)"}\n\nContinue a conversa em ${site} → Planos → Fale conosco.`).catch(() => undefined);
+    await enviarPelaPlataforma(it.whatsapp, `FilaPro Leads: ${texto || "(enviamos um arquivo)"}\n\nContinue a conversa em ${site} → Planos → Fale conosco.`, { prioridade: "alta" }).catch(() => undefined);
   }
   return { ok: true as const, mensagem: "Enviada.", id: m.id };
 }
@@ -89,7 +89,7 @@ export async function gravarDoVisitante(it: { id: string; nome: string; whatsapp
   await prisma.interessado.update({ where: { id: it.id }, data: { ultimoAvisoEm: new Date() } });
   const aviso = `💬 Interessado no site: ${it.nome} (+${it.whatsapp}) escreveu: "${texto.slice(0, 120)}".${it.iaPausada ? "" : " A IA está respondendo."} Veja em Atendimento → Interessados.`;
   const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
-  if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, aviso).catch(() => undefined);
+  if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, aviso, { prioridade: "alta" }).catch(() => undefined);
   for (const a of admins) await chamarWorker(`/push/${a.id}/enviar`, { texto: aviso, url: "/atendimento?aba=interessados" }).catch(() => undefined);
 }
 

@@ -28,6 +28,6 @@ export async function enviarTeste(): Promise<{ ok: boolean; mensagem: string }> 
   await exigirSuperAdmin();
   const c = await prisma.configVenda.findUnique({ where: { id: "config" } });
   if (!c?.numeroAvisos) return { ok: false, mensagem: "Salve primeiro o número que recebe os avisos." };
-  const r = await enviarPelaPlataforma(c.numeroAvisos, "✅ Teste do FilaPro Leads: os avisos do sistema vão chegar neste número.");
+  const r = await enviarPelaPlataforma(c.numeroAvisos, "✅ Teste do FilaPro Leads: os avisos do sistema vão chegar neste número.", { prioridade: "alta", aguardar: true });
   return r.ok ? { ok: true, mensagem: "Mensagem de teste enviada." } : r;
 }

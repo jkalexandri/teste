@@ -100,6 +100,25 @@ test("API: exige token, valida dados e chama o gerenciador", async () => {
   await app.close();
 });
 
+test("API: envio pelo número da plataforma entra na fila com a prioridade certa; o de usuário continua direto (decisão #143)", async () => {
+  const fila: string[] = [];
+  const falso: Sessoes = { conectar: async () => undefined, desconectar: async () => undefined, enviarTexto: async (id) => ({ ok: true, mensagem: `direto:${id}` }) };
+  const app = criarApi(falso, "tok", pino({ level: "silent" }), "./arquivos", undefined, undefined, undefined, {
+    enfileirar: async (para, texto, prioridade) => { fila.push(`${para}|${texto}|${prioridade}`); return { ok: true, mensagem: "Mensagem na fila.", id: "m1" }; },
+    aguardar: async () => ({ ok: false, mensagem: "Este número não tem WhatsApp." }),
+  });
+  const auth = { authorization: "Bearer tok" };
+  const post = (url: string, payload: object) => app.inject({ method: "POST", url, headers: auth, payload });
+  assert.equal((await post("/sessoes/plataforma/enviar", { para: "11900000000", texto: "a" })).statusCode, 200);
+  assert.equal((await post("/sessoes/plataforma/enviar", { para: "11900000000", texto: "b", prioridade: "alta" })).statusCode, 200);
+  assert.deepEqual(fila, ["11900000000|a|NORMAL", "11900000000|b|ALTA"], "sem prioridade = normal");
+  const teste = await post("/sessoes/plataforma/enviar", { para: "11900000000", texto: "c", prioridade: "alta", aguardar: true });
+  assert.equal(teste.statusCode, 409); assert.equal(teste.json().mensagem, "Este número não tem WhatsApp.");
+  const usuario = await post("/sessoes/usuario1/enviar", { para: "11900000000", texto: "d" });
+  assert.equal(usuario.json().mensagem, "direto:usuario1"); assert.equal(fila.length, 3, "número de usuário não passa pela fila da plataforma");
+  await app.close();
+});
+
 test("API: guarda, devolve e apaga anexos (decisão #67)", async () => {
   const { mkdtemp } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");

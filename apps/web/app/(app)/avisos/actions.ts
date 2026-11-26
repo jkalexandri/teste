@@ -49,7 +49,7 @@ export async function testarAviso(): Promise<R> {
   const push = u.avisoCelular ? await chamarWorker(`/push/${u.id}/teste`) : { ok: false, mensagem: "" };
   const numero = numeroValido(u.numeroAvisos || u.whatsapp || "");
   if (!numero) return push.ok ? { ok: true, mensagem: push.mensagem } : { ok: false, mensagem: "Cadastre o número que recebe os avisos e salve antes de testar." };
-  const r = await enviarPelaPlataforma(numero, "✅ FilaPro Leads: este é um aviso de teste. Os avisos dos seus leads chegam neste número.");
+  const r = await enviarPelaPlataforma(numero, "✅ FilaPro Leads: este é um aviso de teste. Os avisos dos seus leads chegam neste número.", { aguardar: true });
   const extra = push.ok ? ` ${push.mensagem}` : "";
   return r.ok ? { ok: true, mensagem: `Aviso de teste enviado. Confira o seu WhatsApp.${extra}` } : { ok: push.ok, mensagem: `Não foi possível enviar pelo WhatsApp: ${r.mensagem}.${extra}` };
 }

@@ -63,6 +63,6 @@ export async function avisarSuporteOffline(cliente: { nome: string; email: strin
   if (online) return;
   const aviso = `💬 Suporte FilaPro Leads: ${cliente.nome} (${cliente.email}) chamou: "${texto.slice(0, 120) || "(arquivo)"}". Responda em Atendimento.`;
   const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
-  if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, aviso).catch(() => undefined);
+  if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, aviso, { prioridade: "alta" }).catch(() => undefined);
   for (const a of admins) await chamarWorker(`/push/${a.id}/enviar`, { texto: aviso, url: "/atendimento" }).catch(() => undefined);
 }

@@ -59,7 +59,7 @@ export async function GET(req: Request) {
   const fin = await sincronizarFinanceiro().catch(() => null);
   const contasAvisadas = await avisarContasVencendo(async (texto) => {
     const cfg = await prisma.configVenda.findUnique({ where: { id: "config" } });
-    if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, texto).catch(() => undefined);
+    if (cfg?.numeroAvisos) await enviarPelaPlataforma(cfg.numeroAvisos, texto, { prioridade: "alta" }).catch(() => undefined);
     const sas = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { id: true } });
     for (const sa of sas) await chamarWorker(`/push/${sa.id}/enviar`, { texto: texto.slice(0, 280), url: "/financeiro/contas" }).catch(() => undefined);
   }).catch(() => 0);
