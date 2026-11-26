@@ -156,10 +156,11 @@ test("queda: demais casos", () => {
   assert.ok(qrExpirou.acao === "encerrar" && qrExpirou.erro.includes("QR Code expirou"));
   const semRede = decidirQueda(408, false, false, 0);
   assert.ok(semRede.acao === "encerrar" && semRede.erro.includes("Não foi possível falar"));
-  // Já conectado antes e caiu a internet: reconecta com espera crescente (máx. 5 min)
-  assert.deepEqual(decidirQueda(428, true, false, 0), { acao: "reconectar", esperaMs: 2000 });
-  assert.deepEqual(decidirQueda(408, true, false, 3), { acao: "reconectar", esperaMs: 16000 });
-  assert.deepEqual(decidirQueda(503, true, false, 20), { acao: "reconectar", esperaMs: 300000 });
+  // Já conectado antes e caiu a internet: reconecta com espera crescente e variação de ±25% (decisão #154; aqui fixa, sorteio 0,5)
+  const meio = () => 0.5;
+  assert.deepEqual(decidirQueda(428, true, false, 0, meio), { acao: "reconectar", esperaMs: 2000 });
+  assert.deepEqual(decidirQueda(408, true, false, 3, meio), { acao: "reconectar", esperaMs: 16000 });
+  assert.deepEqual(decidirQueda(503, true, false, 20, meio), { acao: "reconectar", esperaMs: 240000 }, "teto de 4 min (com a variação, no máximo 5 min)");
 });
 
 test.after(() => prisma.$disconnect());

@@ -9,12 +9,15 @@ import { prisma } from "@filapro/db";
 import { GerenciadorSessoes } from "../src/sessoes.js";
 import { ERRO_OUTRO_LUGAR } from "../src/queda.js";
 import { Instancia } from "../src/instancia.js";
+import { Porteiro } from "../src/porteiro.js";
+import { prioridadeDeAbertura } from "../src/sessoes.js";
 import { chaveDoNumero, registrarNumerosRepetidos } from "../src/numero-unico.js";
 
 const ID = "tst-ses-1";
 const ORFA = "tst-ses-orfa";
 const BLQ = "tst-ses-blq";
 const ID2 = "tst-ses-2";
+const M5 = ["tst-m5-plat", "tst-m5-a", "tst-m5-b", "tst-m5-c"];
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Espera até a condição valer (o banco grava em segundo plano), no máximo 3 s. */
 async function ate(cond: () => boolean | Promise<boolean>, ms = 6000) { for (let i = 0; i < ms / 20; i++) { if (await cond()) return true; await espera(20); } return false; }
@@ -40,12 +43,18 @@ let sockets: SocketFalso[] = [];
 let apagados: string[] = [];
 let g: GerenciadorSessoes;
 
-function novoGerenciador() {
+/** Cada abertura (usarAuth) com a hora: para conferir o ritmo do porteiro (decisão #154) */
+let aberturas: { id: string; t: number }[] = [];
+
+function novoGerenciador(extra: { porteiro?: Porteiro } = {}) {
   return new GerenciadorSessoes(randomBytes(32), pino({ level: "silent" }), {
     versao: [2, 3000, 1],
+    // Nos testes antigos: sem espera no porteiro e sem variação no intervalo (tempos exatos)
+    porteiro: extra.porteiro ?? new Porteiro({ concorrencia: 99, intervaloMs: 0 }),
+    aleatorio: () => 0.5,
     criarSocket: () => { const s = new SocketFalso(); sockets.push(s); return s as never; },
     // Login falso "já pareado" (o celular já leu o QR antes)
-    usarAuth: async (idAtual: string) => { if (falharAuth) throw falharAuth; return ({
+    usarAuth: async (idAtual: string) => { aberturas.push({ id: idAtual, t: Date.now() }); if (falharAuth) throw falharAuth; return ({
       state: { creds: { me: { id: "5511900001111:1@s.whatsapp.net" } } as never, keys: { get: async () => ({}), set: async () => undefined } as never },
       // Como o real: só grava se o registro existir (decisão #138)
       salvarCreds: async () => (await prisma.whatsappSessao.count({ where: { id: idAtual } })) > 0,
@@ -57,15 +66,16 @@ function novoGerenciador() {
 beforeEach(async () => {
   sockets = [];
   apagados = [];
+  aberturas = [];
   falharAuth = null; falharApagar = false;
   g?.encerrarTudo();
   g = novoGerenciador();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ, ...M5] } } });
 });
 
 after(async () => {
   g?.encerrarTudo();
-  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ] } } });
+  await prisma.whatsappSessao.deleteMany({ where: { id: { in: [ID, ID2, ORFA, BLQ, ...M5] } } });
   await prisma.servicoInstancia.deleteMany({ where: { id: "teste-servico" } });
   await prisma.$disconnect();
 });
@@ -499,4 +509,73 @@ test("M4: reconexão por reinício do serviço tem linha própria, separada de q
   assert.ok(await ate(async () => (await logsDesde(inicio, "reconectado depois do reinício do serviço (+5511987654321)", dono)).length >= 1));
   assert.equal((await logsDesde(inicio, "WhatsApp voltou", dono)).length, 0, "reinício não é queda");
   await prisma.log.deleteMany({ where: { criadoEm: { gte: inicio }, texto: { contains: "reinício do serviço" } } });
+});
+
+// ===== M5 (decisão #154): reconexão aos poucos, sem rajada =====
+const ouvir = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const criar = (id: string, usuarioId: string | null) => prisma.whatsappSessao.create({ data: { id, usuarioId, status: "CONECTADO", creds: "v1:x:y:z" } });
+
+test("M5: ao ligar, abre aos poucos (1 a cada intervalo) e na ordem: plataforma, quem tem campanha em andamento, os demais", async () => {
+  const [a, b] = await donos();
+  const campanha = await prisma.campanha.create({ data: { usuarioId: a!, status: "EM_ANDAMENTO", assunto: "tst-m5" } });
+  try {
+    await prisma.whatsappSessao.deleteMany({ where: { id: "plataforma" } });
+    // criadas fora de ordem de propósito: o primeiro da fila NÃO pode ser o da plataforma por acaso
+    await criar("tst-m5-c", b!); await criar("tst-m5-b", b!); await criar("tst-m5-a", a!); await criar("plataforma", null);
+    g.encerrarTudo();
+    g = novoGerenciador({ porteiro: new Porteiro({ concorrencia: 2, intervaloMs: 150 }) });
+    const t0 = Date.now();
+    await g.iniciarTodas();
+    const minhas = aberturas.filter((x) => ["plataforma", "tst-m5-a", "tst-m5-b", "tst-m5-c"].includes(x.id));
+    assert.equal(minhas.length, 4);
+    assert.equal(minhas[0]!.id, "plataforma", "o número da plataforma abre primeiro");
+    assert.equal(minhas[1]!.id, "tst-m5-a", "depois quem tem campanha em andamento");
+    for (let i = 1; i < minhas.length; i++) assert.ok(minhas[i]!.t - minhas[i - 1]!.t >= 135, `abertura ${i} veio só ${minhas[i]!.t - minhas[i - 1]!.t} ms depois da anterior`);
+    assert.ok(Date.now() - t0 >= 3 * 135, "as 4 aberturas levaram pelo menos 3 intervalos");
+  } finally {
+    await prisma.campanha.delete({ where: { id: campanha.id } });
+    await prisma.whatsappSessao.deleteMany({ where: { id: "plataforma" } });
+  }
+});
+
+test("M5: o que o usuário faz (Conectar) NÃO espera a fila do porteiro", async () => {
+  const [a, b] = await donos();
+  await criar("tst-m5-a", a!); await criar("tst-m5-b", b!);
+  g.encerrarTudo();
+  g = novoGerenciador({ porteiro: new Porteiro({ concorrencia: 1, intervaloMs: 3000 }) });
+  const fila = g.iniciarTodas(); // não espera: a 2ª abertura só sai daqui a 3 s
+  await ouvir(300);
+  const antes = aberturas.filter((x) => x.id.startsWith("tst-m5-")).length;
+  assert.equal(antes, 1, "só a primeira abriu; a segunda espera a vez");
+  const t = Date.now();
+  await g.conectar(ID, a); // clique do usuário: imediato
+  assert.ok(Date.now() - t < 1000, "Conectar não esperou os 3 s do porteiro");
+  assert.ok(aberturas.some((x) => x.id === ID), "a conexão do usuário abriu na hora");
+  assert.equal(aberturas.filter((x) => x.id.startsWith("tst-m5-")).length, 1, "e a fila automática continua esperando");
+  await fila;
+  assert.equal(aberturas.filter((x) => x.id.startsWith("tst-m5-")).length, 2, "a fila terminou sozinha depois");
+});
+
+test("M5: quedas ao mesmo tempo reconectam espaçadas (sem rajada)", async () => {
+  const [a, b] = await donos();
+  g.encerrarTudo();
+  g = novoGerenciador({ porteiro: new Porteiro({ concorrencia: 2, intervaloMs: 500 }) });
+  await g.conectar(ID, a); await g.conectar(ID2, b);
+  sockets[0]!.abrir(); sockets[1]!.abrir();
+  assert.ok(await ate(async () => (await prisma.whatsappSessao.count({ where: { id: { in: [ID, ID2] }, status: "CONECTADO" } })) === 2));
+  await prisma.whatsappSessao.updateMany({ where: { id: { in: [ID, ID2] } }, data: { creds: "v1:x:y:z" } });
+  aberturas = [];
+  sockets[0]!.cair(428); sockets[1]!.cair(428); // queda geral: as duas tentativas vencem juntas (2 s)
+  assert.ok(await ate(() => aberturas.filter((x) => x.id === ID || x.id === ID2).length === 2, 8000), "as duas tentaram de novo");
+  const [x, y] = aberturas.filter((z) => z.id === ID || z.id === ID2);
+  assert.ok(y!.t - x!.t >= 450, `a 2ª tentativa veio só ${y!.t - x!.t} ms depois da 1ª`);
+});
+
+test("M5: prioridade de abertura: plataforma 0, campanha em andamento 1, demais 2, só-para-sair 3", () => {
+  const com = new Set(["u1"]);
+  assert.equal(prioridadeDeAbertura({ id: "plataforma", usuarioId: null, bloqueada: false }, com), 0);
+  assert.equal(prioridadeDeAbertura({ id: "x", usuarioId: "u1", bloqueada: false }, com), 1);
+  assert.equal(prioridadeDeAbertura({ id: "y", usuarioId: "u2", bloqueada: false }, com), 2);
+  assert.equal(prioridadeDeAbertura({ id: "z", usuarioId: null, bloqueada: false }, com), 3, "sem dono só conecta para sair");
+  assert.equal(prioridadeDeAbertura({ id: "w", usuarioId: "u1", bloqueada: true }, com), 3, "bloqueado só conecta para sair");
 });

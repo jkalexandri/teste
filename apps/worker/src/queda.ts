@@ -22,7 +22,17 @@ export const ERRO_OUTRO_LUGAR = "Este WhatsApp foi aberto em outro lugar. Clique
  * @param qrGerado true se chegou a aparecer QR nesta tentativa
  * @param tentativas reconexões seguidas já feitas
  */
-export function decidirQueda(codigo: number, pareado: boolean, qrGerado: boolean, tentativas: number): DecisaoQueda {
+/**
+ * Espera até a próxima tentativa (decisão #154 — M5): 2 s, 4 s, 8 s … com teto de 4 min, e uma variação aleatória de ±25%
+ * (3 s a 5 s no 2º passo; no máximo 5 min). Sem a variação, depois de uma queda geral todos os números tentariam de novo no mesmo instante.
+ * `aleatorio` devolve 0 a 1 (nos testes, fixo).
+ */
+export function esperaDaTentativa(tentativas: number, aleatorio: () => number = Math.random): number {
+  const base = Math.min(240_000, 2_000 * 2 ** tentativas);
+  return Math.round(base * (0.75 + 0.5 * aleatorio()));
+}
+
+export function decidirQueda(codigo: number, pareado: boolean, qrGerado: boolean, tentativas: number, aleatorio: () => number = Math.random): DecisaoQueda {
   // Depois da leitura do QR o WhatsApp SEMPRE pede para reiniciar a conexão (código 515).
   // Isso é normal: reconecta na hora, mantendo o login recém-criado.
   if (codigo === DisconnectReason.restartRequired) return { acao: "reconectar", esperaMs: 0 };
@@ -45,7 +55,7 @@ export function decidirQueda(codigo: number, pareado: boolean, qrGerado: boolean
     };
   }
   // Queda comum (internet, servidor): reconecta com espera crescente, até 5 min.
-  return { acao: "reconectar", esperaMs: Math.min(300_000, 2_000 * 2 ** tentativas) };
+  return { acao: "reconectar", esperaMs: esperaDaTentativa(tentativas, aleatorio) };
 }
 
 /**

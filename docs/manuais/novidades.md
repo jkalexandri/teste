@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.45.3 — reconexão dos WhatsApps aos poucos (26/11/2026)
+
+- Ao **reiniciar o serviço** (por exemplo, a cada atualização) ou depois de uma queda geral, os números de WhatsApp agora **reconectam aos poucos** — no máximo 2 por vez,
+  um a cada 1,5 segundo — em vez de todos ao mesmo tempo. Isso protege a VPS e reduz o risco de o WhatsApp limitar as conexões.
+- O serviço **sobe na hora**; o número da plataforma volta primeiro, depois quem tem campanha em andamento, depois os demais.
+- As tentativas depois de uma queda têm intervalos um pouco diferentes para cada número, então não tentam todas juntas.
+- Clicar em **Conectar** ou **Tentar agora** continua imediato.
+
 ## v1.45.2 — Logs mostram as quedas do WhatsApp (26/11/2026)
 
 - Na tela **Logs** (tipo WhatsApp), cada queda agora vira **uma linha**: quando voltou, quando e por que caiu (com o código), quanto tempo ficou fora e quantas tentativas foram.

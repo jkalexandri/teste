@@ -7,7 +7,8 @@ import type { Logger } from "pino";
 import { prisma, StatusWhatsapp } from "@filapro/db";
 import { apagarAuth, usarAuthNoBanco } from "./auth-banco.js";
 import { numeroDoJid, paraJid } from "./numero.js";
-import { decidirQueda, descreverQueda, motivoDaFalha } from "./queda.js";
+import { decidirQueda, descreverQueda, esperaDaTentativa, motivoDaFalha } from "./queda.js";
+import { Porteiro } from "./porteiro.js";
 import { esquecerDono } from "./numeros.js";
 import { reservarNumero, type Conflito } from "./numero-unico.js";
 import { registrarLogSessao, textoVolta } from "./log-sessao.js";
@@ -25,6 +26,10 @@ export type OpcoesSessoes = {
   apagarAuth?: typeof apagarAuth;
   /** Versão do WhatsApp Web (nos testes, evita buscar na internet) */
   versao?: [number, number, number];
+  /** Porteiro das aberturas automáticas (decisão #154); nos testes, sem espera */
+  porteiro?: Porteiro;
+  /** Sorteio 0 a 1 da variação do intervalo de reconexão (nos testes, fixo) */
+  aleatorio?: () => number;
 };
 
 /** Mensagem recebida, com o tipo e (para imagens) como baixar a imagem — Conversas IA. */
@@ -63,8 +68,12 @@ export class GerenciadorSessoes implements Remetente {
   /** Número desconectou de vez, sem pedido do usuário (decisão #142): avisa na hora, com o motivo. */
   aoDesconectarDeVez: ((s: { id: string; usuarioId: string | null; apelido: string; numero: string | null }, motivo: string) => Promise<void>) | null = null;
 
+  /** Aberturas AUTOMÁTICAS (ao ligar e nas tentativas depois de queda) entram na fila: no máximo 2 por vez, 1,5 s entre elas (decisão #154) */
+  private porteiro: Porteiro;
+
   constructor(private chave: Buffer, private log: Logger, private opcoes: OpcoesSessoes = {}) {
     this.versao = opcoes.versao;
+    this.porteiro = opcoes.porteiro ?? new Porteiro();
   }
 
   /** Põe a operação na fila do número: nunca duas ao mesmo tempo para o mesmo número. */
@@ -93,24 +102,33 @@ export class GerenciadorSessoes implements Remetente {
     await prisma.whatsappSessao.update({ where: { id }, data: dados }).catch((e) => this.log.error({ e, id }, "falha ao gravar estado"));
   }
 
-  /** Ao ligar o serviço: reconecta todas as sessões que têm login salvo. */
+  /**
+   * Ao ligar o serviço: reconecta todas as sessões que têm login salvo, AOS POUCOS (decisão #154 — M5): pelo porteiro,
+   * no máximo 2 por vez e 1,5 s entre uma abertura e a próxima. Ordem: número da plataforma, depois quem tem campanha em
+   * andamento, depois os demais (e por último os que só conectam para sair do WhatsApp). Quem chama pode NÃO esperar
+   * (o serviço sobe na hora e os números reconectam em segundo plano); a promessa resolve quando todos tiverem sido abertos.
+   */
   async iniciarTodas() {
     const salvas = await prisma.whatsappSessao.findMany({ where: { creds: { not: null } }, select: { id: true, usuarioId: true, bloqueada: true } });
-    this.log.info({ total: salvas.length }, "reconectando sessões salvas");
-    for (const s of salvas) {
-      if (!s.usuarioId && s.id !== SESSAO_PLATAFORMA) {
-        // Número sem dono (usuário excluído — decisão #138): conecta só para sair e é apagado
-        this.log.warn({ id: s.id }, "número sem dono: será desconectado e apagado");
-        await this.sairDoWhatsapp(s.id, "apagar");
-      } else if (s.bloqueada) {
-        // Número que saiu do plano (decisão #140): não volta a funcionar; sai do WhatsApp e o registro fica
-        this.log.warn({ id: s.id }, "número bloqueado com login salvo: será desconectado");
-        await this.sairDoWhatsapp(s.id, "manter");
-      } else {
-        this.aposReinicio.add(s.id);
-        await this.conectar(s.id).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
-      }
-    }
+    const comCampanha = new Set((await prisma.campanha.findMany({ where: { status: "EM_ANDAMENTO" }, select: { usuarioId: true }, distinct: ["usuarioId"] })).map((c) => c.usuarioId));
+    this.log.info({ total: salvas.length, porVez: this.porteiro.concorrencia, intervaloMs: this.porteiro.intervaloMs }, "reconectando sessões salvas, aos poucos");
+    await Promise.all(salvas.map((s) => {
+      const semDono = !s.usuarioId && s.id !== SESSAO_PLATAFORMA;
+      return this.porteiro.executar(prioridadeDeAbertura({ id: s.id, usuarioId: s.usuarioId, bloqueada: s.bloqueada }, comCampanha), async () => {
+        if (semDono) {
+          // Número sem dono (usuário excluído — decisão #138): conecta só para sair e é apagado
+          this.log.warn({ id: s.id }, "número sem dono: será desconectado e apagado");
+          await this.sairDoWhatsapp(s.id, "apagar");
+        } else if (s.bloqueada) {
+          // Número que saiu do plano (decisão #140): não volta a funcionar; sai do WhatsApp e o registro fica
+          this.log.warn({ id: s.id }, "número bloqueado com login salvo: será desconectado");
+          await this.sairDoWhatsapp(s.id, "manter");
+        } else {
+          this.aposReinicio.add(s.id);
+          await this.conectar(s.id);
+        }
+      }).catch((e) => this.log.error({ e, id: s.id }, "falha ao reconectar"));
+    }));
   }
 
   /** Abre a conexão só para sair do WhatsApp (o FilaPro some de "Dispositivos conectados" do celular). */
@@ -187,7 +205,7 @@ export class GerenciadorSessoes implements Remetente {
     this.falhas.set(id, falhas);
     if (falhas === 1) void registrarLogSessao(id, `Falha ao reabrir o WhatsApp (${motivo.replace(/\.$/, "")}); tentando de novo sozinho`);
     const agora = new Date();
-    const esperaMs = Math.min(300_000, 2_000 * 2 ** tentativas);
+    const esperaMs = esperaDaTentativa(tentativas, this.opcoes.aleatorio); // com variação aleatória (decisão #154)
     await this.gravar(id, {
       status: StatusWhatsapp.RECONECTANDO, qr: null, qrEm: null, erro: motivo,
       quedaEm: s?.quedaEm ?? agora, tentativaReconexao: tentativas + 1, proximaTentativaEm: new Date(agora.getTime() + esperaMs),
@@ -201,10 +219,13 @@ export class GerenciadorSessoes implements Remetente {
     this.pararRelogio(id);
     this.timers.set(id, setTimeout(() => {
       this.timers.delete(id);
-      void this.emFila(id, async () => {
-        if (this.conexoes.has(id) || this.geracoes.get(id) !== serie) return;
+      const abrir = () => this.emFila(id, async () => {
+        if (this.conexoes.has(id) || this.geracoes.get(id) !== serie) return; // o usuário já agiu (Conectar/Desconectar)
         await this.abrirOuReagendar(id, proxima);
-      }).catch((e) => this.log.error({ e, id }, "falha ao reconectar"));
+      });
+      // Tentativa automática depois de queda: espera a vez no porteiro (decisão #154). Espera 0 = reinício logo
+      // depois de ler o QR (515): é o usuário na tela, abre na hora.
+      void (esperaMs > 0 ? this.porteiro.executar(id === SESSAO_PLATAFORMA ? 0 : 2, abrir) : abrir()).catch((e) => this.log.error({ e, id }, "falha ao reconectar"));
     }, esperaMs));
   }
 
@@ -340,7 +361,7 @@ export class GerenciadorSessoes implements Remetente {
     const codigo = (u.lastDisconnect?.error as { output?: { statusCode?: number } } | undefined)?.output?.statusCode ?? 0;
     this.log.warn({ id, codigo }, "conexão fechada");
 
-    const d = decidirQueda(codigo, pareado, conexao.qrGerado, conexao.tentativas);
+    const d = decidirQueda(codigo, pareado, conexao.qrGerado, conexao.tentativas, this.opcoes.aleatorio);
     // Número sem dono que nem chegou a conectar (ex.: já saiu pelo celular): só apaga (decisão #138)
     if (this.paraSair.has(id) && d.acao === "encerrar") { void this.encerrarSemDono(id); return; }
     if (d.acao === "encerrar") {
@@ -486,6 +507,7 @@ export class GerenciadorSessoes implements Remetente {
 
   /** Fecha as conexões sem deslogar (desligamento do serviço; o login continua salvo). */
   encerrarTudo() {
+    this.porteiro.parar();
     for (const t of this.timers.values()) clearTimeout(t);
     this.timers.clear();
     for (const c of this.conexoes.values()) {
@@ -494,4 +516,14 @@ export class GerenciadorSessoes implements Remetente {
     }
     this.conexoes.clear();
   }
+}
+
+/**
+ * Prioridade de abertura ao ligar o serviço (decisão #154): 0 número da plataforma (os avisos do sistema voltam primeiro),
+ * 1 quem tem campanha em andamento, 2 os demais, 3 os que só conectam para sair do WhatsApp (sem dono ou bloqueados).
+ */
+export function prioridadeDeAbertura(s: { id: string; usuarioId: string | null; bloqueada: boolean }, comCampanha: Set<string>): number {
+  if (s.id === SESSAO_PLATAFORMA) return 0;
+  if (!s.usuarioId || s.bloqueada) return 3;
+  return comCampanha.has(s.usuarioId) ? 1 : 2;
 }

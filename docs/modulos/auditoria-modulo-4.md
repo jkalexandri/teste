@@ -36,7 +36,7 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
   de novo, sem dizer que caiu, por quê (código) nem quanto tempo ficou fora; e quedas repetidas enchem os Logs de "conectado".
 - **Onde:** `apps/worker/src/sessoes.ts` (`aoFechar`, `registrarLogSessao`).
 
-### M5 — Reinício do serviço (ou queda geral) reconecta todos os números ao mesmo tempo
+### M5 — Reinício do serviço (ou queda geral) reconecta todos os números ao mesmo tempo — ✅ FEITA na v1.45.3 (decisão #154)
 - **O problema:** `iniciarTodas` abre todos os números em sequência rápida e o recuo da reconexão (2 s, 4 s … 5 min) não tem
   variação aleatória: depois de uma queda geral, todos tentam de novo no mesmo instante. Rajada de conexões do mesmo IP à
   WhatsApp (risco de limitação) e pico de memória/CPU na VPS (KVM 1).
@@ -61,4 +61,4 @@ Regra do projeto: **cada item recebe uma prévia, o dono aprova e só então é 
 - Troca de chip, número bloqueado, usuário excluído, instância única, fila da plataforma: cobertos pelos testes vigia.
 
 ## Ordem sugerida
-~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → ~~M4~~ (feita) → M5 → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.
+~~M1~~ (feita) → ~~M2~~ (feita) → ~~M3~~ (feita) → ~~M4~~ (feita) → ~~M5~~ (feita) → B1–B5 (agrupadas numa única prévia). Depois, marcar o Módulo 4 como 🟢 Revisado.

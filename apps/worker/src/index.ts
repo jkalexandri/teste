@@ -94,7 +94,8 @@ async function iniciar() {
   instancia.iniciarBatimento(() => { sessoes.encerrarTudo(); process.exit(1); });
   await api.listen({ port: config.porta, host: config.host });
   log.info(`Serviço no ar em http://${config.host}:${config.porta}`);
-  await sessoes.iniciarTodas();
+  // Os números reconectam aos poucos em segundo plano (decisão #154): o serviço NÃO espera todos para subir o resto
+  void sessoes.iniciarTodas().catch((e) => log.error({ e }, "falha ao reconectar as sessões"));
   // Números que já estavam repetidos (decisão #152): só registra nos Logs do Super Admin, sem desconectar ninguém
   void registrarNumerosRepetidos().catch((e) => log.error({ e }, "falha ao conferir números repetidos"));
   atendente.iniciar();
