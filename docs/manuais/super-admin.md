@@ -50,7 +50,7 @@ celular ou App no celular). A tela atualiza sozinha a cada 20 segundos.
 ## Atendimento (suporte em tempo real)
 
 Os clientes (Usuários e Admins da Empresa) chamam pelo botão **Suporte**. As conversas chegam aqui, com o número de mensagens novas
-também no menu.
+também no menu. A caixa de escrever e o cabeçalho da conversa ficam **fixos**: só a lista de mensagens rola.
 
 ![Atendimento](prints/s-atendimento.png)
 

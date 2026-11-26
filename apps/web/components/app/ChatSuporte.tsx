@@ -9,7 +9,12 @@ type Msg = { id: string; autor: "CLIENTE" | "SUPORTE" | "VISITANTE" | "IA"; text
 // cliente/suporte: suporte dos clientes (decisão #102). visitante/interessado: chat de quem ainda não é cliente (decisão #104).
 type Modo = "cliente" | "suporte" | "visitante" | "interessado";
 
-export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: Modo; usuarioId?: string; altura?: number }) {
+/**
+ * `preencher` (tela Atendimento do Super Admin — pedido do dono): o chat ocupa toda a altura que o painel dá a ele;
+ * só a lista de mensagens rola e a caixa de escrever (com arquivo e Enviar) fica fixa embaixo.
+ * Sem `preencher`, a lista tem altura fixa em px (popup do cliente e chat dos planos).
+ */
+export default function ChatSuporte({ modo, usuarioId, altura = 360, preencher = false }: { modo: Modo; usuarioId?: string; altura?: number; preencher?: boolean }) {
   const toast = useToast();
   const base = modo === "cliente" ? "/api/suporte" : modo === "suporte" ? `/api/suporte/${usuarioId}` : modo === "visitante" ? "/api/interessados" : `/api/interessados/${usuarioId}`;
   const urlEnvio = modo === "visitante" ? "/api/interessados/mensagens" : base;
@@ -22,7 +27,8 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: M
   useEffect(() => { try { const r = sessionStorage.getItem(chaveRascunho); if (r) setTextoEstado(r); } catch { /* sem armazenamento */ } }, [chaveRascunho]);
   const [enviando, setEnviando] = useState(false);
   const arquivoRef = useRef<HTMLInputElement>(null);
-  const fim = useRef<HTMLDivElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
+  const raiz = useRef<HTMLDivElement>(null);
   const ultima = useRef<string | null>(null);
 
   const buscar = useCallback(async (tudo = false) => {
@@ -42,7 +48,10 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: M
     const t = setInterval(() => void buscar(), 3000);
     return () => clearInterval(t);
   }, [buscar]);
-  useEffect(() => { fim.current?.scrollIntoView({ block: "end" }); }, [msgs.length]);
+  // Atendimento (preencher): ao abrir a conversa, a página se posiciona no painel — caixa de escrever à vista, sem rolar à mão
+  useEffect(() => { if (preencher) raiz.current?.closest("[data-testid=painel-chat]")?.scrollIntoView({ block: "start" }); }, [preencher, usuarioId]);
+  // Vai para a mensagem mais recente rolando só a lista (scrollIntoView moveria a página inteira junto)
+  useEffect(() => { const l = lista.current; if (l) l.scrollTop = l.scrollHeight; }, [msgs.length]);
 
   async function enviar() {
     const f = arquivoRef.current?.files?.[0];
@@ -65,8 +74,8 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: M
     a === "SUPORTE" ? (modo === "interessado" ? "Você" : "Suporte FilaPro Leads") : a === "IA" ? "Assistente virtual (IA)" : a === "VISITANTE" ? "Visitante" : "Cliente";
   const linkArquivo = (id: string) => (modo === "visitante" || modo === "interessado" ? `/api/interessados/arquivo/${id}` : `/api/suporte/arquivo/${id}`);
   return (
-    <div className="flex flex-col" data-testid="chat-suporte">
-      <div className="overflow-y-auto p-3 space-y-2" style={{ height: altura, background: "var(--surface-2, rgba(0,0,0,.03))" }}>
+    <div ref={raiz} className={preencher ? "flex flex-col flex-1 min-h-0" : "flex flex-col"} data-testid="chat-suporte">
+      <div className={preencher ? "overflow-y-auto p-3 space-y-2 flex-1 min-h-0" : "overflow-y-auto p-3 space-y-2"} style={{ ...(preencher ? {} : { height: altura }), background: "var(--surface-2, rgba(0,0,0,.03))" }} data-testid="chat-mensagens" ref={lista}>
         {msgs.length === 0 && <p className="text-[12px] text-center mt-6" style={{ color: "var(--muted)" }}>{modo === "cliente" ? "Escreva sua dúvida. O suporte responde por aqui." : modo === "visitante" ? "Escreva sua dúvida sobre os planos." : "Nenhuma mensagem ainda."}</p>}
         {msgs.map((m) => (
           <div key={m.id} className={`flex ${minha(m) ? "justify-end" : "justify-start"}`}>
@@ -79,9 +88,8 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360 }: { modo: M
             </div>
           </div>
         ))}
-        <div ref={fim} />
       </div>
-      <form className="p-2 flex flex-wrap gap-1.5 items-end" style={{ borderTop: "1px solid var(--border)" }} onSubmit={(e) => { e.preventDefault(); void enviar(); }}>
+      <form className="p-2 flex flex-wrap gap-1.5 items-end shrink-0" data-testid="chat-caixa" style={{ borderTop: "1px solid var(--border)" }} onSubmit={(e) => { e.preventDefault(); void enviar(); }}>
         <textarea className="input flex-1 min-w-[160px] !min-h-[38px] max-h-[110px] !text-[13px]" rows={1} value={texto} maxLength={modo === "visitante" ? 1000 : 4000} aria-label="Mensagem para o suporte"
           placeholder="Escreva a mensagem" onChange={(e) => setTexto(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void enviar(); } }} />

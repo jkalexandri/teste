@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.41.15 — caixa de escrever fixa no Atendimento (26/11/2026)
+
+- **Super Admin:** na tela **Atendimento** (Clientes e Interessados) a caixa de escrever (texto, arquivo e Enviar) e o cabeçalho da
+  conversa ficam **fixos**; só a lista de mensagens rola. Ao abrir uma conversa, a página já se posiciona nela, na mensagem mais
+  recente. Funciona no computador e no celular.
+
 ## v1.41.14 — WhatsApp que não reconecta agora tenta de novo sozinho (26/11/2026)
 
 - Se a conexão do seu WhatsApp falhar **ao ser reaberta** (por exemplo, o sistema ficou sem acesso ao banco por alguns instantes),

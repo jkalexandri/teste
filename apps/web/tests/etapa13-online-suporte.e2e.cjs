@@ -97,6 +97,36 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok('Anexo abre para o cliente', st === 200, String(st));
     await pS.screenshot({ path: OUT + '/atendimento.png', fullPage: true });
     await pU.screenshot({ path: OUT + '/suporte-cliente.png' });
+    // Caixa de escrever fixa no Atendimento (pedido do dono, mesmo cálculo da decisão #136): com muitas mensagens e a tela baixa,
+    // a página rola só até o painel encostar no topo; a caixa fica sempre à vista e só a lista de mensagens rola.
+    const CONV = sql(`select id from "SuporteConversa" where "usuarioId"='${ANA}'`);
+    for (let i = 0; i < 40; i++) sql(`insert into "SuporteMensagem"(id,"conversaId",autor,"autorId",texto,"criadoEm") values ('tfx${i}','${CONV}','${i % 2 ? 'SUPORTE' : 'CLIENTE'}','x','Mensagem de teste número ${i} para encher a conversa',now()-interval '${60 - i} minutes')`);
+    await pS.setViewportSize({ width: 1280, height: 620 });
+    await pS.goto(BASE + `/atendimento?cliente=${ANA}`); await espera(1500);
+    const caixa = async () => pS.evaluate(() => { const r = document.querySelector('[data-testid=chat-caixa]').getBoundingClientRect(); return { fundo: r.bottom, topo: r.top, alt: window.innerHeight }; });
+    let c0 = await caixa();
+    ok('Ao abrir a conversa a caixa de escrever já está à vista (a página se posiciona sozinha)', c0.fundo <= c0.alt + 1 && c0.topo >= 0, JSON.stringify(c0));
+    const rol = await pS.evaluate(() => { const m = document.querySelector('[data-testid=chat-mensagens]'); return { sh: m.scrollHeight, ch: m.clientHeight, noFim: m.scrollTop + m.clientHeight >= m.scrollHeight - 4 }; });
+    ok('Só a lista de mensagens rola (há mais do que cabe) e abre na mais recente', rol.sh > rol.ch + 50 && rol.noFim, JSON.stringify(rol));
+    const yPagina0 = await pS.evaluate(() => window.scrollY);
+    await pS.evaluate(() => window.scrollTo(0, 99999)); await espera(400);
+    const c1 = await caixa();
+    ok('Rolando a página até o fim a caixa continua à vista', c1.fundo <= c1.alt + 1 && c1.topo >= 0, JSON.stringify(c1));
+    const topoPainel = await pS.evaluate(() => document.querySelector('[data-testid=painel-chat]').getBoundingClientRect().top);
+    ok('O painel do chat não some atrás do topo fixo', topoPainel >= 40, String(topoPainel));
+    // Mensagem nova não move a página (antes o scrollIntoView arrastava a página inteira)
+    const yAntes = await pS.evaluate(() => window.scrollY);
+    sql(`insert into "SuporteMensagem"(id,"conversaId",autor,"autorId",texto) values ('tfxnova','${CONV}','CLIENTE','x','Mensagem nova chegando')`); await espera(3800);
+    ok('Mensagem nova aparece na lista e a página não pula', (await pS.locator('[data-testid=chat-mensagens] >> text=Mensagem nova chegando').count()) === 1 && (await pS.evaluate(() => window.scrollY)) === yAntes, String(yAntes));
+    await pS.screenshot({ path: OUT + '/atendimento-fixo.png' });
+    await pS.setViewportSize({ width: 390, height: 700 });
+    await pS.goto(BASE + `/atendimento?cliente=${ANA}`); await espera(1500);
+    await pS.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await espera(400);
+    const cm = await caixa();
+    ok('No celular a caixa de escrever também fica à vista', cm.fundo <= cm.alt + 1 && cm.topo >= 0, JSON.stringify(cm));
+    await pS.screenshot({ path: OUT + '/atendimento-fixo-celular.png' });
+    await pS.setViewportSize({ width: 1280, height: 800 });
+    sql(`delete from "SuporteMensagem" where id like 'tfx%'`);
     // Outro cliente não abre o anexo
     let [cI, pI] = await novo();
     await entrar(pI, 'usuario@disparopro.com.br', 'User@12345678');

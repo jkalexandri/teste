@@ -13,6 +13,14 @@ import NovoAtendimento from "./NovoAtendimento";
 import BotaoIA from "./BotaoIA";
 import { protegerTela } from "@/lib/auth/tela";
 
+/**
+ * Painel do chat (pedido do dono, mesmo cálculo da decisão #136): a página rola só até o painel encostar no topo fixo;
+ * daí em diante ele ocupa a altura da tela e só as mensagens rolam — cabeçalho da conversa e caixa de escrever ficam fixos.
+ * Topo fixo: 52 px (abaixo de 1024 px soma a fileira do menu, 44 px). No computador a altura deixa 170 px para o topo e o
+ * cabeçalho da página; ao abrir a conversa a página se posiciona no painel (ChatSuporte), com a caixa de escrever à vista.
+ */
+const PAINEL_CHAT = "card overflow-hidden flex flex-col self-start sticky z-10 min-h-[360px] scroll-mt-[108px] lg:scroll-mt-[64px] top-[calc(var(--safe-area-inset-top)+108px)] lg:top-[calc(var(--safe-area-inset-top)+64px)] h-[calc(100dvh-var(--safe-area-inset-top)-124px)] lg:h-[calc(100dvh-var(--safe-area-inset-top)-170px)]";
+
 export const dynamic = "force-dynamic";
 const CARGOS: Record<string, string> = { ADMIN_EMPRESA: "Admin da Empresa", USUARIO: "Usuário" };
 
@@ -64,15 +72,15 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
               </Link>
             ))}
           </div>
-          <div className="card overflow-hidden">
+          <div className={atualI ? PAINEL_CHAT : "card overflow-hidden"} data-testid="painel-chat">
             {atualI ? (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                   <div className="text-[12px]"><b className="text-[14px]" data-testid="interessado-atual">{atualI.nome}</b> <span style={{ color: onI(atualI) ? "#16a34a" : "var(--muted)" }}>{onI(atualI) ? "• no chat agora" : "• fora do chat (sua resposta vai também pelo WhatsApp)"}</span><br />
                     <span style={{ color: "var(--muted)" }}>WhatsApp +{atualI.whatsapp}{atualI.email ? ` • ${atualI.email}` : ""}{atualI.iaPausaMotivo ? ` • ${atualI.iaPausaMotivo}` : ""}</span></div>
                   <BotaoIA id={atualI.id} pausada={atualI.iaPausada} />
                 </div>
-                <ChatSuporte key={atualI.id} modo="interessado" usuarioId={atualI.id} altura={420} />
+                <ChatSuporte key={atualI.id} modo="interessado" usuarioId={atualI.id} altura={420} preencher />
               </>
             ) : (
               <p className="text-[13px] p-6 text-center" style={{ color: "var(--muted)" }}>Escolha um interessado à esquerda. Escrever uma mensagem assume a conversa (a IA para).</p>
@@ -127,14 +135,14 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
             );
           })}
         </div>
-        <div className="card overflow-hidden">
+        <div className={atual ? PAINEL_CHAT : "card overflow-hidden"} data-testid="painel-chat">
           {atual ? (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
                 <div className="text-[12px]"><b className="text-[14px]" data-testid="cliente-atual">{atual.nome}</b> <span style={{ color: online(atual) ? "#16a34a" : "var(--muted)" }}>{online(atual) ? "• online" : "• offline"}</span><br /><span style={{ color: "var(--muted)" }}>{atual.email} • {CARGOS[atual.cargo]} • {conta(atual)}</span></div>
                 <BotaoChamar usuarioId={atual.id} rotulo="Chamar cliente" />
               </div>
-              <ChatSuporte key={atual.id} modo="suporte" usuarioId={atual.id} altura={420} />
+              <ChatSuporte key={atual.id} modo="suporte" usuarioId={atual.id} altura={420} preencher />
             </>
           ) : (
             <p className="text-[13px] p-6 text-center" style={{ color: "var(--muted)" }}>Escolha uma conversa à esquerda ou um cliente acima.</p>

@@ -23,7 +23,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 8 | Conversas IA (atendimento) | 🟡 Em revisão | iniciada em 25/11/2026 13:31 (auditoria a fazer) | v1.41.2 | v1.41.6 — 25/11/2026 19:08 (rolagem da tela: cabeçalho e caixa de escrever fixos) |
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
-| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.41.7 — 25/11/2026 19:27 (ícone flutuante do suporte) |
+| 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.41.15 — 26/11/2026 14:50 (Atendimento: caixa de escrever fixa) |
 | 12 | Operação (VPS) | 🔴 Sem revisão | nunca | — | v1.41.5 — 25/11/2026 18:28 (Caddy: só /saude pela internet) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.41.15 | 26/11/2026 14:50 | 11 Comunicação | Atendimento (suporte): cabeçalho da conversa e caixa de escrever fixos; só as mensagens rolam; abre na mais recente | 9 Interessados (aba do Atendimento) | não |
 | v1.41.14 | 26/11/2026 14:20 | 4 WhatsApp (conexão) | Falha ao abrir a conexão agenda nova tentativa, mostra o motivo e nunca apaga o login; Logs só com a 1ª falha e a recuperação (M1) | — | não |
 | v1.41.13 | 26/11/2026 05:40 | 4 WhatsApp (conexão) | Número da plataforma: fila com cadência 5–10 s, limite de 200/dia, prioridade e validade de 6 h; alerta de queda ao Super Admin por celular e e-mail (A7) | 3 Planos (renovação), 9 Interessados, 11 Comunicação, 1 Acesso (alertas de segurança) | não |
 | v1.41.12 | 26/11/2026 04:30 | 4 WhatsApp (conexão) | Aviso de número caído: 3 min fora, na volta, 2 h (selo "Com problema") e desconexão de vez com o motivo; cópia ao Admin da Empresa (A6) | 9 Avisos | não |
