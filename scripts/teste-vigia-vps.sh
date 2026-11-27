@@ -51,6 +51,16 @@ J=$(FILAPRO_NTP=no rodar); t "Relógio sem sincronizar: aviso" "$([ "$(nivel "$J
 J=$(FILAPRO_CERT_DIAS=10 rodar); t "Certificado com 10 dias: aviso" "$([ "$(nivel "$J" certificado)" = aviso ] && echo 1)"
 J=$(FILAPRO_CERT_DIAS=3 rodar); t "Certificado com 3 dias: crítico" "$([ "$(nivel "$J" certificado)" = critico ] && echo 1)"
 
+# ---- 3b. Cópia externa (B2): só vigia se estiver configurada
+J=$(rodar); t "Sem a cópia externa configurada: o item nem aparece (não alarma)" "$(echo "$J" | grep -q backupExterno && echo 0 || echo 1)"
+echo "[filapro-b2]" > /tmp/vg-rclone.conf; export FILAPRO_RCLONE_CONF=/tmp/vg-rclone.conf
+J=$(rodar); t "Configurada, mas sem nenhum envio: aviso" "$([ "$(nivel "$J" backupExterno)" = aviso ] && echo 1)"
+estado externo true 5; J=$(rodar); t "Envio externo com 5 h: ok" "$([ "$(nivel "$J" backupExterno)" = ok ] && echo 1)"
+estado externo true 40; J=$(rodar); t "Envio externo com 40 h: aviso" "$([ "$(nivel "$J" backupExterno)" = aviso ] && echo 1)"
+estado externo true 80; J=$(rodar); t "Envio externo com 80 h: crítico" "$([ "$(nivel "$J" backupExterno)" = critico ] && echo 1)"
+estado externo false 2; J=$(rodar); t "Último envio externo com ok:false: aviso" "$([ "$(nivel "$J" backupExterno)" = aviso ] && echo 1)"
+rm -f "$B/estado-externo.json" /tmp/vg-rclone.conf; unset FILAPRO_RCLONE_CONF
+
 # ---- 4. Segurança do relatório e do envio
 J=$(rodar)
 t "O relatório não contém o segredo nem caminhos da VPS" "$(echo "$J" | grep -q -E 'segredo-falso|/opt/|/root|/tmp' && echo 0 || echo 1)"

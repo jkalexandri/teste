@@ -137,6 +137,7 @@ if [ -n "$CRON" ]; then
   if echo "$CRON" | grep -q 'backup-completo.sh completo'; then ok "Backup completo diário está agendado no cron"
   elif echo "$CRON" | grep -q 'backup-banco.sh'; then aten "Só o backup antigo do banco está agendado (sem arquivos e chaves): troque pelo backup-completo.sh (docs/publicacao-vps.md 6.1)"
   else falha "Backup NÃO está agendado no cron (nenhuma linha com backup-completo.sh)"; fi
+  echo "$CRON" | grep -q 'backup-externo.sh' && ok "Envio da cópia externa (B2) está agendado" || aten "Cópia externa (B2) não está no cron (docs/publicacao-vps.md 6.1b)"
   echo "$CRON" | grep -q 'restaurar-backup.sh --so-testar' && ok "Teste semanal de restauração está agendado" || aten "Teste semanal de restauração não está no cron (docs/publicacao-vps.md 6.1)"
   echo "$CRON" | grep -q 'backup-completo.sh banco' && ok "Dump do banco a cada 6 h está agendado" || aten "Dump do banco a cada 6 h não está no cron (backup-completo.sh banco)"
   echo "$CRON" | grep -q 'vigia-vps.sh' && ok "Vigia da VPS (avisos de backup, disco, memória, reinício) está agendado" || aten "Vigia da VPS não está no cron (docs/publicacao-vps.md 6.1)"
@@ -181,6 +182,15 @@ if [ -d "$PASTA" ]; then
   if [ -n "$UA" ]; then HA=$(horas "$UA"); if [ "$HA" -le 26 ]; then ok "Backup dos arquivos enviados tem ${HA}h ($(basename "$UA"))"; else aten "Backup dos arquivos enviados tem ${HA}h (o completo diário falhou?)"; fi; else aten "Ainda não há backup dos arquivos enviados (o backup completo ainda não rodou: bash deploy/backup-completo.sh)"; fi
   if [ -n "$UC" ]; then HC=$(horas "$UC"); if [ "$HC" -le 26 ]; then ok "Backup das chaves (criptografado) tem ${HC}h ($(basename "$UC"))"; else aten "Backup das chaves tem ${HC}h"; fi; else aten "Ainda não há backup das chaves do sistema (crie a senha: bash deploy/backup-senha.sh, depois rode o backup completo)"; fi
   if [ -f /root/.filapro-backup-senha ]; then ok "Senha do backup das chaves configurada ($(stat -c %a /root/.filapro-backup-senha))"; else aten "Senha do backup das chaves NÃO configurada (bash deploy/backup-senha.sh)"; fi
+  # Cópia fora da VPS (decisão #173)
+  CONF_EXT="${FILAPRO_RCLONE_CONF:-/root/.config/rclone/filapro-b2.conf}"; JE="$PASTA/estado-externo.json"
+  if [ ! -f "$CONF_EXT" ]; then aten "SEM cópia do backup fora da VPS: perder a VPS é perder tudo (docs/publicacao-vps.md 6.1b: backup-externo-config.sh)"
+  else
+    [ "$(stat -c %a "$CONF_EXT")" = "600" ] && ok "Configuração da cópia externa restrita (600)" || falha "Configuração da cópia externa com permissão $(stat -c %a "$CONF_EXT") (deveria ser 600: contém a chave do B2)"
+    if [ ! -f "$JE" ]; then aten "Cópia externa configurada, mas ainda sem envio (rode: bash deploy/backup-externo.sh)"
+    elif ! grep -q '"ok":true' "$JE"; then falha "O último envio da cópia externa terminou COM PROBLEMAS: $(grep -o '"erros":"[^"]*"' "$JE" | cut -d'"' -f4 | cut -c1-160)"
+    else HE=$(horas "$JE"); if [ "$HE" -le 30 ]; then ok "Cópia externa (B2) em dia (há ${HE}h)"; else aten "Último envio da cópia externa há ${HE}h (o de 03:50 falhou?)"; fi; fi
+  fi
   # Teste semanal de restauração (decisão #170)
   JR="$PASTA/estado-restauracao.json"
   if [ -f "$JR" ]; then

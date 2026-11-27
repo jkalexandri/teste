@@ -74,7 +74,7 @@ ARQUIVO_PEDIDO="$ARQUIVO"
 data_do_nome() { basename "$1" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}' | head -1; }
 listar() {  # do mais novo para o mais antigo (pela data no NOME do arquivo)
   for f in "$PASTA"/diarios/banco-*.sql.gz "$PASTA"/6h/banco-*.sql.gz "$PASTA"/semanais/banco-*.sql.gz "$PASTA"/mensais/banco-*.sql.gz \
-           "$PASTA"/filapro-*.sql.gz "$PASTA"/seguranca/antes-restauracao-*.sql.gz; do
+           "$PASTA"/filapro-*.sql.gz "$PASTA"/seguranca/antes-restauracao-*.sql.gz "$PASTA"/recuperado/banco-*.sql.gz; do
     [ -f "$f" ] && echo "$(data_do_nome "$f") $f"
   done | sort -r | awk '{print $2}'
 }

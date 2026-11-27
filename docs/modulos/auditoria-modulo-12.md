@@ -21,7 +21,7 @@ pacote manual** `empacotar-servidor.sh`. Se o disco da VPS for perdido, o banco 
 Asaas, os segredos da verificação em duas etapas e **o login do WhatsApp de todos os números**. Restaurar o banco **sem** a chave deixa tudo isso ilegível:
 todos os clientes precisariam ler o QR Code de novo e as chaves seriam digitadas de novo. Hoje a chave só existe nos dois `.env` da própria VPS.
 
-### P0-3 — Nenhuma cópia fora da VPS (ALTA) ✅
+### P0-3 — Nenhuma cópia fora da VPS (ALTA) ✅ (#173; o dono cadastra a chave do B2 na VPS)
 Os backups ficam na mesma máquina e no mesmo disco que o banco (`/opt/filapro/backups`). Perda da VPS, disco corrompido ou invasão com apagamento levam banco e
 backups juntos. Já é pendência registrada (decisão #105, item 7).
 

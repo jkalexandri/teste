@@ -283,6 +283,59 @@ crontab -e
 
 Teste o backup agora: `bash /opt/filapro/app/deploy/backup-completo.sh completo && ls -lhR /opt/filapro/backups | head -40`
 
+### 6.1b Cópia do backup fora da VPS — Backblaze B2 (decisão #173)
+
+O backup só protege de verdade se houver uma cópia **fora** da VPS. O sistema envia, todo dia às 03:50, os backups **criptografados na própria VPS** para um bucket privado do Backblaze B2: nem o B2 nem um invasor leem nada.
+
+**1. No site do B2 (uma vez):**
+- **Bucket** privado, com **Object Lock habilitado** (retenção padrão de 30 dias, modo Governance) e criptografia ativada.
+- **Lifecycle Settings → regras personalizadas** (prefixo / dias até ocultar / dias até eliminar): `diarios/` 31 e 1; `semanais/` 90 e 1; `mensais/` 365 e 1.
+- **Application Keys → Add a New Application Key:** nome `filapro-vps`, acesso **só a esse bucket**, tipo **Read and Write**. **Nunca use a chave mestra.** O B2 mostra a chave **uma única vez**: **não tire print e não cole no chat**; deixe a página aberta até o passo 2. (Se o cadastro disser "unauthorized", marque também "Allow List All Bucket Names" ao criar a chave.)
+
+**2. Na VPS, cadastro (uma vez).** O script pede o nome do bucket, o keyID e a applicationKey (**você cola uma vez, ela não aparece**), **testa no B2 na hora** (ACEITO / NÃO ACEITO) e só então grava. No final mostra **duas senhas de criptografia, uma única vez**: **anote as duas no gerenciador de senhas, fora da VPS** (sem elas os backups do B2 não abrem), sem print e sem colar no chat:
+
+```bash
+bash /opt/filapro/app/deploy/backup-externo-config.sh
+```
+
+Confira que anotou certo (digite as duas; ele diz CONFEREM ou NÃO CONFEREM) e limpe a tela:
+
+```bash
+bash /opt/filapro/app/deploy/backup-externo-config.sh --verificar-senhas
+```
+
+```bash
+clear
+```
+
+**3. Primeiro envio e conferência:**
+
+```bash
+bash /opt/filapro/app/deploy/backup-externo.sh
+```
+
+```bash
+bash /opt/filapro/app/deploy/backup-externo.sh --listar
+```
+
+**4. Cron (uma vez; pode repetir sem duplicar):**
+
+```bash
+( crontab -l 2>/dev/null | grep -v backup-externo.sh; echo '50 3 * * * /opt/filapro/app/deploy/backup-externo.sh >> /var/log/filapro-backup-externo.log 2>&1' ) | crontab -
+```
+
+O vigia da VPS avisa por e-mail se o envio atrasar mais de 30 horas ou falhar (e o monitor externo fica vermelho se passar de 74 horas). Para trocar só a chave do B2 (sem mexer nas senhas): `bash /opt/filapro/app/deploy/backup-externo-config.sh --trocar-chave`.
+
+**Ensaio de desastre (faça uma vez, é seguro):** baixa o backup mais recente para uma pasta à parte e confere que abre; não altera nada no banco:
+
+```bash
+bash /opt/filapro/app/deploy/backup-externo.sh --baixar --destino /root/ensaio-backup
+```
+
+```bash
+rm -rf /root/ensaio-backup
+```
+
 ### 6.2 Proteção da VPS (decisão #105)
 
 1. No **seu computador** (não na VPS), crie uma chave SSH se ainda não tiver: `ssh-keygen -t ed25519`
@@ -478,7 +531,7 @@ sudo -u postgres dropdb NOME_MOSTRADO_NO_FINAL
 
 ### Roteiro de desastre (servidor perdido ou banco destruído)
 1. Servidor novo com o sistema instalado (seção de instalação acima) e o repositório em `/opt/filapro/app`.
-2. Copie a pasta `backups` (do seu armazenamento fora da VPS) para `/opt/filapro/backups`.
+2. Instale o rclone e recrie a ligação com o B2 usando as **duas senhas de criptografia que você anotou** e uma chave nova do B2 (Read and Write, restrita ao bucket): `bash /opt/filapro/app/deploy/backup-externo-config.sh --recuperar`. Depois baixe o backup mais recente: `bash /opt/filapro/app/deploy/backup-externo.sh --baixar` (vai para `/opt/filapro/backups/recuperado`).
 3. Recupere os `.env`: abra o pacote `chaves-*.tar.gz.enc` com a senha do backup (guardada no seu gerenciador de senhas): `bash restaurar-backup.sh --chaves` e copie os dois `.env` para os lugares certos.
 4. `bash /opt/filapro/app/deploy/restaurar-backup.sh --arquivos` e escolha o backup mais recente.
 5. `bash /opt/filapro/app/deploy/atualizar.sh` e `bash /opt/filapro/app/deploy/diagnostico-vps.sh`.

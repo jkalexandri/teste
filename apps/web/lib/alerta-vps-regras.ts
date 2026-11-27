@@ -11,6 +11,8 @@ export const REGRAS: Record<string, Regra> = {
     oQueFazer: 'Na VPS: "tail -n 20 /var/log/filapro-backup.log" e "bash /opt/filapro/app/deploy/backup-completo.sh completo". Confira também "bash /opt/filapro/app/deploy/diagnostico-vps.sh | grep -E \'ATENCAO|FALHA\'".' },
   backup6h: { titulo: "dump do banco (a cada 6 horas) atrasado ou com falha", persistencia: 1,
     oQueFazer: 'Na VPS: "tail -n 20 /var/log/filapro-backup.log" e "bash /opt/filapro/app/deploy/backup-completo.sh banco".' },
+  backupExterno: { titulo: "cópia do backup fora da VPS (Backblaze B2) atrasada ou com falha", persistencia: 1,
+    oQueFazer: 'Na VPS: "tail -n 20 /var/log/filapro-backup-externo.log" e "bash /opt/filapro/app/deploy/backup-externo.sh --conferir". Se o B2 recusou a chave, crie outra e rode "bash /opt/filapro/app/deploy/backup-externo-config.sh --trocar-chave". Sem essa cópia, perder a VPS é perder tudo.' },
   restauracao: { titulo: "teste de restauração do backup falhou ou está atrasado", persistencia: 1,
     oQueFazer: 'Na VPS: "bash /opt/filapro/app/deploy/restaurar-backup.sh --so-testar" (só confere, não altera o banco real) e leia a mensagem de erro.' },
   disco: { titulo: "pouco espaço livre no disco da VPS", persistencia: 1,

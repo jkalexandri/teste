@@ -47,6 +47,19 @@ else
   else item restauracao ok "há ${H} h"; fi
 fi
 
+# Cópia externa (B2): só vigia se estiver configurada (decisão #173). Atraso >30 h ou falha = aviso; >74 h sem enviar = crítico
+CONF_EXT="${FILAPRO_RCLONE_CONF:-/root/.config/rclone/filapro-b2.conf}"; EE="$PASTA/estado-externo.json"
+if [ -f "$CONF_EXT" ]; then
+  if [ ! -f "$EE" ]; then item backupExterno aviso "configurada, mas nenhum envio registrado"
+  else
+    H=$(horas_de "$EE")
+    if [ "$H" -gt 74 ]; then item backupExterno critico "último envio externo há ${H} h"
+    elif ! ok_json "$EE"; then item backupExterno aviso "o último envio externo terminou com problemas"
+    elif [ "$H" -gt 30 ]; then item backupExterno aviso "último envio externo há ${H} h"
+    else item backupExterno ok "há ${H} h"; fi
+  fi
+fi
+
 # ---------------------------------------------------------------- Disco (do disco onde ficam os backups)
 if [ -n "${FILAPRO_DISCO_PCT:-}" ]; then P="$FILAPRO_DISCO_PCT"; else P=$(df -P "$PASTA" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}'); fi
 if [[ "${P:-}" =~ ^[0-9]+$ ]]; then
