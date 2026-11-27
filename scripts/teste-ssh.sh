@@ -73,7 +73,7 @@ t "Depois de travar: a senha NÃO é mais oferecida (só publickey)" "$(! senha_
 cli >/dev/null 2>&1; t "Depois de travar: o login com a chave continua funcionando" "$([ $? -eq 0 ] && echo 1)"
 EF="$(bash "$D/ssh-travar.sh" --estado 2>&1)"
 t "--estado: senha no, root só com chave, 3 tentativas" "$(echo "$EF" | grep -q 'passwordauthentication no' && echo "$EF" | grep -qE 'permitrootlogin (prohibit-password|without-password)' && echo "$EF" | grep -q 'maxauthtries 3' && echo 1)" "$EF"
-t "Endurecimento extra: sem repasse de portas e de agente, sem X11 (sshd -T)" "$(/usr/sbin/sshd -f "$X/sshd_config" -T | grep -E '^(allowtcpforwarding no|allowagentforwarding no|x11forwarding no|logingracetime 30)' | wc -l | grep -q 4 && echo 1)"
+t "Endurecimento extra: sem repasse de portas e de agente, sem X11, 120 s para entrar (sshd -T)" "$(/usr/sbin/sshd -f "$X/sshd_config" -T | grep -E '^(allowtcpforwarding no|allowagentforwarding no|x11forwarding no|logingracetime 120)' | wc -l | grep -q 4 && echo 1)"
 OUT=$(bash "$D/ssh-travar.sh" 2>&1); t "Travar de novo: avisa que já está e não muda nada (idempotente)" "$([ $? -eq 0 ] && echo "$OUT" | grep -q 'já está' && echo 1)"
 OUT=$(bash "$D/ssh-travar.sh" --desfazer 2>&1); sleep 1
 t "--desfazer: a senha volta a ser oferecida" "$(senha_oferecida && [ ! -f "$CONF" ] && echo 1)"

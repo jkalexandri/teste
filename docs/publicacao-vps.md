@@ -436,6 +436,22 @@ bash /opt/filapro/app/deploy/ssh-chave.sh --adicionar
 ssh root@IP_DA_VPS
 ```
 
+**4b. Para não errar a frase-senha com pressa (recomendado no Windows):** guarde a chave no agente do Windows uma vez. Assim o `ssh` não pede a frase-senha a cada login, e a prova do passo 5 não depende de você digitar rápido. No PowerShell (se o `Start-Service` negar, abra o PowerShell como Administrador):
+
+```powershell
+Get-Service ssh-agent | Set-Service -StartupType Manual
+```
+
+```powershell
+Start-Service ssh-agent
+```
+
+```powershell
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+```
+
+(Digite a frase-senha **uma vez**, com calma; ele responde "Identity added".) Depois o `ssh root@IP_DA_VPS` entra sem pedir a frase-senha.
+
 **5. Trave o SSH (só se o passo 4 entrou).** No Terminal do navegador (**não feche essa janela**):
 
 ```bash

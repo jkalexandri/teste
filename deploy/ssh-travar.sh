@@ -27,7 +27,7 @@ PermitRootLogin prohibit-password
 PermitEmptyPasswords no
 PubkeyAuthentication yes
 MaxAuthTries 3
-LoginGraceTime 30
+LoginGraceTime 120
 X11Forwarding no
 AllowAgentForwarding no
 AllowTcpForwarding no
