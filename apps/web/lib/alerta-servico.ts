@@ -12,7 +12,7 @@ const dataHora = (d: Date) => d.toLocaleString("pt-BR", { day: "2-digit", month:
 
 export type ResultadoVigia = { acao: "avisou-fora" | "avisou-voltou" | "nada" | "manutencao"; foraDesde?: string };
 
-async function enviarAosSuperAdmins(assunto: string, texto: string) {
+export async function enviarAosSuperAdmins(assunto: string, texto: string) {
   const sas = await prisma.usuario.findMany({ where: { cargo: Cargo.SUPERADMIN, status: "ATIVO" }, select: { email: true } });
   const html = `<p>${texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</p>`;
   for (const s of sas) await enviarEmail({ para: s.email, assunto, html, texto }).catch(() => false);

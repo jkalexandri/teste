@@ -269,6 +269,12 @@ crontab -e
 ( crontab -l 2>/dev/null | grep -v vigia-servico.sh; echo '*/5 * * * * /opt/filapro/app/deploy/vigia-servico.sh >> /var/log/filapro-vigia.log 2>&1' ) | crontab -
 ```
 
+- A cada 15 minutos: **vigia da VPS** (decisão #171) — confere backup, teste de restauração, disco, memória, reinício pendente, relógio e certificado, e o site avisa os Super Admins por e-mail (um aviso por problema, lembretes e \"resolvido\"). Para ligar (uma vez; pode rodar de novo sem duplicar):
+
+```bash
+( crontab -l 2>/dev/null | grep -v vigia-vps.sh; echo '*/15 * * * * /opt/filapro/app/deploy/vigia-vps.sh >> /var/log/filapro-vigia-vps.log 2>&1' ) | crontab -
+```
+
 - 03:30 (Brasília): **backup completo** (banco, arquivos enviados e chaves criptografadas) em `/opt/filapro/backups/diarios`, com cópias semanais (domingo) e mensais (dia 1): 14 diários, 8 semanais, 6 mensais.
 - Domingo 04:30: **teste de restauração** (restaura o último backup diário num banco temporário, confere e apaga o temporário; não toca no banco real; resultado em `/var/log/filapro-restauracao.log` e no diagnóstico).
 - 09:30, 15:30 e 21:30: dump só do banco em `/opt/filapro/backups/6h` (perda máxima de 6 horas).
@@ -304,6 +310,75 @@ cd /opt/filapro/app && git fetch origin main && git show origin/main:deploy/diag
 ```bash
 bash /root/diagnostico-vps.sh
 ```
+
+### 6.2c Monitor externo e avisos da VPS (decisão #171)
+
+O aviso por e-mail sai da própria VPS: se ela cair inteira, ele não sai. Por isso há também um **monitor externo**, um serviço gratuito de fora (por exemplo, o UptimeRobot) que verifica o site a cada 5 minutos e avisa você por e-mail e pelo celular.
+
+1. Gere o código secreto do monitor (aparece na tela; **não tire print nem cole no chat**) e coloque no `.env` do site, na linha `MONITOR_TOKEN="..."` (`nano /opt/filapro/app/apps/web/.env.production`):
+
+```bash
+echo "MONITOR_TOKEN=$(openssl rand -hex 24)"
+```
+
+2. Reinicie o site para ler o `.env`:
+
+```bash
+pm2 restart filapro-web --update-env
+```
+
+3. Rode o vigia uma vez (cria o primeiro relatório; sem ele o monitor responde 503 "sem relatorio"):
+
+```bash
+bash /opt/filapro/app/deploy/vigia-vps.sh
+```
+
+4. Crie uma conta grátis no UptimeRobot, escolha **Add New Monitor → HTTP(s)** e use o endereço `https://filaproleads.com.br/api/monitor?t=SEU_CODIGO` (com o código do passo 1), intervalo de **5 minutos**, e cadastre seu e-mail (e o app no celular) para receber os alertas. Em "Keyword", se pedir, use `ok`.
+5. O monitor fica **verde** (200 "ok") quando o site está no ar, a VPS reportou na última hora e não há problema **crítico**. Fica **vermelho** (503) se há problema crítico (backup parado há mais de 50 horas, disco em 90% ou mais, certificado perto de vencer) ou se a VPS parou de reportar. Sem o código certo o endereço responde 404. Durante a atualização do sistema ele responde 200 "manutencao" e não alarma.
+
+Para ver o que o vigia está enxergando agora (não envia nada):
+
+```bash
+bash /opt/filapro/app/deploy/vigia-vps.sh --mostrar
+```
+
+### Reinício controlado da VPS (quando chegar o aviso "a VPS precisa ser reiniciada")
+
+As correções de segurança do sistema só valem depois de reiniciar. Faça em horário de pouco movimento, sem pressa (o aviso só se repete a cada 7 dias).
+
+1. Avise os usuários (opcional) e ligue a manutenção (os clientes veem "Sistema em atualização"; campanhas e respostas da IA ficam em espera e continuam sozinhas):
+
+```bash
+bash /opt/filapro/app/deploy/manutencao.sh avisar 10
+```
+
+```bash
+bash /opt/filapro/app/deploy/manutencao.sh ligar
+```
+
+2. Salve a lista de processos e reinicie a VPS (a conexão do terminal cai; é normal):
+
+```bash
+pm2 save && reboot
+```
+
+3. Espere uns 2 minutos, entre de novo por SSH e confira que o site e o serviço 24/7 subiram sozinhos:
+
+```bash
+pm2 status
+```
+
+4. Libere o sistema e rode o diagnóstico (deve estar sem falhas e sem o aviso de reinício pendente):
+
+```bash
+bash /opt/filapro/app/deploy/manutencao.sh desligar
+```
+
+```bash
+bash /opt/filapro/app/deploy/diagnostico-vps.sh | grep -E "ATENCAO|FALHA|RESUMO"
+```
+
+5. Na tela WhatsApp, confira que os números voltam a "Conectado" (reconectam sozinhos em alguns minutos; se algum pedir novo QR Code, conecte de novo).
 
 ## Parte 6.3 — Sugestão de planos (opcional, decisão #111)
 

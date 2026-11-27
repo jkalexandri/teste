@@ -1099,6 +1099,10 @@ model AlertaServico {
   foraDesde    DateTime?
   avisouEm     DateTime?
   atualizadoEm DateTime  @updatedAt
+  /// Avisos da VPS (decisão #171): quantas leituras seguidas já vieram com problema, quando foi o último e-mail e o nível ("aviso" | "critico")
+  contagem      Int       @default(0)
+  ultimoAvisoEm DateTime?
+  nivel         String?
 }
 
 /// Controle de tentativas de entrada e de pedidos de recuperação (decisão #160 — S5 do Módulo 1).

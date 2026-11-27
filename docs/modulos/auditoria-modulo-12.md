@@ -34,7 +34,7 @@ Tanto `voltar-versao.sh` quanto a seção "Restaurar um backup" de `publicacao-v
 corrompido, vazio ou truncado, **o banco de produção é destruído e a restauração falha**. O correto é restaurar num banco temporário, conferir e só então trocar,
 e guardar uma cópia do banco atual antes (como segurança).
 
-### P0-6 — Ninguém é avisado se o backup falhar ou parar (ALTA) ✅/❓
+### P0-6 — Ninguém é avisado se o backup falhar ou parar (ALTA) ✅ (#171)
 O resultado vai para `/var/log/filapro-backup.log`, que ninguém lê. Cron quebrado, disco cheio ou erro de permissão = sem backup, em silêncio, e depois de 14 dias o
 `find -mtime +14 -delete` só apaga (não há alerta de "último backup com mais de 26 h"). O vigia do serviço 24/7 já manda e-mail (decisão #151) e pode ser estendido.
 
@@ -51,21 +51,21 @@ Backup uma vez por dia (03:30). Uma falha às 20h perde o dia (leads, conversas,
 
 ## Módulo 12 — Operação (VPS)
 
-### O1 — Ninguém avisa se o SITE ou a VPS caírem por inteiro (ALTA) ✅
+### O1 — Ninguém avisa se o SITE ou a VPS caírem por inteiro (ALTA) ✅ (#171; o dono ainda cadastra o monitor externo)
 O vigia roda **dentro** da VPS e o alerta sai pelo **próprio site** (e-mail pelo Resend). Se a VPS cair, o site cair ou o `pm2` morrer, nada é enviado. Falta um monitor **externo**
 (gratuito, ex.: verificação do `https://filaproleads.com.br/api/status` a cada 5 minutos com aviso por e-mail/celular). Ação sua (conta externa), com o endereço de verificação que eu preparo.
 
-### O2 — Relógio da VPS: a verificação em duas etapas depende dele (MÉDIA) ❓
+### O2 — Relógio da VPS: a verificação em duas etapas depende dele (MÉDIA) ✅ (#171)
 Os códigos TOTP (S6) valem por 30 s ±30 s. Se o relógio da VPS sair do horário, **todos** os códigos passam a ser recusados. Ubuntu mantém o relógio por padrão, mas nada confere. O diagnóstico verifica (`timedatectl`).
 
-### O3 — Atualizações de segurança sem reinício programado (MÉDIA) ✅/❓
+### O3 — Atualizações de segurança sem reinício programado (MÉDIA) ✅ (#171, com procedimento de reinício controlado)
 `unattended-upgrades` instala correções, mas com `Automatic-Reboot "false"`: correções de núcleo só valem depois de reiniciar, e nada avisa que um reinício está pendente (`/var/run/reboot-required`).
 Proposta: o vigia avisa o Super Admin ("reinício pendente") e o manual traz o procedimento de reinício controlado (aviso, manutenção, reiniciar, conferir WhatsApp).
 
 ### O4 — Logs sem rotação (MÉDIA) ✅/❓
 `/var/log/filapro-*.log` (a cada 5 minutos, para sempre) e os logs do `pm2` não têm rotação definida na documentação. Crescem até encher o disco (que é pequeno: KVM 1). O diagnóstico mede.
 
-### O5 — Espaço em disco e memória sem vigia (MÉDIA) ❓
+### O5 — Espaço em disco e memória sem vigia (MÉDIA) ✅ (#171)
 Disco cheio derruba o banco e o backup em silêncio; a VPS tem pouca memória (swap de 2 GB). Nada avisa "disco acima de 80%" ou "memória/swap no limite". O vigia pode checar.
 
 ### O6 — Rotação das chaves não está documentada (BAIXA) ✅
@@ -103,7 +103,7 @@ e fuso America/Sao_Paulo; 38 itens OK, 11 de atenção e 1 falha). O que o resul
 1. **Agora (comandos na VPS, sem código):** agendar backup e rotinas no cron (com os horários certos); `chmod` dos backups; rodar `seguranca-vps.sh` (fail2ban + atualizações automáticas).
 2. Backup completo (banco + arquivos + chaves), com retenção em camadas e `umask 077` (P0-1, P0-2, P0-7, P0-8).
 3. Conferência do backup, restauração de teste e restauração segura (P0-4, P0-5). **FEITO em 27/11/2026 (#170, v1.47.6): `restaurar-backup.sh`, teste semanal de restauração, `voltar-versao.sh` sem `dropdb`, roteiro de desastre na documentação. Falta só o dono rodar `--so-testar` na VPS e acrescentar a linha de domingo ao cron.**
-4. Avisos (backup parado, disco/memória, reinício pendente) e monitor externo (P0-6, O1, O3, O5).
+4. Avisos (backup parado, disco/memória, reinício pendente) e monitor externo (P0-6, O1, O3, O5). **FEITO em 27/11/2026 (#171, v1.48.0): `vigia-vps.sh`, `/api/cron/vps`, `/api/monitor`, reinício controlado. Falta o dono atualizar a VPS, pôr o `MONITOR_TOKEN`, ligar o cron e cadastrar o monitor externo (docs/publicacao-vps.md 6.2c).**
 5. Cópia fora da VPS e frequência (P0-3, P0-9); logs, chaves, dependências e roteiro de desastre (O4, O6, O7, O8).
 6. Cadastrar chave SSH e desligar a senha (depende do dono ter acesso por chave).
 

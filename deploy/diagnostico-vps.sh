@@ -139,6 +139,7 @@ if [ -n "$CRON" ]; then
   else falha "Backup NÃO está agendado no cron (nenhuma linha com backup-completo.sh)"; fi
   echo "$CRON" | grep -q 'restaurar-backup.sh --so-testar' && ok "Teste semanal de restauração está agendado" || aten "Teste semanal de restauração não está no cron (docs/publicacao-vps.md 6.1)"
   echo "$CRON" | grep -q 'backup-completo.sh banco' && ok "Dump do banco a cada 6 h está agendado" || aten "Dump do banco a cada 6 h não está no cron (backup-completo.sh banco)"
+  echo "$CRON" | grep -q 'vigia-vps.sh' && ok "Vigia da VPS (avisos de backup, disco, memória, reinício) está agendado" || aten "Vigia da VPS não está no cron (docs/publicacao-vps.md 6.1)"
   echo "$CRON" | grep -q 'vigia-servico.sh' && ok "Vigia do serviço 24/7 está agendado" || aten "Vigia do serviço 24/7 não está no cron"
   echo "$CRON" | grep -q 'rotinas.sh' && ok "Rotinas diárias (renovações) estão agendadas" || aten "Rotinas diárias não estão no cron"
 else
@@ -240,6 +241,7 @@ if [ -f "$ENV_WEB" ] && [ -f "$ENV_WORKER" ]; then
     if [ -z "$A" ] || [ -z "$B" ]; then falha "$v: ausente em um dos arquivos"; elif [ "$A" = "$B" ]; then ok "$v: igual no site e no serviço 24/7"; else falha "$v: DIFERENTE entre o site e o serviço 24/7"; fi
   done
   CC=$(valor "$ENV_WEB" CHAVE_CRIPTO); [ -n "$CC" ] && info "CHAVE_CRIPTO tem ${#CC} caracteres"
+  [ -n "$(valor "$ENV_WEB" MONITOR_TOKEN)" ] && ok "MONITOR_TOKEN definido (monitor externo)" || aten "MONITOR_TOKEN ausente no .env do site: o monitor externo não funciona (docs/publicacao-vps.md, Monitor externo)"
   for v in CRON_SECRET VAPID_PUBLIC_KEY; do [ -n "$(valor "$ENV_WEB" "$v")" ] || aten "$v ausente no .env do site"; done
   [ -n "$(valor "$ENV_WORKER" VAPID_PRIVATE_KEY)" ] || aten "VAPID_PRIVATE_KEY ausente no .env do serviço 24/7"
   AMB=$(valor "$ENV_WEB" NEXT_PUBLIC_APP_ENV); if [ "$AMB" = "production" ]; then ok "NEXT_PUBLIC_APP_ENV=production (sem botões de demonstração no login)"; else falha "NEXT_PUBLIC_APP_ENV='${AMB:-vazio}': o login pode mostrar contas de demonstração!"; fi
