@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { prisma, Cargo, Modulo } from "@filapro/db";
 import { encerrarAcessoDaEmpresa } from "@/lib/auth/encerrar-acesso";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
+import { redefinirDoisFatores } from "@/lib/auth/dois-fatores";
+import { enviarEmail, emailVerificacaoRedefinida } from "@/lib/email";
+import { registrarLog } from "@/lib/logs";
 import { lerLimite } from "@/lib/limite";
 import { criarConta, enviarEmailBoasVindas, novoVencimento, validarComprador } from "@/lib/contas";
 import { desligarAssinatura, sincronizarAssinatura } from "@/lib/assinatura";
@@ -185,4 +188,19 @@ export async function desligarCobrancaAutomaticaSA(empresaId: string): Promise<R
   revalidatePath("/empresas");
   revalidatePath("/usuarios-individuais");
   return r;
+}
+
+/** Decisão #166: o Super Admin redefine a verificação em duas etapas do Admin de uma empresa que perdeu o celular e os códigos. */
+export async function redefinirVerificacaoAdmin(usuarioId: string): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const u = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  if (!u || u.cargo !== Cargo.ADMIN_EMPRESA) return { ok: false, mensagem: "Usuário não encontrado." };
+  if (!u.doisFatoresAtivo) return { ok: false, mensagem: `${u.nome} não usa a verificação em duas etapas.` };
+  await redefinirDoisFatores(u.id);
+  await registrarLog(s.usuario, "USUARIOS", `Verificação em duas etapas redefinida para ${u.nome} (${u.email})`, u.empresaId);
+  const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+  const { texto, html } = emailVerificacaoRedefinida(u.nome, "o suporte do FilaPro Leads", quando);
+  await enviarEmail({ para: u.email, assunto: "Sua verificação em duas etapas foi redefinida — FilaPro Leads", texto, html }).catch(() => undefined);
+  revalidatePath("/empresas");
+  return { ok: true, mensagem: `Verificação de ${u.nome} redefinida: entra só com a senha e pode ativá-la de novo em Segurança.` };
 }

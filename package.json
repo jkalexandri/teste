@@ -1,6 +1,6 @@
 {
   "name": "filapro-leads",
-  "version": "1.46.9",
+  "version": "1.47.0",
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "scripts": {

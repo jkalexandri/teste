@@ -7,6 +7,9 @@ import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { criarConta, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
 import { redefinirAcesso } from "@/lib/auth/link-senha";
+import { redefinirDoisFatores } from "@/lib/auth/dois-fatores";
+import { enviarEmail, emailVerificacaoRedefinida } from "@/lib/email";
+import { registrarLog } from "@/lib/logs";
 
 type R = { ok: boolean; mensagem: string };
 const t = (f: FormData, k: string, max = 120) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -63,4 +66,19 @@ export async function reenviarAcesso(usuarioId: string): Promise<R> {
   const link = await redefinirAcesso(usuarioId);
   const enviado = await enviarEmailBoasVindas(u.nome, u.email, link, u.empresa?.pacote ?? "", u.empresa?.modulo ?? Modulo.INDIVIDUAL, "redefinicao");
   return enviado ? { ok: true, mensagem: `Acesso redefinido: a senha anterior deixou de valer e um link para criar a nova foi enviado para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
+}
+
+/** Decisão #166: o Super Admin redefine a verificação em duas etapas de um usuário individual que perdeu o celular e os códigos. */
+export async function redefinirVerificacaoIndividual(usuarioId: string): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const u = await prisma.usuario.findUnique({ where: { id: usuarioId }, include: { empresa: true } });
+  if (!u || u.empresa?.modulo !== Modulo.INDIVIDUAL) return { ok: false, mensagem: "Usuário não encontrado." };
+  if (!u.doisFatoresAtivo) return { ok: false, mensagem: `${u.nome} não usa a verificação em duas etapas.` };
+  await redefinirDoisFatores(u.id);
+  await registrarLog(s.usuario, "USUARIOS", `Verificação em duas etapas redefinida para ${u.nome} (${u.email})`, u.empresaId);
+  const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+  const { texto, html } = emailVerificacaoRedefinida(u.nome, "o suporte do FilaPro Leads", quando);
+  await enviarEmail({ para: u.email, assunto: "Sua verificação em duas etapas foi redefinida — FilaPro Leads", texto, html }).catch(() => undefined);
+  revalidatePath("/usuarios-individuais");
+  return { ok: true, mensagem: `Verificação de ${u.nome} redefinida: entra só com a senha e pode ativá-la de novo em Segurança.` };
 }

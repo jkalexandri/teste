@@ -14,6 +14,7 @@ import Presenca from "@/components/app/Presenca";
 import { Suspense } from "react";
 import { emManutencao } from "@/lib/manutencao";
 import FaixaManutencao from "@/components/app/FaixaManutencao";
+import ConviteVerificacao from "@/components/app/ConviteVerificacao";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       }}
     >
       {manutencao && !bloqueado && <FaixaManutencao />}
+      {/* Decisão #166: convite para o dono da conta (Admin da Empresa ou Usuário Individual) que ainda não ativou a verificação */}
+      {!bloqueado && u.cargo !== Cargo.SUPERADMIN && ehDonoDaConta(u) && !u.doisFatoresAtivo && <ConviteVerificacao />}
       {bloqueado ? null : children}
       {/* Online, mensagens do Super Admin e Suporte (decisão #102) */}
       <Suspense fallback={null}><Presenca cliente={u.cargo !== Cargo.SUPERADMIN} manutencaoInicial={bloqueado} /></Suspense>

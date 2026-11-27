@@ -46,8 +46,8 @@ export async function POST(req: Request) {
   }
   // Atualização em andamento (decisão #103): só o Super Admin entra
   if (r.cargo !== Cargo.SUPERADMIN && (await emManutencao())) return NextResponse.json({ erro: MSG_MANUTENCAO, manutencao: true }, { status: 503 });
-  // Verificação em duas etapas (decisão #105): o Super Admin com ela ativa ainda precisa do código
-  const doisFatores = r.cargo === Cargo.SUPERADMIN && !!(await prisma.usuario.findUnique({ where: { id: r.usuarioId }, select: { doisFatoresAtivo: true } }))?.doisFatoresAtivo;
+  // Verificação em duas etapas (decisões #105 e #166): quem ativou, em qualquer perfil, ainda precisa do código
+  const doisFatores = !!(await prisma.usuario.findUnique({ where: { id: r.usuarioId }, select: { doisFatoresAtivo: true } }))?.doisFatoresAtivo;
   if (doisFatores) {
     await criarSessao(r.usuarioId, r.precisaTrocar, true);
     return NextResponse.json({ destino: "/verificacao" });

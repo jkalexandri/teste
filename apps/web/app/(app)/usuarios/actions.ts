@@ -10,6 +10,8 @@ import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
 import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
 import { redefinirAcesso } from "@/lib/auth/link-senha";
+import { redefinirDoisFatores } from "@/lib/auth/dois-fatores";
+import { enviarEmail, emailVerificacaoRedefinida } from "@/lib/email";
 import { PERMISSOES } from "@/lib/menu";
 import { lerLimite } from "@/lib/limite";
 
@@ -153,4 +155,19 @@ export async function excluirUsuario(id: string, destinoId: string | null): Prom
     ok: true,
     mensagem: destino ? `${u.nome} excluído. Os dados foram transferidos para ${destino.nome}.` : `${u.nome} excluído.`,
   };
+}
+
+/** Decisão #166: o Admin da Empresa redefine a verificação em duas etapas de um usuário da empresa que perdeu o celular e os códigos. */
+export async function redefinirVerificacao(id: string): Promise<R> {
+  const s = await exigirAdminEmpresa();
+  const u = await usuarioDaEmpresa(id, s.usuario.empresaId);
+  if (!u) return { ok: false, mensagem: "Usuário não encontrado." };
+  if (!u.doisFatoresAtivo) return { ok: false, mensagem: `${u.nome} não usa a verificação em duas etapas.` };
+  await redefinirDoisFatores(u.id);
+  await logDaSessao("USUARIOS", `Verificação em duas etapas redefinida para ${u.nome} (${u.email})`);
+  const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+  const { texto, html } = emailVerificacaoRedefinida(u.nome, `${s.usuario.nome} (Admin da Empresa)`, quando);
+  await enviarEmail({ para: u.email, assunto: "Sua verificação em duas etapas foi redefinida — FilaPro Leads", texto, html }).catch(() => undefined);
+  revalidatePath("/usuarios");
+  return { ok: true, mensagem: `Verificação de ${u.nome} redefinida: ele entra só com a senha e pode ativá-la de novo em Segurança.` };
 }

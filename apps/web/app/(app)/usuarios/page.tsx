@@ -40,6 +40,7 @@ export default async function UsuariosPage() {
           whatsapp: u.whatsapp ?? "",
           ativo: u.status === "ATIVO",
           pendente: !!u.linkSenhaHash || (!!u.senhaTempHash && !u.senhaHash),
+          doisFatores: u.doisFatoresAtivo,
           permissoes: u.permissoes,
           ultimoAcesso: u.ultimoAcesso?.toISOString() ?? null,
         }))}

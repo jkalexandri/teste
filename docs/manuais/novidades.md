@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.47.0 — verificação em duas etapas para todos (26/11/2026)
+
+- **Admin da Empresa, Usuário Individual e Usuário** agora podem proteger a conta com a **verificação em duas etapas** (app autenticador, como o Super Admin): menu **Segurança** → Ativar. É **opcional**; quem é dono da conta vê um convite discreto no topo.
+- Quem ativa passa a digitar também o **código do app** depois da senha. Cada código vale uma vez; 10 erros em 15 minutos bloqueiam o código por 15 minutos (os **códigos de recuperação** continuam funcionando) e você recebe um **e-mail de aviso**. Recuperar a senha por e-mail **não dispensa** o código.
+- **Perdeu o celular e os códigos?** O **Admin da Empresa** redefine a verificação dos usuários dele (botão **Redefinir verificação**, em Usuários); o **Super Admin** redefine a dos Admins (Empresas → Ver usuários) e a dos Individuais. A pessoa é avisada por e-mail, os aparelhos dela saem e ela volta a entrar só com a senha. **Confirme quem é a pessoa por outro canal antes de redefinir.**
+- Na lista, quem usa a verificação aparece com **"2 etapas"**.
+
 ## v1.46.9 — segurança: contas novas e redefinição de acesso por link, sem senha por e-mail (26/11/2026)
 
 - **Contas novas** (compra, teste grátis, criadas pelo Super Admin ou pelo Admin da Empresa) recebem por e-mail um **link para criar a senha** (vale 7 dias e só pode ser usado uma vez), em vez de uma senha escrita no e-mail. Ao criar a senha, é só entrar; não há mais a tela de "primeiro acesso".

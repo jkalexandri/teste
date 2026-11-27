@@ -379,6 +379,8 @@ código). 5 códigos errados cancelam a tentativa (é preciso digitar a senha de
 por código por 15 minutos** e você recebe um alerta — os **códigos de recuperação continuam funcionando**. Para desativar ou gerar novos
 códigos de recuperação, informe o código atual do app. Esqueci minha senha **não dispensa** a verificação em duas etapas.
 
+**Para os outros perfis** (Admin da Empresa, Usuário Individual e Usuário), a verificação é **opcional** e fica no mesmo menu **Segurança**. Se alguém perder o celular e os códigos, você redefine a verificação do **Admin da Empresa** (Empresas → **Ver usuários** → **Redefinir verificação**) ou do **Usuário Individual** (Usuários Individuais → **Redefinir verificação**): confirme quem é a pessoa por outro canal antes; ela é avisada por e-mail, os aparelhos dela saem e ela volta a entrar só com a senha.
+
 **Alertas de segurança** (no WhatsApp de avisos e no celular): a conta do Super Admin bloqueada por senha errada, 3 ou mais contas
 bloqueadas na plataforma em 1 hora e entrada do Super Admin por um endereço de internet novo.
 

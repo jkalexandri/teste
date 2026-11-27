@@ -41,6 +41,7 @@ Menu **Usuários**: quem envia as mensagens pela empresa.
 - **Permissões** (o que cada usuário vê): Leads, Campanhas, Conversas IA, Arquivos e Empresa | IA. Dashboard, WhatsApp, Avisos e Ajuda
   ficam sempre liberados.
 - **Limite de leads:** um máximo por usuário (dentro do limite da empresa) ou ilimitado.
+- **Redefinir verificação:** aparece nos usuários que usam a verificação em duas etapas (chip **2 etapas**). Use só se a pessoa perdeu o celular e os códigos de recuperação e você **confirmou quem ela é por outro canal**: a verificação dela é desativada, as sessões saem, ela é avisada por e-mail e volta a entrar só com a senha.
 - **Resetar senha:** **redefine o acesso** do usuário: a senha atual deixa de valer, as sessões dele são encerradas e um link para criar a nova senha é enviado por e-mail. Quem ainda não criou a senha aparece como **Aguardando criar a senha**.
 - **Desativar:** o usuário não entra mais e a vaga é liberada. **Reativar** só com vaga disponível.
 - **Excluir:** antes, você escolhe para qual usuário os **leads passam**.
@@ -146,3 +147,12 @@ O Admin não envia: crie um usuário para você mesmo, se quiser enviar.
 
 **Posso ver o que a IA respondeu para um lead?**
 Sim, em **Conversas IA** (somente leitura).
+
+## Segurança (verificação em duas etapas)
+
+No menu **Segurança** você protege a sua conta: além da senha, o login passa a pedir o **código de 6 dígitos** do app autenticador (Google Authenticator, Microsoft Authenticator ou Authy). É **opcional e recomendado** para o Admin da Empresa, que vê os dados de todos os usuários.
+
+1. **Ativar** → leia o QR Code com o app → digite o código em **Confirmar e ativar**.
+2. Guarde os **10 códigos de recuperação** fora do celular: cada um entra uma vez se você perder o celular.
+
+Cada código do app vale uma vez; 10 erros em 15 minutos bloqueiam o código por 15 minutos (os códigos de recuperação continuam funcionando) e você recebe um e-mail. Esqueci minha senha **não dispensa** o código. Se perder o celular **e** os códigos, peça ao suporte para redefinir.

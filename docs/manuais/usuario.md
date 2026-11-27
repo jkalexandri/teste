@@ -289,3 +289,12 @@ Você também recebe o aviso no WhatsApp.
 
 **Posso usar no celular?**
 Sim: instale o app (veja *Avisos e app no celular*).
+
+## Segurança (verificação em duas etapas)
+
+No menu **Segurança** você pode ativar a **verificação em duas etapas**: além da senha, o login pede o código de 6 dígitos do app autenticador (Google Authenticator, Microsoft Authenticator ou Authy). É opcional e recomendado, principalmente para quem é dono da conta.
+
+1. **Ativar** → leia o QR Code com o app → digite o código em **Confirmar e ativar**.
+2. Guarde os **10 códigos de recuperação** fora do celular: cada um entra uma vez se você perder o celular.
+
+Se perder o celular e os códigos, peça ao administrador da sua empresa (ou ao suporte, se a conta é Individual) para **redefinir a verificação**.

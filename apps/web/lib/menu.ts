@@ -43,6 +43,8 @@ const USUARIO: ItemMenu[] = [
   { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
   { href: "/leads-anuncios", label: "Leads de anúncios", icone: "play", grupo: "Configurações", etapa: 10, permissao: "leads" },
   // Decisão #101: manual do próprio perfil
+  // Decisão #166: a verificação em duas etapas vale para todos os perfis
+  { href: "/seguranca", label: "Segurança", icone: "config", grupo: "Sistema", etapa: 14 },
   { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 
@@ -60,6 +62,8 @@ const ADMIN_EMPRESA: ItemMenu[] = [
   // Decisão #81: o Admin recebe os avisos de todos os usuários da empresa
   { href: "/avisos", label: "Avisos", icone: "logs", grupo: "Configurações", etapa: 10 },
   { href: "/logs", label: "Logs", icone: "logs", grupo: "Sistema", etapa: 12 },
+  // Decisão #166: a verificação em duas etapas vale para todos os perfis
+  { href: "/seguranca", label: "Segurança", icone: "config", grupo: "Sistema", etapa: 14 },
   { href: "/ajuda", label: "Ajuda", icone: "ajuda", grupo: "Sistema", etapa: 12 },
 ];
 

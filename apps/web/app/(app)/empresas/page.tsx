@@ -27,7 +27,7 @@ export default async function EmpresasPage() {
   const empresas = await prisma.empresa.findMany({
     where: souSuper ? { modulo: Modulo.EMPRESARIAL } : { id: sessao.usuario.empresaId ?? "-" },
     include: {
-      usuarios: { select: { id: true, codigo: true, nome: true, email: true, cargo: true, status: true }, orderBy: { nome: "asc" } },
+      usuarios: { select: { id: true, codigo: true, nome: true, email: true, cargo: true, status: true, doisFatoresAtivo: true }, orderBy: { nome: "asc" } },
       _count: { select: { leads: true } },
       ...INCLUIR_FICHA,
     },
@@ -52,7 +52,7 @@ export default async function EmpresasPage() {
     dias: dias(e.expiraEm),
     // O Admin da Empresa não conta no limite (decisão #23).
     usados: e.usuarios.filter((u) => u.cargo === Cargo.USUARIO).length,
-    usuarios: e.usuarios.map((u) => ({ id: u.id, codigo: u.codigo ?? "", nome: u.nome, email: u.email, admin: u.cargo === Cargo.ADMIN_EMPRESA, ativo: u.status === "ATIVO" })),
+    usuarios: e.usuarios.map((u) => ({ id: u.id, codigo: u.codigo ?? "", nome: u.nome, email: u.email, admin: u.cargo === Cargo.ADMIN_EMPRESA, ativo: u.status === "ATIVO", doisFatores: u.doisFatoresAtivo })),
   }));
 
   const planos = souSuper

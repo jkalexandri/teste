@@ -90,3 +90,15 @@ export async function usarCodigoRecuperacao(usuarioId: string, codigo: string) {
   const r = await prisma.$queryRaw<{ n: number }[]>`UPDATE "Usuario" SET "doisFatoresCodigos" = array_remove("doisFatoresCodigos", ${h}) WHERE "id" = ${usuarioId} AND ${h} = ANY("doisFatoresCodigos") RETURNING cardinality("doisFatoresCodigos") AS n`;
   return r.length ? Number(r[0]!.n) : null;
 }
+
+/**
+ * Redefine a verificação em duas etapas de quem perdeu o celular e os códigos (decisão #166): desativa, apaga o segredo e os
+ * códigos de recuperação, encerra as sessões e zera o congelamento por erros. A pessoa volta a entrar só com a senha e pode ativar de novo.
+ */
+export async function redefinirDoisFatores(usuarioId: string) {
+  await prisma.$transaction([
+    prisma.usuario.update({ where: { id: usuarioId }, data: { doisFatoresAtivo: false, doisFatoresSegredo: null, doisFatoresCodigos: [], doisFatoresUltimoPasso: null } }),
+    prisma.sessao.deleteMany({ where: { usuarioId } }),
+    prisma.tentativaLogin.deleteMany({ where: { chave: `dois:${usuarioId}` } }),
+  ]);
+}

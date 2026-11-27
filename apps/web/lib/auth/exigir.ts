@@ -20,3 +20,10 @@ export async function exigirAdminEmpresa() {
   }
   return sessao as typeof sessao & { usuario: { empresaId: string } };
 }
+
+/** Qualquer perfil com sessão e conta válidas (decisão #166: a verificação em duas etapas vale para todos). */
+export async function exigirUsuario() {
+  const sessao = await obterSessao();
+  if (!sessao || sessao.precisaTrocar || motivoSemAcesso(sessao)) throw new Error("Acesso negado.");
+  return sessao;
+}

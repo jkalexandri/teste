@@ -6,10 +6,10 @@ import { useToast } from "@/components/app/Toast";
 import { Pencil, Plus, X } from "@/components/icons";
 import { PERMISSOES } from "@/lib/menu";
 import CampoLimite from "@/components/app/CampoLimite";
-import { alternarAtivo, criarUsuario, editarUsuario, excluirUsuario, resetarSenha } from "./actions";
+import { alternarAtivo, criarUsuario, editarUsuario, excluirUsuario, resetarSenha, redefinirVerificacao } from "./actions";
 
 type U = {
-  id: string; codigo: string; limiteLeads: number | null; leads: number; nome: string; email: string; whatsapp: string; ativo: boolean; pendente: boolean;
+  id: string; codigo: string; limiteLeads: number | null; leads: number; nome: string; email: string; whatsapp: string; ativo: boolean; pendente: boolean; doisFatores: boolean;
   permissoes: string[]; ultimoAcesso: string | null;
 };
 
@@ -99,6 +99,7 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
                         {u.ativo ? "Ativo" : "Desativado"}
                       </span>
                       {u.pendente && <span className="chip ml-1" style={{ background: "#fff7e0", color: "#8a5a00" }}>Aguardando criar a senha</span>}
+                      {u.doisFatores && <span className="chip ml-1" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)" }}>2 etapas</span>}
                     </td>
                     <td style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>
                       {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "Ainda não acessou"}
@@ -107,6 +108,9 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
                       <div style={{ display: "flex", gap: 4 }}>
                         <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" onClick={() => { setErro(""); setForm(u); }}><Pencil size={11} /> Editar</button>
                         <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Redefinir o acesso de ${u.email}? A senha atual deixa de valer, as sessões são encerradas e um link para criar a nova senha é enviado por e-mail.`) && agir(() => resetarSenha(u.id))}>Resetar senha</button>
+                        {u.doisFatores && (
+                          <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} data-testid="redefinir-verificacao" onClick={() => window.confirm(`Redefinir a verificação em duas etapas de ${u.email}? Use só se a pessoa perdeu o celular e os códigos de recuperação e você confirmou quem ela é por outro canal. As sessões dela são encerradas e ela entra só com a senha.`) && agir(() => redefinirVerificacao(u.id))}>Redefinir verificação</button>
+                        )}
                         <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Desativar" : "Reativar"} ${u.nome}?`) && agir(() => alternarAtivo(u.id))}>
                           {u.ativo ? "Desativar" : "Reativar"}
                         </button>

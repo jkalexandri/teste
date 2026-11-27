@@ -8,11 +8,11 @@ import { Plus, X } from "@/components/icons";
 import { alternarLeadsAnuncios, definirExtras, definirLimiteLeads, desligarCobrancaAutomaticaSA, prorrogarEmpresa } from "../empresas/actions";
 import CampoLimite from "@/components/app/CampoLimite";
 import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
-import { alternarBloqueio, criarIndividual, reenviarAcesso } from "./actions";
+import { alternarBloqueio, criarIndividual, reenviarAcesso, redefinirVerificacaoIndividual } from "./actions";
 
 type Linha = {
   id: string; codigo: string; leads: number; limiteLeads: number | null; empresaId: string; nome: string; email: string; whatsapp: string; pacote: string;
-  expiraEm: string; dias: number; automatica: boolean; ativo: boolean; primeiroAcesso: boolean; treino: TreinoIA; leadsAnuncios: boolean; whatsappsExtras: number;
+  expiraEm: string; dias: number; automatica: boolean; ativo: boolean; primeiroAcesso: boolean; doisFatores: boolean; treino: TreinoIA; leadsAnuncios: boolean; whatsappsExtras: number;
 };
 type Plano = { id: string; nome: string; gratis: boolean; prazoDias: number; aba: AbaPlanos; disparos: number | null };
 
@@ -166,6 +166,11 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Redefinir o acesso de ${u.email}? A senha atual deixa de valer, as sessões são encerradas e um link para criar a nova senha é enviado por e-mail.`) && agir(() => reenviarAcesso(u.id))}>
                           Reenviar acesso
                         </button>
+                        {u.doisFatores && (
+                          <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} data-testid="redefinir-verificacao" onClick={() => window.confirm(`Redefinir a verificação em duas etapas de ${u.email}? Use só se a pessoa perdeu o celular e os códigos de recuperação e você confirmou quem ela é por outro canal. As sessões dela são encerradas e ela entra só com a senha.`) && agir(() => redefinirVerificacaoIndividual(u.id))}>
+                            Redefinir verificação
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

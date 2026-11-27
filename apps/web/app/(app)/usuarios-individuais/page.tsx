@@ -59,6 +59,7 @@ export default async function IndividuaisPage() {
           dias: u.empresa ? dias(u.empresa.expiraEm) : 0,
           ativo: u.status === "ATIVO",
           primeiroAcesso: !u.senhaHash,
+          doisFatores: u.doisFatoresAtivo,
         }))}
       />
     </section>

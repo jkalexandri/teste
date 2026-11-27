@@ -70,3 +70,27 @@ export function emailContaProtegida(nome: string) {
     `<p style="color:#5b6b62"><b>Não foi você?</b> Pode ignorar: sua senha continua segura. Se quiser, troque-a depois de entrar.</p>`;
   return { texto, html };
 }
+
+/** Aviso à pessoa quando a verificação por código dela é congelada por 10 erros (decisão #166; o Super Admin segue no alerta do WhatsApp). */
+export function emailVerificacaoBloqueada(nome: string, ip: string) {
+  const texto =
+    `Olá, ${nome}.\n\nDetectamos 10 códigos errados da verificação em duas etapas da sua conta do FilaPro Leads em 15 minutos (último endereço de internet: ${ip}). ` +
+    `Por segurança, a verificação por código ficou bloqueada por 15 minutos; os códigos de recuperação continuam funcionando.\n\n` +
+    `Não foi você? Alguém pode ter descoberto a sua senha: troque-a (Esqueci minha senha, na tela de login) e avise o suporte.`;
+  const html =
+    `<p>Olá, ${esc(nome)}.</p><p>Detectamos <b>10 códigos errados</b> da verificação em duas etapas da sua conta do <b>FilaPro Leads</b> em 15 minutos (último endereço de internet: ${esc(ip)}). Por segurança, a verificação por código ficou bloqueada por 15 minutos; os códigos de recuperação continuam funcionando.</p>` +
+    `<p style="color:#b42318"><b>Não foi você?</b> Alguém pode ter descoberto a sua senha: troque-a (“Esqueci minha senha”, na tela de login) e avise o suporte.</p>`;
+  return { texto, html };
+}
+
+/** Aviso à pessoa quando alguém redefine a verificação em duas etapas dela (decisão #166). */
+export function emailVerificacaoRedefinida(nome: string, quem: string, quando: string) {
+  const texto =
+    `Olá, ${nome}.\n\nA verificação em duas etapas da sua conta do FilaPro Leads foi redefinida por ${quem} em ${quando}. ` +
+    `Você entra só com a senha e pode ativá-la de novo no menu Segurança.\n\n` +
+    `Você não pediu isso? Avise o suporte e troque a sua senha.`;
+  const html =
+    `<p>Olá, ${esc(nome)}.</p><p>A <b>verificação em duas etapas</b> da sua conta do <b>FilaPro Leads</b> foi redefinida por <b>${esc(quem)}</b> em ${esc(quando)}. Você entra só com a senha e pode ativá-la de novo no menu <b>Segurança</b>.</p>` +
+    `<p style="color:#b42318"><b>Você não pediu isso?</b> Avise o suporte e troque a sua senha.</p>`;
+  return { texto, html };
+}

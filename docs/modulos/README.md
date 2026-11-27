@@ -13,7 +13,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 
 | # | Módulo | Status | Revisão (data e hora) | Versão da revisão | Último ajuste |
 |---|---|---|---|---|---|
-| 1 | Acesso e segurança | 🟡 Em revisão | auditoria iniciada 26/11/2026 | — | v1.46.9 — 27/11/2026 09:00 (S9 Fase 2: contas novas por link) |
+| 1 | Acesso e segurança | 🟡 Em revisão | auditoria iniciada 26/11/2026 | — | v1.47.0 — 27/11/2026 10:00 (S7: verificação em duas etapas para todos os perfis) |
 | 2 | Contas e usuários | 🔴 Sem revisão | nunca | — | v1.44.0 — 26/11/2026 18:30 (semáforo e chaves da IA em 4 pontos) |
 | 3 | Planos, venda e pagamento | 🔴 Sem revisão | nunca | — | v1.40.0 — 25/11/2026 01:06 (upgrade de conta) |
 | 4 | WhatsApp (conexão) | 🟢 Revisado | 26/11/2026 23:59 | v1.45.4 | v1.45.4 — 26/11/2026 23:59 (revisão concluída: baixas B1–B5) |
@@ -32,7 +32,7 @@ Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** �
 
 | # | Módulo | O que cobre | Telas | Serviço 24/7 | Testes |
 |---|---|---|---|---|---|
-| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração, trava das telas | Login, Primeiro acesso, Verificação, Segurança | — | login-regras, 15, 16b, 21, 27, 28, 29, 30, 31, 32, 33, 34, 35 |
+| 1 | Acesso e segurança | Login, primeiro acesso, 2 etapas, bloqueio, expiração, trava das telas | Login, Primeiro acesso, Verificação, Segurança | — | login-regras, 15, 16b, 21, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 |
 | 2 | Contas e usuários | Empresas, usuários, individuais, menu por perfil | Empresas, Usuários, Usuários Individuais, Conta | — | 3, 4c, 5, 18b |
 | 3 | Planos, venda e pagamento | Planos, compra, Asaas, pedidos, renovação, upgrade, financeiro | Planos, Pagamento, Pedidos, Renovar, Financeiro | — | 4a, 4b, 4d, 16, 17, 18, 19a–d, 20 |
 | 4 | WhatsApp (conexão) | QR Code, reconexão, vários números, número da plataforma | WhatsApp, Número da plataforma | sessões, queda, números | 6, 10c |
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.47.0 | 27/11/2026 10:00 | 1 Acesso e segurança | S7: verificação em duas etapas opcional para Admin da Empresa, Individual e Usuário (menu Segurança, convite ao dono); redefinir a verificação de quem perdeu o celular (Admin/Super Admin); aviso por e-mail no congelamento (#166) | 2 Contas e usuários (menu e telas de gestão) | não |
 | v1.46.9 | 27/11/2026 09:00 | 1 Acesso e segurança | S9 Fase 2: conta nova, usuário criado e Resetar/Reenviar acesso por link de uso único (7 dias); redefinir invalida a senha atual e encerra sessões; login de conta sem senha com o mesmo tempo (#165) | 2 Contas e usuários, 3 Planos (compra e teste grátis) | não |
 | v1.46.8 | 27/11/2026 08:00 | 1 Acesso e segurança | S9 Fase 1: "Esqueci minha senha" envia link de uso único (30 min, hash no banco, código no fragmento); definir a senha encerra sessões e desfaz bloqueios; tela /definir-senha; 3 frases do painel de recuperação do login (#164) | 2 Contas e usuários (primeiro acesso) | não |
 | v1.46.7 | 27/11/2026 07:00 | 1 Acesso e segurança | S8: endereço de internet = última entrada do X-Forwarded-For (Caddy define); IPv6 pelo bloco /64; teto de 20 mil chaves em memória; Caddyfile com header_up explícito (#163) | 12 Operação (VPS: Caddyfile) | não |

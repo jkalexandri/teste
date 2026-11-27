@@ -4,14 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/app/Toast";
 import { Building2, Plus, X } from "@/components/icons";
-import { alterarPacote, alternarEmpresaAtiva, alternarLeadsAnuncios, criarEmpresa, definirLimiteLeads, desligarCobrancaAutomaticaSA, prorrogarEmpresa } from "./actions";
+import { alterarPacote, alternarEmpresaAtiva, alternarLeadsAnuncios, criarEmpresa, definirLimiteLeads, desligarCobrancaAutomaticaSA, prorrogarEmpresa, redefinirVerificacaoAdmin } from "./actions";
 import CampoLimite from "@/components/app/CampoLimite";
 import ControleTreinoIA, { type TreinoIA } from "@/components/app/ControleTreinoIA";
 
 export type EmpresaLinha = {
   id: string; codigo: string; nome: string; pacote: string; planoId: string | null; limite: number; ativa: boolean; pacotes: number; automatica: boolean;
   expiraEm: string; dias: number; usados: number; leads: number; limiteLeads: number | null; treino: TreinoIA; leadsAnuncios: boolean;
-  usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean }[];
+  usuarios: { id: string; codigo: string; nome: string; email: string; admin: boolean; ativo: boolean; doisFatores: boolean }[];
 };
 type PlanoOpcao = { id: string; nome: string; usuarios: number | null; personalizado: boolean; prazoDias: number; maxPacotes: number };
 
@@ -235,7 +235,10 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                       <ul className="mt-1 space-y-1">
                         {e.usuarios.map((u) => (
                           <li key={u.id} className="text-[12px] [overflow-wrap:anywhere]">
-                            <span style={{ fontFamily: "monospace" }}>{u.codigo}</span> • {u.nome} • {u.email} • {u.admin ? "Admin da Empresa (não conta no limite)" : "Usuário"}{!u.ativo && " • bloqueado"}
+                            <span style={{ fontFamily: "monospace" }}>{u.codigo}</span> • {u.nome} • {u.email} • {u.admin ? "Admin da Empresa (não conta no limite)" : "Usuário"}{!u.ativo && " • bloqueado"}{u.doisFatores && " • 2 etapas"}
+                            {podeEditar && u.admin && u.doisFatores && (
+                              <button className="btn-ghost !py-0.5 !px-1.5 !text-[11px] ml-1" disabled={pendente} data-testid="redefinir-verificacao" onClick={() => window.confirm(`Redefinir a verificação em duas etapas de ${u.email}? Use só se a pessoa perdeu o celular e os códigos de recuperação e você confirmou quem ela é por outro canal. As sessões dela são encerradas e ela entra só com a senha.`) && agir(() => redefinirVerificacaoAdmin(u.id))}>Redefinir verificação</button>
+                            )}
                           </li>
                         ))}
                       </ul>

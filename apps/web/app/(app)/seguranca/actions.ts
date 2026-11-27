@@ -1,10 +1,10 @@
 "use server";
 
-// Segurança do Super Admin (decisão #105, item 8): ativar, desativar e gerar novos códigos de recuperação.
+// Segurança (decisões #105 e #166): ativar, desativar e gerar novos códigos de recuperação — para todos os perfis.
 import QRCode from "qrcode";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
-import { exigirSuperAdmin } from "@/lib/auth/exigir";
+import { exigirUsuario } from "@/lib/auth/exigir";
 import { consumirPassoTotp, guardarSegredo, passoDoCodigo, lerSegredo, novoSegredo, novosCodigosRecuperacao, urlOtpauth } from "@/lib/auth/dois-fatores";
 import { registrarLog } from "@/lib/logs";
 
@@ -12,7 +12,7 @@ type R = { ok: boolean; mensagem: string; qr?: string; segredo?: string; codigos
 
 /** Passo 1: gera o segredo (ainda não ativo) e o QR Code para o app autenticador. */
 export async function iniciarAtivacao(): Promise<R> {
-  const s = await exigirSuperAdmin();
+  const s = await exigirUsuario();
   if (s.usuario.doisFatoresAtivo) return { ok: false, mensagem: "A verificação já está ativa." };
   const segredo = novoSegredo();
   await prisma.usuario.update({ where: { id: s.usuario.id }, data: { doisFatoresSegredo: guardarSegredo(segredo), doisFatoresUltimoPasso: null } }); // segredo novo: o controle de passo recomeça (decisão #161)
@@ -22,7 +22,7 @@ export async function iniciarAtivacao(): Promise<R> {
 
 /** Passo 2: confere o primeiro código, ativa e mostra os códigos de recuperação (uma vez só). */
 export async function confirmarAtivacao(codigo: string): Promise<R> {
-  const s = await exigirSuperAdmin();
+  const s = await exigirUsuario();
   const u = await prisma.usuario.findUniqueOrThrow({ where: { id: s.usuario.id } });
   if (!u.doisFatoresSegredo) return { ok: false, mensagem: "Comece de novo: clique em Ativar." };
   const passo = passoDoCodigo(lerSegredo(u.doisFatoresSegredo), codigo);
@@ -37,7 +37,7 @@ export async function confirmarAtivacao(codigo: string): Promise<R> {
 
 /** Confere o código atual do app (para desativar ou gerar novos códigos). */
 async function conferirAtual(codigo: string) {
-  const s = await exigirSuperAdmin();
+  const s = await exigirUsuario();
   const u = await prisma.usuario.findUniqueOrThrow({ where: { id: s.usuario.id } });
   const passo = u.doisFatoresSegredo && u.doisFatoresAtivo ? passoDoCodigo(lerSegredo(u.doisFatoresSegredo), codigo) : null;
   const ok = passo !== null && (await consumirPassoTotp(u.id, passo)); // cada código vale uma vez (decisão #161)

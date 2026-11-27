@@ -7,6 +7,8 @@ import { consumirPassoTotp, lerSegredo, passoDoCodigo, usarCodigoRecuperacao } f
 import { chaveDois, erroDeCodigo, limparErrosDeCodigo, minutosCongelado } from "@/lib/auth/tentativas";
 import { registrarLog } from "@/lib/logs";
 import { alertarEntradaSuperAdmin, avisarSuperAdmins } from "@/lib/alertas-seguranca";
+import { enviarEmail, emailVerificacaoBloqueada } from "@/lib/email";
+import { Cargo } from "@filapro/db";
 import { limitarPorIp, ipRealDoPedido } from "@/lib/limite-acesso";
 
 const MAX_TENTATIVAS_2FA = 5;
@@ -43,7 +45,13 @@ export async function POST(req: Request) {
         // 10 códigos errados em 15 minutos (somando todas as entradas): congela o código de 6 dígitos e avisa o Super Admin
         const ip = (await ipRealDoPedido()) ?? "desconhecido";
         await registrarLog(u, "SENHA", "Verificação por código bloqueada por 15 minutos (10 códigos errados)");
-        await avisarSuperAdmins(`🔐 Alerta de segurança: 10 códigos errados da verificação em duas etapas na conta do Super Admin ${u.email} em 15 minutos (último endereço ${ip}). A verificação por código ficou bloqueada por 15 minutos; os códigos de recuperação continuam valendo. Se não foi você, troque a senha.`).catch(() => undefined);
+        if (u.cargo === Cargo.SUPERADMIN) {
+          await avisarSuperAdmins(`🔐 Alerta de segurança: 10 códigos errados da verificação em duas etapas na conta do Super Admin ${u.email} em 15 minutos (último endereço ${ip}). A verificação por código ficou bloqueada por 15 minutos; os códigos de recuperação continuam valendo. Se não foi você, troque a senha.`).catch(() => undefined);
+        } else {
+          // Decisão #166: nos outros perfis o aviso vai por e-mail para a própria pessoa
+          const { texto, html } = emailVerificacaoBloqueada(u.nome, ip);
+          await enviarEmail({ para: u.email, assunto: "Verificação em duas etapas bloqueada por 15 minutos — FilaPro Leads", texto, html }).catch(() => undefined);
+        }
       }
     }
   }

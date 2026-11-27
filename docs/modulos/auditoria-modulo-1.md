@@ -90,7 +90,7 @@ Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
   bloqueio nem alerta; só existe o limite de 20 verificações a cada 10 minutos por endereço de internet. Quem já descobriu a senha pode
   tentar adivinhar o código (1 em ~333 mil por tentativa) usando vários endereços sem ser notado.
 
-### S7 — Verificação em duas etapas só existe para o Super Admin ✅ (mapeado em 26/11/2026)
+### S7 — Verificação em duas etapas só existe para o Super Admin ✅ (mapeado em 26/11/2026) — **FEITA na v1.47.0 (decisão #166); obrigatoriedade para o Admin da Empresa fica para versão futura**
 Hoje a verificação (app autenticador + 10 códigos de recuperação, reforçada nas etapas S6) vale só para o Super Admin: a tela **Segurança**, o item
 do menu, as ações de ativar/desativar e a condição do login (`cargo === SUPERADMIN`) são exclusivos dele. O **Admin da Empresa** vê os dados e as
 conversas de todos os usuários da empresa, redefine acessos e é o alvo mais valioso depois do Super Admin; o **Usuário Individual** é dono de uma

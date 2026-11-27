@@ -22,7 +22,7 @@ const OUT = process.argv[2];
   // Usuário individual
   let [c, p] = await entrar('usuario@disparopro.com.br', 'User@12345678', 'individual');
   ok('Usuário entra no dashboard', p.url().endsWith('/dashboard'));
-  ok('Menu do Usuário', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Campanhas','Leads','Conversas IA','Arquivos','Empresa | IA','WhatsApp','Avisos','Leads de anúncios','Ajuda']), (await menu(p)).join(', '));
+  ok('Menu do Usuário', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Campanhas','Leads','Conversas IA','Arquivos','Empresa | IA','WhatsApp','Avisos','Leads de anúncios','Segurança','Ajuda']), (await menu(p)).join(', '));
   ok('Grupos do Usuário (ocultos os vazios)', JSON.stringify(await grupos(p)) === JSON.stringify(['PRINCIPAL','VENDAS','CONFIGURAÇÕES','SISTEMA']), (await grupos(p)).join(', '));
   await p.screenshot({ path: OUT + '/dash-usuario.png' });
   await p.goto(BASE + '/usuarios'); await p.waitForTimeout(500);
@@ -35,7 +35,7 @@ const OUT = process.argv[2];
 
   // Admin da empresa
   [c, p] = await entrar('admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'empresarial');
-  ok('Menu do Admin', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Todos os disparos','Leads','Conversas IA','Usuários','Empresas','Empresa | IA','Configurações','Avisos','Logs','Ajuda']), (await menu(p)).join(', '));
+  ok('Menu do Admin', JSON.stringify(await menu(p)) === JSON.stringify(['Dashboard','Todos os disparos','Leads','Conversas IA','Usuários','Empresas','Empresa | IA','Configurações','Avisos','Logs','Segurança','Ajuda']), (await menu(p)).join(', '));
   const linhas = await p.locator('table tbody tr').allInnerTexts();
   ok('Disparos por usuários sem o Administrador', linhas.length >= 1 && linhas.some(l => l.includes('Ana Souza')) && !linhas.some(l => l.includes('admin-empresa@')), linhas.length + ' linhas');
   ok('Dashboard sem linha TOTAL no resumo', (await p.locator('tfoot').count()) === 0);
@@ -73,7 +73,7 @@ const OUT = process.argv[2];
   // Celular
   [c, p] = await entrar('usuario@disparopro.com.br', 'User@12345678', 'individual', { width: 390, height: 844 });
   await p.screenshot({ path: OUT + '/dash-celular.png' });
-  ok('Menu em pílulas no celular', await p.locator('main').count() === 1 && (await p.locator('a.rounded-full').count()) === 10);
+  ok('Menu em pílulas no celular', await p.locator('main').count() === 1 && (await p.locator('a.rounded-full').count()) === 11);
   await c.close();
 
   console.log(res.join('\n')); await b.close();
