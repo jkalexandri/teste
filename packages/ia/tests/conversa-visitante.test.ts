@@ -1,6 +1,6 @@
 // Fale conosco (decisão #178): o que a IA do chat da tela de Planos recebe — material comercial e script do dono só no chat do site,
 // com a ordem de autoridade (dados dos planos > script > material). Servidor falso no lugar do provedor, sem gastar crédito.
-// Rodar: DATABASE_URL=... CHAVE_CRIPTO=x npx tsx --test tests/conversa-visitante.test.ts
+// Rodar: DATABASE_URL=... CHAVE_CRIPTO=x npx tsx --test --test-concurrency=1 tests/*.test.ts  (SERIAL: este teste e o status-atendimento mexem na mesma configuração de IA "conversar")
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";

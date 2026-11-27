@@ -25,7 +25,7 @@ pkill -f "src/[i]ndex.ts"; sleep 2
 conta etapa16b-status-login
 pkill -f "src/[i]ndex.ts"; sleep 1
 (cd apps/worker && set -a && . ./.env && set +a && echo "worker-unit: $(npx tsx --test --test-concurrency=1 tests/*.test.ts 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' ')")
-(cd packages/ia && set -a && . ../../apps/web/.env.local && set +a && echo "ia-unit: $(npx tsx --test tests/*.test.ts 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' ')")
+(cd packages/ia && set -a && . ../../apps/web/.env.local && set +a && echo "ia-unit: $(npx tsx --test --test-concurrency=1 tests/*.test.ts 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' ')")
 (cd apps/web && set -a && . ./.env.local && set +a && echo "web-unit (leads, endereços e avisos da VPS): $(../worker/node_modules/.bin/tsx --test tests/leads-unit.test.ts tests/ip-unit.test.ts tests/alerta-vps-unit.test.ts 2>&1 | grep -E '^# (pass|fail)' | tr '\n' ' ')")
 (cd apps/worker && set -a && . ./.env && set +a && DISPAROS=desligado PASTA_ARQUIVOS=/var/tmp/filapro-arquivos nohup npx tsx src/index.ts > /tmp/worker-teste.log 2>&1 &)
 echo FIM
