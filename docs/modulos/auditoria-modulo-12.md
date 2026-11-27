@@ -77,6 +77,36 @@ Não há rotina (`pnpm audit`) para listar dependências com vulnerabilidades co
 ### O8 — Documentação do reinício e da recuperação de desastre (BAIXA) ✅
 Existem `restaurar-servidor.sh` (mudar de servidor) e a seção de emergência; falta um **roteiro de recuperação de desastre** de ponta a ponta (quem faz o quê, em que ordem, quanto tempo leva) e **um ensaio** registrado (a "restauração de teste" do P0-4).
 
+## Resultado do diagnóstico na VPS real (27/11/2026, v1.47.1)
+Rodado pelo dono (Ubuntu 26.04.1, 1 processador, 3,9 GB de memória, swap de 2 GB, disco com 18% de uso e 40 GB livres, no ar há 2 dias; relógio sincronizado
+e fuso America/Sao_Paulo; 38 itens OK, 11 de atenção e 1 falha). O que o resultado mostrou:
+
+- **URGENTE — o backup diário e as rotinas diárias NUNCA foram agendados (FALHA):** o cron só tem o vigia do serviço 24/7. Os backups que existem na pasta
+  (52 MB) vêm do `atualizar.sh`, que faz um backup antes de cada atualização; **sem atualização, não há backup**. Sem log do backup (o cron nunca rodou).
+  Pior: `rotinas.sh` também não roda, então **os avisos de renovação (10 e 3 dias antes), os lançamentos financeiros do mês, o aviso de contas vencendo e o
+  reprocessamento dos avisos do Asaas não estão saindo**. Com a decisão #158 (conta vencida para de enviar e de responder na hora), cliente sem aviso de vencimento
+  é cliente cortado de surpresa.
+- **Hora do cron:** o fuso da VPS é America/Sao_Paulo (não UTC). A documentação (6.1) escreveu `30 6` e `0 12` supondo UTC e anunciou 03:30 e 09:00 de Brasília; na VPS
+  real isso rodaria às 06:30 e 12:00. Corrigir a documentação e agendar `30 3` e `0 9`.
+- **SSH aberto com senha e root (ATENÇÃO alta) e fail2ban desligado:** `permitrootlogin yes`, `passwordauthentication yes` e `fail2ban: inactive`. O
+  `seguranca-vps.sh` (decisão #105) nunca foi aplicado. Qualquer pessoa na internet pode tentar a senha do root sem ser barrada. O script é seguro de rodar sem chave
+  cadastrada (ele só liga o fail2ban e as atualizações automáticas e **mantém a senha** até haver uma chave).
+- **Backups legíveis por qualquer usuário da máquina:** pasta `755` e arquivo `644` (esperado `700` e `600`).
+- **pm2:** o site e o serviço reiniciaram 29 vezes cada, o mesmo número: são os reinícios das atualizações (`atualizar.sh` reinicia os dois juntos), não quedas.
+- **Sem rotação de logs:** hoje pequenos (pm2 980 KB, /var/log 74 MB), baixa urgência.
+- **1 arquivo enviado só nesta VPS** (236 KB): o backup diário não o guarda (P0-1 confirmado, ainda pequeno).
+- **Falso alarme meu (corrigido na v1.47.2):** o diagnóstico acusava `VAPID_PRIVATE_KEY` ausente no `.env` do site; o site só usa a chave pública, a privada é do serviço 24/7.
+- Confirmados OK: relógio, memória, swap, disco, certificado HTTPS, portas (só 22, 80 e 443), site e serviço 24/7 respondendo, banco só em localhost, `.env` restritos,
+  `CHAVE_CRIPTO`/`WORKER_TOKEN`/`DATABASE_URL` iguais, modo produção, sem atualização parada.
+
+### Nova ordem das prévias (o diagnóstico mudou as prioridades)
+1. **Agora (comandos na VPS, sem código):** agendar backup e rotinas no cron (com os horários certos); `chmod` dos backups; rodar `seguranca-vps.sh` (fail2ban + atualizações automáticas).
+2. Backup completo (banco + arquivos + chaves), com retenção em camadas e `umask 077` (P0-1, P0-2, P0-7, P0-8).
+3. Conferência do backup, restauração de teste e restauração segura (P0-4, P0-5).
+4. Avisos (backup parado, disco/memória, reinício pendente) e monitor externo (P0-6, O1, O3, O5).
+5. Cópia fora da VPS e frequência (P0-3, P0-9); logs, chaves, dependências e roteiro de desastre (O4, O6, O7, O8).
+6. Cadastrar chave SSH e desligar a senha (depende do dono ter acesso por chave).
+
 ## Não é falha (conferido)
 - `atualizar.sh` faz backup antes, guarda o ponto de volta, liga a manutenção, monta o site em pasta separada e só troca depois; se algo falha, o sistema fica em manutenção (seguro).
 - SSH só com chave, fail2ban, atualizações de segurança automáticas, firewall conferido (`seguranca-vps.sh`).

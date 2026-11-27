@@ -213,7 +213,7 @@ if [ -f "$ENV_WEB" ] && [ -f "$ENV_WORKER" ]; then
     if [ -z "$A" ] || [ -z "$B" ]; then falha "$v: ausente em um dos arquivos"; elif [ "$A" = "$B" ]; then ok "$v: igual no site e no serviço 24/7"; else falha "$v: DIFERENTE entre o site e o serviço 24/7"; fi
   done
   CC=$(valor "$ENV_WEB" CHAVE_CRIPTO); [ -n "$CC" ] && info "CHAVE_CRIPTO tem ${#CC} caracteres"
-  for v in CRON_SECRET VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY; do [ -n "$(valor "$ENV_WEB" "$v")" ] || aten "$v ausente no .env do site"; done
+  for v in CRON_SECRET VAPID_PUBLIC_KEY; do [ -n "$(valor "$ENV_WEB" "$v")" ] || aten "$v ausente no .env do site"; done
   [ -n "$(valor "$ENV_WORKER" VAPID_PRIVATE_KEY)" ] || aten "VAPID_PRIVATE_KEY ausente no .env do serviço 24/7"
   AMB=$(valor "$ENV_WEB" NEXT_PUBLIC_APP_ENV); if [ "$AMB" = "production" ]; then ok "NEXT_PUBLIC_APP_ENV=production (sem botões de demonstração no login)"; else falha "NEXT_PUBLIC_APP_ENV='${AMB:-vazio}': o login pode mostrar contas de demonstração!"; fi
   WU=$(valor "$ENV_WEB" WORKER_URL); case "$WU" in http://127.0.0.1:*|http://localhost:*) ok "WORKER_URL aponta para dentro da VPS ($WU)";; *) aten "WORKER_URL='${WU:-vazio}': o serviço 24/7 deveria ser acessado por http://127.0.0.1:4000";; esac

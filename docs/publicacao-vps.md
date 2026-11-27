@@ -253,11 +253,11 @@ chmod +x /opt/filapro/app/deploy/*.sh
 crontab -e
 ```
 
-(Se perguntar o editor, escolha **1** — nano.) Acrescente no final:
+(Se perguntar o editor, escolha **1** — nano.) A VPS usa o fuso de Brasília (America/Sao_Paulo; confira com `date`), então os horários abaixo já são os de Brasília. Acrescente no final:
 
 ```
-30 6 * * * /opt/filapro/app/deploy/backup-banco.sh >> /var/log/filapro-backup.log 2>&1
-0 12 * * * /opt/filapro/app/deploy/rotinas.sh >> /var/log/filapro-rotinas.log 2>&1
+30 3 * * * /opt/filapro/app/deploy/backup-banco.sh >> /var/log/filapro-backup.log 2>&1
+0 9 * * * /opt/filapro/app/deploy/rotinas.sh >> /var/log/filapro-rotinas.log 2>&1
 ```
 
 - A cada 5 minutos: vigia do serviço 24/7 (decisão #151) — avisa os Super Admins por e-mail se ele ficar mais de 3 minutos sem sinal (e quando voltar).
