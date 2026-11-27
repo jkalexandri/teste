@@ -105,7 +105,7 @@ e fuso America/Sao_Paulo; 38 itens OK, 11 de atenção e 1 falha). O que o resul
 3. Conferência do backup, restauração de teste e restauração segura (P0-4, P0-5). **FEITO em 27/11/2026 (#170, v1.47.6): `restaurar-backup.sh`, teste semanal de restauração, `voltar-versao.sh` sem `dropdb`, roteiro de desastre na documentação. Falta só o dono rodar `--so-testar` na VPS e acrescentar a linha de domingo ao cron.**
 4. Avisos (backup parado, disco/memória, reinício pendente) e monitor externo (P0-6, O1, O3, O5). **FEITO em 27/11/2026 (#171, v1.48.0): `vigia-vps.sh`, `/api/cron/vps`, `/api/monitor`, reinício controlado. Falta o dono atualizar a VPS, pôr o `MONITOR_TOKEN`, ligar o cron e cadastrar o monitor externo (docs/publicacao-vps.md 6.2c).**
 5. Cópia fora da VPS e frequência (P0-3, P0-9); logs, chaves, dependências e roteiro de desastre (O4, O6, O7, O8).
-6. Cadastrar chave SSH e desligar a senha (depende do dono ter acesso por chave).
+6. Cadastrar chave SSH e desligar a senha (depende do dono ter acesso por chave). **FEITO em 27/11/2026 (#174, v1.48.3): `ssh-chave.sh` e `ssh-travar.sh`; falta o dono seguir docs/publicacao-vps.md 6.2e.**
 
 ## Não é falha (conferido)
 - `atualizar.sh` faz backup antes, guarda o ponto de volta, liga a manutenção, monta o site em pasta separada e só troca depois; se algo falha, o sistema fica em manutenção (seguro).

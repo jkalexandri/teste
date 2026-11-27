@@ -102,7 +102,13 @@ if tem ufw; then
 fi
 if tem sshd; then
   SSH=$(lim sshd -T | grep -E '^(passwordauthentication|permitrootlogin) ' | tr '\n' ' ')
-  if echo "$SSH" | grep -q 'passwordauthentication no'; then ok "SSH só com chave ($SSH)"; elif [ -n "$SSH" ]; then aten "SSH aceita senha ($SSH): rode deploy/seguranca-vps.sh depois de cadastrar a chave"; fi
+  NCH=$(grep -cE '^(ssh-|ecdsa-|sk-)' /root/.ssh/authorized_keys 2>/dev/null || true); NCH=${NCH:-0}
+  if echo "$SSH" | grep -q 'passwordauthentication no'; then
+    if echo "$SSH" | grep -qE 'permitrootlogin (no|prohibit-password|without-password)'; then ok "SSH só com chave; root só com chave ($SSH)"; else aten "SSH sem senha, mas o root ainda entra por senha? ($SSH)"; fi
+    [ "$NCH" -ge 1 ] && ok "$NCH chave(s) SSH cadastrada(s)" || aten "Senha do SSH desligada e nenhuma chave cadastrada: o acesso é só pelo Terminal do navegador do painel"
+  elif [ -n "$SSH" ]; then
+    aten "SSH aceita senha ($SSH): cadastre a chave (deploy/ssh-chave.sh --adicionar) e trave (deploy/ssh-travar.sh; passo a passo em docs/publicacao-vps.md 6.2e)"
+  fi
 fi
 ULT=/var/log/unattended-upgrades/unattended-upgrades.log
 [ -f "$ULT" ] && info "última atualização automática: $(date -r "$ULT" '+%d/%m/%Y %H:%M')"

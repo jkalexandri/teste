@@ -24,7 +24,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.46.0 — 27/11/2026 00:30 (suporte encerrado por inatividade do cliente) |
-| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.48.2 — 27/11/2026 (cópia externa no B2) |
+| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.48.3 — 27/11/2026 (SSH só com chave) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
 
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.48.3 | 27/11/2026 | 12 Operação (VPS) | SSH só com chave: cadastro seguro da chave pública, travar com prova de login real e desfazer automático, diagnóstico da configuração efetiva (#174) | 1 Acesso e segurança | não |
 | v1.48.2 | 27/11/2026 | 12 Operação (VPS) | Cópia do backup fora da VPS no Backblaze B2: criptografada na VPS, imutável, conferida por hash, com aviso no vigia, `--baixar` e roteiro de desastre (#173) | 1 Acesso e segurança (senhas de criptografia) | não |
 | v1.48.1 | 27/11/2026 | 12 Operação (VPS) | Rotação de logs com o logrotate do sistema (logs do FilaPro e do pm2, journal limitado), permissão 600 e conferência no diagnóstico (#172) | — | não |
 | v1.48.0 | 27/11/2026 | 12 Operação (VPS) | Avisos automáticos por e-mail (backup parado, teste de restauração, disco, memória, reinício pendente, relógio, certificado) via `vigia-vps.sh` a cada 15 min, e monitor externo (`/api/monitor?t=TOKEN`); reinício controlado documentado (#171) | 1 Acesso e segurança (e-mails aos Super Admins, `AlertaServico`) | não |

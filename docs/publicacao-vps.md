@@ -338,12 +338,9 @@ rm -rf /root/ensaio-backup
 
 ### 6.2 Proteção da VPS (decisão #105)
 
-1. No **seu computador** (não na VPS), crie uma chave SSH se ainda não tiver: `ssh-keygen -t ed25519`
-   e cadastre na VPS: `ssh-copy-id root@IP_DA_VPS`. Confira que `ssh root@IP_DA_VPS` entra **sem pedir senha**.
-2. Na VPS: `bash /opt/filapro/app/deploy/seguranca-vps.sh`
+Rode uma vez como root: `bash /opt/filapro/app/deploy/seguranca-vps.sh`. Liga o **fail2ban** (bloqueia por 1 hora quem errar o SSH 5 vezes em 10 minutos) e as **atualizações de segurança automáticas** (sem reiniciar a VPS sozinha). Pode rodar de novo sem problema.
 
-Liga: SSH só com chave (senha desligada), **fail2ban** e **atualizações de segurança automáticas**. Se não houver chave cadastrada,
-o script **não** desliga a senha. Sem a chave, o acesso continua pelo **Terminal do navegador** no painel da Hostinger.
+O **SSH só com chave** é feito à parte, com prova e desfazer automático: veja **6.2e**. (Desde a decisão #174 este script não desliga mais a senha por conta própria.)
 
 ### 6.2b Diagnóstico da VPS (somente leitura — decisão #168)
 
@@ -408,6 +405,56 @@ Ele usa o `logrotate` do Ubuntu: os logs do FilaPro (`/var/log/filapro-*.log`) g
 ```bash
 bash /opt/filapro/app/deploy/rotacao-logs.sh --conferir
 ```
+
+### 6.2e SSH só com chave (decisão #174)
+
+O SSH com senha é a porta de entrada mais atacada de uma VPS. Com **só chave**, uma senha adivinhada ou vazada deixa de servir. A ordem abaixo foi pensada para **você nunca ficar trancado fora**: a senha só é desligada depois de **provar um login real com a chave**, e volta sozinha se a prova não vier. E o **Terminal do navegador do painel da Hostinger não usa o SSH**: ele funciona mesmo que o SSH esteja bloqueado.
+
+**1. No seu computador Windows (PowerShell, não na VPS).** Abra o PowerShell e crie a chave (aceite o local padrão e **use uma frase-senha**, guardada no seu gerenciador de senhas):
+
+```powershell
+ssh-keygen -t ed25519 -C "filapro-vps"
+```
+
+Isso cria dois arquivos em `C:\Users\SEU_USUARIO\.ssh\`: `id_ed25519` (chave **PRIVADA**: **nunca** sai do seu computador, **nunca** vai ao chat nem à VPS; guarde uma cópia segura) e `id_ed25519.pub` (chave **pública**: é uma linha de texto, não é segredo).
+
+**2. Mostre a linha da chave pública** (a que começa com `ssh-ed25519`) e copie só essa linha:
+
+```powershell
+Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub
+```
+
+**3. No Terminal do navegador da VPS**, cadastre a chave (cole a linha e aperte Enter; o script recusa chave privada e linhas erradas):
+
+```bash
+bash /opt/filapro/app/deploy/ssh-chave.sh --adicionar
+```
+
+**4. Teste o login com a chave, com a senha ainda ligada.** No PowerShell (o IP da VPS está no painel da Hostinger). Deve entrar pedindo a **frase-senha da chave**, e não a senha da VPS (na primeira vez pergunta se confia no servidor: digite `yes`):
+
+```powershell
+ssh root@IP_DA_VPS
+```
+
+**5. Trave o SSH (só se o passo 4 entrou).** No Terminal do navegador (**não feche essa janela**):
+
+```bash
+bash /opt/filapro/app/deploy/ssh-travar.sh
+```
+
+Ele desliga a senha e espera até 5 minutos pela **prova**: **abra outra janela do PowerShell e entre de novo** com `ssh root@IP_DA_VPS`. Ao detectar o login com chave, mostra **CONFIRMADO**. Se a prova não vier, **desfaz tudo sozinho** e a senha volta; é só tentar de novo.
+
+**6. Confira:**
+
+```bash
+bash /opt/filapro/app/deploy/ssh-travar.sh --estado
+```
+
+```bash
+bash /opt/filapro/app/deploy/diagnostico-vps.sh | grep -E "ATENCAO|FALHA|RESUMO"
+```
+
+**Se perder o acesso** (computador perdido, chave perdida): entre pelo **Terminal do navegador do painel da Hostinger** e cadastre uma chave nova (`ssh-chave.sh --adicionar`), remova a antiga (`ssh-chave.sh --listar` e `ssh-chave.sh --remover N`) ou, em último caso, reabra a senha por um tempo com `bash /opt/filapro/app/deploy/ssh-travar.sh --desfazer` (depois trave de novo).
 
 ### Reinício controlado da VPS (quando chegar o aviso "a VPS precisa ser reiniciada")
 
