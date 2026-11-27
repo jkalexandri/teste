@@ -127,6 +127,7 @@ const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "d
     log = fs.readFileSync('/var/tmp/web.log', 'utf8');
     ok('Alerta: 3 contas bloqueadas em 1 hora', contas.length === 3 && log.includes('contas bloqueadas por senha errada'), String(contas.length));
     for (const e of contas) sql(`update "Usuario" set "bloqueadoAte"=null, "tentativasFalhas"=0 where email='${e}'`);
+    sql(`delete from "TentativaLogin"`); // decisão #160: o controle de tentativas fica no banco
 
     // Desativar (exige o código)
     [c, p] = await novo();

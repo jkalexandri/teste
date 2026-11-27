@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { conferirServico } from "@/lib/alerta-servico";
 import { prisma } from "@filapro/db";
+import { limparTentativasVelhas } from "@/lib/auth/tentativas";
 
 export const dynamic = "force-dynamic";
 
@@ -13,5 +14,6 @@ export async function GET(req: Request) {
   }
   // Limpeza (decisão #158): sessões vencidas há mais de 1 dia não servem para nada (só o hash do token fica guardado)
   const limpas = await prisma.sessao.deleteMany({ where: { expiraEm: { lt: new Date(Date.now() - 24 * 3600_000) } } }).then((r) => r.count).catch(() => 0);
-  return NextResponse.json({ ...(await conferirServico()), sessoesLimpas: limpas });
+  const tentativasLimpas = await limparTentativasVelhas().catch(() => 0); // linhas de controle de login/recuperação com mais de 1 dia
+  return NextResponse.json({ ...(await conferirServico()), sessoesLimpas: limpas, tentativasLimpas });
 }

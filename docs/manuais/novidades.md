@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.4 — segurança: ninguém tranca a sua conta de propósito (26/11/2026)
+
+- As **5 senhas erradas** agora bloqueiam **só quem errou** (aquele endereço de internet, naquele e-mail) por 15 minutos. Antes, bastava alguém errar 5 vezes para trancar a conta inteira, mesmo com o dono usando outro aparelho.
+- Se **muitos endereços diferentes** errarem a senha da mesma conta (30 erros em 15 minutos), a conta entra em **proteção** por 15 minutos e você recebe um **e-mail de aviso** (no máximo 1 por hora).
+- **Você nunca fica sem saída:** a **senha temporária** enviada ao seu e-mail ("Esqueci minha senha") entra na hora, mesmo com a conta em proteção, e libera tudo.
+- A recuperação de senha tem limite de **3 pedidos por hora** e só gera outra senha depois de **10 minutos** (acaba a enxurrada de e-mails e a senha do e-mail não é mais anulada por outros pedidos).
+- Para o dia a dia nada muda: mesma tela, mesmas mensagens.
+
 ## v1.46.3 — segurança: ninguém descobre quais e-mails têm conta (26/11/2026)
 
 - O **login** leva o mesmo tempo e dá as mesmas respostas, o e-mail tenha conta ou não. O bloqueio por tentativas (5 erros, 15 minutos) agora é igual para qualquer e-mail, então não dá mais para descobrir contas errando a senha.

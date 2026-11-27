@@ -18,7 +18,7 @@ const avisos = () => (log().match(/Assunto: Sua senha foi alterada/g) || []).len
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1280, height: 800 } }); return [c, await c.newPage()]; };
   const entrar = async (p, senha) => { await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.fill('#email', EMAIL); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForTimeout(1500); };
-  const recuperar = async (p) => { await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Esqueci minha senha'); await p.fill('#rec-email', EMAIL); await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1500); return ultimaTemp(); };
+  const recuperar = async (p) => { sql(`delete from "TentativaLogin"`); await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Esqueci minha senha'); await p.fill('#rec-email', EMAIL); await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1500); return ultimaTemp(); };
   const trocar = (p, senha) => p.evaluate(async (s) => { const r = await fetch('/api/auth/trocar-senha', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ senha: s }) }); return { status: r.status, corpo: await r.json().catch(() => ({})) }; }, senha);
   const cookie = async (c) => (await c.cookies()).find((x) => x.name === 'filapro_sessao')?.value;
   try {

@@ -10,6 +10,7 @@ const res = [];
 const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} — ${nome}${extra ? ' (' + extra + ')' : ''}`);
 
 (async () => {
+  sql('delete from "TentativaLogin"');
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); return [c, await c.newPage()]; };
   const login = async (p, email, senha, modulo) => {
@@ -62,6 +63,7 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'empresarial');
   ok('Bloqueado mesmo com a senha certa', (await erroTxt(p)).includes('Tente novamente em'), await erroTxt(p));
   sql("update \"Usuario\" set \"bloqueadoAte\"=null, \"tentativasFalhas\"=0 where email='ana@empresaexemplo.com.br'");
+  sql('delete from "TentativaLogin"'); // decisão #160: o controle de tentativas fica no banco
   await c.close();
 
   // 6. Pacote expirado: todos da empresa

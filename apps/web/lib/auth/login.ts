@@ -1,95 +1,72 @@
 // Regras de entrada no sistema (docs/decisoes.md #11 a #14).
 import "server-only";
 import { randomBytes } from "node:crypto";
+import { BLOQUEIO_MINUTOS as BLOQUEIO_MIN_TENTATIVAS, MAX_ERROS_CONTA, MAX_ERROS_PAR, chaveConta, chavePar, lerLinhas, limpar, minutosRestantes, registrarErro } from "./tentativas";
 import { prisma, conferirSenha, gerarHash, Cargo, Modulo, StatusUsuario } from "@filapro/db";
 
-export const MAX_TENTATIVAS = 5;
-export const BLOQUEIO_MINUTOS = 15;
+export const MAX_TENTATIVAS = MAX_ERROS_PAR;
+export const BLOQUEIO_MINUTOS = BLOQUEIO_MIN_TENTATIVAS;
 
 export type ResultadoLogin =
   | { ok: true; usuarioId: string; precisaTrocar: boolean; cargo: Cargo }
-  | { ok: false; erro: string };
+  /** avisarDono: a conta entrou em proteção agora (30 erros de vários endereços) — o dono recebe um e-mail (decisão #160) */
+  | { ok: false; erro: string; avisarDono?: { nome: string; email: string } };
 
 /**
- * Contra a descoberta de e-mails cadastrados (decisão #159 — S4 do Módulo 1):
- * - O tempo do login não pode depender de a conta existir: SEMPRE se calculam dois hashes (o da senha definitiva e o da temporária),
- *   usando um hash falso quando a conta ou a senha temporária não existem.
- * - O bloqueio por tentativas vale igual para e-mail que não existe (contado em memória, com a mesma mensagem).
+ * Contra a descoberta de e-mails cadastrados (decisão #159 — S4 do Módulo 1): o tempo do login não pode depender de a conta existir.
+ * SEMPRE se calculam dois hashes (o da senha definitiva e o da temporária), usando um hash falso quando a conta ou a senha
+ * temporária não existem. O e-mail sem conta passa pelas mesmas regras de bloqueio (tabela TentativaLogin).
  */
 let hashFalso: Promise<string> | null = null;
 const obterHashFalso = () => (hashFalso ??= gerarHash(randomBytes(16).toString("hex")));
-
-type Desconhecido = { falhas: number; bloqueadoAte: number };
-const desconhecidos = new Map<string, Desconhecido>();
-const MAX_DESCONHECIDOS = 10_000;
 const msgBloqueio = (min: number) => `Muitas tentativas erradas. Tente novamente em ${min} ${min === 1 ? "minuto" : "minutos"}.`;
-
-/** Tentativa com e-mail sem conta: mesmo tempo, mesma contagem e mesmas mensagens de quem tem conta. */
-async function falhaDeDesconhecido(email: string, senha: string): Promise<ResultadoLogin> {
-  const agora = Date.now();
-  const d = desconhecidos.get(email) ?? { falhas: 0, bloqueadoAte: 0 };
-  if (d.bloqueadoAte > agora) return { ok: false, erro: msgBloqueio(Math.ceil((d.bloqueadoAte - agora) / 60000)) };
-  const falso = await obterHashFalso();
-  await conferirSenha(senha, falso); // mesmo custo de uma conta real (senha definitiva + temporária)
-  await conferirSenha(senha, falso);
-  d.falhas += 1;
-  let resposta: ResultadoLogin = { ok: false, erro: "E-mail ou senha incorretos." };
-  if (d.falhas >= MAX_TENTATIVAS) {
-    d.falhas = 0;
-    d.bloqueadoAte = agora + BLOQUEIO_MINUTOS * 60000;
-    resposta = { ok: false, erro: `Muitas tentativas erradas. Acesso bloqueado por ${BLOQUEIO_MINUTOS} minutos.` };
-  }
-  desconhecidos.delete(email); // reinsere no fim (ordem de chegada)
-  desconhecidos.set(email, d);
-  if (desconhecidos.size > MAX_DESCONHECIDOS) {
-    for (const [k, v] of desconhecidos) if (v.bloqueadoAte < agora && desconhecidos.size > MAX_DESCONHECIDOS * 0.8) desconhecidos.delete(k);
-    while (desconhecidos.size > MAX_DESCONHECIDOS) desconhecidos.delete(desconhecidos.keys().next().value as string);
-  }
-  return resposta;
-}
-
-/** Só para os testes: zera a memória dos e-mails sem conta. */
-export function _limparDesconhecidos() { desconhecidos.clear(); }
 
 const NOME_MODULO: Record<Modulo, string> = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" };
 
-export async function tentarLogin(emailBruto: string, senha: string, modulo: Modulo): Promise<ResultadoLogin> {
+export async function tentarLogin(emailBruto: string, senha: string, modulo: Modulo, ip = "local"): Promise<ResultadoLogin> {
   const email = emailBruto.trim().toLowerCase();
   const erroGenerico = { ok: false as const, erro: "E-mail ou senha incorretos." };
 
   const usuario = await prisma.usuario.findUnique({ where: { email }, include: { empresa: true } });
-  if (!usuario) return falhaDeDesconhecido(email, senha);
-
-  // Bloqueio por excesso de tentativas (#14)
   const agora = new Date();
-  if (usuario.bloqueadoAte && usuario.bloqueadoAte > agora) {
-    const min = Math.ceil((usuario.bloqueadoAte.getTime() - agora.getTime()) / 60000);
-    return { ok: false, erro: msgBloqueio(min) };
-  }
 
-  // Confere a senha definitiva; se não bater, confere a temporária (ainda válida).
+  // Bloqueios (decisão #160): do endereço (e-mail + endereço) e da conta (erros somados de todos os endereços).
+  // Vale igual para e-mail sem conta. O campo bloqueadoAte do usuário continua valendo (bloqueio manual/antigo).
+  const kPar = chavePar(email, ip), kConta = chaveConta(email);
+  const linhas = await lerLinhas([kPar, kConta]);
+  const restantes = Math.max(
+    minutosRestantes(linhas.get(kPar), agora),
+    minutosRestantes(linhas.get(kConta), agora),
+    usuario?.bloqueadoAte && usuario.bloqueadoAte > agora ? Math.ceil((usuario.bloqueadoAte.getTime() - agora.getTime()) / 60000) : 0,
+  );
+
   // Sempre dois hashes, tenha a conta senha temporária ou não (o tempo não pode revelar nada — decisão #159)
   const falso = await obterHashFalso();
-  const senhaDefinitivaOk = await conferirSenha(senha, usuario.senhaHash);
-  const tempValida = !!usuario.senhaTempHash && (!usuario.senhaTempExpiraEm || usuario.senhaTempExpiraEm > agora);
-  const tempConfere = await conferirSenha(senha, tempValida ? usuario.senhaTempHash : falso);
-  const senhaTempOk = !senhaDefinitivaOk && tempValida && tempConfere;
+  const confereDefinitiva = await conferirSenha(senha, usuario ? usuario.senhaHash : falso);
+  const tempValida = !!usuario?.senhaTempHash && (!usuario.senhaTempExpiraEm || usuario.senhaTempExpiraEm > agora);
+  const confereTemp = await conferirSenha(senha, tempValida ? usuario!.senhaTempHash : falso);
+  const senhaDefinitivaOk = !!usuario && confereDefinitiva;
+  const senhaTempOk = !senhaDefinitivaOk && tempValida && confereTemp;
+
+  // Bloqueado: só a senha temporária enviada ao e-mail passa (quem a recebe é o dono da caixa de e-mail — decisão #160)
+  if (restantes > 0 && !senhaTempOk) return { ok: false, erro: msgBloqueio(restantes) };
 
   if (!senhaDefinitivaOk && !senhaTempOk) {
-    const tentativas = usuario.tentativasFalhas + 1;
-    if (tentativas >= MAX_TENTATIVAS) {
-      await prisma.usuario.update({
-        where: { id: usuario.id },
-        data: { tentativasFalhas: 0, bloqueadoAte: new Date(agora.getTime() + BLOQUEIO_MINUTOS * 60000) },
-      });
-      return { ok: false, erro: `Muitas tentativas erradas. Acesso bloqueado por ${BLOQUEIO_MINUTOS} minutos.` };
+    const bloqueouPar = await registrarErro(kPar, MAX_ERROS_PAR, agora);
+    const bloqueouConta = await registrarErro(kConta, MAX_ERROS_CONTA, agora);
+    if (bloqueouPar || bloqueouConta) {
+      return {
+        ok: false,
+        erro: `Muitas tentativas erradas. Acesso bloqueado por ${BLOQUEIO_MINUTOS} minutos.`,
+        ...(bloqueouConta && usuario && usuario.status === StatusUsuario.ATIVO ? { avisarDono: { nome: usuario.nome, email: usuario.email } } : {}),
+      };
     }
-    await prisma.usuario.update({ where: { id: usuario.id }, data: { tentativasFalhas: tentativas } });
     return erroGenerico;
   }
-
-  // Senha certa: zera o contador de tentativas.
-  await prisma.usuario.update({ where: { id: usuario.id }, data: { tentativasFalhas: 0, bloqueadoAte: null } });
+  // Entrou (inclusive pela senha temporária durante um bloqueio): desfaz os bloqueios
+  await limpar([kPar, kConta]);
+  if (usuario && (usuario.tentativasFalhas || usuario.bloqueadoAte)) await prisma.usuario.update({ where: { id: usuario.id }, data: { tentativasFalhas: 0, bloqueadoAte: null } });
+  if (!usuario) return erroGenerico; // (não acontece: sem conta nenhuma senha confere)
 
   if (usuario.status === StatusUsuario.BLOQUEADO) {
     return { ok: false, erro: "Acesso bloqueado. Fale com o administrador." };

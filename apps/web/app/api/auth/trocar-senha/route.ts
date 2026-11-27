@@ -8,6 +8,7 @@ import { obterSessao, renovarSessoesAposNovaSenha } from "@/lib/auth/session";
 import { destinoPorCargo } from "@/lib/auth/login";
 import { isPasswordValid } from "@/lib/password-policy";
 import { registrarLog } from "@/lib/logs";
+import { limparRecuperacao } from "@/lib/auth/tentativas";
 import { enviarEmail, emailSenhaAlterada } from "@/lib/email";
 
 export async function POST(req: Request) {
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
 
   const ip = await ipDoPedido();
   const u = sessao.usuario;
+  await limparRecuperacao(u.email).catch(() => undefined); // o dono provou que tem a caixa de e-mail: pode pedir recuperação de novo
   await registrarLog(u, "ENTRADA", "Senha definida no primeiro acesso (sessões antigas encerradas)");
   const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
   const { texto, html } = emailSenhaAlterada(u.nome, quando, ip);

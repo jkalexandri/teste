@@ -1095,3 +1095,15 @@ model AlertaServico {
   avisouEm     DateTime?
   atualizadoEm DateTime  @updatedAt
 }
+
+/// Controle de tentativas de entrada e de pedidos de recuperação (decisão #160 — S5 do Módulo 1).
+/// chave: "par:e-mail|endereço" (erros de senha de um endereço), "conta:e-mail" (erros somados de todos os endereços),
+/// "rec:e-mail" (pedidos de recuperação na hora) e "aviso:e-mail" (último aviso ao dono). Vale também para e-mail sem conta
+/// (para as respostas serem iguais — decisão #159). Linhas velhas são apagadas pela rotina de 5 minutos.
+model TentativaLogin {
+  chave        String    @id
+  falhas       Int       @default(0)
+  desde        DateTime  @default(now())
+  bloqueadoAte DateTime?
+  atualizadoEm DateTime  @updatedAt
+}

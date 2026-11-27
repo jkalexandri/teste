@@ -8,10 +8,11 @@ const BASE = 'http://localhost:3005';
 const EXISTE = 'usuario@disparopro.com.br', ADMIN_USER = 'ana@empresaexemplo.com.br';
 const ERRADA = 'Errada@1234567';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
-let ipN = 0; const ip = () => `198.51.100.${(ipN++ % 200) + 20}`;
+const SORTE = 1 + Math.floor(Math.random() * 250); // endereços novos a cada rodada (o limite por endereço do site fica em memória)
+let ipN = 0; const ip = () => `198.${SORTE}.${Math.floor(ipN / 200) % 250}.${(ipN++ % 200) + 20}`;
 const post = async (rota, corpo, enderecoIp = ip()) => { const t = process.hrtime.bigint(); const r = await fetch(BASE + rota, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': enderecoIp }, body: JSON.stringify(corpo) }); const ms = Number(process.hrtime.bigint() - t) / 1e6; return { st: r.status, corpo: await r.json().catch(() => ({})), ms }; };
 const med = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
-const zera = () => sql(`update "Usuario" set "tentativasFalhas"=0, "bloqueadoAte"=null where email='${EXISTE}'`);
+const zera = () => { sql(`update "Usuario" set "tentativasFalhas"=0, "bloqueadoAte"=null where email='${EXISTE}'`); sql(`delete from "TentativaLogin"`); };
 const unico = () => `ninguem-${Date.now()}-${ipN++}@teste-s4.com`;
 const log = () => fs.readFileSync('/var/tmp/web.log', 'utf8');
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,6 +31,7 @@ const parecido = (a, b) => { const r = a / b; return r > 0.6 && r < 1.6; };
     ok('Login: tempo igual para e-mail existente e inexistente', parecido(med(tE), med(tN)), `existente ${Math.round(med(tE))} ms, inexistente ${Math.round(med(tN))} ms`);
 
     // 1b. Conta com senha temporária pendente leva o mesmo tempo
+    zera();
     const rec = await post('/api/auth/recuperar', { email: EXISTE });
     await esperar(2500);
     ok('Recuperar gerou senha temporária para a conta existente', sql(`select "senhaTempHash" is not null from "Usuario" where email='${EXISTE}'`) === 't');
@@ -42,9 +44,10 @@ const parecido = (a, b) => { const r = a / b; return r > 0.6 && r < 1.6; };
     zera();
     const fantasma = unico();
     const msgs = { e: [], n: [] };
+    const ipBloqueio = ip(); // o bloqueio é por e-mail + endereço (decisão #160): as 7 tentativas saem do mesmo endereço
     for (let i = 0; i < 7; i++) {
-      msgs.e.push((await post('/api/auth/login', { email: EXISTE, senha: ERRADA, modulo: 'individual' })).corpo.erro);
-      msgs.n.push((await post('/api/auth/login', { email: fantasma, senha: ERRADA, modulo: 'individual' })).corpo.erro);
+      msgs.e.push((await post('/api/auth/login', { email: EXISTE, senha: ERRADA, modulo: 'individual' }, ipBloqueio)).corpo.erro);
+      msgs.n.push((await post('/api/auth/login', { email: fantasma, senha: ERRADA, modulo: 'individual' }, ipBloqueio)).corpo.erro);
     }
     ok('Bloqueio: as 7 respostas são idênticas para e-mail existente e inexistente', JSON.stringify(msgs.e) === JSON.stringify(msgs.n), `5ª: "${msgs.e[4]}" | 6ª: "${msgs.e[5]}"`);
     ok('Bloqueio começa na 5ª tentativa (regra do dono: 5 erros, 15 minutos)', /bloqueado por 15 minutos/.test(msgs.n[4] || '') && /Tente novamente em 15 minutos/.test(msgs.n[5] || ''));
@@ -63,7 +66,7 @@ const parecido = (a, b) => { const r = a / b; return r > 0.6 && r < 1.6; };
     ok('Recuperar: tempo igual (responde antes de trabalhar)', parecido(med(rE), med(rN)) || (med(rE) < 40 && med(rN) < 40), `existente ${Math.round(med(rE))} ms, inexistente ${Math.round(med(rN))} ms`);
     await esperar(3000);
     const depois = (log().match(/senha temporária do FilaPro Leads/g) || []).length;
-    ok('Recuperar: e-mail com a senha temporária saiu só para a conta existente', depois - antes === 5, `${depois - antes} e-mails para 10 pedidos (5 existentes)`);
+    ok('Recuperar: e-mail com a senha temporária saiu só para a conta existente, e só 1 (intervalo de 10 minutos, decisão #160)', depois - antes === 1, `${depois - antes} e-mail para 10 pedidos (5 existentes)`);
     sql(`update "Usuario" set "senhaTempHash"=null, "senhaTempExpiraEm"=null where email='${EXISTE}'`);
 
     // 4. Login certo continua funcionando (senha definitiva) e com temporária
@@ -73,11 +76,11 @@ const parecido = (a, b) => { const r = a / b; return r > 0.6 && r < 1.6; };
     // 5. Compra: respostas "e-mail já existe" têm limite próprio (5 por hora por endereço)
     const plano = sql(`select id from "Plano" where visivel and not gratis and not personalizado and "precoAtual">0 limit 1`);
     const meuIp = ip(); const sts = [];
-    for (let i = 0; i < 7; i++) sts.push((await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: ADMIN_USER, whatsapp: '11999990000', empresaNome: 'X', quantidade: 1 }, meuIp)).st);
+    for (let i = 0; i < 7; i++) sts.push((await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: ADMIN_USER, whatsapp: '11999990000', empresaNome: 'Empresa Teste', quantidade: 1 }, meuIp)).st);
     ok('Pedidos: 5 respostas "já existe" e depois 429 no mesmo endereço', sts.slice(0, 5).every((s) => s === 409) && sts[5] === 429 && sts[6] === 429, sts.join(','));
-    const outro = (await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: ADMIN_USER, whatsapp: '11999990000', empresaNome: 'X', quantidade: 1 }, ip())).st;
+    const outro = (await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: ADMIN_USER, whatsapp: '11999990000', empresaNome: 'Empresa Teste', quantidade: 1 }, ip())).st;
     ok('Pedidos: outro endereço não é afetado', outro === 409, String(outro));
-    const novo = (await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: unico(), whatsapp: '11999990000', empresaNome: 'X', quantidade: 1 }, meuIp)).st;
+    const novo = (await post('/api/pedidos', { planoId: plano, nome: 'Fulano de Tal', email: unico(), whatsapp: '11999990000', empresaNome: 'Empresa Teste', quantidade: 1 }, meuIp)).st;
     ok('Pedidos: e-mail novo no endereço limitado ainda compra (o limite só conta as respostas "já existe")', novo === 200, String(novo));
 
     // 6. Teste grátis

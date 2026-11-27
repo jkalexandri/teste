@@ -5,6 +5,7 @@ import { NextResponse, after } from "next/server";
 import { limitarPorIp } from "@/lib/limite-acesso";
 import { prisma, gerarHash, gerarSenhaTemporaria, StatusUsuario } from "@filapro/db";
 import { enviarEmail, emailSenhaTemporaria } from "@/lib/email";
+import { podePedirRecuperacao } from "@/lib/auth/tentativas";
 
 const VALIDADE_TEMP_HORAS = 24;
 
@@ -22,6 +23,9 @@ export async function POST(req: Request) {
       try {
         const usuario = await prisma.usuario.findUnique({ where: { email } });
         if (usuario && usuario.status === StatusUsuario.ATIVO) {
+          // Decisão #160 (S5): no máximo 3 pedidos por hora por e-mail e 10 minutos entre uma senha e outra (a senha do e-mail
+          // que o dono está digitando não é anulada por pedidos alheios; contra quem enche a caixa de e-mail). Atômico.
+          if (!(await podePedirRecuperacao(email))) return;
           const temp = gerarSenhaTemporaria();
           await prisma.usuario.update({
             where: { id: usuario.id },

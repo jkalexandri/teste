@@ -55,7 +55,7 @@ Medido no site de teste, com e-mail existente e inexistente:
 - Conferido e correto: os botões de demonstração do login só aparecem fora de produção (#3); a recuperação responde igual para e-mail
   existente ou não; as mensagens "módulo errado/expirado/inativa" só aparecem depois de acertar a senha.
 
-### S5 — Qualquer pessoa consegue trancar a conta de outra e lotar a caixa de e-mail dela ✅ (reproduzido em 26/11/2026)
+### S5 — Qualquer pessoa consegue trancar a conta de outra e lotar a caixa de e-mail dela ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.4 (decisão #160)**
 Teste no site de teste, com endereços de internet diferentes:
 - **S5a — bloqueio como arma:** um atacante errou 5 vezes de um endereço; a vítima, **de outro endereço e com a senha certa**, recebeu
   "Muitas tentativas erradas. Tente novamente em 15 minutos." O bloqueio é da conta inteira, não de quem errou.
@@ -86,4 +86,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 ✅ → S4 ✅ → S5 → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.

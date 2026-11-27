@@ -57,3 +57,17 @@ export function emailSenhaAlterada(nome: string, quando: string, ip: string) {
     `<p style="color:#b42318"><b>Não reconhece?</b> Use “Esqueci minha senha” na tela de login agora mesmo e avise o suporte.</p>`;
   return { texto, html };
 }
+
+/** Aviso ao dono quando a conta entra em proteção por muitas tentativas de vários endereços (decisão #160). */
+export function emailContaProtegida(nome: string) {
+  const texto =
+    `Olá, ${nome}.\n\nDetectamos muitas tentativas erradas de entrar na sua conta do FilaPro Leads, vindas de vários endereços de internet. ` +
+    `Por segurança, a entrada pela senha ficou bloqueada por 15 minutos.\n\n` +
+    `Foi você? Espere 15 minutos, ou use "Esqueci minha senha" na tela de login: a senha temporária enviada para este e-mail entra na hora.\n\n` +
+    `Não foi você? Pode ignorar: sua senha continua segura. Se quiser, troque-a depois de entrar.`;
+  const html =
+    `<p>Olá, ${esc(nome)}.</p><p>Detectamos <b>muitas tentativas erradas</b> de entrar na sua conta do <b>FilaPro Leads</b>, vindas de vários endereços de internet. Por segurança, a entrada pela senha ficou bloqueada por 15 minutos.</p>` +
+    `<p><b>Foi você?</b> Espere 15 minutos, ou use “Esqueci minha senha” na tela de login: a senha temporária enviada para este e-mail entra na hora.</p>` +
+    `<p style="color:#5b6b62"><b>Não foi você?</b> Pode ignorar: sua senha continua segura. Se quiser, troque-a depois de entrar.</p>`;
+  return { texto, html };
+}
