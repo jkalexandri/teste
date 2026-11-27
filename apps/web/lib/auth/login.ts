@@ -42,7 +42,8 @@ export async function tentarLogin(emailBruto: string, senha: string, modulo: Mod
 
   // Sempre dois hashes, tenha a conta senha temporária ou não (o tempo não pode revelar nada — decisão #159)
   const falso = await obterHashFalso();
-  const confereDefinitiva = await conferirSenha(senha, usuario ? usuario.senhaHash : falso);
+  // Conta nova (ainda sem senha) também calcula o hash: o tempo não pode revelar que a conta é recém-criada (decisão #165)
+  const confereDefinitiva = await conferirSenha(senha, usuario?.senhaHash || falso);
   const tempValida = !!usuario?.senhaTempHash && (!usuario.senhaTempExpiraEm || usuario.senhaTempExpiraEm > agora);
   const confereTemp = await conferirSenha(senha, tempValida ? usuario!.senhaTempHash : falso);
   const senhaDefinitivaOk = !!usuario && confereDefinitiva;

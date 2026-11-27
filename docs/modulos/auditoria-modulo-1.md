@@ -119,7 +119,7 @@ valendo por 24 h ou 7 dias, quantas vezes alguém a usar, até ser trocada. Link
 Observações: há 7 arquivos de teste de ponta a ponta que leem a senha temporária do log do site (`login-regras`, `etapa27`, `etapa29`, `etapa30`,
 `etapa4b`, `etapa4c`, `etapa5`), que precisarão ser adaptados.
 
-### S9 — Fase 2 (levantamento em 26/11/2026)
+### S9 — Fase 2 (levantamento em 26/11/2026) — **FEITA na v1.46.9 (decisão #165); falta só a Fase 3 (remover a senha temporária do código, versão futura)**
 - Os 4 caminhos que ainda e-mailam senha temporária (conta nova por compra/teste grátis/Super Admin, usuário criado pelo Admin, redefinir/reenviar acesso)
   usam `enviarEmailBoasVindas(…, senhaTemporaria, …)` em 7 chamadas; `criarConta` e `criarUsuarioNaEmpresa` gravam `senhaTempHash` (7 dias).
 - **Sobra da S4 (reproduzida):** conta nova que ainda não definiu senha (`senhaHash` vazio) responde ao login **mais rápido** (55 ms) que conta com

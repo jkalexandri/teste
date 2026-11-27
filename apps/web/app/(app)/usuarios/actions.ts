@@ -5,10 +5,11 @@
 import { revalidatePath } from "next/cache";
 import { chamarWorker } from "@/lib/worker";
 import { logDaSessao } from "@/lib/logs";
-import { prisma, gerarHash, gerarSenhaTemporaria, Cargo, Modulo, StatusUsuario } from "@filapro/db";
+import { prisma, gerarHash, Cargo, Modulo, StatusUsuario } from "@filapro/db";
 import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirAdminEmpresa } from "@/lib/auth/exigir";
-import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
+import { criarUsuarioNaEmpresa, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
+import { redefinirAcesso } from "@/lib/auth/link-senha";
 import { PERMISSOES } from "@/lib/menu";
 import { lerLimite } from "@/lib/limite";
 
@@ -47,13 +48,13 @@ export async function criarUsuario(form: FormData): Promise<R> {
   }
   const limiteLeads = lerLimite(form);
   if (limiteLeads === "erro") return { ok: false, mensagem: "Informe o máximo de leads do usuário ou marque “Ilimitado”." };
-  const { usuario, senhaTemporaria } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form), limiteLeads });
-  const enviado = await enviarEmailBoasVindas(usuario.nome, usuario.email, senhaTemporaria, v.empresa.pacote, Modulo.EMPRESARIAL);
+  const { usuario, linkSenha } = await criarUsuarioNaEmpresa(empresaId, { ...dados, permissoes: lerPermissoes(form), limiteLeads });
+  const enviado = await enviarEmailBoasVindas(usuario.nome, usuario.email, linkSenha, v.empresa.pacote, Modulo.EMPRESARIAL);
   await logDaSessao("USUARIOS", `Usuário criado: ${usuario.nome} (${usuario.email})`, empresaId);
   revalidatePath("/usuarios");
   return {
     ok: true,
-    mensagem: enviado ? `Usuário ${usuario.nome} criado. Senha temporária enviada para ${usuario.email}.` : `Usuário criado, mas o e-mail não foi enviado. Use “Resetar senha”.`,
+    mensagem: enviado ? `Usuário ${usuario.nome} criado. Link para criar a senha enviado para ${usuario.email}.` : `Usuário criado, mas o e-mail não foi enviado. Use “Resetar senha”.`,
   };
 }
 
@@ -79,15 +80,12 @@ export async function resetarSenha(id: string): Promise<R> {
   const s = await exigirAdminEmpresa();
   const u = await usuarioDaEmpresa(id, s.usuario.empresaId);
   if (!u) return { ok: false, mensagem: "Usuário não encontrado." };
-  const temp = gerarSenhaTemporaria();
-  await prisma.usuario.update({
-    where: { id },
-    data: { senhaTempHash: await gerarHash(temp), senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000) },
-  });
-  const enviado = await enviarEmailBoasVindas(u.nome, u.email, temp, s.usuario.empresa?.pacote ?? "", Modulo.EMPRESARIAL);
-  await logDaSessao("USUARIOS", `Nova senha temporária para ${u.nome} (${u.email})`);
+  // Decisão #165: redefinir de verdade — a senha atual deixa de valer, as sessões caem e a pessoa recebe um link de 7 dias
+  const link = await redefinirAcesso(id);
+  const enviado = await enviarEmailBoasVindas(u.nome, u.email, link, s.usuario.empresa?.pacote ?? "", Modulo.EMPRESARIAL, "redefinicao");
+  await logDaSessao("USUARIOS", `Acesso redefinido para ${u.nome} (${u.email}): senha anterior invalidada e link enviado`);
   revalidatePath("/usuarios");
-  return enviado ? { ok: true, mensagem: `Nova senha temporária enviada para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
+  return enviado ? { ok: true, mensagem: `Acesso redefinido: a senha anterior deixou de valer e um link para criar a nova foi enviado para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
 }
 
 /** Desativar libera a vaga; reativar só com vaga disponível (decisão #50). */

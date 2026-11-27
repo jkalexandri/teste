@@ -9,10 +9,21 @@ const BASE = 'http://localhost:3005';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
 const OUT = process.argv[2];
 const sufixo = Date.now().toString().slice(-6);
-const ultimaSenha = (email) => {
+// Decisão #165: o e-mail de acesso traz um LINK (não uma senha). Este auxiliar abre o link do último e-mail enviado para o endereço:
+// cria a senha (padrão ou a informada) e a devolve; null se não havia link ou se ele não foi aceito.
+const SENHA_PADRAO = 'SenhaTeste@2026x';
+const _ultimoLink = (email) => {
   const log = fs.readFileSync('/var/tmp/web.log', 'utf8');
-  const blocos = log.split('[email de desenvolvimento]').filter(b => b.includes('Para: ' + email));
-  const m = (blocos.pop() || '').match(/Senha temporária: (\S+)/); return m && m[1];
+  const blocos = log.split('[email de desenvolvimento]').filter((b) => b.includes('Para: ' + email));
+  const m = (blocos.pop() || '').match(/definir-senha#t=([A-Za-z0-9_-]{43})/); return m && m[1];
+};
+const temLink = (email) => !!_ultimoLink(email);
+const ultimaSenha = (email, senha = SENHA_PADRAO) => {
+  const token = _ultimoLink(email); if (!token) return null;
+  const ipFalso = `198.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 200) + 20}`;
+  const corpo = JSON.stringify({ token, senha });
+  const r = require('child_process').execSync(`curl -s -o /dev/null -w "%{http_code}" -X POST ${BASE}/api/auth/definir-senha -H 'content-type: application/json' -H 'x-forwarded-for: ${ipFalso}' -d '${corpo}'`).toString();
+  return r === '200' ? senha : null;
 };
 (async () => {
   const b = await chromium.launch();
@@ -71,13 +82,11 @@ const ultimaSenha = (email) => {
 
   // 5. Comprador entra com a senha temporária do e-mail
   const temp = ultimaSenha(emailEmp);
-  ok('E-mail de boas-vindas com senha temporária', !!temp);
+  ok('E-mail de boas-vindas com o link para criar a senha (sem senha no e-mail), e o link cria a senha', !!temp);
   [c, p] = await ctx();
   await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Empresarial');
   await p.fill('#email', emailEmp); await p.fill('#senha', temp); await p.click('button[type=submit]');
-  await p.waitForURL('**/primeiro-acesso', { timeout: 6000 }).catch(() => {});
-  ok('Novo Admin cai no primeiro acesso', p.url().endsWith('/primeiro-acesso'));
-  await p.fill('#new-pw', 'MinhaSenha@2026'); await p.click('text=Salvar nova senha e entrar');
+  ok('Novo Admin entra direto, sem tela de primeiro acesso (a senha foi criada pelo link)', !(await p.waitForURL('**/primeiro-acesso', { timeout: 2500 }).then(() => true).catch(() => false)));
   await p.waitForURL('**/dashboard', { timeout: 6000 }).catch(() => {});
   ok('Novo Admin entra no dashboard da empresa', (await p.locator('main').innerText()).includes('Imobiliária Teste ' + sufixo));
   await c.close();

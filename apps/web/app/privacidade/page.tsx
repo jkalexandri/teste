@@ -51,7 +51,7 @@ export default async function PrivacidadePage() {
         <ul>
           <li>Prestar o serviço: enviar as campanhas, receber as respostas, conversar e qualificar leads com IA, mostrar relatórios.</li>
           <li>Criar e manter a conta, controlar acesso, prazos, renovações e pagamentos.</li>
-          <li>Enviar avisos do sistema por e-mail e WhatsApp (senha temporária, renovação, pedidos, problemas em campanhas).</li>
+          <li>Enviar avisos do sistema por e-mail e WhatsApp (link para criar a senha, renovação, pedidos, problemas em campanhas).</li>
           <li>Segurança, prevenção de fraude e de uso abusivo (como spam) e cumprimento de obrigações legais.</li>
         </ul>
         <p>Bases legais (art. 7º da LGPD): execução de contrato, cumprimento de obrigação legal, legítimo interesse e, quando necessário, consentimento.</p>

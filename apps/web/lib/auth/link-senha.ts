@@ -6,20 +6,43 @@ import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@filapro/db";
 
 export const VALIDADE_LINK_MIN = 30;
+/** Link de acesso novo (conta nova, usuário criado, redefinição pelo Admin): vale 7 dias, como valia a senha temporária (decisão #165). */
+export const VALIDADE_LINK_ACESSO_MIN = 7 * 24 * 60;
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 const hashDoToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
 /** O código tem 43 caracteres (32 bytes em base64url). */
 export const tokenValido = (t: string) => /^[A-Za-z0-9_-]{43}$/.test(t);
 
-/** Gera um link novo para o usuário (o anterior deixa de valer). Devolve o código em texto — só vai para o e-mail. */
-export async function criarLinkSenha(usuarioId: string) {
+/** Código novo + o que vai para o banco (hash e validade). Usado ao CRIAR a conta, junto com o usuário. */
+export function novoLink(minutos: number) {
   const token = randomBytes(32).toString("base64url");
-  await prisma.usuario.update({
-    where: { id: usuarioId },
-    data: { linkSenhaHash: hashDoToken(token), linkSenhaExpiraEm: new Date(Date.now() + VALIDADE_LINK_MIN * 60_000) },
-  });
-  return token;
+  return { token, hash: hashDoToken(token), expira: new Date(Date.now() + minutos * 60_000) };
+}
+
+/** Gera um link novo para o usuário (o anterior deixa de valer). Devolve o código em texto — só vai para o e-mail. */
+export async function criarLinkSenha(usuarioId: string, minutos = VALIDADE_LINK_MIN) {
+  const l = novoLink(minutos);
+  await prisma.usuario.update({ where: { id: usuarioId }, data: { linkSenhaHash: l.hash, linkSenhaExpiraEm: l.expira } });
+  return l.token;
+}
+
+/**
+ * Redefinir o acesso (botões "Resetar senha" do Admin e "Reenviar acesso" do Super Admin — decisão #165):
+ * a senha atual DEIXA DE VALER, as sessões e as notificações do celular são encerradas, e a pessoa recebe um link de 7 dias.
+ * Quem tinha a conta comprometida perde o acesso na hora.
+ */
+export async function redefinirAcesso(usuarioId: string) {
+  const l = novoLink(VALIDADE_LINK_ACESSO_MIN);
+  await prisma.$transaction([
+    prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { senhaHash: null, senhaTempHash: null, senhaTempExpiraEm: null, linkSenhaHash: l.hash, linkSenhaExpiraEm: l.expira, tentativasFalhas: 0, bloqueadoAte: null },
+    }),
+    prisma.sessao.deleteMany({ where: { usuarioId } }),
+    prisma.pushInscricao.deleteMany({ where: { usuarioId } }),
+  ]);
+  return l.token;
 }
 
 export const urlDoLink = (token: string) => `${SITE}/definir-senha#t=${token}`;

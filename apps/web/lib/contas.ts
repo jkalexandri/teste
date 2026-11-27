@@ -1,12 +1,13 @@
 // Criação de contas a partir de uma compra confirmada ou do teste grátis.
 // Cria a "Empresa" (no Individual, a conta da própria pessoa) e o usuário,
-// com senha temporária enviada por e-mail (troca obrigatória no 1º acesso).
+// com link de uso único para criar a senha, enviado por e-mail (decisão #165 — S9 Fase 2 do Módulo 1).
 import "server-only";
-import { prisma, gerarHash, gerarSenhaTemporaria, proximoCodigo, Cargo, Modulo, type Prisma } from "@filapro/db";
+import { prisma, proximoCodigo, Cargo, Modulo, type Prisma } from "@filapro/db";
+import { VALIDADE_LINK_ACESSO_MIN, novoLink, urlDoLink } from "@/lib/auth/link-senha";
 import { enviarEmail } from "@/lib/email";
 
-/** Senha temporária de conta nova vale 7 dias (mesma regra do Super Admin na instalação). */
-export const VALIDADE_TEMP_CONTA_NOVA_DIAS = 7;
+/** O link para criar a senha de uma conta nova vale 7 dias (era a validade da senha temporária). */
+export const VALIDADE_LINK_CONTA_NOVA_DIAS = VALIDADE_LINK_ACESSO_MIN / 1440;
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://filaproleads.com.br";
 
@@ -44,7 +45,7 @@ export type NovaConta = {
 
 /** Cria conta + usuário (Admin da Empresa no Empresarial; Usuário no Individual). */
 export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient = prisma) {
-  const temp = gerarSenhaTemporaria();
+  const link = novoLink(VALIDADE_LINK_ACESSO_MIN);
   const empresarial = dados.modulo === Modulo.EMPRESARIAL;
   // Códigos (decisão #63): empresa "E…" + Admin "EU…"; individual: conta e usuário com o mesmo número.
   const codigoConta = await proximoCodigo(tx, empresarial ? "empresa" : "individual");
@@ -80,27 +81,38 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       whatsapp: dados.usuario.whatsapp || null,
       cargo: dados.modulo === Modulo.EMPRESARIAL ? Cargo.ADMIN_EMPRESA : Cargo.USUARIO,
       empresaId: empresa.id,
-      senhaTempHash: await gerarHash(temp),
-      senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000),
+      // Conta nova nasce SEM senha: entra depois de criá-la pelo link do e-mail (decisão #165)
+      linkSenhaHash: link.hash,
+      linkSenhaExpiraEm: link.expira,
     },
   });
-  return { empresa, usuario, senhaTemporaria: temp };
+  return { empresa, usuario, linkSenha: link.token };
 }
 
-export async function enviarEmailBoasVindas(nome: string, email: string, senha: string, plano: string, modulo: Modulo) {
+/**
+ * E-mail de acesso novo com o link para criar a senha (decisão #165): nunca leva senha.
+ * tipo "redefinicao": o Admin/Super Admin pediu para a pessoa criar uma nova senha (a anterior deixou de valer).
+ */
+export async function enviarEmailBoasVindas(nome: string, email: string, linkSenha: string, plano: string, modulo: Modulo, tipo: "novo" | "redefinicao" = "novo") {
   const aba = modulo === Modulo.EMPRESARIAL ? "Módulo Empresarial" : "Módulo Individual";
+  const link = urlDoLink(linkSenha);
+  const dias = VALIDADE_LINK_CONTA_NOVA_DIAS;
+  const abertura = tipo === "redefinicao"
+    ? `Seu acesso ao FilaPro Leads${plano ? ` (plano ${plano})` : ""} foi redefinido: a senha anterior deixou de valer e é preciso criar uma nova.`
+    : `Seu acesso ao FilaPro Leads${plano ? ` (plano ${plano})` : ""} está pronto.`;
   const texto =
-    `Olá, ${nome}.\n\nSeu acesso ao FilaPro Leads (plano ${plano}) está pronto.\n\n` +
-    `Endereço: ${SITE}\nE-mail: ${email}\nSenha temporária: ${senha}\n\n` +
-    `Na tela de login, escolha "${aba}". No primeiro acesso você vai criar uma nova senha ` +
-    `(mínimo de 12 caracteres). A senha temporária vale por ${VALIDADE_TEMP_CONTA_NOVA_DIAS} dias.`;
+    `Olá, ${nome}.\n\n${abertura}\n\n` +
+    `Para criar sua senha, abra o link abaixo (vale por ${dias} dias e só pode ser usado uma vez):\n\n${link}\n\n` +
+    `Depois, entre em ${SITE} com o e-mail ${email} e escolha "${aba}" na tela de login.\n\n` +
+    `Se o link expirar, use "Esqueci minha senha" na tela de login para receber outro.`;
   const html =
-    `<p>Olá, ${nome}.</p><p>Seu acesso ao <b>FilaPro Leads</b> (plano <b>${plano}</b>) está pronto.</p>` +
-    `<p>Endereço: <a href="${SITE}">${SITE}</a><br>E-mail: <b>${email}</b><br>Senha temporária: ` +
-    `<b style="font-family:monospace;font-size:16px">${senha}</b></p>` +
-    `<p>Na tela de login, escolha <b>${aba}</b>. No primeiro acesso você vai criar uma nova senha ` +
-    `(mínimo de 12 caracteres). A senha temporária vale por ${VALIDADE_TEMP_CONTA_NOVA_DIAS} dias.</p>`;
-  return enviarEmail({ para: email, assunto: "Seu acesso ao FilaPro Leads", texto, html });
+    `<p>Olá, ${nome}.</p><p>${abertura.replace("FilaPro Leads", "<b>FilaPro Leads</b>")}</p>` +
+    `<p>Para criar sua senha, use o botão abaixo. O link vale por <b>${dias} dias</b> e só pode ser usado <b>uma vez</b>.</p>` +
+    `<p><a href="${link}" style="display:inline-block;background:#16a34a;color:#fff;font-weight:bold;padding:12px 20px;border-radius:10px;text-decoration:none">Criar minha senha</a></p>` +
+    `<p style="font-size:12px;color:#5b6b62">Se o botão não abrir, copie este endereço no navegador:<br>${link}</p>` +
+    `<p>Depois, entre em <a href="${SITE}">${SITE}</a> com o e-mail <b>${email}</b> e escolha <b>${aba}</b> na tela de login.</p>` +
+    `<p style="color:#5b6b62">Se o link expirar, use “Esqueci minha senha” na tela de login para receber outro.</p>`;
+  return enviarEmail({ para: email, assunto: tipo === "redefinicao" ? "Crie uma nova senha — FilaPro Leads" : "Seu acesso ao FilaPro Leads", texto, html });
 }
 
 /** Validações simples dos dados do comprador. */
@@ -118,7 +130,7 @@ export async function criarUsuarioNaEmpresa(
   empresaId: string,
   u: { nome: string; email: string; whatsapp: string; permissoes: string[]; limiteLeads?: number | null },
 ) {
-  const temp = gerarSenhaTemporaria();
+  const link = novoLink(VALIDADE_LINK_ACESSO_MIN);
   const usuario = await prisma.usuario.create({
     data: {
       codigo: await proximoCodigo(prisma, "usuario_empresa"),
@@ -129,9 +141,9 @@ export async function criarUsuarioNaEmpresa(
       empresaId,
       permissoes: u.permissoes,
       limiteLeads: u.limiteLeads ?? null,
-      senhaTempHash: await gerarHash(temp),
-      senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000),
+      linkSenhaHash: link.hash,
+      linkSenhaExpiraEm: link.expira,
     },
   });
-  return { usuario, senhaTemporaria: temp };
+  return { usuario, linkSenha: link.token };
 }

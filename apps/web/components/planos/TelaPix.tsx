@@ -35,7 +35,7 @@ export default function TelaPix({ pix }: { pix: DadosPix }) {
     <div className="mt-3 rounded-xl p-3 text-[13px] leading-relaxed text-slate-300" style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.30)" }}>
       {pix.renovacao
         ? "Assim que confirmarmos o pagamento, seu acesso será renovado e você receberá a confirmação por e-mail."
-        : "Assim que confirmarmos o pagamento, você receberá por e-mail o acesso com uma senha temporária."}
+        : "Assim que confirmarmos o pagamento, você receberá por e-mail um link para criar a sua senha e entrar."}
     </div>
   );
   const resumo = (

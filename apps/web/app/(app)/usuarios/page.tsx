@@ -26,7 +26,7 @@ export default async function UsuariosPage() {
       <Cabecalho
         rotulo="Admin • Gestão de usuários"
         titulo="Usuários"
-        descricao={`Cadastre os usuários de ${empresa.nome}. Cada um recebe uma senha temporária por e-mail e usa o próprio WhatsApp. Todos vencem junto com o pacote (${empresa.expiraEm.toLocaleDateString("pt-BR")}).`}
+        descricao={`Cadastre os usuários de ${empresa.nome}. Cada um recebe por e-mail um link para criar a senha e usa o próprio WhatsApp. Todos vencem junto com o pacote (${empresa.expiraEm.toLocaleDateString("pt-BR")}).`}
       />
       <GestaoUsuarios
         limite={empresa.limiteUsuarios}
@@ -39,7 +39,7 @@ export default async function UsuariosPage() {
           email: u.email,
           whatsapp: u.whatsapp ?? "",
           ativo: u.status === "ATIVO",
-          pendente: !!u.senhaTempHash && !u.senhaHash,
+          pendente: !!u.linkSenhaHash || (!!u.senhaTempHash && !u.senhaHash),
           permissoes: u.permissoes,
           ultimoAcesso: u.ultimoAcesso?.toISOString() ?? null,
         }))}

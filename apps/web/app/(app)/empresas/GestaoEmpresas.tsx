@@ -94,7 +94,7 @@ export default function GestaoEmpresas({ empresas, planos, podeEditar }: { empre
                 <Campo nome="adminEmail" rotulo="E-mail do Admin (login)" tipo="email" />
                 <Campo nome="adminWhatsapp" rotulo="WhatsApp do Admin (opcional)" />
               </div>
-              <p className="help mt-2">O Admin recebe por e-mail uma senha temporária e troca no primeiro acesso. Ele não conta no limite de usuários.</p>
+              <p className="help mt-2">O Admin recebe por e-mail um link para criar a senha. Ele não conta no limite de usuários.</p>
               {erro && <p className="text-[12px] font-semibold text-[#b42318] mt-2">{erro}</p>}
               <div className="flex gap-2 mt-3">
                 <button className="btn-primary" disabled={pendente}>{pendente ? "Criando…" : "Criar empresa e enviar acesso"}</button>

@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.9 — segurança: contas novas e redefinição de acesso por link, sem senha por e-mail (26/11/2026)
+
+- **Contas novas** (compra, teste grátis, criadas pelo Super Admin ou pelo Admin da Empresa) recebem por e-mail um **link para criar a senha** (vale 7 dias e só pode ser usado uma vez), em vez de uma senha escrita no e-mail. Ao criar a senha, é só entrar; não há mais a tela de "primeiro acesso".
+- **Resetar senha** (Admin da Empresa) e **Reenviar acesso** (Super Admin) agora **redefinem de verdade**: a senha antiga deixa de valer, os aparelhos conectados saem e a pessoa recebe um link para criar a nova.
+- Se o link expirar, a pessoa pede outro em **"Esqueci minha senha"**.
+- Na lista de usuários, quem ainda não criou a senha aparece como **"Aguardando criar a senha"**.
+- Corrigida uma diferença de tempo no login que deixava descobrir contas recém-criadas.
+- Quem já recebeu uma senha temporária por e-mail pode usá-la até ela vencer (no máximo 7 dias).
+
 ## v1.46.8 — segurança: recuperar a senha por link, não por senha no e-mail (26/11/2026)
 
 - **"Esqueci minha senha"** agora envia um **link para criar a nova senha** (vale 30 minutos e só pode ser usado uma vez), em vez de uma senha escrita no e-mail. Nada de senha guardada na caixa de e-mail.

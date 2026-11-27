@@ -144,7 +144,7 @@ Para cada empresa: código, pacote, vencimento, usuários e leads. Ações:
 Cada usuário individual tem a própria conta e o próprio prazo. Em **Novo usuário individual**, escolha o **Tipo**
 (**Mensal** — por dias, sem limite de disparos — ou **Por disparo**) e depois o plano daquele tipo; o limite de disparos da conta
 vem do plano (no Free, dos disparos do teste). Ações: **Novo usuário**, **Prorrogar**, **Limite de leads**,
-**Bloquear/Desbloquear**, **Reenviar acesso**, **IA: treino**, **Anúncios** e **WhatsApps** (números extras sem pedido;
+**Bloquear/Desbloquear**, **Reenviar acesso** (redefine o acesso: a senha atual deixa de valer, as sessões caem e a pessoa recebe um link de 7 dias para criar a nova), **IA: treino**, **Anúncios** e **WhatsApps** (números extras sem pedido;
 ao diminuir, saem os mais recentes).
 
 ## Financeiro (faturamento e despesas)

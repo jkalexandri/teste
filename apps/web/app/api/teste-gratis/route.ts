@@ -49,6 +49,6 @@ export async function POST(req: Request) {
   });
   // Era um interessado do chat (decisão #104): a conversa vira o suporte do novo cliente
   await ligarInteressadoAoCliente(conta.usuario).catch(() => undefined);
-  await enviarEmailBoasVindas(dados.nome, dados.email, conta.senhaTemporaria, plano.nome, Modulo.INDIVIDUAL);
+  await enviarEmailBoasVindas(dados.nome, dados.email, conta.linkSenha, plano.nome, Modulo.INDIVIDUAL);
   return NextResponse.json({ ok: true });
 }

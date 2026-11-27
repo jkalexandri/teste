@@ -9,9 +9,21 @@ const BASE = 'http://localhost:3005';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
 const OUT = process.argv[2];
 const suf = Date.now().toString().slice(-6);
-const ultimaSenha = (email) => {
-  const blocos = fs.readFileSync('/var/tmp/web.log', 'utf8').split('[email de desenvolvimento]').filter(b => b.includes('Para: ' + email));
-  const m = (blocos.pop() || '').match(/Senha temporária: (\S+)/); return m && m[1];
+// Decisão #165: o e-mail de acesso traz um LINK (não uma senha). Este auxiliar abre o link do último e-mail enviado para o endereço:
+// cria a senha (padrão ou a informada) e a devolve; null se não havia link ou se ele não foi aceito.
+const SENHA_PADRAO = 'SenhaTeste@2026x';
+const _ultimoLink = (email) => {
+  const log = fs.readFileSync('/var/tmp/web.log', 'utf8');
+  const blocos = log.split('[email de desenvolvimento]').filter((b) => b.includes('Para: ' + email));
+  const m = (blocos.pop() || '').match(/definir-senha#t=([A-Za-z0-9_-]{43})/); return m && m[1];
+};
+const temLink = (email) => !!_ultimoLink(email);
+const ultimaSenha = (email, senha = SENHA_PADRAO) => {
+  const token = _ultimoLink(email); if (!token) return null;
+  const ipFalso = `198.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 200) + 20}`;
+  const corpo = JSON.stringify({ token, senha });
+  const r = require('child_process').execSync(`curl -s -o /dev/null -w "%{http_code}" -X POST ${BASE}/api/auth/definir-senha -H 'content-type: application/json' -H 'x-forwarded-for: ${ipFalso}' -d '${corpo}'`).toString();
+  return r === '200' ? senha : null;
 };
 const diaISO = (q) => sql(q).slice(0, 10);
 (async () => {
@@ -88,20 +100,22 @@ const diaISO = (q) => sql(q).slice(0, 10);
   await p.fill('#ind-nome', 'Igor Individual'); await p.fill('#ind-email', `igor${suf}@x.com`); await p.fill('#ind-whats', '11955554444');
   await p.click('text=Criar e enviar acesso'); await p.waitForTimeout(1500);
   ok('Usuário individual criado', sql(`select e.modulo||'|'||e."limiteUsuarios"||'|'||u.cargo from "Usuario" u join "Empresa" e on e.id=u."empresaId" where u.email='igor${suf}@x.com'`) === 'INDIVIDUAL|1|USUARIO');
-  ok('Aparece na lista aguardando 1º acesso', (await p.locator(`tr:has-text("igor${suf}@x.com")`).innerText()).includes('aguardando 1º acesso'));
+  ok('Aparece na lista aguardando 1º acesso (link ainda não usado)', (await p.locator(`tr:has-text("igor${suf}@x.com")`).innerText()).includes('aguardando 1º acesso'));
+  const tempIgor = ultimaSenha(`igor${suf}@x.com`); // abre o link: cria a senha ANTES de bloquear (bloqueado não aceita o link)
   await p.click(`tr:has-text("igor${suf}@x.com") >> text=Bloquear`); await p.waitForTimeout(1500);
   ok('Bloquear', sql(`select status from "Usuario" where email='igor${suf}@x.com'`) === 'BLOQUEADO');
-  const tempIgor = ultimaSenha(`igor${suf}@x.com`);
   const [c2, p2] = await novo(); await loginComo(p2, `igor${suf}@x.com`, tempIgor, 'individual');
   ok('Usuário bloqueado não entra', (await p2.locator('text=Acesso bloqueado').count()) === 1); await c2.close();
   await p.click(`tr:has-text("igor${suf}@x.com") >> text=Desbloquear`); await p.waitForTimeout(1500);
   await p.click(`tr:has-text("igor${suf}@x.com") >> text=Reenviar acesso`); await p.waitForTimeout(1500);
-  const tempNova = ultimaSenha(`igor${suf}@x.com`);
-  ok('Reenviar acesso gera nova senha temporária', tempNova && tempNova !== tempIgor);
+  const [c4, p4] = await novo(); await loginComo(p4, `igor${suf}@x.com`, tempIgor, 'individual');
+  ok('Reenviar acesso invalida a senha anterior (decisão #165)', (await p4.locator('text=incorretos').count()) === 1); await c4.close();
+  const tempNova = ultimaSenha(`igor${suf}@x.com`, 'OutraSenha@2026y');
+  ok('Reenviar acesso envia um link novo, que cria a nova senha', !!tempNova && tempNova !== tempIgor);
   await p.screenshot({ path: OUT + '/individuais.png', fullPage: true });
   await c.close();
   const [c3, p3] = await novo(); await loginComo(p3, `igor${suf}@x.com`, tempNova, 'individual');
-  ok('Desbloqueado entra com a nova senha (primeiro acesso)', p3.url().endsWith('/primeiro-acesso')); await c3.close();
+  ok('Desbloqueado entra com a nova senha criada pelo link', p3.url().endsWith('/dashboard')); await c3.close();
 
   console.log(res.join('\n')); await b.close();
 })();

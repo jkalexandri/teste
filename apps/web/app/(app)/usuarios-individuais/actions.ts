@@ -2,10 +2,11 @@
 
 // Super Admin → Usuários Individuais (decisões #31 e #40).
 import { revalidatePath } from "next/cache";
-import { prisma, gerarHash, gerarSenhaTemporaria, Modulo, StatusUsuario } from "@filapro/db";
+import { prisma, Modulo, StatusUsuario } from "@filapro/db";
 import { encerrarAcessoDeUsuarios } from "@/lib/auth/encerrar-acesso";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
-import { criarConta, enviarEmailBoasVindas, validarComprador, VALIDADE_TEMP_CONTA_NOVA_DIAS } from "@/lib/contas";
+import { criarConta, enviarEmailBoasVindas, validarComprador } from "@/lib/contas";
+import { redefinirAcesso } from "@/lib/auth/link-senha";
 
 type R = { ok: boolean; mensagem: string };
 const t = (f: FormData, k: string, max = 120) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -35,7 +36,7 @@ export async function criarIndividual(form: FormData): Promise<R> {
     limiteLeads: plano.limiteLeads,
     usuario: dados,
   });
-  const enviado = await enviarEmailBoasVindas(dados.nome, dados.email, conta.senhaTemporaria, plano.nome, Modulo.INDIVIDUAL);
+  const enviado = await enviarEmailBoasVindas(dados.nome, dados.email, conta.linkSenha, plano.nome, Modulo.INDIVIDUAL);
   revalidatePath("/usuarios-individuais");
   return {
     ok: true,
@@ -58,11 +59,8 @@ export async function reenviarAcesso(usuarioId: string): Promise<R> {
   await exigirSuperAdmin();
   const u = await prisma.usuario.findUnique({ where: { id: usuarioId }, include: { empresa: true } });
   if (!u) return { ok: false, mensagem: "Usuário não encontrado." };
-  const temp = gerarSenhaTemporaria();
-  await prisma.usuario.update({
-    where: { id: usuarioId },
-    data: { senhaTempHash: await gerarHash(temp), senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_CONTA_NOVA_DIAS * 86400000) },
-  });
-  const enviado = await enviarEmailBoasVindas(u.nome, u.email, temp, u.empresa?.pacote ?? "", u.empresa?.modulo ?? Modulo.INDIVIDUAL);
-  return enviado ? { ok: true, mensagem: `Nova senha temporária enviada para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
+  // Decisão #165: a senha atual deixa de valer, as sessões caem e a pessoa recebe um link de 7 dias
+  const link = await redefinirAcesso(usuarioId);
+  const enviado = await enviarEmailBoasVindas(u.nome, u.email, link, u.empresa?.pacote ?? "", u.empresa?.modulo ?? Modulo.INDIVIDUAL, "redefinicao");
+  return enviado ? { ok: true, mensagem: `Acesso redefinido: a senha anterior deixou de valer e um link para criar a nova foi enviado para ${u.email}.` } : { ok: false, mensagem: "Não foi possível enviar o e-mail." };
 }

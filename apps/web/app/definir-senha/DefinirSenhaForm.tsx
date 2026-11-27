@@ -1,6 +1,6 @@
 "use client";
 
-// Tela "Crie sua nova senha" (link de recuperação — decisão #164). Mesmo estilo da tela de primeiro acesso.
+// Tela "Crie sua senha" (link de recuperação ou de acesso novo — decisões #164 e #165). Mesmo estilo da tela de primeiro acesso.
 // O link só é gasto quando a senha nova é aceita; abrir esta página não o consome.
 import { useEffect, useMemo, useState } from "react";
 import { CircleCheck, CircleDashed, Eye, EyeOff, Lock, TriangleAlert } from "@/components/icons";
@@ -46,7 +46,7 @@ export default function DefinirSenhaForm() {
       <div className="min-h-[100dvh] flex items-center justify-center p-3 py-6">
         <div className="card w-full max-w-[520px] p-4">
           <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary-dark)" }}>
-            <Lock size={12} /> Recuperar senha
+            <Lock size={12} /> Definir senha
           </span>
           {concluido ? (
             <>
@@ -66,9 +66,9 @@ export default function DefinirSenhaForm() {
             </>
           ) : (
             <>
-              <h1 className="font-display text-[22px] font-extrabold mt-2 leading-tight">Crie sua nova senha</h1>
+              <h1 className="font-display text-[22px] font-extrabold mt-2 leading-tight">Crie sua senha</h1>
               <p className="text-[13px] mt-1 leading-relaxed" style={{ color: "var(--muted)" }}>
-                Escolha uma senha definitiva. Este link vale por 30 minutos e só pode ser usado uma vez.
+                Escolha uma senha definitiva. Este link só pode ser usado uma vez.
               </p>
               <label className="label mt-3" htmlFor="nova-senha">Nova senha</label>
               <div className="relative">

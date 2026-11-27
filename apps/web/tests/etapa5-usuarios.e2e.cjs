@@ -10,9 +10,21 @@ const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'
 const OUT = process.argv[2];
 const suf = Date.now().toString().slice(-6);
 const EMP = 'teste-empresa-exemplo';
-const senhaDe = (email) => {
-  const blocos = fs.readFileSync('/var/tmp/web.log', 'utf8').split('[email de desenvolvimento]').filter(b => b.includes('Para: ' + email));
-  const m = (blocos.pop() || '').match(/Senha temporária: (\S+)/); return m && m[1];
+// Decisão #165: o e-mail de acesso traz um LINK (não uma senha). Este auxiliar abre o link do último e-mail enviado para o endereço:
+// cria a senha (padrão ou a informada) e a devolve; null se não havia link ou se ele não foi aceito.
+const SENHA_PADRAO = 'SenhaTeste@2026x';
+const _ultimoLink = (email) => {
+  const log = fs.readFileSync('/var/tmp/web.log', 'utf8');
+  const blocos = log.split('[email de desenvolvimento]').filter((b) => b.includes('Para: ' + email));
+  const m = (blocos.pop() || '').match(/definir-senha#t=([A-Za-z0-9_-]{43})/); return m && m[1];
+};
+const temLink = (email) => !!_ultimoLink(email);
+const senhaDe = (email, senha = SENHA_PADRAO) => {
+  const token = _ultimoLink(email); if (!token) return null;
+  const ipFalso = `198.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 200) + 20}`;
+  const corpo = JSON.stringify({ token, senha });
+  const r = require('child_process').execSync(`curl -s -o /dev/null -w "%{http_code}" -X POST ${BASE}/api/auth/definir-senha -H 'content-type: application/json' -H 'x-forwarded-for: ${ipFalso}' -d '${corpo}'`).toString();
+  return r === '200' ? senha : null;
 };
 (async () => {
   // Estado inicial: Empresa Exemplo com 2 vagas, só a Ana como usuária, vencendo em 5 dias.
@@ -43,7 +55,7 @@ const senhaDe = (email) => {
   ok('Vagas em uso 1 / 2 (Admin não conta)', (await kpi(p)) === '1 / 2', await kpi(p));
   await criar(p, 'Bruno Vendas', `bruno${suf}@ex.com`, ['leads', 'campanhas', 'conversas', 'arquivos', 'empresa-ia']);
   ok('Usuário criado', sql(`select cargo||'|'||"empresaId" from "Usuario" where email='bruno${suf}@ex.com'`) === `USUARIO|${EMP}`);
-  ok('Senha temporária enviada por e-mail', !!senhaDe(`bruno${suf}@ex.com`));
+  ok('Link para criar a senha enviado por e-mail (sem senha no e-mail)', temLink(`bruno${suf}@ex.com`));
   ok('Pacote cheio: botão "Novo usuário" bloqueado', await p.locator('button:has-text("Novo usuário")').isDisabled());
   await p.click(`tr:has-text("bruno${suf}") >> button:has-text("Desativar")`); await p.waitForTimeout(1500);
   ok('Desativado não ocupa vaga', (await kpi(p)) === '1 / 2', await kpi(p));
@@ -57,7 +69,7 @@ const senhaDe = (email) => {
   // Permissões: Carla só tem Leads
   const [c2, p2] = await novo();
   await entrar(p2, `carla${suf}@ex.com`, senhaDe(`carla${suf}@ex.com`));
-  await p2.fill('#new-pw', 'CarlaSenha@2026'); await p2.click('text=Salvar nova senha e entrar'); await p2.waitForURL('**/dashboard');
+  await p2.waitForURL('**/dashboard');
   const menu = (await p2.locator('aside nav a').allInnerTexts()).map(s => s.trim());
   ok('Menu respeita as permissões (só Leads + fixos)', JSON.stringify(menu) === JSON.stringify(['Dashboard', 'Leads', 'WhatsApp', 'Avisos', 'Leads de anúncios', 'Ajuda']), menu.join(', '));
   ok('Sem permissão de campanhas: sem botão "Criar campanha"', (await p2.locator('text=Criar campanha').count()) === 0);

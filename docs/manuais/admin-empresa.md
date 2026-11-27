@@ -7,10 +7,11 @@ Para o passo a passo do que os usuários fazem (campanhas, conversas, WhatsApp),
 
 ## Primeiro acesso
 
-1. Depois da compra, você recebe por e-mail uma **senha temporária**.
-2. Abra **filaproleads.com.br**, escolha **Módulo Empresarial** e entre com o e-mail e a senha temporária.
-3. Crie a sua senha definitiva (12 caracteres ou mais, com maiúscula, minúscula, número e caractere especial) —
+1. Depois da compra, você recebe por e-mail um **link para criar a sua senha** (vale 7 dias e só pode ser usado uma vez).
+2. Abra o link e crie a sua senha (12 caracteres ou mais, com maiúscula, minúscula, número e caractere especial) —
    ou use **Gerar senha forte** e **Copiar senha**.
+3. Abra **filaproleads.com.br**, escolha **Módulo Empresarial** e entre com o e-mail e a senha que você criou.
+   Se o link expirar, use **Esqueci minha senha** na tela de login.
 
 ## Dashboard
 
@@ -35,12 +36,12 @@ Menu **Usuários**: quem envia as mensagens pela empresa.
 
 ![Usuários](prints/a-usuarios.png)
 
-- **Novo usuário:** nome, e-mail, WhatsApp, **permissões** e **limite de leads**. A senha temporária vai sozinha por e-mail.
+- **Novo usuário:** nome, e-mail, WhatsApp, **permissões** e **limite de leads**. Um link para criar a senha vai sozinho por e-mail (vale 7 dias).
 - **Vagas:** o seu plano define quantos usuários a empresa pode ter. O Admin não conta no limite.
 - **Permissões** (o que cada usuário vê): Leads, Campanhas, Conversas IA, Arquivos e Empresa | IA. Dashboard, WhatsApp, Avisos e Ajuda
   ficam sempre liberados.
 - **Limite de leads:** um máximo por usuário (dentro do limite da empresa) ou ilimitado.
-- **Resetar senha:** envia uma nova senha temporária.
+- **Resetar senha:** **redefine o acesso** do usuário: a senha atual deixa de valer, as sessões dele são encerradas e um link para criar a nova senha é enviado por e-mail. Quem ainda não criou a senha aparece como **Aguardando criar a senha**.
 - **Desativar:** o usuário não entra mais e a vaga é liberada. **Reativar** só com vaga disponível.
 - **Excluir:** antes, você escolhe para qual usuário os **leads passam**.
 

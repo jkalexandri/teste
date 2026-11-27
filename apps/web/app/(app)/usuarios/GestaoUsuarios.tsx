@@ -46,7 +46,7 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
           { l: "Vagas do pacote em uso", v: `${ativos} / ${limite}` },
           { l: "Vagas livres", v: String(Math.max(0, livres)) },
           { l: "Desativados (não ocupam vaga)", v: String(usuarios.length - ativos) },
-          { l: "Aguardando 1º acesso", v: String(usuarios.filter((u) => u.pendente).length) },
+          { l: "Aguardando criar a senha", v: String(usuarios.filter((u) => u.pendente).length) },
         ].map((c) => (
           <div key={c.l} className="card p-2.5">
             <div className="font-display text-[22px] font-extrabold leading-none">{c.v}</div>
@@ -98,7 +98,7 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
                       <span className="chip" style={u.ativo ? { background: "var(--primary-soft)", color: "#087a44" } : { background: "#f1f3f2", color: "#5b6b62" }}>
                         {u.ativo ? "Ativo" : "Desativado"}
                       </span>
-                      {u.pendente && <span className="chip ml-1" style={{ background: "#fff7e0", color: "#8a5a00" }}>Senha temporária</span>}
+                      {u.pendente && <span className="chip ml-1" style={{ background: "#fff7e0", color: "#8a5a00" }}>Aguardando criar a senha</span>}
                     </td>
                     <td style={{ whiteSpace: "nowrap", color: "var(--muted)" }}>
                       {u.ultimoAcesso ? new Date(u.ultimoAcesso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "Ainda não acessou"}
@@ -106,7 +106,7 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
                     <td style={{ whiteSpace: "nowrap" }}>
                       <div style={{ display: "flex", gap: 4 }}>
                         <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" onClick={() => { setErro(""); setForm(u); }}><Pencil size={11} /> Editar</button>
-                        <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Enviar nova senha temporária para ${u.email}?`) && agir(() => resetarSenha(u.id))}>Resetar senha</button>
+                        <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Redefinir o acesso de ${u.email}? A senha atual deixa de valer, as sessões são encerradas e um link para criar a nova senha é enviado por e-mail.`) && agir(() => resetarSenha(u.id))}>Resetar senha</button>
                         <button className="btn-ghost !py-1 !px-1.5 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Desativar" : "Reativar"} ${u.nome}?`) && agir(() => alternarAtivo(u.id))}>
                           {u.ativo ? "Desativar" : "Reativar"}
                         </button>
@@ -158,7 +158,7 @@ export default function GestaoUsuarios({ usuarios, limite }: { usuarios: U[]; li
               ))}
             </div>
             <p className="help mt-2">Dashboard e WhatsApp ficam sempre liberados. O acesso vence junto com o pacote da empresa.</p>
-            {!editando && <p className="help">Uma senha temporária é gerada e enviada para o e-mail do usuário.</p>}
+            {!editando && <p className="help">Um link para criar a senha é enviado para o e-mail do usuário.</p>}
             {erro && <p className="text-[12px] font-semibold text-[#b42318] mt-2">{erro}</p>}
             <div className="flex justify-end gap-2 mt-3">
               <button type="button" className="btn-ghost" onClick={() => setForm(null)}>Cancelar</button>

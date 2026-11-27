@@ -103,7 +103,7 @@ async function confirmarPedidoSemAssinatura(id: string, por: string): Promise<R>
   await guardarDocumento(conta.empresa.id, pedido.cpfCnpj);
   // Era um interessado do chat (decisão #104): a conversa vira o suporte do novo cliente
   await ligarInteressadoAoCliente(conta.usuario).catch(() => undefined);
-  const enviado = await enviarEmailBoasVindas(pedido.nome, pedido.email, conta.senhaTemporaria, pedido.planoNome, pedido.modulo);
+  const enviado = await enviarEmailBoasVindas(pedido.nome, pedido.email, conta.linkSenha, pedido.planoNome, pedido.modulo);
   return {
     ok: true,
     mensagem: enviado

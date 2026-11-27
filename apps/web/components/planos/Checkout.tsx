@@ -72,7 +72,7 @@ export default function Checkout({ plano, onVoltar, quantidadeInicial = 1 }: { p
         <div className="mt-4 rounded-xl p-3" style={{ background: "rgba(37,211,102,.10)", border: "1px solid rgba(37,211,102,.30)" }}>
           <div className="flex gap-2 font-bold text-[13px] text-emerald-300"><CircleCheck size={16} /> Conta de teste criada</div>
           <p className="text-[13px] mt-1.5 leading-relaxed text-slate-300">
-            Enviamos para <b className="[overflow-wrap:anywhere]">{email}</b> o acesso com uma senha temporária. Na tela de login,
+            Enviamos para <b className="[overflow-wrap:anywhere]">{email}</b> um link para criar a sua senha. Depois, na tela de login,
             escolha “Módulo Individual”.
           </p>
         </div>

@@ -50,7 +50,7 @@ export async function criarEmpresa(form: FormData): Promise<R> {
     limiteLeads: r.plano.limiteLeads,
     usuario: admin,
   });
-  const enviado = await enviarEmailBoasVindas(admin.nome, admin.email, conta.senhaTemporaria, r.plano.nome, Modulo.EMPRESARIAL);
+  const enviado = await enviarEmailBoasVindas(admin.nome, admin.email, conta.linkSenha, r.plano.nome, Modulo.EMPRESARIAL);
   revalidatePath("/empresas");
   return {
     ok: true,

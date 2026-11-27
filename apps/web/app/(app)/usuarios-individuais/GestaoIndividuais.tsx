@@ -94,7 +94,7 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                 <input id="ind-prazo" name="prazoDias" type="number" min={1} className="input" defaultValue={plano?.prazoDias ?? 31} key={planoId} />
               </div>
             </div>
-            <p className="help mt-2">A pessoa recebe por e-mail uma senha temporária e troca no primeiro acesso.</p>
+            <p className="help mt-2">A pessoa recebe por e-mail um link para criar a senha.</p>
             {erro && <p className="text-[12px] font-semibold text-[#b42318] mt-2">{erro}</p>}
             <div className="flex gap-2 mt-3">
               <button className="btn-primary" disabled={pendente}>{pendente ? "Criando…" : "Criar e enviar acesso"}</button>
@@ -163,7 +163,7 @@ export default function GestaoIndividuais({ usuarios, planos }: { usuarios: Linh
                         <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`${u.ativo ? "Bloquear" : "Desbloquear"} ${u.nome}?`) && agir(() => alternarBloqueio(u.id))}>
                           {u.ativo ? "Bloquear" : "Desbloquear"}
                         </button>
-                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Enviar nova senha temporária para ${u.email}?`) && agir(() => reenviarAcesso(u.id))}>
+                        <button className="btn-ghost !py-1 !px-2 !text-[11px]" disabled={pendente} onClick={() => window.confirm(`Redefinir o acesso de ${u.email}? A senha atual deixa de valer, as sessões são encerradas e um link para criar a nova senha é enviado por e-mail.`) && agir(() => reenviarAcesso(u.id))}>
                           Reenviar acesso
                         </button>
                       </div>
