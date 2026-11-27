@@ -2,6 +2,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { prisma } from "@filapro/db";
+import { ipReal } from "@/lib/ip";
 
 export const TIPOS_LOG = {
   ENTRADA: "Entradas",
@@ -20,7 +21,7 @@ type Quem = { id: string; nome: string; email: string; empresaId: string | null 
 export async function registrarLog(quem: Quem | null, tipo: TipoLog, texto: string, empresaId?: string | null) {
   try {
     const h = await headers().catch(() => null);
-    const ip = h?.get("x-forwarded-for")?.split(",")[0]?.trim() || h?.get("x-real-ip") || null;
+    const ip = h ? ipReal(h.get("x-forwarded-for"), h.get("x-real-ip")) : null; // decisão #163: última entrada do cabeçalho
     await prisma.log.create({
       data: {
         empresaId: empresaId !== undefined ? empresaId : quem?.empresaId ?? null,

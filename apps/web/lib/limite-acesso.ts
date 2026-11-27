@@ -2,24 +2,25 @@
 import "server-only";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { chaveDeLimite, ipReal } from "@/lib/ip";
 
-const batidas = new Map<string, number[]>();
+import { dentroDoLimite } from "@/lib/limite-memoria";
+export { dentroDoLimite };
 
-/** true = pode; false = passou do limite (máximo "max" vezes em "janelaMs"). */
-export function dentroDoLimite(chave: string, max: number, janelaMs: number) {
-  const agora = Date.now();
-  const l = (batidas.get(chave) ?? []).filter((t) => agora - t < janelaMs);
-  if (l.length >= max) { batidas.set(chave, l); return false; }
-  l.push(agora);
-  batidas.set(chave, l);
-  if (batidas.size > 5000) for (const [k, v] of batidas) if (!v.some((t) => agora - t < 3600_000)) batidas.delete(k);
-  return true;
-}
-
-/** Endereço de internet de quem chamou. Atrás do Caddy vem no X-Forwarded-For (o Caddy não aceita o enviado pelo cliente). */
+/**
+ * Endereço de internet de quem chamou, para LIMITES (IPv6 pelo bloco /64; "local" = a própria máquina, sem cabeçalho).
+ * Atrás do Caddy vale a última entrada do X-Forwarded-For (decisão #163; o Caddyfile também o define explicitamente).
+ */
 export async function ipDoPedido() {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "local";
+  const ip = ipReal(h.get("x-forwarded-for"), h.get("x-real-ip"));
+  return ip ? chaveDeLimite(ip) : "local";
+}
+
+/** Endereço COMPLETO (sem agrupar o IPv6), para Logs, alertas e e-mails; null se não houver cabeçalho. */
+export async function ipRealDoPedido() {
+  const h = await headers();
+  return ipReal(h.get("x-forwarded-for"), h.get("x-real-ip"));
 }
 
 /**

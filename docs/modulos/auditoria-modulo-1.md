@@ -93,7 +93,7 @@ Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
 ### S7 — 2FA só para Super Admin ❓ (decisão de produto)
 Admin da Empresa não tem 2FA. Não é falha de código; é uma decisão para o dono.
 
-### S8 — Limites por endereço de internet: confiança no cabeçalho, IPv6 e memória ✅ (reproduzido em 26/11/2026)
+### S8 — Limites por endereço de internet: confiança no cabeçalho, IPv6 e memória ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.7 (decisão #163)**
 O site roda num único processo (pm2, sem cluster), então guardar o limite em memória é coerente. Reproduzido no site de teste (login, limite de
 20 por 10 minutos por endereço; controle: o mesmo endereço 25 vezes = 5 bloqueados, como deve):
 - **S8a — confia na primeira entrada do `X-Forwarded-For`:** com o cabeçalho `X-Forwarded-For: <qualquer>, <endereço real>`, a 1ª entrada
@@ -116,4 +116,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 ✅ → S3 ✅ → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 ✅ → S3 ✅ → S8 ✅ (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.

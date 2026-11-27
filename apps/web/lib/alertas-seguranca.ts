@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { prisma, Cargo } from "@filapro/db";
 import { enviarPelaPlataforma } from "@/lib/avisos-whatsapp";
 import { chamarWorker } from "@/lib/worker";
+import { ipReal } from "@/lib/ip";
 
 export const BLOQUEIOS_ALERTA = 3;
 let ultimoAlertaBloqueios = 0;
@@ -23,7 +24,7 @@ export async function avisarSuperAdmins(texto: string, url = "/logs") {
 
 async function ipAtual() {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
+  return ipReal(h.get("x-forwarded-for"), h.get("x-real-ip")); // decisão #163: última entrada do cabeçalho
 }
 
 /** Uma conta foi bloqueada por senha errada (chamar logo depois de gravar o log do bloqueio). */

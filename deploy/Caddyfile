@@ -6,7 +6,12 @@ filaproleads.com.br {
 	request_body {
 		max_size 25MB
 	}
-	reverse_proxy 127.0.0.1:3000
+	# O endereço de quem chamou é SEMPRE o que o Caddy vê (decisão #163): quem chama não consegue forjar o cabeçalho.
+	# O site usa a última entrada do X-Forwarded-For para limites, Logs e alertas.
+	reverse_proxy 127.0.0.1:3000 {
+		header_up X-Forwarded-For {http.request.remote.host}
+		header_up X-Real-IP {http.request.remote.host}
+	}
 	# Nos segundos em que o site reinicia (atualização — decisão #103): página "Sistema em atualização"
 	handle_errors {
 		@fora expression `{err.status_code} in [502, 503, 504]`

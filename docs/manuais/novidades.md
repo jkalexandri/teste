@@ -2,6 +2,14 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.7 — segurança: os limites por endereço de internet não têm mais contorno (26/11/2026)
+
+- O endereço de quem acessa passa a ser sempre o que o **servidor de entrada (Caddy)** informa; um cabeçalho inventado não engana mais os limites, os Logs nem o alerta de "endereço novo" do Super Admin.
+- **IPv6:** quem tem IPv6 conta pelo bloco inteiro dele, então não dá mais para fugir do limite trocando de endereço dentro do bloco.
+- A memória usada pelos limites tem **teto**, mesmo sob um ataque com milhares de endereços.
+- Os **Logs e e-mails** continuam mostrando o endereço completo.
+- **Na VPS:** o `atualizar.sh` também ajusta a configuração do Caddy (com conferência antes; se falhar, mantém a antiga e avisa).
+
 ## v1.46.6 — segurança: arquivos, avisos e manual só para quem tem acesso (26/11/2026)
 
 - Baixar **arquivos**, abrir os anexos do **suporte**, marcar **comunicados** como lidos e ver as imagens do **manual** agora valem só para quem tem a conta em dia e já trocou a senha temporária. Uma sessão antiga de conta vencida, inativa ou bloqueada não passa mais.

@@ -2,7 +2,7 @@
 // Decisão #157 (Módulo 1, S1): só vale enquanto a sessão está em "primeiro acesso" (precisaTrocar); a nova senha não pode
 // repetir a temporária; as sessões antigas são apagadas e uma nova é aberta; o dono recebe e-mail de aviso e fica nos Logs.
 import { NextResponse } from "next/server";
-import { limitarPorIp, ipDoPedido } from "@/lib/limite-acesso";
+import { limitarPorIp, ipRealDoPedido } from "@/lib/limite-acesso";
 import { prisma, gerarHash, conferirSenha } from "@filapro/db";
 import { obterSessao, renovarSessoesAposNovaSenha } from "@/lib/auth/session";
 import { destinoPorCargo } from "@/lib/auth/login";
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   // Token novo: sessões antigas (inclusive a atual) deixam de valer
   await renovarSessoesAposNovaSenha(sessao.usuarioId);
 
-  const ip = await ipDoPedido();
+  const ip = (await ipRealDoPedido()) ?? "desconhecido";
   const u = sessao.usuario;
   await limparRecuperacao(u.email).catch(() => undefined); // o dono provou que tem a caixa de e-mail: pode pedir recuperação de novo
   await registrarLog(u, "ENTRADA", "Senha definida no primeiro acesso (sessões antigas encerradas)");
