@@ -256,7 +256,8 @@ crontab -e
 (Se perguntar o editor, escolha **1** — nano.) A VPS usa o fuso de Brasília (America/Sao_Paulo; confira com `date`), então os horários abaixo já são os de Brasília. Acrescente no final:
 
 ```
-30 3 * * * /opt/filapro/app/deploy/backup-banco.sh >> /var/log/filapro-backup.log 2>&1
+30 3 * * * /opt/filapro/app/deploy/backup-completo.sh completo >> /var/log/filapro-backup.log 2>&1
+30 9,15,21 * * * /opt/filapro/app/deploy/backup-completo.sh banco >> /var/log/filapro-backup.log 2>&1
 0 9 * * * /opt/filapro/app/deploy/rotinas.sh >> /var/log/filapro-rotinas.log 2>&1
 ```
 
@@ -267,10 +268,12 @@ crontab -e
 ( crontab -l 2>/dev/null | grep -v vigia-servico.sh; echo '*/5 * * * * /opt/filapro/app/deploy/vigia-servico.sh >> /var/log/filapro-vigia.log 2>&1' ) | crontab -
 ```
 
-- 03:30 (Brasília): backup do banco em `/opt/filapro/backups` (guarda 14 dias).
+- 03:30 (Brasília): **backup completo** (banco, arquivos enviados e chaves criptografadas) em `/opt/filapro/backups/diarios`, com cópias semanais (domingo) e mensais (dia 1): 14 diários, 8 semanais, 6 mensais.
+- 09:30, 15:30 e 21:30: dump só do banco em `/opt/filapro/backups/6h` (perda máxima de 6 horas).
+- **Antes do primeiro backup completo**, crie a senha que protege as chaves (uma vez; **guarde a mesma senha fora da VPS**): `bash /opt/filapro/app/deploy/backup-senha.sh`
 - 09:00 (Brasília): avisos de renovação, despesas fixas do mês e contas vencendo.
 
-Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh && ls -lh /opt/filapro/backups`
+Teste o backup agora: `bash /opt/filapro/app/deploy/backup-completo.sh completo && ls -lhR /opt/filapro/backups | head -40`
 
 ### 6.2 Proteção da VPS (decisão #105)
 

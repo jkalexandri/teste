@@ -141,19 +141,18 @@ else
 fi
 PASTA="$RAIZ/backups"
 if [ -d "$PASTA" ]; then
-  # Ordem pelo NOME (tem a data): a data do arquivo muda se ele for copiado ou restaurado
-  mapfile -t ARQS < <(ls -1 "$PASTA"/filapro-*.sql.gz 2>/dev/null | sort -r)
+  MP=$(stat -c %a "$PASTA"); info "pasta: $PASTA (permissão $MP, dono $(stat -c %U "$PASTA")) — total $(LIMITE=25 lim du -sh "$PASTA" | cut -f1)"
+  case "$MP" in *00) ok "Pasta de backups restrita ($MP)";; *) aten "Pasta de backups legível por outros usuários ($MP): deveria ser 700 (rode: chmod 700 $PASTA)";; esac
+  # Todos os dumps do banco, do mais novo para o mais antigo (pelo NOME, que tem a data): antes de atualizar (raiz), diários e a cada 6 h
+  mapfile -t ARQS < <(for f in "$PASTA"/filapro-*.sql.gz "$PASTA"/diarios/banco-*.sql.gz "$PASTA"/6h/banco-*.sql.gz; do
+      [ -f "$f" ] && echo "$(basename "$f" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}') $f"; done | sort -r | awk '{print $2}')
   QTD=${#ARQS[@]}
-  info "pasta: $PASTA — $QTD backup(s), total $(LIMITE=25 lim du -sh "$PASTA" | cut -f1)"
-  if [ "$QTD" -eq 0 ]; then falha "Nenhum backup encontrado em $PASTA"; else
+  info "dumps do banco: $QTD — antes de atualizar: $(ls -1 "$PASTA"/filapro-*.sql.gz 2>/dev/null | wc -l), diários: $(ls -1 "$PASTA"/diarios/banco-*.sql.gz 2>/dev/null | wc -l), a cada 6 h: $(ls -1 "$PASTA"/6h/banco-*.sql.gz 2>/dev/null | wc -l), semanais: $(ls -1 "$PASTA"/semanais/banco-*.sql.gz 2>/dev/null | wc -l), mensais: $(ls -1 "$PASTA"/mensais/banco-*.sql.gz 2>/dev/null | wc -l)"
+  if [ "$QTD" -eq 0 ]; then falha "Nenhum backup do banco encontrado em $PASTA"; else
     NOVO="${ARQS[0]}"; H=$(horas "$NOVO"); TAM=$(stat -c %s "$NOVO")
     info "mais recente: $(basename "$NOVO") — $(du -h "$NOVO" | cut -f1) — há ${H}h"
-    if [ "$H" -le 26 ]; then ok "Último backup tem ${H}h (diário em dia)"; elif [ "$H" -le 50 ]; then aten "Último backup tem ${H}h: o de ontem falhou?"; else falha "Último backup tem ${H}h (parado!)"; fi
-    [ "$TAM" -lt 10240 ] && falha "Último backup tem só ${TAM} bytes: provavelmente vazio"
-    [ "$QTD" -lt 7 ] && aten "Só $QTD backup(s) guardados (esperado: até 14 diários)"
-    # permissões
-    MP=$(stat -c %a "$PASTA"); info "permissão da pasta: $MP ($(stat -c %U "$PASTA"))"
-    case "$MP" in *00) ok "Pasta de backups restrita ($MP)";; *) aten "Pasta de backups legível por outros usuários ($MP): deveria ser 700";; esac
+    if [ "$H" -le 8 ]; then ok "Último dump do banco tem ${H}h"; elif [ "$H" -le 26 ]; then ok "Último dump do banco tem ${H}h (diário em dia)"; elif [ "$H" -le 50 ]; then aten "Último dump do banco tem ${H}h: o de ontem falhou?"; else falha "Último dump do banco tem ${H}h (parado!)"; fi
+    [ "$TAM" -lt 10240 ] && falha "Último dump tem só ${TAM} bytes: provavelmente vazio"
     MA=$(stat -c %a "$NOVO"); case "$MA" in *00) ok "Backup restrito ($MA)";; *) aten "Backup legível por outros usuários ($MA): deveria ser 600 (contém todos os dados dos clientes)";; esac
     # integridade dos 3 mais recentes
     TABELAS_VIVAS=$(sql "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'")
@@ -171,6 +170,18 @@ if [ -d "$PASTA" ]; then
       fi
     done
   fi
+  # Backup completo (decisão #169): arquivos enviados e chaves, e o resultado do último
+  UA=$(ls -1 "$PASTA"/diarios/arquivos-*.tar.gz 2>/dev/null | sort -r | head -1); UC=$(ls -1 "$PASTA"/diarios/chaves-*.tar.gz.enc 2>/dev/null | sort -r | head -1)
+  if [ -n "$UA" ]; then HA=$(horas "$UA"); if [ "$HA" -le 26 ]; then ok "Backup dos arquivos enviados tem ${HA}h ($(basename "$UA"))"; else aten "Backup dos arquivos enviados tem ${HA}h (o completo diário falhou?)"; fi; else aten "Ainda não há backup dos arquivos enviados (o backup completo ainda não rodou: bash deploy/backup-completo.sh)"; fi
+  if [ -n "$UC" ]; then HC=$(horas "$UC"); if [ "$HC" -le 26 ]; then ok "Backup das chaves (criptografado) tem ${HC}h ($(basename "$UC"))"; else aten "Backup das chaves tem ${HC}h"; fi; else aten "Ainda não há backup das chaves do sistema (crie a senha: bash deploy/backup-senha.sh, depois rode o backup completo)"; fi
+  if [ -f /root/.filapro-backup-senha ]; then ok "Senha do backup das chaves configurada ($(stat -c %a /root/.filapro-backup-senha))"; else aten "Senha do backup das chaves NÃO configurada (bash deploy/backup-senha.sh)"; fi
+  for e in completo banco; do
+    J="$PASTA/estado-$e.json"
+    if [ -f "$J" ]; then
+      if grep -q '"ok":true' "$J"; then ok "Último backup $e: sucesso ($(grep -o '"quando":"[^"]*"' "$J" | cut -d'"' -f4))"; else falha "Último backup $e terminou COM PROBLEMAS: $(grep -o '"erros":"[^"]*"' "$J" | cut -d'"' -f4)"; fi
+    fi
+  done
+  info "camadas: diárias $(ls -1 "$PASTA"/diarios/banco-*.sql.gz 2>/dev/null | wc -l)/14, semanais $(ls -1 "$PASTA"/semanais/banco-*.sql.gz 2>/dev/null | wc -l)/8, mensais $(ls -1 "$PASTA"/mensais/banco-*.sql.gz 2>/dev/null | wc -l)/6"
 else
   falha "Pasta de backups $PASTA não existe"
 fi
@@ -186,12 +197,14 @@ if [ -n "$PACOTES" ]; then
 else ok "Nenhum pacote de mudança esquecido na VPS"; fi
 
 # ---------------------------------------------------------------- 6. Arquivos enviados
-secao "6. Arquivos enviados pelos usuários (o backup diário NÃO os inclui)"
+secao "6. Arquivos enviados pelos usuários (entram no backup completo — decisão #169)"
 PASTA_ARQ=$(valor "$ENV_WORKER" PASTA_ARQUIVOS); PASTA_ARQ="${PASTA_ARQ:-$RAIZ/arquivos}"
 if [ -d "$PASTA_ARQ" ]; then
   NA=$(LIMITE=25 lim find "$PASTA_ARQ" -type f | wc -l)
   info "pasta: $PASTA_ARQ — $NA arquivo(s), $(LIMITE=25 lim du -sh "$PASTA_ARQ" | cut -f1)"
-  if [ "$NA" -gt 0 ]; then aten "Há $NA arquivo(s) que só existem nesta VPS: o backup diário do banco não os guarda"; else ok "Pasta de arquivos vazia"; fi
+  if [ "$NA" -eq 0 ]; then ok "Pasta de arquivos vazia"
+  elif ls "$RAIZ"/backups/diarios/arquivos-*.tar.gz >/dev/null 2>&1; then ok "Os $NA arquivo(s) entram no backup completo (diários/arquivos-*.tar.gz)"
+  else aten "Há $NA arquivo(s) que só existem nesta VPS e ainda não têm backup (rode: bash deploy/backup-completo.sh)"; fi
 else
   aten "Pasta de arquivos $PASTA_ARQ não existe"
 fi

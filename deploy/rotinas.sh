@@ -3,3 +3,4 @@
 set -euo pipefail
 SEGREDO=$(grep '^CRON_SECRET=' /opt/filapro/app/apps/web/.env.production | cut -d= -f2- | tr -d '"')
 curl -fsS -H "Authorization: Bearer $SEGREDO" http://127.0.0.1:3000/api/cron/renovacao
+echo
