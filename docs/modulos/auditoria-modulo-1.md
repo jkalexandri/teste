@@ -107,10 +107,17 @@ O site roda num único processo (pm2, sem cluster), então guardar o limite em m
 - **S8d — reinício zera os limites:** acontece em cada atualização/queda do site. Por desenho; as proteções de alto valor (bloqueio de conta,
   recuperação de senha, verificação em duas etapas) já estão no banco desde as etapas S5 e S6.
 
-### S9 — Senha temporária por e-mail pode ser repetida e vale 24 h ✅
-`/api/auth/recuperar` envia a senha em texto no e-mail e cada pedido sobrescreve a anterior (sem limite por e-mail: S5). Um atacante
-pode invalidar a senha temporária que a vítima acabou de receber (negação de acesso) e lotar a caixa dela. Melhor: link de uso único
-com validade curta (30–60 min). Decisão de produto: prévia própria.
+### S9 — Senhas temporárias viajam em texto no e-mail ✅ (mapeado em 26/11/2026)
+Hoje **5 lugares** geram uma senha temporária e a enviam em texto no e-mail (ou, no último caso, no terminal):
+1. **Recuperação** ("Esqueci minha senha", `api/auth/recuperar`): pedido público, vale 24 h. É a superfície de ataque (qualquer pessoa dispara).
+2. **Conta nova** (`contas.ts: criarConta` — compra, teste grátis, Super Admin cria empresa): e-mail de boas-vindas, vale 7 dias.
+3. **Admin da Empresa cria usuário** (`criarUsuarioNaEmpresa`): e-mail de boas-vindas, 7 dias.
+4. **Redefinir/reenviar acesso** (`usuarios: resetarSenha`, `usuarios-individuais: reenviarAcesso`): e-mail de boas-vindas, 7 dias.
+5. **Instalação** (`seed`): senha do Super Admin mostrada no terminal (não passa por e-mail).
+Problemas: a senha fica guardada na caixa de e-mail (histórico, cópias de segurança, aparelhos sincronizados, encaminhamentos) e continua
+valendo por 24 h ou 7 dias, quantas vezes alguém a usar, até ser trocada. Link de uso único com validade curta não tem esses problemas.
+Observações: há 7 arquivos de teste de ponta a ponta que leem a senha temporária do log do site (`login-regras`, `etapa27`, `etapa29`, `etapa30`,
+`etapa4b`, `etapa4c`, `etapa5`), que precisarão ser adaptados.
 
 ### S10 — A nova senha pode ser igual à temporária ✅ — **FEITA na v1.46.1 junto com a S1 (#157)**
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
