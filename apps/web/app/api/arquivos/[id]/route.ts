@@ -2,14 +2,14 @@
 // Só o dono do arquivo (ou o Super Admin) pode ver. O arquivo vem da VPS (decisão #67).
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { lerArquivoDoWorker } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s || s.precisaTrocar) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   const a = await prisma.arquivo.findUnique({ where: { id }, include: { usuario: { select: { empresaId: true } } } });
   // Dono, Super Admin, ou Admin da mesma empresa (vê as conversas dos usuários — decisão #92)

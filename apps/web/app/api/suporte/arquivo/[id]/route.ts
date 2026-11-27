@@ -1,13 +1,13 @@
 // Anexo de uma mensagem do suporte (decisão #102): o cliente dono da conversa ou o Super Admin.
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { lerArquivoDoWorker } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   const { id } = await params;
   const m = await prisma.suporteMensagem.findUnique({ where: { id }, include: { conversa: true } });

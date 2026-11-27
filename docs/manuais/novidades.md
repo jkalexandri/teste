@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.6 — segurança: arquivos, avisos e manual só para quem tem acesso (26/11/2026)
+
+- Baixar **arquivos**, abrir os anexos do **suporte**, marcar **comunicados** como lidos e ver as imagens do **manual** agora valem só para quem tem a conta em dia e já trocou a senha temporária. Uma sessão antiga de conta vencida, inativa ou bloqueada não passa mais.
+- Os **relatórios, o financeiro e os logos** do Super Admin também conferem isso (se um Super Admin for bloqueado, a sessão dele cai na hora).
+- **Desligar a cobrança automática do cartão** continua permitido para plano vencido ou empresa inativa (é um direito do cliente), mas não para quem ainda não trocou a senha temporária nem para usuário bloqueado.
+- Para quem tem conta normal, nada muda.
+
 ## v1.46.5 — segurança: cada código do app autenticador vale uma vez (26/11/2026)
 
 - **Super Admin:** o código de 6 dígitos da verificação em duas etapas **só entra uma vez**. Se alguém vir ou copiar o código, não consegue usá-lo de novo. Ao entrar duas vezes seguidas em menos de 30 segundos, espere o **próximo código** do app.

@@ -37,7 +37,7 @@ Teste: sessão aberta de um usuário de empresa; depois a empresa foi inativada,
   plano vencido e usuário bloqueado por abuso. A `continuidade.md` já guardava isso como "bloqueado/vencido com WhatsApp e IA (decidir)".
 
 ## Baixas
-### S3 — Rotas que só conferem a sessão, sem olhar a situação da conta ✅ (reproduzido em 26/11/2026)
+### S3 — Rotas que só conferem a sessão, sem olhar a situação da conta ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.6 (decisão #162)**
 Varredura de todas as rotas e ações do servidor: tudo o que é privado confere a sessão; as que não conferem são públicas por desenho
 (pedidos, planos, renovação por link, teste grátis, chat do visitante, webhook do Asaas, webhook de anúncios por token — este já recusa conta
 vencida/inativa/bloqueada —, rotinas protegidas por segredo). Faltam só estas (conta de teste com sessão antiga aberta):
@@ -105,4 +105,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 ✅ → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 ✅ → S3 ✅ → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.

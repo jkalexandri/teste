@@ -1,13 +1,13 @@
 // Comprovante de um lançamento (decisão #106) — só o Super Admin.
 import { NextResponse } from "next/server";
 import { prisma, Cargo } from "@filapro/db";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { lerArquivoDoWorker } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s || s.usuario.cargo !== Cargo.SUPERADMIN) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   const { id } = await params;
   const l = await prisma.lancamento.findUnique({ where: { id } });

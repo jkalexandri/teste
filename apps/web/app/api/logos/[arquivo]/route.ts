@@ -3,13 +3,13 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { Cargo } from "@filapro/db";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { FORMATOS, LOGOS } from "@/lib/logos";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ arquivo: string }> }) {
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s || s.precisaTrocar || s.usuario.cargo !== Cargo.SUPERADMIN) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   const { arquivo } = await params;
   const m = /^([a-z-]+)\.(png|svg)$/.exec(arquivo);

@@ -2,13 +2,13 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { PASTA_MANUAIS } from "@/lib/ajuda";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ nome: string }> }) {
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   const { nome } = await params;
   if (!/^[a-z0-9-]+\.png$/.test(nome)) return NextResponse.json({ erro: "Imagem não encontrada." }, { status: 404 });

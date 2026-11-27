@@ -2,14 +2,14 @@
 import { NextResponse } from "next/server";
 import writeXlsxFile from "write-excel-file/node";
 import { Cargo } from "@filapro/db";
-import { obterSessao } from "@/lib/auth/session";
+import { sessaoDaRota } from "@/lib/auth/rota";
 import { gerarRelatorioFin, TIPOS_FIN, type TipoFin } from "@/lib/relatorios-financeiros";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: Promise<{ tipo: string }> }) {
   const { tipo } = await params;
-  const s = await obterSessao();
+  const s = await sessaoDaRota();
   if (!s || s.precisaTrocar || s.usuario.cargo !== Cargo.SUPERADMIN) return NextResponse.json({ erro: "Acesso negado." }, { status: 403 });
   if (!(tipo in TIPOS_FIN)) return NextResponse.json({ erro: "Relatório inválido." }, { status: 404 });
   const u = new URL(req.url).searchParams;
