@@ -24,7 +24,8 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.49.1 — 27/11/2026 (atendimentos do suporte numerados: tela limpa ao encerrar) |
-| 12 | Operação (VPS) | 🟢 Revisado | 27/11/2026 14:00 | v1.49.1 | 27/11/2026 | 11 Comunicação (suporte) | Atendimentos do suporte numerados: a tela limpa ao encerrar, a próxima mensagem abre um atendimento novo (a IA começa do zero), "Atendimentos anteriores" só leitura para o Super Admin; nada apagado (#177) | 12 Operação (migração) | não |
+| 12 | Operação (VPS) | 🟢 Revisado | 27/11/2026 14:00 | v1.49.2 | 27/11/2026 | 11 Comunicação (Fale conosco) | Script do Fale conosco (Empresa | IA), material comercial e planos com promoções como cadastradas para a IA do chat da tela de Planos (#178) | 3 Planos, 12 Operação (migração) | não |
+| v1.49.1 | 27/11/2026 | 11 Comunicação (suporte) | Atendimentos do suporte numerados: a tela limpa ao encerrar, a próxima mensagem abre um atendimento novo (a IA começa do zero), "Atendimentos anteriores" só leitura para o Super Admin; nada apagado (#177) | 12 Operação (migração) | não |
 | v1.49.0 | v1.49.0 — 27/11/2026 14:00 (revisão concluída: Passo 0 e O1–O8; diagnóstico real 63 OK, 0 atenção, 0 falha) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
@@ -43,7 +44,7 @@ Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** �
 | 8 | Conversas IA (atendimento) | Resposta automática, assumir/devolver, avisos ao usuário | Conversas IA | conversas, avisos, notificações | 10, 10b |
 | 9 | Interessados (site) | Chat do site, teste grátis, vendedor IA | Atendimento | interessados | 14b |
 | 10 | Relatórios e painéis | Dashboard, relatórios, logs, online | Dashboard, Relatórios, Logs, Online | — | 11, 12, 13 |
-| 11 | Comunicação | Avisos, comunicados, suporte, ajuda, app no celular | Avisos, Comunicados, Ajuda | notificações | 12b, 13, 17b, 26, 38 |
+| 11 | Comunicação | Avisos, comunicados, suporte, ajuda, app no celular | Avisos, Comunicados, Ajuda | notificações | 12b, 13, 17b, 26, 38, 39 |
 | 12 | Operação (VPS) | Atualizar, manutenção, backup, voltar versão | — (terminal da VPS) | manutenção | 14 |
 
 ## Histórico de ajustes

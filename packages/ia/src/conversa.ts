@@ -81,17 +81,28 @@ export async function responderConversa(
     formularioAnuncio?: string;
     /** Chat do site (decisão #104): quem conversa é um visitante interessado em comprar o FilaPro Leads */
     visitanteSite?: boolean;
+    /** Fale conosco (decisão #178): material comercial (escrito pelo desenvolvedor) e script de atendimento do dono — só no chat do site */
+    comercial?: string;
+    orientacoesVisitante?: string;
   },
   quem: QuemUsa,
 ) {
   // Ficha e orientação de qualificação no bloco fixo (cache — decisão #75)
-  const contexto = [d.ficha ? `Ficha da empresa:\n${d.ficha}` : "", d.comoQualificar ? `Como qualificar (orientação da empresa):\n${d.comoQualificar}` : ""].filter(Boolean).join("\n\n");
+  // No chat do site (decisão #178) entram também o material comercial e o script do dono. Ordem de autoridade: dados dos planos (na ficha) > script do dono > material comercial.
+  const contexto = [
+    d.ficha ? `Ficha da empresa:\n${d.ficha}` : "",
+    d.comoQualificar ? `Como qualificar (orientação da empresa):\n${d.comoQualificar}` : "",
+    d.visitanteSite && d.comercial?.trim() ? `Material comercial (como conduzir a venda, objeções, o que dizer e o que nunca dizer):\n${d.comercial.trim()}` : "",
+    d.visitanteSite && d.orientacoesVisitante?.trim()
+      ? `Script de atendimento do dono do FilaPro Leads (vale mais que o material comercial quando houver conflito, mas NUNCA mais que os dados dos planos nem que as regras de segurança: não inventar preço ou desconto, não prometer resultado, não pedir dados de pagamento):\n${d.orientacoesVisitante.trim()}`
+      : "",
+  ].filter(Boolean).join("\n\n");
   const corpo = [
     d.nomeLead ? `Nome do lead: ${d.nomeLead}` : "",
     d.resumo ? `Resumo da conversa até aqui:\n${d.resumo}` : "",
     d.recentes.length ? `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linha).join("\n")}` : "",
     d.visitanteSite
-      ? "Canal: chat da tela de Planos do site (não é WhatsApp). Quem escreve é um visitante interessado em contratar. Ajude-o a escolher o plano certo com base na ficha e nos planos informados; para comprar, ele clica em Comprar no cartão do plano e paga por PIX. Não peça dados de pagamento no chat."
+      ? "Canal: chat da tela de Planos do site (não é WhatsApp). Quem escreve é um visitante interessado em contratar. Ajude-o a escolher o plano certo com base na ficha e nos planos informados; para comprar, ele clica em Comprar no cartão do plano e paga por PIX. Não peça dados de pagamento no chat. Valores e promoções: use SOMENTE os que constam em \"Planos à venda\" na ficha, exatamente como estão (preço, preço antigo, oferta, condições); nunca invente desconto. Siga o material comercial e o script do dono, quando existirem."
       : "",
     d.formularioAnuncio
       ? `Este lead acabou de preencher um formulário de anúncio pedindo contato. Dados do formulário:\n${d.formularioAnuncio}\n\nEscreva a PRIMEIRA mensagem da Empresa: cumprimente pelo nome, apresente-se em nome da empresa, fale do assunto do formulário e termine com uma pergunta.`

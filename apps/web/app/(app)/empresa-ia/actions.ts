@@ -4,6 +4,7 @@
 // montagem da ficha acontecem no serviço 24/7; aqui só cadastramos e pedimos o processamento.
 import { MAX_COMO_QUALIFICAR } from "@/lib/sugestao-qualificar";
 import { MAX_ORIENTACOES_SUPORTE } from "@/lib/sugestao-suporte";
+import { MAX_ORIENTACOES_VISITANTE } from "@/lib/sugestao-visitante";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { revalidatePath } from "next/cache";
 import { prisma, StatusMaterial, TipoMaterial } from "@filapro/db";
@@ -208,4 +209,27 @@ export type TesteSuporte = { ok: true; resposta: string; vaiParaAtendente: boole
 export async function testarSuporteIA(pergunta: string): Promise<TesteSuporte> {
   const s = await exigirSuperAdmin();
   return chamarWorkerJson<{ ok: true; resposta: string; vaiParaAtendente: boolean; motivo: string }>("/suporte/testar", { superAdminId: s.usuario.id, pergunta: String(pergunta ?? "").slice(0, 1000) });
+}
+
+// ===== Script de atendimento do Fale conosco (decisão #178) — só o Super Admin =====
+
+/** Salva o script que só a IA do Fale conosco (chat da tela de Planos) lê. Não refaz a ficha nem gasta IA. */
+export async function salvarOrientacoesVisitante(form: FormData): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const texto = String(form.get("orientacoesVisitante") ?? "").trim().slice(0, MAX_ORIENTACOES_VISITANTE);
+  await prisma.fichaEmpresa.upsert({
+    where: { superAdminId: s.usuario.id },
+    update: { orientacoesVisitante: texto },
+    create: { superAdminId: s.usuario.id, nome: "", orientacoesVisitante: texto },
+  });
+  revalidatePath("/empresa-ia");
+  return { ok: true, mensagem: texto ? "Script do Fale conosco salvo." : "Script do Fale conosco apagado." };
+}
+
+export type TesteVisitante = { ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string } | { ok: false; mensagem: string };
+
+/** Mostra o que a IA do Fale conosco responderia a esta mensagem (usa o script SALVO). Não cria conversa nem avisa ninguém. */
+export async function testarVisitanteIA(pergunta: string): Promise<TesteVisitante> {
+  const s = await exigirSuperAdmin();
+  return chamarWorkerJson<TesteVisitante>("/interessados/testar", { superAdminId: s.usuario.id, pergunta: String(pergunta ?? "").slice(0, 1000) });
 }

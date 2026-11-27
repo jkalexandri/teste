@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.2 — Fale conosco: script de atendimento, material comercial e promoções dos planos (27/11/2026)
+
+- Novo cartão **Script do Fale conosco** em **Configurações → Empresa | IA** (só Super Admin): escreva (ou comece pelo **Texto sugestão**) o roteiro que a IA do Fale conosco segue ao conversar com quem ainda não é cliente. Dá para **testar uma mensagem** antes de valer.
+- A IA do Fale conosco agora **conhece o sistema** (material comercial: o que o FilaPro Leads faz, como começar, objeções comuns, o que nunca prometer) e lê os **valores e as promoções dos planos direto do cadastro**: preço antigo e atual, oferta, condições, descontos por quantidade, teste grátis.
+- Ela **nunca inventa preço nem desconto**, não promete resultado nem "100% sem bloqueio" e não pede dados de pagamento no chat; negociação, contrato e nota fiscal vão para você.
+
 ## v1.49.1 — suporte: a tela limpa quando o atendimento termina (27/11/2026)
 
 - Quando o atendimento do suporte é **encerrado** (10 minutos sem o cliente escrever), a **tela do chat fica limpa** na próxima vez que o cliente abrir o suporte. Se ele escrever de novo, começa um **atendimento novo**, sem as mensagens do anterior.

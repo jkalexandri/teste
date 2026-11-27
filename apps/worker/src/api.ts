@@ -41,7 +41,7 @@ export type Atender = {
   atenderAnuncio(id: string): Promise<void>;
 };
 
-export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, vigiaIA?: { verificar(): Promise<unknown> }, encerradorSuporte?: { verificar(): Promise<number> }) {
+export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaArquivos = "./arquivos", aprender?: Aprender, atender?: Atender, interessados?: { agendar(id: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, filaPlataforma?: FilaDaPlataforma, suporteIA?: { agendar(usuarioId: string): void; testar(superAdminId: string, pergunta: string): Promise<unknown> }, vigiaIA?: { verificar(): Promise<unknown> }, encerradorSuporte?: { verificar(): Promise<number> }) {
   const app = Fastify({ loggerInstance: logger as FastifyBaseLogger, bodyLimit: 64 * 1024 });
   // Anexos chegam como bytes puros (application/octet-stream)
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer", bodyLimit: MAX_ARQUIVO }, (_req, corpo, feito) => feito(null, corpo));
@@ -173,6 +173,14 @@ export function criarApi(sessoes: Sessoes, token: string, logger: Logger, pastaA
     const id = String(req.body?.superAdminId ?? "");
     if (!ID_VALIDO.test(id)) return res.code(400).send({ ok: false, mensagem: "Pedido inválido." });
     return suporteIA.testar(id, String(req.body?.pergunta ?? ""));
+  });
+
+  // Teste do script do Fale conosco (decisão #178): só o Super Admin chama (pelo site); não cria conversa
+  app.post<{ Body: { superAdminId?: string; pergunta?: string } | null }>("/interessados/testar", async (req, res) => {
+    if (!interessados) return res.code(503).send({ ok: false, mensagem: "Fale conosco indisponível." });
+    const id = String(req.body?.superAdminId ?? "");
+    if (!ID_VALIDO.test(id)) return res.code(400).send({ ok: false, mensagem: "Pedido inválido." });
+    return interessados.testar(id, String(req.body?.pergunta ?? ""));
   });
 
   // ===== Notificações no celular (decisão #99): teste a partir da tela Avisos =====

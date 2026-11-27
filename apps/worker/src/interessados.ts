@@ -5,6 +5,7 @@ import { prisma, Cargo } from "@filapro/db";
 import { responderConversa, MENSAGENS_RECENTES, type MensagemConversa } from "@filapro/ia/src/conversa.ts";
 import { ErroIA } from "@filapro/ia/src/tipos.ts";
 import { emManutencao } from "./manutencao.js";
+import { lerMaterialComercial, textoDosPlanos, type PlanoParaTexto } from "./comercial.js";
 import { pontoLigado } from "./ia-plataforma.js";
 
 export const MOTIVO_INTERESSADO_NAO_SEI = "A IA não soube responder";
@@ -14,9 +15,15 @@ type Opcoes = {
   esperaMs?: () => number;
   /** Avisa o Super Admin (WhatsApp de avisos e celular) */
   avisarSuporte?: (texto: string) => Promise<void>;
+  /** A IA que responde (nos testes, uma que registra o que recebeu) */
+  ia?: typeof responderConversa;
+  /** Material comercial (nos testes, fixo) */
+  lerMaterial?: () => Promise<string>;
 };
 
-const reais = (centavos: number) => (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Limite dos testes do Super Admin (cada teste usa IA) */
+export const LIMITE_TESTES_VISITANTE_HORA = 10;
+
 
 export class AtendenteInteressados {
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -47,6 +54,48 @@ export class AtendenteInteressados {
     for (const i of its) if (i.mensagens[0]?.autor === "VISITANTE") this.agendar(i.id);
   }
 
+  /**
+   * Tudo o que a IA do Fale conosco sabe (decisão #178): ficha da empresa, planos com preço e PROMOÇÃO exatamente como cadastrados,
+   * material comercial (arquivo do projeto) e o script de atendimento do Super Admin.
+   */
+  async conhecimento(superAdminId: string | null) {
+    const ficha = superAdminId ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId } }) : null;
+    const planos = await prisma.plano.findMany({ where: { visivel: true }, orderBy: { ordem: "asc" } });
+    const textoPlanos = textoDosPlanos(planos as PlanoParaTexto[]);
+    const ficha_ = [
+      "Empresa: FilaPro Leads (sistema de prospecção pelo WhatsApp com IA e proteção contra bloqueio).",
+      ficha?.resumo?.trim() ?? "",
+      textoPlanos ? `Planos à venda (valores, promoções e condições valem EXATAMENTE como estão aqui):\n${textoPlanos}` : "",
+    ].filter(Boolean).join("\n\n");
+    const comercial = await (this.op.lerMaterial ?? lerMaterialComercial)().catch(() => "");
+    return { ficha: ficha_, comoQualificar: ficha?.comoQualificar ?? "", comercial, orientacoesVisitante: ficha?.orientacoesVisitante ?? "" };
+  }
+
+  private testes = new Map<string, number[]>();
+
+  /** Teste do Super Admin: o que a IA do Fale conosco responderia a esta mensagem (usa o script SALVO). Não cria conversa nem avisa ninguém. */
+  async testar(superAdminId: string, pergunta: string): Promise<{ ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string } | { ok: false; mensagem: string }> {
+    const texto = pergunta.trim().slice(0, 1000);
+    if (!texto) return { ok: false, mensagem: "Escreva uma pergunta." };
+    const agora = Date.now();
+    const usados = (this.testes.get(superAdminId) ?? []).filter((t) => agora - t < 3_600_000);
+    if (usados.length >= LIMITE_TESTES_VISITANTE_HORA) {
+      const min = Math.ceil((3_600_000 - (agora - usados[0]!)) / 60_000);
+      return { ok: false, mensagem: `Limite de ${LIMITE_TESTES_VISITANTE_HORA} testes por hora. Tente de novo em ${min} min.` };
+    }
+    this.testes.set(superAdminId, [...usados, agora]);
+    try {
+      const r = await (this.op.ia ?? responderConversa)(
+        { ...(await this.conhecimento(superAdminId)), resumo: "", nomeLead: "Visitante", recentes: [{ autor: "LEAD", texto }], visitanteSite: true },
+        { empresaId: null, usuarioId: superAdminId },
+      );
+      return { ok: true, resposta: r.resposta, vaiParaAtendente: r.naoSei, temperatura: r.temperatura };
+    } catch (e) {
+      this.log.warn({ msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu o teste do Fale conosco");
+      return { ok: false, mensagem: e instanceof ErroIA ? e.message : "A IA não respondeu agora. Tente de novo." };
+    }
+  }
+
   async responder(id: string) {
     // Ponto Visitante desligado pelo Super Admin (decisão #149): só o Super Admin responde; ao religar, a IA retoma quem esperou
     if (!(await pontoLigado("VISITANTE"))) return;
@@ -55,19 +104,12 @@ export class AtendenteInteressados {
     const recentes = (await prisma.interessadoMensagem.findMany({ where: { interessadoId: id }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();
     if (recentes.at(-1)?.autor !== "VISITANTE") return; // já respondido
     const sa = await prisma.usuario.findFirst({ where: { cargo: Cargo.SUPERADMIN }, orderBy: { criadoEm: "asc" }, select: { id: true } });
-    const ficha = sa ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId: sa.id } }) : null;
-    const planos = await prisma.plano.findMany({ where: { visivel: true }, orderBy: { ordem: "asc" } });
-    const textoPlanos = planos.map((p) => `- ${p.nome}: ${p.personalizado || p.precoAtual == null ? "sob consulta" : reais(p.precoAtual)}${p.prazoDias ? ` por ${p.prazoDias} dias` : ""}${p.recursos?.length ? ` — ${p.recursos.join("; ")}` : ""}`).join("\n");
-    const fichaTexto = [
-      "Empresa: FilaPro Leads (sistema de prospecção pelo WhatsApp com IA e proteção contra bloqueio).",
-      ficha?.resumo?.trim() ?? "",
-      textoPlanos ? `Planos à venda:\n${textoPlanos}` : "",
-    ].filter(Boolean).join("\n\n");
+    const base = await this.conhecimento(sa?.id ?? null);
     const paraIA = (m: { autor: string; texto: string }): MensagemConversa => ({ autor: m.autor === "VISITANTE" ? "LEAD" : "IA", texto: m.texto || "(arquivo)" });
     let r;
     try {
-      r = await responderConversa(
-        { ficha: fichaTexto, comoQualificar: ficha?.comoQualificar ?? "", resumo: "", nomeLead: it.nome, recentes: recentes.map(paraIA), visitanteSite: true },
+      r = await (this.op.ia ?? responderConversa)(
+        { ...base, resumo: "", nomeLead: it.nome, recentes: recentes.map(paraIA), visitanteSite: true },
         { empresaId: null, usuarioId: sa?.id ?? null },
       );
     } catch (e) {

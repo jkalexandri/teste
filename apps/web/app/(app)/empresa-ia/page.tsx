@@ -6,6 +6,8 @@ import { atorEmpresaIA, mesAtual } from "@/lib/empresa-ia";
 import { workerConfigurado } from "@/lib/worker";
 import TelaEmpresaIA from "./TelaEmpresaIA";
 import OrientacoesSuporte from "./OrientacoesSuporte";
+import OrientacoesVisitante from "./OrientacoesVisitante";
+import { MAX_ORIENTACOES_VISITANTE, SUGESTAO_ORIENTACOES_VISITANTE } from "@/lib/sugestao-visitante";
 import { MAX_ORIENTACOES_SUPORTE, SUGESTAO_ORIENTACOES_SUPORTE, TESTES_POR_HORA } from "@/lib/sugestao-suporte";
 import { MAX_COMO_QUALIFICAR, sugestaoQualificar } from "@/lib/sugestao-qualificar";
 import { protegerTela } from "@/lib/auth/tela";
@@ -51,6 +53,10 @@ export default async function EmpresaIAPage() {
       {/* Orientações do suporte (decisão #148): só o Super Admin */}
       {a.u.cargo === Cargo.SUPERADMIN && (
         <OrientacoesSuporte inicial={f.orientacoesSuporte} sugestao={SUGESTAO_ORIENTACOES_SUPORTE} max={MAX_ORIENTACOES_SUPORTE} testesPorHora={TESTES_POR_HORA} />
+      )}
+      {/* Script do Fale conosco (decisão #178): só o Super Admin */}
+      {a.u.cargo === Cargo.SUPERADMIN && (
+        <OrientacoesVisitante inicial={f.orientacoesVisitante} sugestao={SUGESTAO_ORIENTACOES_VISITANTE} max={MAX_ORIENTACOES_VISITANTE} />
       )}
     </section>
   );

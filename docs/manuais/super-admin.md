@@ -89,6 +89,8 @@ quiser), aceita a Política de Privacidade e conversa — só por texto.
 
 - **A IA responde primeiro**, como vendedora do FilaPro Leads, usando o **seu Empresa | IA** e os **planos visíveis**, e marca o
   interessado como Quente, Morno ou Frio.
+- A IA conhece o sistema pelo **material comercial** (escrito pelo desenvolvedor, em `docs/comercial/fale-conosco.md`) e lê os **valores e promoções dos planos visíveis direto do cadastro** (preço antigo e atual, oferta, condições, descontos por quantidade, teste grátis): ela só repete o que está cadastrado e **nunca inventa desconto**.
+- Para dar o **seu roteiro** à IA, use **Configurações → Empresa | IA → Script do Fale conosco** (abertura, perguntas, como recomendar o plano, respostas prontas, regras) e teste com **Testar uma mensagem**. O seu script vale mais que o material comercial, mas nunca mais que os dados dos planos nem que as regras de segurança.
 - Se a IA não souber responder, ela **pausa** e você recebe aviso no WhatsApp e no celular.
 - **Assumir conversa** (ou escrever uma mensagem) faz a IA parar; **Devolver para a IA** faz ela voltar. Você pode enviar imagem ou PDF.
 - Se o visitante não estiver com o chat aberto, a sua resposta vai **também pelo WhatsApp** dele (pelo Número da plataforma).
