@@ -24,7 +24,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.46.0 — 27/11/2026 00:30 (suporte encerrado por inatividade do cliente) |
-| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.44.1 — 26/11/2026 19:10 (atualização à prova de rota removida e de tentativa repetida) |
+| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.47.1 — 27/11/2026 12:00 (diagnóstico da VPS, somente leitura) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
 
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.47.1 | 27/11/2026 12:00 | 12 Operação (VPS) | `deploy/diagnostico-vps.sh`: diagnóstico somente leitura da VPS (sistema, relógio, serviços, backup, arquivos, .env só os nomes, banco, aplicação, logs) (#168) | — | não |
 | v1.47.0 | 27/11/2026 11:00 | 1 Acesso e segurança | **Revisão concluída (S1 a S10, decisões #157 a #166):** 14 testes de ponta a ponta e 13 unitários passando; pendente só a limpeza da senha temporária (S9 Fase 3, 8 dias ou mais depois da v1.46.9) (#167) | — | não |
 | v1.47.0 | 27/11/2026 10:00 | 1 Acesso e segurança | S7: verificação em duas etapas opcional para Admin da Empresa, Individual e Usuário (menu Segurança, convite ao dono); redefinir a verificação de quem perdeu o celular (Admin/Super Admin); aviso por e-mail no congelamento (#166) | 2 Contas e usuários (menu e telas de gestão) | não |
 | v1.46.9 | 27/11/2026 09:00 | 1 Acesso e segurança | S9 Fase 2: conta nova, usuário criado e Resetar/Reenviar acesso por link de uso único (7 dias); redefinir invalida a senha atual e encerra sessões; login de conta sem senha com o mesmo tempo (#165) | 2 Contas e usuários, 3 Planos (compra e teste grátis) | não |

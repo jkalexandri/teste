@@ -281,6 +281,25 @@ Teste o backup agora: `bash /opt/filapro/app/deploy/backup-banco.sh && ls -lh /o
 Liga: SSH só com chave (senha desligada), **fail2ban** e **atualizações de segurança automáticas**. Se não houver chave cadastrada,
 o script **não** desliga a senha. Sem a chave, o acesso continua pelo **Terminal do navegador** no painel da Hostinger.
 
+### 6.2b Diagnóstico da VPS (somente leitura — decisão #168)
+
+Mostra o estado real da VPS (sistema, relógio, serviços, site, backup, arquivos, chaves — só os **nomes** —, banco, aplicação e logs) com [OK], [ATENCAO] e [FALHA].
+**Não altera nada** e **não mostra senhas, chaves nem valores dos `.env`**. Rode como root e mande a tela inteira para o desenvolvedor:
+
+```bash
+bash /opt/filapro/app/deploy/diagnostico-vps.sh
+```
+
+Se a VPS ainda não tem o arquivo (versão antiga), baixe só ele, sem atualizar o sistema:
+
+```bash
+cd /opt/filapro/app && git fetch origin main && git show origin/main:deploy/diagnostico-vps.sh > /root/diagnostico-vps.sh
+```
+
+```bash
+bash /root/diagnostico-vps.sh
+```
+
 ## Parte 6.3 — Sugestão de planos (opcional, decisão #111)
 
 Preenche 12 planos (7 "Sem limite" + 5 "Start" por quantidade), todos **visíveis como "Em breve"** (preço **R$ 0,00**, sem compra).
