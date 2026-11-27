@@ -61,6 +61,21 @@ estado externo true 80; J=$(rodar); t "Envio externo com 80 h: crítico" "$([ "$
 estado externo false 2; J=$(rodar); t "Último envio externo com ok:false: aviso" "$([ "$(nivel "$J" backupExterno)" = aviso ] && echo 1)"
 rm -f "$B/estado-externo.json" /tmp/vg-rclone.conf; unset FILAPRO_RCLONE_CONF
 
+# ---- 3c. Dependências e ensaio do desastre (decisão #175)
+J=$(rodar); t "Sem estado de dependências: o item nem aparece" "$(echo "$J" | grep -q dependencias && echo 0 || echo 1)"
+dep() { printf '{"quando":"x","ok":%s,"executou":%s,"pendentes":"%s"}\n' "$1" "$2" "$3" > "$B/estado-dependencias.json"; touch -d "$4 hours ago" "$B/estado-dependencias.json"; }
+dep true true "" 24; J=$(rodar); t "Dependências em dia: ok" "$([ "$(nivel "$J" dependencias)" = ok ] && echo 1)"
+dep false true "GHSA-xxxx pacote" 24; J=$(rodar); t "Vulnerabilidade alta pendente: aviso" "$([ "$(nivel "$J" dependencias)" = aviso ] && echo "$J" | grep -q 'GHSA-xxxx' && echo 1)"
+dep true true "" 400; J=$(rodar); t "Auditoria sem rodar há 16 dias: aviso" "$([ "$(nivel "$J" dependencias)" = aviso ] && echo 1)"
+dep false false "" 24; J=$(rodar); t "Auditoria que não executou (sem internet) há pouco tempo: ainda ok (não alarma por rede)" "$([ "$(nivel "$J" dependencias)" = ok ] && echo 1)"
+rm -f "$B/estado-dependencias.json"
+echo "[filapro-b2]" > /tmp/vg-rclone.conf; export FILAPRO_RCLONE_CONF=/tmp/vg-rclone.conf
+J=$(rodar); t "Cópia externa configurada e nenhum ensaio ainda: ok (não alarma)" "$([ "$(nivel "$J" ensaio)" = ok ] && echo 1)"
+estado ensaio true 100; J=$(rodar); t "Ensaio com 4 dias: ok" "$([ "$(nivel "$J" ensaio)" = ok ] && echo 1)"
+estado ensaio true 1100; J=$(rodar); t "Ensaio com 46 dias: aviso" "$([ "$(nivel "$J" ensaio)" = aviso ] && echo 1)"
+estado ensaio false 5; J=$(rodar); t "Ensaio que falhou: aviso" "$([ "$(nivel "$J" ensaio)" = aviso ] && echo 1)"
+rm -f "$B/estado-ensaio.json" /tmp/vg-rclone.conf; unset FILAPRO_RCLONE_CONF
+
 # ---- 4. Segurança do relatório e do envio
 J=$(rodar)
 t "O relatório não contém o segredo nem caminhos da VPS" "$(echo "$J" | grep -q -E 'segredo-falso|/opt/|/root|/tmp' && echo 0 || echo 1)"

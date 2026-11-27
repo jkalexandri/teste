@@ -144,6 +144,8 @@ if [ -n "$CRON" ]; then
   elif echo "$CRON" | grep -q 'backup-banco.sh'; then aten "Só o backup antigo do banco está agendado (sem arquivos e chaves): troque pelo backup-completo.sh (docs/publicacao-vps.md 6.1)"
   else falha "Backup NÃO está agendado no cron (nenhuma linha com backup-completo.sh)"; fi
   echo "$CRON" | grep -q 'backup-externo.sh' && ok "Envio da cópia externa (B2) está agendado" || aten "Cópia externa (B2) não está no cron (docs/publicacao-vps.md 6.1b)"
+  echo "$CRON" | grep -q 'auditar-dependencias.sh' && ok "Auditoria semanal de dependências está agendada" || aten "Auditoria de dependências não está no cron (docs/publicacao-vps.md 6.2g)"
+  echo "$CRON" | grep -q 'ensaio-desastre.sh' && ok "Ensaio mensal do desastre está agendado" || aten "Ensaio mensal do desastre não está no cron (docs/publicacao-vps.md 6.2h)"
   echo "$CRON" | grep -q 'restaurar-backup.sh --so-testar' && ok "Teste semanal de restauração está agendado" || aten "Teste semanal de restauração não está no cron (docs/publicacao-vps.md 6.1)"
   echo "$CRON" | grep -q 'backup-completo.sh banco' && ok "Dump do banco a cada 6 h está agendado" || aten "Dump do banco a cada 6 h não está no cron (backup-completo.sh banco)"
   echo "$CRON" | grep -q 'vigia-vps.sh' && ok "Vigia da VPS (avisos de backup, disco, memória, reinício) está agendado" || aten "Vigia da VPS não está no cron (docs/publicacao-vps.md 6.1)"
@@ -196,6 +198,20 @@ if [ -d "$PASTA" ]; then
     if [ ! -f "$JE" ]; then aten "Cópia externa configurada, mas ainda sem envio (rode: bash deploy/backup-externo.sh)"
     elif ! grep -q '"ok":true' "$JE"; then falha "O último envio da cópia externa terminou COM PROBLEMAS: $(grep -o '"erros":"[^"]*"' "$JE" | cut -d'"' -f4 | cut -c1-160)"
     else HE=$(horas "$JE"); if [ "$HE" -le 30 ]; then ok "Cópia externa (B2) em dia (há ${HE}h)"; else aten "Último envio da cópia externa há ${HE}h (o de 03:50 falhou?)"; fi; fi
+  fi
+  # Auditoria de dependências (decisão #175)
+  JD="$PASTA/estado-dependencias.json"
+  if [ ! -f "$JD" ]; then aten "Ainda sem auditoria de dependências (rode: bash deploy/auditar-dependencias.sh)"
+  elif grep -q '"executou":true' "$JD" && ! grep -q '"ok":true' "$JD"; then falha "Dependência(s) com vulnerabilidade alta/crítica PENDENTE: $(grep -o '"pendentes":"[^"]*"' "$JD" | cut -d'"' -f4 | cut -c1-120)"
+  elif [ "$(horas "$JD")" -gt 360 ]; then aten "Auditoria de dependências sem rodar há mais de 15 dias (cron de domingo 05:00)"
+  else ok "Dependências sem vulnerabilidade alta/crítica pendente (auditoria há $(( $(horas "$JD") / 24 )) dia(s))"; fi
+  # Ensaio do desastre (decisão #175)
+  JN="$PASTA/estado-ensaio.json"
+  if [ -f "$CONF_EXT" ]; then
+    if [ ! -f "$JN" ]; then aten "Ainda sem ensaio do desastre (rode: bash deploy/ensaio-desastre.sh)"
+    elif ! grep -q '"ok":true' "$JN"; then falha "O último ENSAIO DO DESASTRE falhou: $(grep -o '"erros":"[^"]*"' "$JN" | cut -d'"' -f4 | cut -c1-160)"
+    elif [ "$(horas "$JN")" -gt 1080 ]; then aten "Último ensaio do desastre há $(( $(horas "$JN") / 24 )) dias (cron: dia 1, 05:30)"
+    else ok "Ensaio do desastre em dia (há $(( $(horas "$JN") / 24 )) dia(s); $(grep -o '"duracao_s":[0-9]*' "$JN" | cut -d: -f2)s)"; fi
   fi
   # Teste semanal de restauração (decisão #170)
   JR="$PASTA/estado-restauracao.json"

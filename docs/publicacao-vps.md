@@ -406,6 +406,65 @@ Ele usa o `logrotate` do Ubuntu: os logs do FilaPro (`/var/log/filapro-*.log`) g
 bash /opt/filapro/app/deploy/rotacao-logs.sh --conferir
 ```
 
+### 6.2f Rotação de segredos (decisão #175)
+
+Troque um segredo **quando houver suspeita de vazamento** (print que o mostrou, computador perdido, ex-colaborador) — não por rotina. O impacto é bem diferente de um para outro:
+
+| Segredo | Impacto de trocar | Como |
+|---|---|---|
+| `CRON_SECRET` | baixo | `bash /opt/filapro/app/deploy/rotacionar-segredo.sh cron` |
+| `MONITOR_TOKEN` | baixo (atualize o endereço no UptimeRobot) | `... rotacionar-segredo.sh monitor` e depois `... rotacionar-segredo.sh monitor --mostrar-url` |
+| `WORKER_TOKEN` | baixo (site e serviço 24/7 reiniciam; o WhatsApp reconecta sozinho em minutos) | `... rotacionar-segredo.sh worker-token` |
+| Senha do banco | médio (muda no PostgreSQL e nos dois `.env`) | `... rotacionar-segredo.sh banco` |
+| Chave do B2 | baixo | `bash .../backup-externo-config.sh --trocar-chave` (crie antes a chave nova no B2 e apague a antiga) |
+| Senha do backup (chaves) | os pacotes antigos continuam com a senha antiga: **guarde as duas** | `bash .../backup-senha.sh --trocar --gerar` |
+| Chave SSH | baixo | cadastre a nova (`ssh-chave.sh --adicionar`), teste o login, remova a antiga (`--remover N`) |
+| Chaves do Asaas e do Resend | baixo | gere a chave nova no painel deles, troque no `.env` (`nano`), `pm2 restart ... --update-env` e **revogue a antiga** |
+| **VAPID** (notificações no celular) | **alto**: as notificações de **todos** os usuários deixam de funcionar até reativarem | só se vazar: gere um par novo (`bash .../gerar-segredos.sh`), troque no site e no serviço, reinicie os dois e avise os usuários para reativar as notificações |
+| **`CHAVE_CRIPTO`** | **muito alto** | **NÃO troque sem uma migração** (veja abaixo) |
+
+Cada script automático **gera o valor novo sem mostrá-lo**, guarda cópia dos `.env`, troca, reinicia, **confere que o novo vale e o antigo foi recusado** e, **se algo falhar, desfaz tudo sozinho**.
+
+**Por que a `CHAVE_CRIPTO` é diferente.** Ela criptografa, no banco, o login do WhatsApp de todos os números, as chaves da IA e do Asaas e os segredos da verificação em duas etapas. Trocá-la sem re-criptografar esses dados os deixa **ilegíveis**: todos os números pedem QR Code de novo, as chaves da IA e do Asaas precisam ser digitadas de novo e quem usa 2FA perde o segundo fator (é preciso "Redefinir verificação"). Hoje **não existe** a migração que re-criptografa com a chave nova. **Árvore de decisão:** (1) o vazamento é **comprovado** (a chave apareceu fora da VPS e dos seus cofres)? Se não, **não troque**; (2) se sim, **peça ao desenvolvedor a migração de re-criptografia primeiro**, faça um backup completo (`backup-completo.sh`), coloque o sistema em manutenção e só então troque nos dois `.env`; (3) depois confira o ensaio do desastre (`ensaio-desastre.sh`) e o diagnóstico. A `CHAVE_CRIPTO` do backup precisa ser sempre a mesma da VPS: o ensaio mensal confere isso.
+
+### 6.2g Auditoria de dependências (decisão #175)
+
+O sistema usa bibliotecas de terceiros, e novas falhas conhecidas aparecem o tempo todo. Toda semana (domingo 05:00) a VPS consulta o registro de falhas conhecidas e o site avisa por e-mail se houver uma **alta ou crítica** pendente. Ligue o cron (uma vez; pode repetir):
+
+```bash
+( crontab -l 2>/dev/null | grep -v auditar-dependencias.sh; echo '0 5 * * 0 /opt/filapro/app/deploy/auditar-dependencias.sh >> /var/log/filapro-dependencias.log 2>&1' ) | crontab -
+```
+
+Para rodar agora e ver o resultado:
+
+```bash
+bash /opt/filapro/app/deploy/auditar-dependencias.sh
+```
+
+Uma falha que **não dá para corrigir** e que não afeta o sistema em funcionamento pode ser **aceita com justificativa**: uma linha em `deploy/dependencias-aceitas.txt` (`ID | pacote | motivo | reavaliar até AAAA-MM-DD`). **Quando o prazo vence, ela volta a ser problema**, para forçar a reavaliação. A lista hoje está vazia (a única falha encontrada foi corrigida).
+
+### 6.2h Ensaio do desastre (decisão #175)
+
+Um backup que nunca foi restaurado é uma esperança, não um backup. O ensaio faz, **num banco e numa pasta temporários** (apaga tudo no fim e **não toca nos dados reais**), o que você faria depois de perder a VPS: baixa o backup mais recente do B2, abre o pacote de chaves com a senha do backup, confere os `.env` recuperados (inclusive que a `CHAVE_CRIPTO` bate com a atual), restaura o banco e confere os arquivos enviados. Mede o tempo de cada passo. Ligue o cron mensal (dia 1, 05:30; uma vez, pode repetir):
+
+```bash
+( crontab -l 2>/dev/null | grep -v ensaio-desastre.sh; echo '30 5 1 * * /opt/filapro/app/deploy/ensaio-desastre.sh >> /var/log/filapro-ensaio.log 2>&1' ) | crontab -
+```
+
+Para ensaiar agora (leva de 1 a poucos minutos) e ver os tempos:
+
+```bash
+bash /opt/filapro/app/deploy/ensaio-desastre.sh
+```
+
+```bash
+cat /opt/filapro/backups/estado-ensaio.json
+```
+
+Se o ensaio falhar, o vigia avisa por e-mail e o diagnóstico mostra FALHA: trate com **prioridade**, porque significa que o backup que você acha que tem pode não restaurar.
+
+**O que você precisa ter à mão no dia de um desastre** (guarde fora da VPS, no seu gerenciador de senhas): as **duas senhas de criptografia do backup externo**, a **senha do backup das chaves**, o acesso à **conta do B2**, a **frase-senha e a cópia da chave SSH**, o acesso ao **painel da Hostinger** (inclusive o Terminal do navegador) e ao **painel do domínio** (DNS). **Quanto tempo leva:** o ensaio registra os tempos de baixar, abrir as chaves e restaurar em `estado-ensaio.json`; some a isso a instalação de um servidor novo (seções 2 a 5 deste guia) — como estimativa a confirmar no seu primeiro ensaio real em servidor novo, conte **de 1 a 2 horas** no total.
+
 ### 6.2e SSH só com chave (decisão #174)
 
 O SSH com senha é a porta de entrada mais atacada de uma VPS. Com **só chave**, uma senha adivinhada ou vazada deixa de servir. A ordem abaixo foi pensada para **você nunca ficar trancado fora**: a senha só é desligada depois de **provar um login real com a chave**, e volta sozinha se a prova não vier. E o **Terminal do navegador do painel da Hostinger não usa o SSH**: ele funciona mesmo que o SSH esteja bloqueado.

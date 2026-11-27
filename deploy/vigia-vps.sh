@@ -60,6 +60,26 @@ if [ -f "$CONF_EXT" ]; then
   fi
 fi
 
+# Auditoria de dependências (O7, decisão #175): pendente alta/crítica = aviso; auditoria que não roda há mais de 15 dias = aviso
+ED="$PASTA/estado-dependencias.json"
+if [ -f "$ED" ]; then
+  H=$(horas_de "$ED"); PEND="$(grep -o '"pendentes":"[^"]*"' "$ED" | cut -d'"' -f4 | cut -c1-55)"
+  if [ "$H" -gt 360 ]; then item dependencias aviso "auditoria sem rodar há $((H / 24)) dias"
+  elif grep -q '"executou":true' "$ED" && ! ok_json "$ED"; then item dependencias aviso "${PEND:-vulnerabilidade pendente}"
+  else item dependencias ok "há $((H / 24)) dias"; fi
+fi
+# Ensaio do desastre (O8, decisão #175): só vigia se a cópia externa existe; falhou ou mais de 45 dias = aviso
+EN="$PASTA/estado-ensaio.json"
+if [ -f "$CONF_EXT" ]; then
+  if [ ! -f "$EN" ]; then item ensaio ok "ainda sem ensaio"
+  else
+    H=$(horas_de "$EN")
+    if ! ok_json "$EN"; then item ensaio aviso "o último ensaio do desastre falhou"
+    elif [ "$H" -gt 1080 ]; then item ensaio aviso "último ensaio há $((H / 24)) dias"
+    else item ensaio ok "há $((H / 24)) dias"; fi
+  fi
+fi
+
 # ---------------------------------------------------------------- Disco (do disco onde ficam os backups)
 if [ -n "${FILAPRO_DISCO_PCT:-}" ]; then P="$FILAPRO_DISCO_PCT"; else P=$(df -P "$PASTA" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}'); fi
 if [[ "${P:-}" =~ ^[0-9]+$ ]]; then

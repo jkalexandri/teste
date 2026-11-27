@@ -1,0 +1,4 @@
+# Exceções justificadas da auditoria de dependências (decisão #175 — Módulo 12, O7).
+# Uma por linha:  ID-do-aviso (GHSA-...) | pacote | motivo | reavaliar até AAAA-MM-DD
+# Uma exceção VENCIDA volta a ser tratada como problema (força a reavaliação). Linhas com # são comentários.
+# (vazio: não há exceções. O deepmerge-ts foi corrigido forçando a versão 8 em package.json > pnpm.overrides.)

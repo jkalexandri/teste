@@ -71,5 +71,5 @@ test("todas as regras têm título, instrução e persistência válida", () => 
   for (const [id, r] of Object.entries(REGRAS)) {
     assert.ok(r.titulo.length > 5 && r.oQueFazer.length > 20 && r.persistencia >= 1, id);
   }
-  assert.deepEqual(Object.keys(REGRAS).sort(), ["backup", "backup6h", "backupExterno", "certificado", "disco", "memoria", "reinicio", "relogio", "restauracao"]);
+  assert.deepEqual(Object.keys(REGRAS).sort(), ["backup", "backup6h", "backupExterno", "certificado", "dependencias", "disco", "ensaio", "memoria", "reinicio", "relogio", "restauracao"]);
 });

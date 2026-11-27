@@ -68,13 +68,13 @@ Proposta: o vigia avisa o Super Admin ("reinício pendente") e o manual traz o p
 ### O5 — Espaço em disco e memória sem vigia (MÉDIA) ✅ (#171)
 Disco cheio derruba o banco e o backup em silêncio; a VPS tem pouca memória (swap de 2 GB). Nada avisa "disco acima de 80%" ou "memória/swap no limite". O vigia pode checar.
 
-### O6 — Rotação das chaves não está documentada (BAIXA) ✅
+### O6 — Rotação das chaves não está documentada (BAIXA) ✅ (#175: script para os de baixo impacto + procedimento e árvore de decisão para CHAVE_CRIPTO e VAPID)
 Não há procedimento para trocar `CHAVE_CRIPTO`, `CRON_SECRET`, `WORKER_TOKEN` ou a chave VAPID (o que fazer com os dados criptografados, o que reconfigurar). Importante principalmente se uma chave vazar.
 
-### O7 — Verificação de dependências com falhas conhecidas (BAIXA) ✅
+### O7 — Verificação de dependências com falhas conhecidas (BAIXA) ✅ (#175: auditoria semanal; deepmerge-ts corrigido)
 Não há rotina (`pnpm audit`) para listar dependências com vulnerabilidades conhecidas. Proposta: conferir a cada entrega e registrar o resultado.
 
-### O8 — Documentação do reinício e da recuperação de desastre (BAIXA) ✅
+### O8 — Documentação do reinício e da recuperação de desastre (BAIXA) ✅ (#175: ensaio mensal automático e roteiro com o que ter à mão)
 Existem `restaurar-servidor.sh` (mudar de servidor) e a seção de emergência; falta um **roteiro de recuperação de desastre** de ponta a ponta (quem faz o quê, em que ordem, quanto tempo leva) e **um ensaio** registrado (a "restauração de teste" do P0-4).
 
 ## Resultado do diagnóstico na VPS real (27/11/2026, v1.47.1)
