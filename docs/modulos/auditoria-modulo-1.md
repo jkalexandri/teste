@@ -93,8 +93,19 @@ Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
 ### S7 — 2FA só para Super Admin ❓ (decisão de produto)
 Admin da Empresa não tem 2FA. Não é falha de código; é uma decisão para o dono.
 
-### S8 — Limite por IP guardado em memória ❓
-Reiniciar o site zera os contadores. Aceitável com uma só instância; registrar como limitação.
+### S8 — Limites por endereço de internet: confiança no cabeçalho, IPv6 e memória ✅ (reproduzido em 26/11/2026)
+O site roda num único processo (pm2, sem cluster), então guardar o limite em memória é coerente. Reproduzido no site de teste (login, limite de
+20 por 10 minutos por endereço; controle: o mesmo endereço 25 vezes = 5 bloqueados, como deve):
+- **S8a — confia na primeira entrada do `X-Forwarded-For`:** com o cabeçalho `X-Forwarded-For: <qualquer>, <endereço real>`, a 1ª entrada
+  mudando a cada pedido, **0 de 25 foram bloqueados**. Hoje o Caddy sobrescreve o cabeçalho (quem o envia não consegue forjar), mas
+  se algum dia ele passar a acrescentar (outra versão ou configuração), todos os limites, os Logs e o alerta de "endereço novo do Super Admin"
+  ficariam forjáveis. O código lê a 1ª entrada em 3 lugares (`limite-acesso.ts`, `logs.ts`, `alertas-seguranca.ts`).
+- **S8b — IPv6:** **25 endereços IPv6 diferentes do mesmo bloco /64: 0 bloqueados.** Quem tem IPv6 recebe um bloco /64 inteiro (bilhões de
+  endereços) e foge de qualquer limite por endereço. Só atinge se o site passar a ter registro AAAA (hoje só IPv4); vale corrigir antes.
+- **S8c — memória sem teto firme:** o mapa de limites só é limpo (varrendo tudo) quando passa de 5 mil chaves e só remove as inativas há mais
+  de 1 hora; uma inundação de endereços distintos pode crescer e gastar CPU na varredura.
+- **S8d — reinício zera os limites:** acontece em cada atualização/queda do site. Por desenho; as proteções de alto valor (bloqueio de conta,
+  recuperação de senha, verificação em duas etapas) já estão no banco desde as etapas S5 e S6.
 
 ### S9 — Senha temporária por e-mail pode ser repetida e vale 24 h ✅
 `/api/auth/recuperar` envia a senha em texto no e-mail e cada pedido sobrescreve a anterior (sem limite por e-mail: S5). Um atacante
