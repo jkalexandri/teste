@@ -101,6 +101,18 @@ t "Atualizar.sh: o backup do banco sem argumentos guarda os 10 mais recentes" "$
 t "Atualizar.sh: o backup novo tem permissão 600" "$([ "$(stat -c %a "$NOVO")" = 600 ] && echo 1)"
 t "Atualizar.sh: o arquivo mais recente continua achável como antes (ls | sort)" "$(gunzip -t "$NOVO" 2>/dev/null && echo 1)"
 
+# ---- 9b. Senha gerada (modo recomendado): aleatória, gravada, mostrada uma vez, conferível
+rm -f "$SENHA_ARQ"
+GER=$(bash "$D/backup-senha.sh" --gerar 2>&1); RC=$?
+TOKEN=$(echo "$GER" | grep -E '^    [A-Za-z0-9]{24}$' | tr -d ' ')
+t "Senha gerada: grava 24 caracteres, permissão 600, e a tela mostra a mesma senha" "$([ $RC -eq 0 ] && [ -n "$TOKEN" ] && [ "$(head -1 "$SENHA_ARQ")" = "$TOKEN" ] && [ "$(stat -c %a "$SENHA_ARQ")" = 600 ] && echo 1)"
+printf '%s\n' "$TOKEN" | bash "$D/backup-senha.sh" --verificar > /dev/null 2>&1; t "Senha gerada: --verificar com a senha anotada CONFERE" "$([ $? -eq 0 ] && echo 1)"
+printf 'senha-anotada-errada\n' | bash "$D/backup-senha.sh" --verificar > /dev/null 2>&1; t "Senha gerada: --verificar com senha errada NÃO confere" "$([ $? -ne 0 ] && echo 1)"
+bash "$D/backup-senha.sh" --gerar > /dev/null 2>&1; t "Senha gerada: rodar de novo sem --trocar não sobrescreve" "$([ $? -ne 0 ] && [ "$(head -1 "$SENHA_ARQ")" = "$TOKEN" ] && echo 1)"
+bash "$D/backup-senha.sh" --trocar --gerar > /dev/null 2>&1; t "Senha gerada: --trocar --gerar troca por outra" "$([ $? -eq 0 ] && [ "$(head -1 "$SENHA_ARQ")" != "$TOKEN" ] && echo 1)"
+# o backup completo continua funcionando com a senha gerada
+FILAPRO_AGORA="2026-12-11 03:30" bash "$D/backup-completo.sh" completo >> "$LOG" 2>&1; t "Senha gerada: o backup completo roda e cria as chaves com ela" "$([ $? -eq 0 ] && [ -f "$B/diarios/chaves-2026-12-11_0330.tar.gz.enc" ] && echo 1)"
+
 # ---- 10. Vazamento: nenhuma saída pode conter segredo ou senha
 t "Vazamento: nenhuma saída dos scripts contém os segredos nem a senha do backup" "$(grep -q -F -e "$SEG1" -e "$SEG2" -e "$SENHA" "$LOG" && echo 0 || echo 1)"
 

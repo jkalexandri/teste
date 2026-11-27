@@ -270,7 +270,7 @@ crontab -e
 
 - 03:30 (Brasília): **backup completo** (banco, arquivos enviados e chaves criptografadas) em `/opt/filapro/backups/diarios`, com cópias semanais (domingo) e mensais (dia 1): 14 diários, 8 semanais, 6 mensais.
 - 09:30, 15:30 e 21:30: dump só do banco em `/opt/filapro/backups/6h` (perda máxima de 6 horas).
-- **Antes do primeiro backup completo**, crie a senha que protege as chaves (uma vez; **guarde a mesma senha fora da VPS**): `bash /opt/filapro/app/deploy/backup-senha.sh`
+- **Antes do primeiro backup completo**, crie a senha que protege as chaves (uma vez; **guarde a mesma senha fora da VPS**): `bash /opt/filapro/app/deploy/backup-senha.sh --gerar` (gera uma senha aleatória, mostra uma vez para você anotar — **sem print e sem colar no chat** — e depois `bash /opt/filapro/app/deploy/backup-senha.sh --verificar` prova que você anotou certo)
 - 09:00 (Brasília): avisos de renovação, despesas fixas do mês e contas vencendo.
 
 Teste o backup agora: `bash /opt/filapro/app/deploy/backup-completo.sh completo && ls -lhR /opt/filapro/backups | head -40`
