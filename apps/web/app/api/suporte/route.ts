@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   if (r.conversa && url.searchParams.get("aberto") === "1" && (r.conversa.naoLidasCliente > 0 || r.conversa.chamadoEm)) {
     await prisma.suporteConversa.update({ where: { id: r.conversa.id }, data: { naoLidasCliente: 0, chamadoEm: null } });
   }
-  return NextResponse.json({ ok: true, mensagens: r.mensagens });
+  return NextResponse.json({ ok: true, mensagens: r.mensagens, atendimento: r.atendimento, encerrada: r.encerrada });
 }
 
 export async function POST(req: Request) {

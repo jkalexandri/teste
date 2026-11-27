@@ -172,6 +172,29 @@ test("Super Admin nunca é atendido pela IA do suporte", async () => {
   await prisma.suporteConversa.deleteMany({ where: { usuarioId: sa.id } });
 });
 
+test("decisão #177: a IA só enxerga o atendimento ATUAL — o pedido de atendente de um atendimento anterior não contamina a conversa nova", async () => {
+  // Atendimento 1 (já encerrado): o cliente tinha pedido um atendente. Atendimento 2 (atual): pergunta comum.
+  await prisma.suporteConversa.update({ where: { id: conversaId }, data: { atendimentoAtual: 2 } });
+  await cliente("quero falar com um atendente", { atendimento: 1, criadoEm: new Date(Date.now() - 60_000) });
+  await cliente("como conecto meu whatsapp?", { atendimento: 2 });
+  await at().responder(USU);
+  const ms = await mensagens();
+  const ia = ms.filter((m) => m.autor === "IA");
+  assert.equal(ia.length, 1, "a IA respondeu a pergunta nova");
+  assert.equal(ia[0]!.atendimento, 2, "a resposta da IA pertence ao atendimento atual");
+  assert.equal((await conv()).iaPausada, false, "NÃO passou para atendente por causa da mensagem do atendimento anterior");
+  assert.equal(avisos.length, 0);
+});
+
+test("sem a regra do atendimento a mesma conversa passaria para o atendente (prova de que o filtro é o que decide)", async () => {
+  // Mesmo cenário, mas com as duas mensagens no MESMO atendimento (1): as mensagens seguidas do cliente se juntam e a IA passa o caso
+  await cliente("quero falar com um atendente", { criadoEm: new Date(Date.now() - 60_000) });
+  await cliente("como conecto meu whatsapp?");
+  await at().responder(USU);
+  assert.equal((await conv()).iaPausada, true);
+  assert.equal((await conv()).iaPausaMotivo, MOTIVO_HUMANO);
+});
+
 test("regras de assunto: sensível, atendente e conversa comum", () => {
   assert.equal(assuntoDoAtendente("Quero CANCELAR"), MOTIVO_SENSIVEL);
   assert.equal(assuntoDoAtendente("cobrança errada no cartão"), MOTIVO_SENSIVEL);

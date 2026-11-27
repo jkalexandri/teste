@@ -63,7 +63,7 @@ responde quem ficou esperando (últimas 48 horas). Você recebe aviso no WhatsAp
 Os clientes (Usuários e Admins da Empresa) chamam pelo botão **Suporte**. As conversas chegam aqui, com o número de mensagens novas
 também no menu. A caixa de escrever e o cabeçalho da conversa ficam **fixos**: só a lista de mensagens rola.
 
-**Encerramento por inatividade:** 10 minutos depois da sua resposta (ou da resposta da IA), se o cliente não escrever, o atendimento é encerrado com um aviso no chat e o selo "Encerrada" na lista; quando o cliente escrever de novo, reabre sozinho. Nunca encerra enquanto o cliente espera você.
+**Encerramento por inatividade:** 10 minutos depois da sua resposta (ou da resposta da IA), se o cliente não escrever, o atendimento é encerrado com um aviso no chat e o selo "Encerrada" na lista; quando o cliente escrever de novo, começa um **atendimento novo**: o chat mostra só o atendimento atual (o encerrado fica limpo na tela). Para ver os atendimentos já encerrados use o botão **Atendimentos anteriores** (só leitura, com data e hora). A IA começa o atendimento novo sem o contexto do anterior. Nada é apagado (vale a regra de 365 dias). Nunca encerra enquanto o cliente espera você.
 
 **IA no suporte dos clientes:** no topo de Atendimento → Clientes há a chave **Ligar a IA** (começa desligada). Ligada, a IA responde primeiro, com o
 manual do perfil do cliente e os dados da conta dele. Quando você escreve, ela para naquela conversa; **Devolver para a IA** a reativa.

@@ -839,6 +839,9 @@ model SuporteConversa {
   encerradaEm      DateTime?
   /// O Super Admin chamou o cliente: o chat abre sozinho na tela dele
   chamadoEm        DateTime?
+  /// Número do atendimento atual (decisão #177): cada atendimento é um bloco; depois de encerrado, a próxima mensagem abre o seguinte.
+  /// As telas mostram só o atual; os anteriores ficam guardados (Atendimentos anteriores, só leitura).
+  atendimentoAtual Int      @default(1)
   mensagens        SuporteMensagem[]
 
   @@index([ultimaMensagemEm])
@@ -856,9 +859,12 @@ model SuporteMensagem {
   tipo        String          @default("texto")
   arquivoNome String?
   arquivoTipo String?
+  /// A que atendimento a mensagem pertence (SuporteConversa.atendimentoAtual no momento em que foi gravada)
+  atendimento Int             @default(1)
   criadoEm    DateTime        @default(now())
 
   @@index([conversaId, criadoEm])
+  @@index([conversaId, atendimento])
   @@index([criadoEm])
 }
 

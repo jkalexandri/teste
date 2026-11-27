@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.1 — suporte: a tela limpa quando o atendimento termina (27/11/2026)
+
+- Quando o atendimento do suporte é **encerrado** (10 minutos sem o cliente escrever), a **tela do chat fica limpa** na próxima vez que o cliente abrir o suporte. Se ele escrever de novo, começa um **atendimento novo**, sem as mensagens do anterior.
+- No **Atendimento** (Super Admin), o chat do cliente também mostra só o atendimento atual. O botão **Atendimentos anteriores** abre o histórico dos atendimentos já encerrados (só leitura), com data e hora.
+- A **IA do suporte** começa o atendimento novo **sem** o contexto do anterior.
+- **Nada é apagado:** o histórico fica guardado (e segue a regra de 365 dias). As conversas que já estavam encerradas ficam limpas também; as que nunca foram encerradas continuam como estão.
+
 ## v1.47.0 — verificação em duas etapas para todos (26/11/2026)
 
 - **Admin da Empresa, Usuário Individual e Usuário** agora podem proteger a conta com a **verificação em duas etapas** (app autenticador, como o Super Admin): menu **Segurança** → Ativar. É **opcional**; quem é dono da conta vê um convite discreto no topo.

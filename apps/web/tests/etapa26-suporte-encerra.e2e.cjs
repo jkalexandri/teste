@@ -39,13 +39,17 @@ const encerrar = async () => (await (await fetch('http://127.0.0.1:4000/suporte/
     // Cliente vê a mensagem do sistema, centralizada
     await pU.goto(BASE + '/leads'); await espera(800);
     await pU.click('[data-testid=botao-suporte]'); await espera(1500);
-    ok('Cliente vê "Atendimento encerrado por inatividade" no chat', (await pU.locator('[data-testid=janela-suporte] [data-testid=msg-sistema]').count()) === 1 && /encerrado por inatividade/.test(await pU.locator('[data-testid=janela-suporte] [data-testid=msg-sistema]').innerText()));
+    // Decisão #177: depois de encerrado, quem abre o chat do zero vê a tela LIMPA (o histórico fica guardado, só escondido)
+    ok('Cliente abre o chat depois de encerrado: tela limpa (nada do atendimento anterior)', (await pU.locator('[data-testid=janela-suporte] [data-testid=msg-sistema]').count()) === 0 && (await pU.locator('[data-testid=janela-suporte] >> text=Preciso de ajuda com a campanha').count()) === 0 && (await pU.locator('[data-testid=janela-suporte] [data-testid=chat-vazio]').count()) === 1);
     await pU.screenshot({ path: OUT + '/suporte-encerrado-cliente.png' });
 
     // Super Admin vê o selo na lista e no cabeçalho; histórico completo
     await pS.goto(BASE + `/atendimento?cliente=${ANA}`); await espera(1500);
     ok('Atendimento: selo "Encerrada" na lista', (await pS.locator('[data-testid=item-atendimento] [data-testid=selo-encerrada]').count()) === 1);
-    ok('Atendimento: selo no cabeçalho da conversa e histórico preservado', (await pS.locator('[data-testid=selo-encerrada-chat]').count()) === 1 && (await pS.locator('[data-testid=chat-mensagens] >> text=Preciso de ajuda com a campanha').count()) === 1);
+    ok('Atendimento: selo no cabeçalho e chat principal limpo, com o aviso do atendimento encerrado (decisão #177)', (await pS.locator('[data-testid=selo-encerrada-chat]').count()) === 1 && (await pS.locator('[data-testid=chat-mensagens] >> text=Preciso de ajuda com a campanha').count()) === 0 && /Atendimento encerrado/.test(await pS.locator('[data-testid=chat-vazio]').innerText()));
+    await pS.click('[data-testid=abrir-anteriores]'); await espera(1200);
+    ok('Atendimentos anteriores: o histórico continua guardado e aparece aqui, só leitura', (await pS.locator('[data-testid=atendimento-anterior]').count()) === 1 && (await pS.locator('[data-testid=anteriores] >> text=Preciso de ajuda com a campanha').count()) === 1 && /encerrado por inatividade/.test(await pS.locator('[data-testid=anteriores]').innerText()));
+    await pS.click('[data-testid=fechar-anteriores]');
     await pS.screenshot({ path: OUT + '/suporte-encerrado-admin.png' });
 
     // Cliente escreve: reabre sozinho (novo atendimento)

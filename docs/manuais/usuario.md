@@ -51,7 +51,7 @@ Mantenha o celular com internet de vez em quando. Se ficar muitos dias desligado
 Se aparecer "Este WhatsApp foi aberto em outro lugar", clique em **Conectar**: ele volta sem precisar ler o QR Code.
 Se você **trocar o chip** de um número, o novo recomeça o aquecimento (20 envios por dia nos primeiros dias), para não ser bloqueado.
 Se aparecer **"Reconectando…"**, a conexão caiu e está voltando sozinha (não precisa ler o QR Code). Para tentar na hora, toque em **Tentar agora**.
-Se você ficar 10 minutos sem responder ao suporte, o atendimento é encerrado com um aviso; é só escrever de novo para continuar.
+Se você ficar 10 minutos sem responder ao suporte, o atendimento é encerrado com um aviso. Na próxima vez que você abrir o suporte, a tela vem limpa: é só escrever para começar um atendimento novo.
 O **Suporte** (ícone do atendente) pode ser respondido primeiro por um assistente virtual (IA). Para falar com uma pessoa, escreva que quer um **atendente**; pagamento, cobrança, cancelamento e reclamações também são encaminhados ao atendente.
 Se a reconexão falhar ao ser reaberta, a tela mostra **"Última falha: …"** e o sistema continua tentando sozinho (seu login não é apagado); se não resolver, toque em **Desconectar** e leia o QR Code de novo.
 Se você apertar **Conectar** ou **Tentar agora** várias vezes seguidas, aparece "Aguarde alguns segundos antes de tentar de novo" (10 s para gerar o QR, 5 s para tentar de novo). "Conectado desde" mostra quando o número conectou de verdade; depois de uma queda aparece também "Última reconexão".

@@ -31,7 +31,7 @@ export class EncerradorSuporte {
     const limite = new Date(agora.getTime() - (this.o.inatividadeMs ?? INATIVIDADE_MS));
     const candidatas = await prisma.suporteConversa.findMany({
       where: { encerradaEm: null, ultimaMensagemEm: { gte: new Date(agora.getTime() - JANELA_ATIVA_MS) } },
-      select: { id: true, usuarioId: true, ultimaMensagemEm: true, iaPausada: true, iaPausaMotivo: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true, criadoEm: true } } },
+      select: { id: true, usuarioId: true, atendimentoAtual: true, ultimaMensagemEm: true, iaPausada: true, iaPausaMotivo: true, mensagens: { orderBy: { criadoEm: "desc" }, take: 1, select: { autor: true, criadoEm: true } } },
     });
     let n = 0;
     for (const c of candidatas) {
@@ -43,7 +43,7 @@ export class EncerradorSuporte {
       // Fecha só se nada mudou desde a leitura (o cliente pode ter escrito agora): condição no próprio update
       const r = await prisma.suporteConversa.updateMany({ where: { id: c.id, encerradaEm: null, ultimaMensagemEm: c.ultimaMensagemEm }, data: { encerradaEm: agora } });
       if (r.count !== 1) continue;
-      await prisma.suporteMensagem.create({ data: { conversaId: c.id, autor: "SISTEMA", autorId: "sistema", texto: TEXTO_ENCERRADO, tipo: "texto", criadoEm: agora } });
+      await prisma.suporteMensagem.create({ data: { conversaId: c.id, atendimento: c.atendimentoAtual, autor: "SISTEMA", autorId: "sistema", texto: TEXTO_ENCERRADO, tipo: "texto", criadoEm: agora } });
       this.log.info({ usuarioId: c.usuarioId }, "atendimento do suporte encerrado por inatividade");
       n++;
     }

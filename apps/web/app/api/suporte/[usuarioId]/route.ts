@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ usuarioI
   if (!(await clienteValido(usuarioId))) return NextResponse.json({ ok: false }, { status: 404 });
   const r = await mensagensDaConversa(usuarioId, new URL(req.url).searchParams.get("desde"));
   if (r.conversa?.naoLidasSuporte) await prisma.suporteConversa.update({ where: { id: r.conversa.id }, data: { naoLidasSuporte: 0 } });
-  return NextResponse.json({ ok: true, mensagens: r.mensagens });
+  return NextResponse.json({ ok: true, mensagens: r.mensagens, atendimento: r.atendimento, encerrada: r.encerrada });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ usuarioId: string }> }) {

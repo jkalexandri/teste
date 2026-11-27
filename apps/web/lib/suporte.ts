@@ -10,19 +10,52 @@ const TIPOS_ANEXO: Record<string, string> = { "image/jpeg": "imagem", "image/png
 
 export type MsgSuporte = { id: string; autor: "CLIENTE" | "SUPORTE" | "IA" | "SISTEMA"; texto: string; tipo: string; arquivoNome: string | null; criadoEm: string };
 
+/**
+ * Mensagens do atendimento ATUAL da conversa (decisão #177). Cada atendimento é um bloco: depois de encerrado, a tela fica limpa e a próxima
+ * mensagem abre o seguinte; os anteriores continuam guardados (atendimentosAnteriores, só leitura). Atendimento encerrado: quem abre a tela do
+ * zero vê vazio; quem já estava com ela aberta (`desde`) recebe só o que chegou depois — a mensagem de encerramento, uma única vez.
+ * `atendimento` vai junto: se mudou (a conversa foi reaberta), a tela recarrega do zero e some o que era do atendimento anterior.
+ */
 export async function mensagensDaConversa(usuarioId: string, desde?: string | null) {
   const c = await prisma.suporteConversa.findUnique({ where: { usuarioId } });
-  if (!c) return { conversa: null, mensagens: [] as MsgSuporte[] };
+  if (!c) return { conversa: null, mensagens: [] as MsgSuporte[], atendimento: 1, encerrada: false };
   const d = desde ? new Date(desde) : null;
+  const valida = !!d && !isNaN(+d);
+  const base = { conversa: c, atendimento: c.atendimentoAtual, encerrada: !!c.encerradaEm };
+  if (c.encerradaEm && !valida) return { ...base, mensagens: [] as MsgSuporte[] };
   const ms = await prisma.suporteMensagem.findMany({
-    where: { conversaId: c.id, ...(d && !isNaN(+d) ? { criadoEm: { gt: d } } : {}) },
+    where: { conversaId: c.id, atendimento: c.atendimentoAtual, ...(valida ? { criadoEm: { gt: d! } } : {}) },
     orderBy: { criadoEm: "asc" },
     take: 300,
   });
   return {
-    conversa: c,
+    ...base,
     mensagens: ms.map((m) => ({ id: m.id, autor: m.autor as MsgSuporte["autor"], texto: m.texto, tipo: m.tipo, arquivoNome: m.arquivoNome, criadoEm: m.criadoEm.toISOString() })),
   };
+}
+
+export type AtendimentoAnterior = { numero: number; inicio: string; fim: string; mensagens: MsgSuporte[] };
+
+/** Atendimentos anteriores da conversa (só leitura, para o Super Admin): os já fechados, do mais novo para o mais antigo. */
+export async function atendimentosAnteriores(usuarioId: string): Promise<AtendimentoAnterior[]> {
+  const c = await prisma.suporteConversa.findUnique({ where: { usuarioId }, select: { id: true, atendimentoAtual: true, encerradaEm: true } });
+  if (!c) return [];
+  // Já fechados: os de número menor que o atual e, se a conversa está encerrada, o próprio atual
+  const ms = await prisma.suporteMensagem.findMany({
+    where: { conversaId: c.id, ...(c.encerradaEm ? {} : { atendimento: { lt: c.atendimentoAtual } }) },
+    orderBy: { criadoEm: "asc" },
+    take: 3000,
+  });
+  const porNumero = new Map<number, typeof ms>();
+  for (const m of ms) porNumero.set(m.atendimento, [...(porNumero.get(m.atendimento) ?? []), m]);
+  return [...porNumero.entries()]
+    .sort((x, y) => y[0] - x[0])
+    .map(([numero, lista]) => ({
+      numero,
+      inicio: lista[0]!.criadoEm.toISOString(),
+      fim: lista[lista.length - 1]!.criadoEm.toISOString(),
+      mensagens: lista.map((m) => ({ id: m.id, autor: m.autor as MsgSuporte["autor"], texto: m.texto, tipo: m.tipo, arquivoNome: m.arquivoNome, criadoEm: m.criadoEm.toISOString() })),
+    }));
 }
 
 /** Grava a mensagem (texto e/ou anexo) e atualiza os contadores de não lidas. */
@@ -34,11 +67,12 @@ export async function gravarMensagem(usuarioId: string, autor: "CLIENTE" | "SUPO
     if (arquivo.size > MAX_ANEXO_SUPORTE) return { ok: false as const, mensagem: "Arquivo muito grande (máximo 15 MB)." };
   }
   const agora = new Date();
-  // Reabre o atendimento encerrado por inatividade (decisão #156): a mensagem do cliente (ou do Super Admin) começa um novo atendimento;
+  // Reabre o atendimento encerrado por inatividade (decisões #156 e #177): a mensagem do cliente (ou do Super Admin) começa um novo atendimento (número seguinte);
   // para o cliente a IA volta a atender (sem pausa antiga)
   await prisma.suporteConversa.updateMany({
     where: { usuarioId, encerradaEm: { not: null } },
-    data: autor === "CLIENTE" ? { encerradaEm: null, iaPausada: false, iaPausaMotivo: null, ultimoAvisoEm: null } : { encerradaEm: null },
+    // Atendimento novo (decisão #177): a conversa reaberta começa um bloco novo; a tela passa a mostrar só ele
+    data: autor === "CLIENTE" ? { encerradaEm: null, atendimentoAtual: { increment: 1 }, iaPausada: false, iaPausaMotivo: null, ultimoAvisoEm: null } : { encerradaEm: null, atendimentoAtual: { increment: 1 } },
   });
   const conversa = await prisma.suporteConversa.upsert({
     where: { usuarioId },
@@ -47,7 +81,7 @@ export async function gravarMensagem(usuarioId: string, autor: "CLIENTE" | "SUPO
     update: { ultimaMensagemEm: agora, ...(autor === "SUPORTE" ? { iaPausada: true, iaPausaMotivo: "Assumida pelo Super Admin" } : {}) },
   });
   const m = await prisma.suporteMensagem.create({
-    data: { conversaId: conversa.id, autor, autorId, texto, tipo: arquivo ? TIPOS_ANEXO[arquivo.type]! : "texto", arquivoNome: arquivo?.name.slice(0, 120) ?? null, arquivoTipo: arquivo?.type ?? null },
+    data: { conversaId: conversa.id, atendimento: conversa.atendimentoAtual, autor, autorId, texto, tipo: arquivo ? TIPOS_ANEXO[arquivo.type]! : "texto", arquivoNome: arquivo?.name.slice(0, 120) ?? null, arquivoTipo: arquivo?.type ?? null },
   });
   if (arquivo) {
     const g = await guardarArquivoNoWorker(`sup-${m.id}`, await arquivo.arrayBuffer());

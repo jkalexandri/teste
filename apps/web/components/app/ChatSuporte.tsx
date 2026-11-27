@@ -31,19 +31,29 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360, preencher =
   const raiz = useRef<HTMLDivElement>(null);
   const ultima = useRef<string | null>(null);
 
-  const buscar = useCallback(async (tudo = false) => {
+  // Atendimento atual (decisão #177): se mudar (a conversa foi reaberta), a tela recarrega do zero e some o que era do atendimento anterior
+  const atendimentoRef = useRef<number | null>(null);
+  const [encerrada, setEncerrada] = useState(false);
+
+  const buscar = useCallback(async (tudo = false): Promise<void> => {
     const q = new URLSearchParams({ aberto: "1", ...(!tudo && ultima.current ? { desde: ultima.current } : {}) });
     const r = await fetch(`${base}?${q}`, { cache: "no-store" }).then((x) => x.json()).catch(() => null);
     if (!r?.ok) return;
     const novas = r.mensagens as Msg[];
+    if (typeof r.atendimento === "number") {
+      if (!tudo && atendimentoRef.current !== null && r.atendimento !== atendimentoRef.current) { atendimentoRef.current = r.atendimento; ultima.current = null; return buscar(true); }
+      atendimentoRef.current = r.atendimento;
+      setEncerrada(!!r.encerrada);
+    }
     if (novas.length) {
       ultima.current = novas[novas.length - 1]!.criadoEm;
       setMsgs((m) => (tudo ? novas : [...m, ...novas.filter((n) => !m.some((x) => x.id === n.id))]));
-    } else if (tudo) setMsgs([]);
+    } else if (tudo) { ultima.current = null; setMsgs([]); }
   }, [base]);
 
   useEffect(() => {
     ultima.current = null;
+    atendimentoRef.current = null;
     void buscar(true);
     const t = setInterval(() => void buscar(), 3000);
     return () => clearInterval(t);
@@ -76,7 +86,7 @@ export default function ChatSuporte({ modo, usuarioId, altura = 360, preencher =
   return (
     <div ref={raiz} className={preencher ? "flex flex-col flex-1 min-h-0" : "flex flex-col"} data-testid="chat-suporte">
       <div className={preencher ? "overflow-y-auto p-3 space-y-2 flex-1 min-h-0" : "overflow-y-auto p-3 space-y-2"} style={{ ...(preencher ? {} : { height: altura }), background: "var(--surface-2, rgba(0,0,0,.03))" }} data-testid="chat-mensagens" ref={lista}>
-        {msgs.length === 0 && <p className="text-[12px] text-center mt-6" style={{ color: "var(--muted)" }}>{modo === "cliente" ? "Escreva sua dúvida. O suporte responde por aqui." : modo === "visitante" ? "Escreva sua dúvida sobre os planos." : "Nenhuma mensagem ainda."}</p>}
+        {msgs.length === 0 && <p className="text-[12px] text-center mt-6" style={{ color: "var(--muted)" }} data-testid="chat-vazio">{modo === "suporte" && encerrada ? "Atendimento encerrado. O histórico está em \"Atendimentos anteriores\". Se você escrever, começa um atendimento novo." : modo === "cliente" ? "Escreva sua dúvida. O suporte responde por aqui." : modo === "visitante" ? "Escreva sua dúvida sobre os planos." : "Nenhuma mensagem ainda."}</p>}
         {msgs.map((m) => m.autor === "SISTEMA" ? (
           // Mensagem do sistema (ex.: atendimento encerrado por inatividade — decisão #156): centralizada, sem balão
           <div key={m.id} className="text-center text-[11px] py-1" style={{ color: "var(--muted)" }} data-testid="msg-sistema">{m.texto}</div>

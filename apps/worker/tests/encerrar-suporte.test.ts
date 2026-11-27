@@ -120,3 +120,15 @@ test("se o cliente escreveu enquanto conferia, não encerra (condição no próp
   assert.equal((await conversa()).encerradaEm, null);
   assert.equal((await sistema()).length, 0);
 });
+
+test("decisão #177: a mensagem de encerramento fica no atendimento que foi encerrado (número do atendimento atual)", async () => {
+  await nova(ha(11), { atendimentoAtual: 3 });
+  await prisma.suporteMensagem.create({ data: { conversaId, atendimento: 3, autor: "CLIENTE", autorId: USU, texto: "dúvida", criadoEm: ha(15) } });
+  await prisma.suporteMensagem.create({ data: { conversaId, atendimento: 3, autor: "SUPORTE", autorId: "x", texto: "resposta", criadoEm: ha(11) } });
+  assert.equal(await enc().verificar(), 1);
+  const s = await sistema();
+  assert.equal(s.length, 1);
+  assert.equal(s[0]!.atendimento, 3, "a mensagem de encerramento pertence ao atendimento 3");
+  assert.equal(s[0]!.texto, TEXTO_ENCERRADO);
+  assert.equal((await conversa()).atendimentoAtual, 3, "encerrar não muda o número do atendimento (quem muda é a próxima mensagem)");
+});

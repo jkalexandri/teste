@@ -11,6 +11,7 @@ import { ONLINE_MS } from "@/lib/suporte";
 import BotaoChamar from "../online/BotaoChamar";
 import NovoAtendimento from "./NovoAtendimento";
 import BotaoIA from "./BotaoIA";
+import AtendimentosAnteriores from "./AtendimentosAnteriores";
 import { statusAtendimentoIA } from "@filapro/ia";
 import { Bolinha } from "@/components/app/StatusIA";
 import { protegerTela } from "@/lib/auth/tela";
@@ -161,6 +162,7 @@ export default async function AtendimentoPage({ searchParams }: { searchParams: 
                       <BotaoIA id={atual.id} pausada={iaPausadaAtual} tipo="suporte" />
                     </>
                   )}
+                  <AtendimentosAnteriores usuarioId={atual.id} />
                   <BotaoChamar usuarioId={atual.id} rotulo="Chamar cliente" />
                 </div>
               </div>

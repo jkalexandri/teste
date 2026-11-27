@@ -121,7 +121,8 @@ export class AtendenteSuporte {
     if (!cfg?.iaSuporteLigada) return;
     const conversa = await prisma.suporteConversa.findUnique({ where: { usuarioId } });
     if (!conversa || conversa.iaPausada) return;
-    const recentes = (await prisma.suporteMensagem.findMany({ where: { conversaId: conversa.id }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();
+    // Só o atendimento atual (decisão #177): a conversa nova começa sem o contexto do atendimento anterior
+    const recentes = (await prisma.suporteMensagem.findMany({ where: { conversaId: conversa.id, atendimento: conversa.atendimentoAtual }, orderBy: { criadoEm: "desc" }, take: MENSAGENS_RECENTES })).reverse();
     if (recentes.at(-1)?.autor === "SUPORTE") return; // o Super Admin respondeu
     const cliente = await prisma.usuario.findUnique({ where: { id: usuarioId }, include: { empresa: true } });
     if (!cliente || cliente.cargo === Cargo.SUPERADMIN) return;
@@ -166,7 +167,9 @@ export class AtendenteSuporte {
 
   /** Grava a mensagem da IA, avisa o cliente (celular) e, se pediu, pausa a IA da conversa. */
   private async gravarResposta(conversaId: string, clienteId: string, texto: string, pausarMotivo: string | null) {
-    await prisma.suporteMensagem.create({ data: { conversaId, autor: "IA", autorId: "ia", texto, tipo: "texto" } });
+    // A resposta pertence ao atendimento atual da conversa (decisão #177)
+    const at = (await prisma.suporteConversa.findUnique({ where: { id: conversaId }, select: { atendimentoAtual: true } }))?.atendimentoAtual ?? 1;
+    await prisma.suporteMensagem.create({ data: { conversaId, atendimento: at, autor: "IA", autorId: "ia", texto, tipo: "texto" } });
     await prisma.suporteConversa.update({
       where: { id: conversaId },
       data: { ultimaMensagemEm: this.agora(), naoLidasCliente: { increment: 1 }, ...(pausarMotivo ? { iaPausada: true, iaPausaMotivo: pausarMotivo } : {}) },
