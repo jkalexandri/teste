@@ -68,8 +68,16 @@ Teste no site de teste, com endereços de internet diferentes:
 - Sobre a preocupação original ("vários endereços tentando a mesma conta"): o bloqueio da conta limita a 5 tentativas a cada 15 minutos
   e as senhas exigem 12+ caracteres com 4 tipos; o risco de adivinhar é baixo. O problema real é o bloqueio ser usado contra o dono.
 
-### S6 — TOTP do Super Admin sem anti-reuso do código ❓
-Um código válido pode ser usado de novo dentro da janela de validade.
+### S6 — O código do app autenticador pode ser reutilizado e a verificação tem furos ✅ (reproduzido em 26/11/2026)
+Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
+- **S6a — reuso do código:** o **mesmo código de 6 dígitos foi aceito 3 vezes seguidas**, em entradas diferentes (a norma TOTP, RFC 6238, exige
+  recusar o segundo uso). O sistema aceita o código de 30 s atrás, o atual e o de 30 s à frente (janela de ~90 s): quem vê ou intercepta um
+  código (ombro, tela compartilhada, vírus) tem ~90 s para usá-lo, quantas vezes quiser.
+- **S6b — código de recuperação "de uso único" usado várias vezes:** **6 entradas simultâneas com o mesmo código de recuperação: as 6 foram
+  aceitas** (a lista só perdeu 1 código). A leitura e a gravação da lista são em passos separados.
+- **S6c — erros do código não pesam contra a conta:** **20 códigos errados em 4 entradas seguidas** (com a senha certa) não geraram nenhum
+  bloqueio nem alerta; só existe o limite de 20 verificações a cada 10 minutos por endereço de internet. Quem já descobriu a senha pode
+  tentar adivinhar o código (1 em ~333 mil por tentativa) usando vários endereços sem ser notado.
 
 ### S7 — 2FA só para Super Admin ❓ (decisão de produto)
 Admin da Empresa não tem 2FA. Não é falha de código; é uma decisão para o dono.
