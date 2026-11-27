@@ -90,8 +90,14 @@ Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
   bloqueio nem alerta; só existe o limite de 20 verificações a cada 10 minutos por endereço de internet. Quem já descobriu a senha pode
   tentar adivinhar o código (1 em ~333 mil por tentativa) usando vários endereços sem ser notado.
 
-### S7 — 2FA só para Super Admin ❓ (decisão de produto)
-Admin da Empresa não tem 2FA. Não é falha de código; é uma decisão para o dono.
+### S7 — Verificação em duas etapas só existe para o Super Admin ✅ (mapeado em 26/11/2026)
+Hoje a verificação (app autenticador + 10 códigos de recuperação, reforçada nas etapas S6) vale só para o Super Admin: a tela **Segurança**, o item
+do menu, as ações de ativar/desativar e a condição do login (`cargo === SUPERADMIN`) são exclusivos dele. O **Admin da Empresa** vê os dados e as
+conversas de todos os usuários da empresa, redefine acessos e é o alvo mais valioso depois do Super Admin; o **Usuário Individual** é dono de uma
+conta paga com WhatsApp conectado. Senha vazada, reaproveitada ou capturada por phishing entrega a conta inteira.
+O que muda para estender (esforço médio, sem migração): liberar a tela e o menu Segurança aos outros perfis, generalizar as ações e o login, alerta
+por e-mail ao próprio usuário (em vez do alerta do Super Admin), e **botões de redefinir a verificação de quem perdeu o celular e os códigos** (Admin da
+Empresa para os usuários dele; Super Admin para Admins e Individuais), com Logs, e-mail ao afetado e sessões encerradas.
 
 ### S8 — Limites por endereço de internet: confiança no cabeçalho, IPv6 e memória ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.7 (decisão #163)**
 O site roda num único processo (pm2, sem cluster), então guardar o limite em memória é coerente. Reproduzido no site de teste (login, limite de
