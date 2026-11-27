@@ -133,7 +133,11 @@ secao "5. Backup do banco"
 CRON=$(crontab -l 2>/dev/null | grep -i filapro | oculta)
 if [ -n "$CRON" ]; then
   echo "$CRON" | while IFS= read -r l; do info "cron: $l"; done
-  echo "$CRON" | grep -q 'backup-banco.sh' && ok "Backup diário está agendado no cron" || falha "Backup NÃO está agendado no cron (nenhuma linha com backup-banco.sh)"
+  # Backup completo diário (#169); aceita também a linha antiga do backup-banco.sh
+  if echo "$CRON" | grep -q 'backup-completo.sh completo'; then ok "Backup completo diário está agendado no cron"
+  elif echo "$CRON" | grep -q 'backup-banco.sh'; then aten "Só o backup antigo do banco está agendado (sem arquivos e chaves): troque pelo backup-completo.sh (docs/publicacao-vps.md 6.1)"
+  else falha "Backup NÃO está agendado no cron (nenhuma linha com backup-completo.sh)"; fi
+  echo "$CRON" | grep -q 'backup-completo.sh banco' && ok "Dump do banco a cada 6 h está agendado" || aten "Dump do banco a cada 6 h não está no cron (backup-completo.sh banco)"
   echo "$CRON" | grep -q 'vigia-servico.sh' && ok "Vigia do serviço 24/7 está agendado" || aten "Vigia do serviço 24/7 não está no cron"
   echo "$CRON" | grep -q 'rotinas.sh' && ok "Rotinas diárias (renovações) estão agendadas" || aten "Rotinas diárias não estão no cron"
 else
@@ -186,7 +190,8 @@ else
   falha "Pasta de backups $PASTA não existe"
 fi
 LOGB=/var/log/filapro-backup.log
-if [ -f "$LOGB" ]; then info "log do backup ($(date -r "$LOGB" '+%d/%m/%Y %H:%M')), últimas linhas:"; tail -n 3 "$LOGB" | oculta | while IFS= read -r l; do info "  $l"; done; else aten "Sem log do backup em $LOGB (o cron nunca rodou?)"; fi
+if [ -f "$LOGB" ]; then info "log do backup ($(date -r "$LOGB" '+%d/%m/%Y %H:%M')), últimas linhas:"; tail -n 3 "$LOGB" | oculta | while IFS= read -r l; do info "  $l"; done; elif [ -f "$RAIZ/backups/estado-completo.json" ]; then info "Ainda sem log do cron em $LOGB (normal até a primeira execução automática, às 03:30; o backup manual não grava nele)"
+else aten "Sem log do backup em $LOGB (o cron nunca rodou?)"; fi
 [ -f "$RAIZ/backup-antes-da-atualizacao" ] && info "ponto de volta da última atualização: $(basename "$(cat "$RAIZ/backup-antes-da-atualizacao" 2>/dev/null)")"
 PACOTES=$(ls -1 "$RAIZ"/mudanca-*.tar.gz 2>/dev/null)
 if [ -n "$PACOTES" ]; then
