@@ -279,9 +279,16 @@ secao "10. Logs"
 for l in /var/log/filapro-*.log; do [ -f "$l" ] && info "$(basename "$l"): $(du -h "$l" | cut -f1)"; done
 GRANDE=$(find /var/log "${HOME:-/root}/.pm2/logs" -maxdepth 2 -type f -size +500M 2>/dev/null | head -3)
 [ -n "$GRANDE" ] && falha "Log(s) com mais de 500 MB: $(echo "$GRANDE" | tr '\n' ' ')" || ok "Nenhum log com mais de 500 MB"
-ROT=$(ls /etc/logrotate.d 2>/dev/null | grep -iE 'filapro|pm2' | tr '\n' ' ')
-[ -d "${HOME:-/root}/.pm2/modules/pm2-logrotate" ] && ROT="$ROT pm2-logrotate"
-if [ -n "$ROT" ]; then ok "Rotação de logs configurada: $ROT"; else aten "Nenhuma rotação de logs do FilaPro/pm2: os logs crescem até encher o disco"; fi
+# Rotação de logs (decisão #172): a regra do FilaPro é conferida pelo próprio script (só lê, não altera nada)
+if [ -f "$APP/deploy/rotacao-logs.sh" ] && [ "$(id -u)" = "0" ]; then
+  RES=$(bash "$APP/deploy/rotacao-logs.sh" --conferir 2>&1); RCR=$?
+  if [ "$RCR" -eq 0 ]; then ok "Rotação de logs configurada e válida (FilaPro 8 cópias, pm2 14 cópias, journal 200 MB/1 mês)"
+  elif echo "$RES" | grep -q '^FALHA'; then falha "A regra de rotação de logs existe, mas o logrotate a recusou: $(echo "$RES" | grep '^FALHA' | head -1)"
+  else
+    ROT=$(ls /etc/logrotate.d 2>/dev/null | grep -iE 'pm2' | tr '\n' ' '); [ -d "${HOME:-/root}/.pm2/modules/pm2-logrotate" ] && ROT="$ROT pm2-logrotate"
+    if [ -n "$ROT" ]; then ok "Rotação de logs por outro meio: $ROT (o padrão do FilaPro é: bash deploy/rotacao-logs.sh)"; else aten "Rotação de logs não configurada: os logs crescem até encher o disco (rode: bash deploy/rotacao-logs.sh)"; fi
+  fi
+fi
 
 # ---------------------------------------------------------------- Resumo
 echo

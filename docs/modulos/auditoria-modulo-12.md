@@ -62,7 +62,7 @@ Os códigos TOTP (S6) valem por 30 s ±30 s. Se o relógio da VPS sair do horár
 `unattended-upgrades` instala correções, mas com `Automatic-Reboot "false"`: correções de núcleo só valem depois de reiniciar, e nada avisa que um reinício está pendente (`/var/run/reboot-required`).
 Proposta: o vigia avisa o Super Admin ("reinício pendente") e o manual traz o procedimento de reinício controlado (aviso, manutenção, reiniciar, conferir WhatsApp).
 
-### O4 — Logs sem rotação (MÉDIA) ✅/❓
+### O4 — Logs sem rotação (MÉDIA) ✅ (#172; o dono roda `rotacao-logs.sh` uma vez)
 `/var/log/filapro-*.log` (a cada 5 minutos, para sempre) e os logs do `pm2` não têm rotação definida na documentação. Crescem até encher o disco (que é pequeno: KVM 1). O diagnóstico mede.
 
 ### O5 — Espaço em disco e memória sem vigia (MÉDIA) ✅ (#171)

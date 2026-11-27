@@ -342,6 +342,20 @@ Para ver o que o vigia está enxergando agora (não envia nada):
 bash /opt/filapro/app/deploy/vigia-vps.sh --mostrar
 ```
 
+### 6.2d Rotação de logs (decisão #172)
+
+Sem isso os logs crescem até encher o disco. Rode **uma vez** como root (pode repetir sem problema):
+
+```bash
+bash /opt/filapro/app/deploy/rotacao-logs.sh
+```
+
+Ele usa o `logrotate` do Ubuntu: os logs do FilaPro (`/var/log/filapro-*.log`) giram toda semana (ou ao passar de 20 MB) e guardam 8 cópias; os do pm2 giram todo dia (ou ao passar de 50 MB) e guardam 14 cópias; tudo compactado e só o root lê. O journal do sistema fica limitado a 200 MB e 1 mês. Para conferir (não altera nada):
+
+```bash
+bash /opt/filapro/app/deploy/rotacao-logs.sh --conferir
+```
+
 ### Reinício controlado da VPS (quando chegar o aviso "a VPS precisa ser reiniciada")
 
 As correções de segurança do sistema só valem depois de reiniciar. Faça em horário de pouco movimento, sem pressa (o aviso só se repete a cada 7 dias).
