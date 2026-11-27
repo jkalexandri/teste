@@ -137,6 +137,7 @@ if [ -n "$CRON" ]; then
   if echo "$CRON" | grep -q 'backup-completo.sh completo'; then ok "Backup completo diário está agendado no cron"
   elif echo "$CRON" | grep -q 'backup-banco.sh'; then aten "Só o backup antigo do banco está agendado (sem arquivos e chaves): troque pelo backup-completo.sh (docs/publicacao-vps.md 6.1)"
   else falha "Backup NÃO está agendado no cron (nenhuma linha com backup-completo.sh)"; fi
+  echo "$CRON" | grep -q 'restaurar-backup.sh --so-testar' && ok "Teste semanal de restauração está agendado" || aten "Teste semanal de restauração não está no cron (docs/publicacao-vps.md 6.1)"
   echo "$CRON" | grep -q 'backup-completo.sh banco' && ok "Dump do banco a cada 6 h está agendado" || aten "Dump do banco a cada 6 h não está no cron (backup-completo.sh banco)"
   echo "$CRON" | grep -q 'vigia-servico.sh' && ok "Vigia do serviço 24/7 está agendado" || aten "Vigia do serviço 24/7 não está no cron"
   echo "$CRON" | grep -q 'rotinas.sh' && ok "Rotinas diárias (renovações) estão agendadas" || aten "Rotinas diárias não estão no cron"
@@ -179,6 +180,14 @@ if [ -d "$PASTA" ]; then
   if [ -n "$UA" ]; then HA=$(horas "$UA"); if [ "$HA" -le 26 ]; then ok "Backup dos arquivos enviados tem ${HA}h ($(basename "$UA"))"; else aten "Backup dos arquivos enviados tem ${HA}h (o completo diário falhou?)"; fi; else aten "Ainda não há backup dos arquivos enviados (o backup completo ainda não rodou: bash deploy/backup-completo.sh)"; fi
   if [ -n "$UC" ]; then HC=$(horas "$UC"); if [ "$HC" -le 26 ]; then ok "Backup das chaves (criptografado) tem ${HC}h ($(basename "$UC"))"; else aten "Backup das chaves tem ${HC}h"; fi; else aten "Ainda não há backup das chaves do sistema (crie a senha: bash deploy/backup-senha.sh, depois rode o backup completo)"; fi
   if [ -f /root/.filapro-backup-senha ]; then ok "Senha do backup das chaves configurada ($(stat -c %a /root/.filapro-backup-senha))"; else aten "Senha do backup das chaves NÃO configurada (bash deploy/backup-senha.sh)"; fi
+  # Teste semanal de restauração (decisão #170)
+  JR="$PASTA/estado-restauracao.json"
+  if [ -f "$JR" ]; then
+    HR=$(horas "$JR")
+    if ! grep -q '"ok":true' "$JR"; then falha "O último TESTE DE RESTAURAÇÃO falhou: $(grep -o '"erros":"[^"]*"' "$JR" | cut -d'"' -f4)"
+    elif [ "$HR" -gt 216 ]; then aten "O último teste de restauração tem $((HR/24)) dias (deveria rodar todo domingo às 04:30)"
+    else ok "Teste de restauração em dia (há ${HR}h): $(grep -o '"usuarios":"[^"]*"' "$JR" | cut -d'"' -f4) usuários e $(grep -o '"empresas":"[^"]*"' "$JR" | cut -d'"' -f4) empresas restauradas num banco temporário"; fi
+  else aten "Ainda não há teste de restauração (cron de domingo 04:30; para rodar agora: bash deploy/restaurar-backup.sh --so-testar)"; fi
   for e in completo banco; do
     J="$PASTA/estado-$e.json"
     if [ -f "$J" ]; then

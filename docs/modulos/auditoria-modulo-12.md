@@ -25,11 +25,11 @@ todos os clientes precisariam ler o QR Code de novo e as chaves seriam digitadas
 Os backups ficam na mesma máquina e no mesmo disco que o banco (`/opt/filapro/backups`). Perda da VPS, disco corrompido ou invasão com apagamento levam banco e
 backups juntos. Já é pendência registrada (decisão #105, item 7).
 
-### P0-4 — Nunca se testa a restauração e o backup não é conferido (ALTA) ✅/❓
+### P0-4 — Nunca se testa a restauração e o backup não é conferido (ALTA) ✅ (restauração de teste semanal — #170)
 Depois do `pg_dump | gzip` o script não confere nada: nem se o arquivo abre (`gunzip -t`), nem se tem tamanho plausível, nem se o dump é legível. Uma restauração de
 teste nunca é feita. Backup que nunca foi restaurado é uma esperança, não uma garantia.
 
-### P0-5 — Restaurar apaga o banco ANTES de conferir o backup (ALTA) ✅
+### P0-5 — Restaurar apaga o banco ANTES de conferir o backup (ALTA) ✅ (#170)
 Tanto `voltar-versao.sh` quanto a seção "Restaurar um backup" de `publicacao-vps.md` fazem `dropdb` e só depois `gunzip | psql`. Se o arquivo estiver
 corrompido, vazio ou truncado, **o banco de produção é destruído e a restauração falha**. O correto é restaurar num banco temporário, conferir e só então trocar,
 e guardar uma cópia do banco atual antes (como segurança).
@@ -102,7 +102,7 @@ e fuso America/Sao_Paulo; 38 itens OK, 11 de atenção e 1 falha). O que o resul
 ### Nova ordem das prévias (o diagnóstico mudou as prioridades)
 1. **Agora (comandos na VPS, sem código):** agendar backup e rotinas no cron (com os horários certos); `chmod` dos backups; rodar `seguranca-vps.sh` (fail2ban + atualizações automáticas).
 2. Backup completo (banco + arquivos + chaves), com retenção em camadas e `umask 077` (P0-1, P0-2, P0-7, P0-8).
-3. Conferência do backup, restauração de teste e restauração segura (P0-4, P0-5).
+3. Conferência do backup, restauração de teste e restauração segura (P0-4, P0-5). **FEITO em 27/11/2026 (#170, v1.47.6): `restaurar-backup.sh`, teste semanal de restauração, `voltar-versao.sh` sem `dropdb`, roteiro de desastre na documentação. Falta só o dono rodar `--so-testar` na VPS e acrescentar a linha de domingo ao cron.**
 4. Avisos (backup parado, disco/memória, reinício pendente) e monitor externo (P0-6, O1, O3, O5).
 5. Cópia fora da VPS e frequência (P0-3, P0-9); logs, chaves, dependências e roteiro de desastre (O4, O6, O7, O8).
 6. Cadastrar chave SSH e desligar a senha (depende do dono ter acesso por chave).

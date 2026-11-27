@@ -8,18 +8,24 @@ ALVO=$(cat /opt/filapro/versao-anterior)
 ATUAL=$(node -p "require('./package.json').version")
 echo "Versão atual: v$ATUAL. Voltar para o código de $(git log -1 --format='%cd' --date=short "$ALVO")."
 read -r -p "Restaurar também o banco do backup de antes da atualização? (s/N) " BANCO
+# Restauração segura (decisão #170): o backup é CONFERIDO (restaurado num banco temporário) ANTES de mexer no código e no banco.
+# O script é copiado para fora do repositório porque o código antigo (git checkout) pode não ter esse arquivo.
+RESTAURADOR=""
+if [ "${BANCO,,}" = "s" ]; then
+  ARQ=$(cat /opt/filapro/backup-antes-da-atualizacao)
+  RESTAURADOR=$(mktemp /opt/filapro/restaurar-backup.XXXXXX.sh)
+  cp deploy/restaurar-backup.sh "$RESTAURADOR"
+  echo "==> Conferindo o backup $ARQ antes de qualquer mudança"
+  bash "$RESTAURADOR" --so-testar "$ARQ" || { rm -f "$RESTAURADOR"; echo "O backup não passou na conferência: NADA foi alterado (código e banco continuam como estavam)."; exit 1; }
+fi
 # Clientes bloqueados enquanto volta (decisão #103)
 bash deploy/manutencao.sh ligar || true
 git checkout --detach "$ALVO"
 pnpm install --frozen-lockfile
 if [ "${BANCO,,}" = "s" ]; then
-  ARQ=$(cat /opt/filapro/backup-antes-da-atualizacao)
-  echo "==> Restaurando $ARQ"
-  pm2 stop filapro-web filapro-worker
-  sudo -u postgres dropdb filaproleads
-  sudo -u postgres createdb -O filaproleads filaproleads
-  gunzip -c "$ARQ" | sudo -u postgres psql -q filaproleads
-  sudo -u postgres psql -q filaproleads -c "REASSIGN OWNED BY postgres TO filaproleads;"
+  echo "==> Restaurando $ARQ (o banco atual fica guardado, nada é apagado)"
+  bash "$RESTAURADOR" --confirmado --sem-reiniciar --sem-migrar "$ARQ" || { rm -f "$RESTAURADOR"; echo "A restauração falhou. O banco atual foi preservado. Veja a mensagem acima."; exit 1; }
+  rm -f "$RESTAURADOR"
 fi
 # Tipos gerados de versões mais novas apontam para rotas que o código antigo não tem: apagar antes do build (como no atualizar.sh)
 rm -rf apps/web/.next/types apps/web/.next-novo apps/web/.next-antigo/types

@@ -258,6 +258,7 @@ crontab -e
 ```
 30 3 * * * /opt/filapro/app/deploy/backup-completo.sh completo >> /var/log/filapro-backup.log 2>&1
 30 9,15,21 * * * /opt/filapro/app/deploy/backup-completo.sh banco >> /var/log/filapro-backup.log 2>&1
+30 4 * * 0 /opt/filapro/app/deploy/restaurar-backup.sh --so-testar >> /var/log/filapro-restauracao.log 2>&1
 0 9 * * * /opt/filapro/app/deploy/rotinas.sh >> /var/log/filapro-rotinas.log 2>&1
 ```
 
@@ -269,6 +270,7 @@ crontab -e
 ```
 
 - 03:30 (Brasília): **backup completo** (banco, arquivos enviados e chaves criptografadas) em `/opt/filapro/backups/diarios`, com cópias semanais (domingo) e mensais (dia 1): 14 diários, 8 semanais, 6 mensais.
+- Domingo 04:30: **teste de restauração** (restaura o último backup diário num banco temporário, confere e apaga o temporário; não toca no banco real; resultado em `/var/log/filapro-restauracao.log` e no diagnóstico).
 - 09:30, 15:30 e 21:30: dump só do banco em `/opt/filapro/backups/6h` (perda máxima de 6 horas).
 - **Antes do primeiro backup completo**, crie a senha que protege as chaves (uma vez; **guarde a mesma senha fora da VPS**): `bash /opt/filapro/app/deploy/backup-senha.sh --gerar` (gera uma senha aleatória, mostra uma vez para você anotar — **sem print e sem colar no chat** — e depois `bash /opt/filapro/app/deploy/backup-senha.sh --verificar` prova que você anotou certo)
 - 09:00 (Brasília): avisos de renovação, despesas fixas do mês e contas vencendo.
@@ -353,11 +355,42 @@ Para **mudar de servidor**, veja o Manual do Desenvolvedor (menu Ajuda), seção
 
 ## Restaurar um backup (só em emergência)
 
+Use sempre o script seguro. Ele **não apaga nada antes de provar que o backup restaura**: restaura num banco temporário, confere, mostra a comparação com o banco atual e só então pede para você digitar `RESTAURAR`. O banco atual não é apagado: fica guardado com outro nome (e um dump de segurança é salvo antes).
+
+Primeiro, **teste sem risco** (só confere; não altera nada no banco real):
+
 ```bash
-pm2 stop filapro-web filapro-worker
-sudo -u postgres dropdb filaproleads
-sudo -u postgres createdb -O filaproleads filaproleads
-gunzip -c /opt/filapro/backups/ARQUIVO.sql.gz | sudo -u postgres psql filaproleads
-sudo -u postgres psql filaproleads -c "REASSIGN OWNED BY postgres TO filaproleads;"
-pm2 start filapro-web filapro-worker
+bash /opt/filapro/app/deploy/restaurar-backup.sh --so-testar
 ```
+
+Para restaurar de verdade (lista os backups e você escolhe o número):
+
+```bash
+bash /opt/filapro/app/deploy/restaurar-backup.sh
+```
+
+Para restaurar também os arquivos enviados do mesmo backup:
+
+```bash
+bash /opt/filapro/app/deploy/restaurar-backup.sh --arquivos
+```
+
+Para abrir o pacote de chaves do backup (só se perdeu os `.env`; usa a senha guardada em `/root/.filapro-backup-senha`, ou copie a senha de volta para esse arquivo antes) numa pasta à parte, sem sobrescrever nada:
+
+```bash
+bash /opt/filapro/app/deploy/restaurar-backup.sh --chaves
+```
+
+Depois de conferir que está tudo certo, apague o banco antigo que ficou guardado (o nome aparece no final do script):
+
+```bash
+sudo -u postgres dropdb NOME_MOSTRADO_NO_FINAL
+```
+
+### Roteiro de desastre (servidor perdido ou banco destruído)
+1. Servidor novo com o sistema instalado (seção de instalação acima) e o repositório em `/opt/filapro/app`.
+2. Copie a pasta `backups` (do seu armazenamento fora da VPS) para `/opt/filapro/backups`.
+3. Recupere os `.env`: abra o pacote `chaves-*.tar.gz.enc` com a senha do backup (guardada no seu gerenciador de senhas): `bash restaurar-backup.sh --chaves` e copie os dois `.env` para os lugares certos.
+4. `bash /opt/filapro/app/deploy/restaurar-backup.sh --arquivos` e escolha o backup mais recente.
+5. `bash /opt/filapro/app/deploy/atualizar.sh` e `bash /opt/filapro/app/deploy/diagnostico-vps.sh`.
+6. Reconecte os números de WhatsApp se algum pedir novo QR Code (o login fica no banco, mas confira).

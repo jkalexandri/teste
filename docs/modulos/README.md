@@ -24,7 +24,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.46.0 — 27/11/2026 00:30 (suporte encerrado por inatividade do cliente) |
-| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.47.3 — 27/11/2026 13:00 (backup completo em camadas) |
+| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.47.6 — 27/11/2026 (restauração segura) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
 
@@ -51,6 +51,7 @@ Cada ajuste fica no módulo do **comportamento que muda para o usuário**; "Toca
 
 | Versão | Data e hora | Módulo | O que mudou | Toca também | Revisão completa? |
 |---|---|---|---|---|---|
+| v1.47.6 | 27/11/2026 | 12 Operação (VPS) | Restauração segura (`restaurar-backup.sh`: restaura num banco temporário, confere, pede RESTAURAR, guarda o banco antigo e devolve se a migração falhar) e teste de restauração semanal; `voltar-versao.sh` sem `dropdb` (#170) | 1 Acesso e segurança (backup dos dados) | não |
 | v1.47.3 | 27/11/2026 13:00 | 12 Operação (VPS) | Backup completo em camadas: banco + arquivos enviados + chaves criptografadas; dumps do banco a cada 6 h; retenção 14 diários, 8 semanais, 6 mensais; arquivos 600 e conferência de cada peça; diagnóstico e rotinas ajustados (#169) | 1 Acesso e segurança (chaves), 4 WhatsApp (login guardado no banco) | não |
 | v1.47.1 | 27/11/2026 12:00 | 12 Operação (VPS) | `deploy/diagnostico-vps.sh`: diagnóstico somente leitura da VPS (sistema, relógio, serviços, backup, arquivos, .env só os nomes, banco, aplicação, logs) (#168) | — | não |
 | v1.47.0 | 27/11/2026 11:00 | 1 Acesso e segurança | **Revisão concluída (S1 a S10, decisões #157 a #166):** 14 testes de ponta a ponta e 13 unitários passando; pendente só a limpeza da senha temporária (S9 Fase 3, 8 dias ou mais depois da v1.46.9) (#167) | — | não |
