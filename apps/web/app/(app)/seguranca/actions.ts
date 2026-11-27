@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
-import { conferirTotp, guardarSegredo, lerSegredo, novoSegredo, novosCodigosRecuperacao, urlOtpauth } from "@/lib/auth/dois-fatores";
+import { consumirPassoTotp, guardarSegredo, passoDoCodigo, lerSegredo, novoSegredo, novosCodigosRecuperacao, urlOtpauth } from "@/lib/auth/dois-fatores";
 import { registrarLog } from "@/lib/logs";
 
 type R = { ok: boolean; mensagem: string; qr?: string; segredo?: string; codigos?: string[] };
@@ -15,7 +15,7 @@ export async function iniciarAtivacao(): Promise<R> {
   const s = await exigirSuperAdmin();
   if (s.usuario.doisFatoresAtivo) return { ok: false, mensagem: "A verificação já está ativa." };
   const segredo = novoSegredo();
-  await prisma.usuario.update({ where: { id: s.usuario.id }, data: { doisFatoresSegredo: guardarSegredo(segredo) } });
+  await prisma.usuario.update({ where: { id: s.usuario.id }, data: { doisFatoresSegredo: guardarSegredo(segredo), doisFatoresUltimoPasso: null } }); // segredo novo: o controle de passo recomeça (decisão #161)
   const qr = await QRCode.toDataURL(urlOtpauth(segredo, s.usuario.email), { margin: 1, width: 220 });
   return { ok: true, mensagem: "Leia o QR Code no app autenticador.", qr, segredo: segredo.replace(/(.{4})/g, "$1 ").trim() };
 }
@@ -25,7 +25,9 @@ export async function confirmarAtivacao(codigo: string): Promise<R> {
   const s = await exigirSuperAdmin();
   const u = await prisma.usuario.findUniqueOrThrow({ where: { id: s.usuario.id } });
   if (!u.doisFatoresSegredo) return { ok: false, mensagem: "Comece de novo: clique em Ativar." };
-  if (!conferirTotp(lerSegredo(u.doisFatoresSegredo), codigo)) return { ok: false, mensagem: "Código incorreto. Confira a hora do celular e tente de novo." };
+  const passo = passoDoCodigo(lerSegredo(u.doisFatoresSegredo), codigo);
+  // Cada código vale uma vez (decisão #161): o da ativação também não pode ser reaproveitado na entrada
+  if (passo === null || !(await consumirPassoTotp(u.id, passo))) return { ok: false, mensagem: "Código incorreto. Confira a hora do celular e tente de novo." };
   const { codigos, hashes } = novosCodigosRecuperacao();
   await prisma.usuario.update({ where: { id: u.id }, data: { doisFatoresAtivo: true, doisFatoresCodigos: hashes } });
   await registrarLog(s.usuario, "SENHA", "Verificação em duas etapas ativada");
@@ -37,14 +39,15 @@ export async function confirmarAtivacao(codigo: string): Promise<R> {
 async function conferirAtual(codigo: string) {
   const s = await exigirSuperAdmin();
   const u = await prisma.usuario.findUniqueOrThrow({ where: { id: s.usuario.id } });
-  const ok = !!u.doisFatoresSegredo && u.doisFatoresAtivo && conferirTotp(lerSegredo(u.doisFatoresSegredo), codigo);
+  const passo = u.doisFatoresSegredo && u.doisFatoresAtivo ? passoDoCodigo(lerSegredo(u.doisFatoresSegredo), codigo) : null;
+  const ok = passo !== null && (await consumirPassoTotp(u.id, passo)); // cada código vale uma vez (decisão #161)
   return { s, u, ok };
 }
 
 export async function desativar(codigo: string): Promise<R> {
   const { s, u, ok } = await conferirAtual(codigo);
   if (!ok) return { ok: false, mensagem: "Código incorreto." };
-  await prisma.usuario.update({ where: { id: u.id }, data: { doisFatoresAtivo: false, doisFatoresSegredo: null, doisFatoresCodigos: [] } });
+  await prisma.usuario.update({ where: { id: u.id }, data: { doisFatoresAtivo: false, doisFatoresSegredo: null, doisFatoresCodigos: [], doisFatoresUltimoPasso: null } });
   await registrarLog(s.usuario, "SENHA", "Verificação em duas etapas desativada");
   revalidatePath("/seguranca");
   return { ok: true, mensagem: "Verificação em duas etapas desativada." };

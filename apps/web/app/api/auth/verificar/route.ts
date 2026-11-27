@@ -3,10 +3,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@filapro/db";
 import { obterSessaoPendente2fa, encerrarSessao, SESSAO_PRIMEIRO_ACESSO_MIN } from "@/lib/auth/session";
-import { conferirTotp, lerSegredo, usarCodigoRecuperacao } from "@/lib/auth/dois-fatores";
+import { consumirPassoTotp, lerSegredo, passoDoCodigo, usarCodigoRecuperacao } from "@/lib/auth/dois-fatores";
+import { chaveDois, erroDeCodigo, limparErrosDeCodigo, minutosCongelado } from "@/lib/auth/tentativas";
 import { registrarLog } from "@/lib/logs";
-import { alertarEntradaSuperAdmin } from "@/lib/alertas-seguranca";
-import { limitarPorIp } from "@/lib/limite-acesso";
+import { alertarEntradaSuperAdmin, avisarSuperAdmins } from "@/lib/alertas-seguranca";
+import { limitarPorIp, ipDoPedido } from "@/lib/limite-acesso";
 
 const MAX_TENTATIVAS_2FA = 5;
 
@@ -20,15 +21,31 @@ export async function POST(req: Request) {
 
   let ok = false;
   let restantes: number | null = null;
+  let erroTexto: string | null = null;
   if (recuperacao) {
-    const nova = usarCodigoRecuperacao(u.doisFatoresCodigos, String(codigo));
-    if (nova) {
-      ok = true;
-      restantes = nova.length;
-      await prisma.usuario.update({ where: { id: u.id }, data: { doisFatoresCodigos: nova } });
-    }
+    // Código de recuperação: vale uma vez, remoção atômica no banco (decisão #161). Funciona mesmo com o código de 6 dígitos congelado.
+    const sobraram = await usarCodigoRecuperacao(u.id, String(codigo));
+    if (sobraram !== null) { ok = true; restantes = sobraram; }
   } else if (u.doisFatoresSegredo) {
-    try { ok = conferirTotp(lerSegredo(u.doisFatoresSegredo), String(codigo)); } catch { ok = false; }
+    const congelado = await minutosCongelado(u.id);
+    if (congelado > 0) {
+      erroTexto = `Muitos códigos errados. A verificação por código ficou bloqueada por ${congelado} ${congelado === 1 ? "minuto" : "minutos"}. Use um código de recuperação (“Perdi o celular”).`;
+    } else {
+      let passo: number | null = null;
+      try { passo = passoDoCodigo(lerSegredo(u.doisFatoresSegredo), String(codigo)); } catch { passo = null; }
+      if (passo !== null) {
+        // Cada código vale uma vez (RFC 6238): o mesmo código, ou um mais antigo que o último aceito, é recusado
+        ok = await consumirPassoTotp(u.id, passo);
+        if (!ok) await registrarLog(u, "SENHA", "Código de verificação reutilizado recusado");
+      }
+      if (ok) await limparErrosDeCodigo(u.id);
+      else if (await erroDeCodigo(u.id)) {
+        // 10 códigos errados em 15 minutos (somando todas as entradas): congela o código de 6 dígitos e avisa o Super Admin
+        const ip = await ipDoPedido();
+        await registrarLog(u, "SENHA", "Verificação por código bloqueada por 15 minutos (10 códigos errados)");
+        await avisarSuperAdmins(`🔐 Alerta de segurança: 10 códigos errados da verificação em duas etapas na conta do Super Admin ${u.email} em 15 minutos (último endereço ${ip}). A verificação por código ficou bloqueada por 15 minutos; os códigos de recuperação continuam valendo. Se não foi você, troque a senha.`).catch(() => undefined);
+      }
+    }
   }
 
   if (!ok) {
@@ -39,7 +56,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ erro: "Muitos códigos errados. Entre de novo com a senha.", voltar: true }, { status: 401 });
     }
     await prisma.sessao.update({ where: { id: s.id }, data: { tentativas2fa: t } });
-    return NextResponse.json({ erro: `Código incorreto. Restam ${MAX_TENTATIVAS_2FA - t} tentativas.` }, { status: 401 });
+    return NextResponse.json({ erro: erroTexto ?? `Código incorreto. Restam ${MAX_TENTATIVAS_2FA - t} tentativas.` }, { status: 401 });
   }
 
   // Liberou: a sessão passa a valer o tempo normal

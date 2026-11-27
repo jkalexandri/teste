@@ -117,6 +117,8 @@ model Usuario {
   doisFatoresSegredo String?
   doisFatoresAtivo   Boolean       @default(false)
   doisFatoresCodigos String[]      @default([])
+  /// Último intervalo de 30 s do código TOTP já aceito: cada código vale uma vez (decisão #161 — S6 do Módulo 1)
+  doisFatoresUltimoPasso Int?
   aparelho           String?
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?

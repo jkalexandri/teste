@@ -21,6 +21,15 @@ function totp(b32, quando = Date.now()) {
   const h = crypto.createHmac('sha1', Buffer.from(out)).update(msg).digest(); const o = h[h.length - 1] & 15;
   return String((((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]) % 1e6).padStart(6, '0');
 }
+// Cada código vale uma vez (decisão #161): devolve um código de um intervalo de 30 s ainda não usado, dentro da janela aceita pelo site
+let ultimoPasso = 0;
+async function novoCodigo(b32) {
+  for (;;) {
+    const agora = Math.floor(Date.now() / 30000); const alvo = Math.max(agora, ultimoPasso + 1);
+    if (alvo <= agora + 1) { ultimoPasso = alvo; return totp(b32, alvo * 30000 + 1000); }
+    await espera(1000);
+  }
+}
 const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "doisFatoresSegredo"=null, "doisFatoresCodigos"='{}' where email='${SA}'`);
 
 (async () => {
@@ -57,7 +66,7 @@ const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "d
     await p.screenshot({ path: OUT + '/seguranca-ativar.png' });
     await p.fill('[aria-label="Código de 6 dígitos"]', '000000'); await p.click('button:has-text("Confirmar e ativar")'); await espera(800);
     ok('Código errado não ativa', sql(`select "doisFatoresAtivo" from "Usuario" where email='${SA}'`) === 'f');
-    await p.fill('[aria-label="Código de 6 dígitos"]', totp(segredo)); await p.click('button:has-text("Confirmar e ativar")'); await espera(1200);
+    await p.fill('[aria-label="Código de 6 dígitos"]', await novoCodigo(segredo)); await p.click('button:has-text("Confirmar e ativar")'); await espera(1200);
     const codigos = (await p.locator('[data-testid=codigos-recuperacao] span').allInnerTexts());
     ok('Ativa e mostra 10 códigos de recuperação', sql(`select "doisFatoresAtivo" from "Usuario" where email='${SA}'`) === 't' && codigos.length === 10);
     ok('Segredo guardado criptografado', sql(`select "doisFatoresSegredo" like 'v1:%' from "Usuario" where email='${SA}'`) === 't');
@@ -74,7 +83,7 @@ const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "d
     await p.goto(BASE + '/verificacao'); await espera(500);
     await p.fill('#codigo-2fa', '123456'); await p.click('button:has-text("Entrar")'); await espera(800);
     ok('Código errado mostra tentativas restantes', (await p.locator('text=Restam 4 tentativas').count()) === 1);
-    await p.fill('#codigo-2fa', totp(segredo)); await p.click('button:has-text("Entrar")');
+    await p.fill('#codigo-2fa', await novoCodigo(segredo)); await p.click('button:has-text("Entrar")');
     await p.waitForURL('**/dashboard', { timeout: 8000 }).catch(() => undefined);
     ok('Código certo entra', p.url().includes('/dashboard'));
     await c.close();
@@ -107,21 +116,21 @@ const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "d
     // Entrada do Super Admin por um endereço novo (via API, com a segunda etapa)
     const ipNovo = `198.51.100.${Math.floor(Math.random() * 200) + 20}`;
     const ctx = await b.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipNovo } }); const pn = await ctx.newPage();
-    await senha(pn, SA, 'Super@12345678'); await pn.fill('#codigo-2fa', totp(segredo)); await pn.click('button:has-text("Entrar")'); await espera(1500);
+    await senha(pn, SA, 'Super@12345678'); await pn.fill('#codigo-2fa', await novoCodigo(segredo)); await pn.click('button:has-text("Entrar")'); await espera(1500);
     await ctx.close();
     let log = fs.readFileSync('/var/tmp/web.log', 'utf8').slice(antes);
     ok('Alerta: entrada do Super Admin por endereço novo', log.includes('endereço de internet novo') && log.includes(ipNovo));
     // Mesmo endereço de novo: sem alerta
     const antes2 = fs.readFileSync('/var/tmp/web.log', 'utf8').length;
     const ctx2 = await b.newContext({ extraHTTPHeaders: { 'x-forwarded-for': ipNovo } }); const pn2 = await ctx2.newPage();
-    await senha(pn2, SA, 'Super@12345678'); await pn2.fill('#codigo-2fa', totp(segredo, Date.now() + 30000)); await pn2.click('button:has-text("Entrar")'); await espera(1500);
+    await senha(pn2, SA, 'Super@12345678'); await pn2.fill('#codigo-2fa', await novoCodigo(segredo)); await pn2.click('button:has-text("Entrar")'); await espera(1500);
     await ctx2.close();
     ok('Endereço conhecido não gera alerta', !fs.readFileSync('/var/tmp/web.log', 'utf8').slice(antes2).includes('endereço de internet novo'));
     // Bloqueio de 3 contas em 1 hora
     sql(`delete from "Log" where tipo='SENHA' and texto like '%bloqueado por%'`);
     const contas = sql(`select email from "Usuario" where cargo<>'SUPERADMIN' and status='ATIVO' and email not in ('ana@empresaexemplo.com.br','admin-empresa@empresaexemplo.com.br','usuario@disparopro.com.br') order by email limit 3`).split('\n').filter(Boolean);
     const antes3 = fs.readFileSync('/var/tmp/web.log', 'utf8').length;
-    for (const e of contas) for (let i = 0; i < 5; i++) await fetch(BASE + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': `192.0.2.${i + 10}` }, body: JSON.stringify({ email: e, senha: 'Errada@1234567' }) });
+    for (const [k, e] of contas.entries()) for (let i = 0; i < 5; i++) await fetch(BASE + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': `192.0.2.${100 + k}` }, body: JSON.stringify({ email: e, senha: 'Errada@1234567' }) });
     await espera(800);
     // O alerta sai no máximo 1 vez por hora: vale o enviado agora ou um já enviado antes por outro teste da regressão
     log = fs.readFileSync('/var/tmp/web.log', 'utf8');
@@ -131,11 +140,11 @@ const desligar2fa = () => sql(`update "Usuario" set "doisFatoresAtivo"=false, "d
 
     // Desativar (exige o código)
     [c, p] = await novo();
-    await senha(p, SA, 'Super@12345678'); await p.fill('#codigo-2fa', totp(segredo)); await p.click('button:has-text("Entrar")'); await p.waitForURL('**/dashboard', { timeout: 8000 }).catch(() => undefined);
+    await senha(p, SA, 'Super@12345678'); await p.fill('#codigo-2fa', await novoCodigo(segredo)); await p.click('button:has-text("Entrar")'); await p.waitForURL('**/dashboard', { timeout: 8000 }).catch(() => undefined);
     await p.goto(BASE + '/seguranca'); await espera(600);
     ok('Tela mostra ativa e códigos restantes', (await p.locator('[data-testid=estado-2fa]').innerText()).includes('ativa') && (await p.locator('text=Códigos de recuperação restantes').count()) === 1);
     await p.screenshot({ path: OUT + '/seguranca-ativa.png' });
-    await p.fill('[aria-label="Código de 6 dígitos"]', totp(segredo)); await p.click('button:has-text("Desativar")'); await espera(1200);
+    await p.fill('[aria-label="Código de 6 dígitos"]', await novoCodigo(segredo)); await p.click('button:has-text("Desativar")'); await espera(1200);
     ok('Desativar com o código', sql(`select "doisFatoresAtivo" from "Usuario" where email='${SA}'`) === 'f');
     await c.close();
   } finally {

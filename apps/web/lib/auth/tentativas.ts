@@ -96,3 +96,23 @@ export async function limparTentativasVelhas(agora = new Date()) {
   const r = await prisma.tentativaLogin.deleteMany({ where: { atualizadoEm: { lt: new Date(agora.getTime() - 24 * 60 * MIN) }, OR: [{ bloqueadoAte: null }, { bloqueadoAte: { lt: agora } }] } });
   return r.count;
 }
+
+// ===== Verificação em duas etapas (decisão #161 — S6 do Módulo 1) =====
+/** 10 códigos de 6 dígitos errados em 15 minutos, somando todas as entradas: congela a verificação por código (15 minutos). */
+export const MAX_ERROS_CODIGO = 10;
+export const chaveDois = (usuarioId: string) => `dois:${usuarioId}`;
+
+/** Minutos que faltam para o código de 6 dígitos voltar a valer (0 = não está congelado). */
+export async function minutosCongelado(usuarioId: string, agora = new Date()) {
+  const l = await prisma.tentativaLogin.findUnique({ where: { chave: chaveDois(usuarioId) } });
+  return minutosRestantes(l, agora);
+}
+
+/** Conta 1 código errado; true se este erro congelou a verificação por código. */
+export async function erroDeCodigo(usuarioId: string, agora = new Date()) {
+  return registrarErro(chaveDois(usuarioId), MAX_ERROS_CODIGO, agora);
+}
+
+export async function limparErrosDeCodigo(usuarioId: string) {
+  await limpar([chaveDois(usuarioId)]);
+}

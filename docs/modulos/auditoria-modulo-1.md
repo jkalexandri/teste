@@ -68,7 +68,7 @@ Teste no site de teste, com endereços de internet diferentes:
 - Sobre a preocupação original ("vários endereços tentando a mesma conta"): o bloqueio da conta limita a 5 tentativas a cada 15 minutos
   e as senhas exigem 12+ caracteres com 4 tipos; o risco de adivinhar é baixo. O problema real é o bloqueio ser usado contra o dono.
 
-### S6 — O código do app autenticador pode ser reutilizado e a verificação tem furos ✅ (reproduzido em 26/11/2026)
+### S6 — O código do app autenticador pode ser reutilizado e a verificação tem furos ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.5 (decisão #161)**
 Teste no site de teste, com a verificação em duas etapas ativa no Super Admin:
 - **S6a — reuso do código:** o **mesmo código de 6 dígitos foi aceito 3 vezes seguidas**, em entradas diferentes (a norma TOTP, RFC 6238, exige
   recusar o segundo uso). O sistema aceita o código de 30 s atrás, o atual e o de 30 s à frente (janela de ~90 s): quem vê ou intercepta um
@@ -94,4 +94,4 @@ com validade curta (30–60 min). Decisão de produto: prévia própria.
 `trocar-senha` só valida a força; aceita repetir a senha temporária que passou por e-mail. Tratado junto com a S1.
 
 ## Ordem sugerida das prévias
-S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.
+S1 ✅ → S2 ✅ → S4 ✅ → S5 ✅ → S6 ✅ → S3 → S8 (S7 só se o dono quiser). Itens ❓ serão reproduzidos antes de virar prévia; se não se confirmarem, saem da lista.

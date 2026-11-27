@@ -2,6 +2,7 @@
 // (Google Authenticator, Microsoft Authenticator, Authy…) no padrão TOTP (RFC 6238) e códigos de recuperação.
 import "server-only";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { prisma } from "@filapro/db";
 import { criptografar, descriptografar } from "@filapro/ia/src/cripto";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -36,14 +37,27 @@ export function codigoTotp(segredoB32: string, quando = Date.now()) {
   return String(n % 1_000_000).padStart(6, "0");
 }
 
-/** Confere o código aceitando 30 s antes ou depois (relógio do celular um pouco diferente). */
-export function conferirTotp(segredoB32: string, codigo: string) {
+/**
+ * Intervalo de 30 s (número do passo) do código, aceitando 30 s antes ou depois (relógio do celular um pouco diferente);
+ * null se o código não confere. Quem consome o passo (consumirPassoTotp) garante que cada código vale uma vez.
+ */
+export function passoDoCodigo(segredoB32: string, codigo: string, agora = Date.now()): number | null {
   const c = codigo.replace(/\D/g, "");
-  if (c.length !== 6) return false;
-  return [-1, 0, 1].some((d) => {
-    const esperado = codigoTotp(segredoB32, Date.now() + d * 30_000);
-    return timingSafeEqual(Buffer.from(esperado), Buffer.from(c));
-  });
+  if (c.length !== 6) return null;
+  for (const d of [-1, 0, 1]) {
+    const quando = agora + d * 30_000;
+    if (timingSafeEqual(Buffer.from(codigoTotp(segredoB32, quando)), Buffer.from(c))) return Math.floor(quando / 30_000);
+  }
+  return null;
+}
+
+/**
+ * Cada código vale uma vez (RFC 6238, decisão #161): só aceita um passo MAIOR que o último já aceito.
+ * Atômico no banco: pedidos simultâneos com o mesmo código aceitam apenas um. true = aceito agora.
+ */
+export async function consumirPassoTotp(usuarioId: string, passo: number) {
+  const n = await prisma.$executeRaw`UPDATE "Usuario" SET "doisFatoresUltimoPasso" = ${passo} WHERE "id" = ${usuarioId} AND ("doisFatoresUltimoPasso" IS NULL OR "doisFatoresUltimoPasso" < ${passo})`;
+  return n === 1;
 }
 
 export function novoSegredo() { return base32(randomBytes(20)); }
@@ -67,8 +81,12 @@ export function novosCodigosRecuperacao() {
   return { codigos, hashes: codigos.map(hashCodigo) };
 }
 
-/** Se o código de recuperação existir, devolve a lista sem ele (cada um vale uma vez); senão null. */
-export function usarCodigoRecuperacao(hashes: string[], codigo: string) {
+/**
+ * Usa um código de recuperação (vale uma vez — decisão #161): remove-o da lista num comando ATÔMICO no banco,
+ * então dois pedidos simultâneos com o mesmo código aceitam apenas um. Devolve quantos códigos sobraram, ou null se não vale.
+ */
+export async function usarCodigoRecuperacao(usuarioId: string, codigo: string) {
   const h = hashCodigo(codigo);
-  return hashes.includes(h) ? hashes.filter((x) => x !== h) : null;
+  const r = await prisma.$queryRaw<{ n: number }[]>`UPDATE "Usuario" SET "doisFatoresCodigos" = array_remove("doisFatoresCodigos", ${h}) WHERE "id" = ${usuarioId} AND ${h} = ANY("doisFatoresCodigos") RETURNING cardinality("doisFatoresCodigos") AS n`;
+  return r.length ? Number(r[0]!.n) : null;
 }

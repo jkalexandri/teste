@@ -2,6 +2,13 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.5 — segurança: cada código do app autenticador vale uma vez (26/11/2026)
+
+- **Super Admin:** o código de 6 dígitos da verificação em duas etapas **só entra uma vez**. Se alguém vir ou copiar o código, não consegue usá-lo de novo. Ao entrar duas vezes seguidas em menos de 30 segundos, espere o **próximo código** do app.
+- Os **códigos de recuperação** valem uma vez de verdade, mesmo se usados ao mesmo tempo.
+- **10 códigos errados em 15 minutos** congelam a verificação por código por 15 minutos e você recebe um **alerta** no WhatsApp e no celular. **Os códigos de recuperação continuam funcionando**, então você nunca fica sem entrar.
+- Tentativas de repetir um código aparecem nos **Logs**.
+
 ## v1.46.4 — segurança: ninguém tranca a sua conta de propósito (26/11/2026)
 
 - As **5 senhas erradas** agora bloqueiam **só quem errou** (aquele endereço de internet, naquele e-mail) por 15 minutos. Antes, bastava alguém errar 5 vezes para trancar a conta inteira, mesmo com o dono usando outro aparelho.
