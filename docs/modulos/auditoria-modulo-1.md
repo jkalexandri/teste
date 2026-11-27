@@ -107,7 +107,7 @@ O site roda num único processo (pm2, sem cluster), então guardar o limite em m
 - **S8d — reinício zera os limites:** acontece em cada atualização/queda do site. Por desenho; as proteções de alto valor (bloqueio de conta,
   recuperação de senha, verificação em duas etapas) já estão no banco desde as etapas S5 e S6.
 
-### S9 — Senhas temporárias viajam em texto no e-mail ✅ (mapeado em 26/11/2026)
+### S9 — Senhas temporárias viajam em texto no e-mail ✅ (mapeado em 26/11/2026) — **Fase 1 (recuperação) FEITA na v1.46.8 (decisão #164); Fase 2 (contas novas, usuário criado pelo Admin, redefinir/reenviar acesso) pendente, prévia própria**
 Hoje **5 lugares** geram uma senha temporária e a enviam em texto no e-mail (ou, no último caso, no terminal):
 1. **Recuperação** ("Esqueci minha senha", `api/auth/recuperar`): pedido público, vale 24 h. É a superfície de ataque (qualquer pessoa dispara).
 2. **Conta nova** (`contas.ts: criarConta` — compra, teste grátis, Super Admin cria empresa): e-mail de boas-vindas, vale 7 dias.

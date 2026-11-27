@@ -374,14 +374,19 @@ Menu **Segurança**: além da senha, a entrada passa a pedir o **código de 6 d�
 2. Digite o código do app em **Confirmar e ativar**.
 3. Guarde os **10 códigos de recuperação** (fora do celular). Cada um permite entrar uma vez se você perder o celular.
 
-Depois de ativada: senha → tela do código. 5 códigos errados cancelam a tentativa (é preciso digitar a senha de novo). Para desativar
-ou gerar novos códigos de recuperação, informe o código atual do app.
+Depois de ativada: senha → tela do código. **Cada código do app vale uma vez** (se entrar duas vezes em menos de 30 segundos, espere o próximo
+código). 5 códigos errados cancelam a tentativa (é preciso digitar a senha de novo); **10 códigos errados em 15 minutos congelam a verificação
+por código por 15 minutos** e você recebe um alerta — os **códigos de recuperação continuam funcionando**. Para desativar ou gerar novos
+códigos de recuperação, informe o código atual do app. Esqueci minha senha **não dispensa** a verificação em duas etapas.
 
 **Alertas de segurança** (no WhatsApp de avisos e no celular): a conta do Super Admin bloqueada por senha errada, 3 ou mais contas
 bloqueadas na plataforma em 1 hora e entrada do Super Admin por um endereço de internet novo.
 
 **Proteções automáticas:** limite de tentativas por endereço de internet (login, Esqueci minha senha, compra, teste grátis, renovação,
-leads de anúncios e chat), o sistema não pode ser aberto dentro de outro site e o navegador só carrega arquivos do próprio sistema.
+leads de anúncios e chat; endereços IPv6 contam pelo bloco), o sistema não pode ser aberto dentro de outro site e o navegador só carrega
+arquivos do próprio sistema. **Senhas erradas:** 5 erros bloqueiam só o endereço de quem errou (15 minutos); 30 erros de vários endereços
+colocam a conta em proteção (o dono recebe um e-mail). **Recuperação de senha:** link de uso único (30 minutos) enviado ao e-mail, no máximo
+3 pedidos por hora e 10 minutos entre links; contas vencidas, inativas ou bloqueadas não têm acesso a arquivos, relatórios nem rotas do sistema.
 
 ## Status no login
 

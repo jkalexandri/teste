@@ -13,7 +13,9 @@ qualifica os leads (Quente, Morno, Frio) e trata objeções.
 2. Abra **filaproleads.com.br**, escolha **Módulo Individual** ou **Módulo Empresarial** e entre com o e-mail e a senha temporária.
 3. Crie a sua senha definitiva: no mínimo 12 caracteres, com maiúscula, minúscula, número e caractere especial.
    Se preferir, clique em **Gerar senha forte** e depois em **Copiar senha** — guarde-a antes de salvar.
-4. Esqueceu a senha? Na tela de login, clique em **Esqueci minha senha**: uma nova senha temporária chega no seu e-mail.
+4. Esqueceu a senha? Na tela de login, clique em **Esqueci minha senha**: chega no seu e-mail um **link para criar uma nova senha**
+   (vale 30 minutos e só funciona uma vez). Ao salvar a nova senha, os outros aparelhos conectados na sua conta saem. Depois é só entrar.
+   Se errar a senha 5 vezes, só aquele aparelho/endereço de internet fica bloqueado por 15 minutos; você não perde o acesso de outros aparelhos.
 
 Depois de 5 senhas erradas seguidas, o acesso fica bloqueado por 15 minutos.
 

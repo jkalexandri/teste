@@ -2,6 +2,15 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.46.8 — segurança: recuperar a senha por link, não por senha no e-mail (26/11/2026)
+
+- **"Esqueci minha senha"** agora envia um **link para criar a nova senha** (vale 30 minutos e só pode ser usado uma vez), em vez de uma senha escrita no e-mail. Nada de senha guardada na caixa de e-mail.
+- Abrir o link não o gasta; só quando você **salva a nova senha**. Se a senha for fraca, o link continua valendo para você tentar de novo.
+- Ao criar a nova senha, **os outros aparelhos conectados saem** e você recebe o aviso "Sua senha foi alterada". Depois é só entrar com a nova senha (o Super Admin continua precisando do código do app autenticador).
+- Pediu um link novo? O anterior deixa de valer.
+- Na tela de login, o painel "Recuperar senha" tem os textos novos (só as frases mudaram).
+- As **contas novas** ainda recebem a senha temporária de boas-vindas por e-mail; isso muda numa próxima etapa.
+
 ## v1.46.7 — segurança: os limites por endereço de internet não têm mais contorno (26/11/2026)
 
 - O endereço de quem acessa passa a ser sempre o que o **servidor de entrada (Caddy)** informa; um cabeçalho inventado não engana mais os limites, os Logs nem o alerta de "endereço novo" do Super Admin.

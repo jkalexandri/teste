@@ -5,6 +5,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
+// Senha temporária criada direto no banco (decisão #164: a recuperação passou a usar link; a senha temporária continua nos acessos novos)
+const _cr = require('crypto');
+function darTemp(email, pw = 'TempTeste@2026xyz') {
+  const sal = _cr.randomBytes(16); const h = _cr.scryptSync(pw, sal, 64);
+  const guardado = `scrypt$${sal.toString('base64')}$${h.toString('base64')}`;
+  require('child_process').execSync('psql -h /var/tmp -p 5433 -U postgres -d filapro -tA', { input: `update "Usuario" set "senhaTempHash"='${guardado}', "senhaTempExpiraEm"=now()+interval '24 hours' where email='${email}';` });
+  return pw;
+}
+
 const VIT = 'usuario@disparopro.com.br', OK = 'User@12345678', ERR = 'Errada@1234567';
 const SA = 'superadmin@disparopro.com.br', SA_OK = 'Super@12345678';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
@@ -13,7 +22,7 @@ const post = async (rota, corpo, enderecoIp) => { const r = await fetch(BASE + r
 const entrar = (email, senha, enderecoIp, modulo = 'individual') => post('/api/auth/login', { email, senha, modulo }, enderecoIp);
 const log = () => fs.readFileSync('/var/tmp/web.log', 'utf8');
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
-const limpa = () => { sql(`delete from "TentativaLogin"`); sql(`update "Usuario" set "bloqueadoAte"=null,"tentativasFalhas"=0,"senhaTempHash"=null,"senhaTempExpiraEm"=null where email in ('${VIT}','${SA}')`); };
+const limpa = () => { sql(`delete from "TentativaLogin"`); sql(`update "Usuario" set "bloqueadoAte"=null,"tentativasFalhas"=0,"senhaTempHash"=null,"senhaTempExpiraEm"=null,"linkSenhaHash"=null,"linkSenhaExpiraEm"=null where email in ('${VIT}','${SA}')`); };
 const emailsProtecao = () => (log().match(/Assunto: Muitas tentativas de entrar na sua conta/g) || []).length;
 
 (async () => {
@@ -47,10 +56,11 @@ const emailsProtecao = () => (log().match(/Assunto: Muitas tentativas de entrar 
     ok('O dono recebeu 1 e-mail avisando da proteção', emailsProtecao() === antesEmail + 1, `${emailsProtecao() - antesEmail} e-mail(s)`);
 
     // 3. Saída: a senha temporária enviada ao e-mail entra mesmo em proteção, e desfaz o bloqueio
+    const logAntes = log().length;
     const rec = await post('/api/auth/recuperar', { email: VIT });
     await esperar(2500);
-    const temp = (log().match(/senha temporária do FilaPro Leads é: (\S+)/g) || []).pop()?.split(': ')[1];
-    ok('Recuperação funciona com a conta em proteção (e-mail com a senha temporária saiu)', rec.st === 200 && !!temp);
+    const temp = darTemp(VIT); // conta nova com senha temporária pendente (a recuperação agora envia link — etapa34)
+    ok('Recuperação funciona com a conta em proteção (o e-mail com o link de nova senha saiu)', rec.st === 200 && /definir-senha#t=/.test(log().slice(logAntes)));
     const viaTemp = await entrar(VIT, temp, ip());
     ok('Senha temporária entra mesmo com a conta em proteção (vai ao primeiro acesso)', viaTemp.st === 200 && viaTemp.c.destino === '/primeiro-acesso', JSON.stringify(viaTemp.c));
     const depois = await entrar(VIT, OK, ip());
@@ -73,30 +83,30 @@ const emailsProtecao = () => (log().match(/Assunto: Muitas tentativas de entrar 
 
     // 6. Recuperação: intervalo de 10 minutos e 3 por hora por e-mail
     limpa();
-    const emails0 = (log().match(/senha temporária do FilaPro Leads/g) || []).length;
+    const emails0 = (log().match(/definir-senha#t=/g) || []).length;
     await post('/api/auth/recuperar', { email: VIT }); await esperar(1800);
-    const h1 = sql(`select "senhaTempHash" from "Usuario" where email='${VIT}'`);
+    const h1 = sql(`select "linkSenhaHash" from "Usuario" where email='${VIT}'`);
     await post('/api/auth/recuperar', { email: VIT }); await esperar(1800);
-    const h2 = sql(`select "senhaTempHash" from "Usuario" where email='${VIT}'`);
-    ok('Recuperação repetida em menos de 10 minutos NÃO gera outra senha (a primeira continua valendo)', !!h1 && h1 === h2);
+    const h2 = sql(`select "linkSenhaHash" from "Usuario" where email='${VIT}'`);
+    ok('Recuperação repetida em menos de 10 minutos NÃO gera outro link (o primeiro continua valendo)', !!h1 && h1 === h2);
     const mexe = () => sql(`delete from "TentativaLogin" where chave like 'recint:%'`); // faz de conta que passaram os 10 minutos
     mexe(); await post('/api/auth/recuperar', { email: VIT }); await esperar(1800);
-    const h3 = sql(`select "senhaTempHash" from "Usuario" where email='${VIT}'`);
+    const h3 = sql(`select "linkSenhaHash" from "Usuario" where email='${VIT}'`);
     mexe(); await post('/api/auth/recuperar', { email: VIT }); await esperar(1800);
-    const h4 = sql(`select "senhaTempHash" from "Usuario" where email='${VIT}'`);
+    const h4 = sql(`select "linkSenhaHash" from "Usuario" where email='${VIT}'`);
     mexe(); await post('/api/auth/recuperar', { email: VIT }); await esperar(1800);
-    const h5 = sql(`select "senhaTempHash" from "Usuario" where email='${VIT}'`);
-    ok('Depois dos 10 minutos gera nova senha, até 3 por hora por e-mail', h3 !== h2 && h4 !== h3 && h5 === h4, 'hash 3 e 4 novos; o 4º pedido da hora (5º no total) não troca');
-    const emails1 = (log().match(/senha temporária do FilaPro Leads/g) || []).length;
+    const h5 = sql(`select "linkSenhaHash" from "Usuario" where email='${VIT}'`);
+    ok('Depois dos 10 minutos gera novo link, até 3 por hora por e-mail', h3 !== h2 && h4 !== h3 && h5 === h4, 'hash 3 e 4 novos; o 4º pedido da hora (5º no total) não troca');
+    const emails1 = (log().match(/definir-senha#t=/g) || []).length;
     ok('Foram enviados só 3 e-mails para 5 pedidos', emails1 - emails0 === 3, `${emails1 - emails0} e-mails`);
 
     // 6b. Pedidos SIMULTÂNEOS não furam os limites (a contagem é atômica no banco)
     limpa();
-    const e0 = (log().match(/senha temporária do FilaPro Leads/g) || []).length;
+    const e0 = (log().match(/definir-senha#t=/g) || []).length;
     await Promise.all(Array.from({ length: 8 }, () => post('/api/auth/recuperar', { email: VIT })));
     await esperar(3500);
-    const e1 = (log().match(/senha temporária do FilaPro Leads/g) || []).length;
-    ok('8 pedidos de recuperação ao mesmo tempo geram só 1 senha e 1 e-mail', e1 - e0 === 1, `${e1 - e0} e-mail(s)`);
+    const e1 = (log().match(/definir-senha#t=/g) || []).length;
+    ok('8 pedidos de recuperação ao mesmo tempo geram só 1 link e 1 e-mail', e1 - e0 === 1, `${e1 - e0} e-mail(s)`);
     limpa();
     const C = `203.0.115.${SORTE}`;
     await Promise.all(Array.from({ length: 12 }, () => entrar(VIT, ERR, C)));

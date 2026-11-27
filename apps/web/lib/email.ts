@@ -30,22 +30,21 @@ export async function enviarEmail({ para, assunto, html, texto }: Email): Promis
   return true;
 }
 
-export function emailSenhaTemporaria(nome: string, senha: string, horas: number) {
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** Link de uso único para criar uma nova senha (decisão #164 — S9 do Módulo 1): nunca leva senha. */
+export function emailLinkRecuperacao(nome: string, link: string, minutos: number) {
   const texto =
-    `Olá, ${nome}.\n\nSua senha temporária do FilaPro Leads é: ${senha}\n\n` +
-    `Ela vale por ${horas} horas. Ao entrar, você vai criar uma nova senha com no mínimo 12 caracteres.\n\n` +
-    `Se você não pediu esta senha, ignore este e-mail. Sua senha atual continua valendo.`;
+    `Olá, ${nome}.\n\nPara criar uma nova senha no FilaPro Leads, abra o link abaixo (vale por ${minutos} minutos e só pode ser usado uma vez):\n\n${link}\n\n` +
+    `Se você não pediu, ignore este e-mail: sua senha atual continua valendo.`;
   const html =
-    `<p>Olá, ${nome}.</p><p>Sua senha temporária do <b>FilaPro Leads</b> é:</p>` +
-    `<p style="font-size:18px;font-family:monospace"><b>${senha}</b></p>` +
-    `<p>Ela vale por ${horas} horas. Ao entrar, você vai criar uma nova senha com no mínimo 12 caracteres.</p>` +
-    `<p style="color:#5b6b62">Se você não pediu esta senha, ignore este e-mail. Sua senha atual continua valendo.</p>`;
+    `<p>Olá, ${esc(nome)}.</p><p>Para criar uma nova senha no <b>FilaPro Leads</b>, use o botão abaixo. O link vale por <b>${minutos} minutos</b> e só pode ser usado <b>uma vez</b>.</p>` +
+    `<p><a href="${link}" style="display:inline-block;background:#16a34a;color:#fff;font-weight:bold;padding:12px 20px;border-radius:10px;text-decoration:none">Criar nova senha</a></p>` +
+    `<p style="font-size:12px;color:#5b6b62">Se o botão não abrir, copie este endereço no navegador:<br>${link}</p>` +
+    `<p style="color:#5b6b62">Se você não pediu, ignore este e-mail: sua senha atual continua valendo.</p>`;
   return { texto, html };
 }
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-
-/** Aviso de senha alterada (decisão #157): nunca leva a senha; mostra quando e de onde, para o dono notar uma tomada de conta. */
 export function emailSenhaAlterada(nome: string, quando: string, ip: string) {
   const texto =
     `Olá, ${nome}.\n\nA senha da sua conta no FilaPro Leads foi definida em ${quando} (endereço de internet: ${ip}).\n\n` +

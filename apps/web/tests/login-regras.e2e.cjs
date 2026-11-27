@@ -6,6 +6,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
+// Senha temporária criada direto no banco (decisão #164: a recuperação passou a usar link; a senha temporária continua nos acessos novos)
+const _cr = require('crypto');
+function darTemp(email, pw = 'TempTeste@2026xyz') {
+  const sal = _cr.randomBytes(16); const h = _cr.scryptSync(pw, sal, 64);
+  const guardado = `scrypt$${sal.toString('base64')}$${h.toString('base64')}`;
+  require('child_process').execSync('psql -h /var/tmp -p 5433 -U postgres -d filapro -tA', { input: `update "Usuario" set "senhaTempHash"='${guardado}', "senhaTempExpiraEm"=now()+interval '24 hours' where email='${email}';` });
+  return pw;
+}
+
 const res = [];
 const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} — ${nome}${extra ? ' (' + extra + ')' : ''}`);
 
@@ -81,11 +90,11 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
   await p.click('text=Esqueci minha senha');
   await p.fill('#rec-email', 'usuario@disparopro.com.br');
-  await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1500);
+  await p.click('text=Enviar link para nova senha'); await p.waitForTimeout(1500);
   ok('Recuperação mostra "Solicitação registrada"', await p.locator('text=Solicitação registrada').count() === 1);
   const log = fs.readFileSync('/var/tmp/web.log', 'utf8');
-  const temp = (log.match(/senha temporária do FilaPro Leads é: (\S+)/g) || []).pop()?.split(': ')[1];
-  ok('E-mail com senha temporária gerado', !!temp);
+  ok('E-mail com o link para criar a nova senha gerado (sem senha no e-mail)', /definir-senha#t=[A-Za-z0-9_-]{43}/.test(log) && !/senha temporária do FilaPro Leads é/.test(log.slice(-4000)));
+  const temp = darTemp('usuario@disparopro.com.br'); // estado "primeiro acesso" (conta nova com senha temporária)
   await login(p, 'usuario@disparopro.com.br', temp, 'individual');
   ok('Senha temporária leva ao primeiro acesso', p.url().endsWith('/primeiro-acesso'));
   await p.goto(BASE + '/dashboard'); await p.waitForTimeout(500);
@@ -117,7 +126,7 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   [c, p] = await novo();
   await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
   await p.click('text=Esqueci minha senha'); await p.fill('#rec-email', 'naoexiste@x.com');
-  await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1000);
+  await p.click('text=Enviar link para nova senha'); await p.waitForTimeout(1000);
   ok('E-mail inexistente: mesma resposta (não revela cadastro)', await p.locator('text=Solicitação registrada').count() === 1);
   await c.close();
 

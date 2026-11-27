@@ -6,6 +6,15 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
+// Senha temporária criada direto no banco (decisão #164: a recuperação passou a usar link; a senha temporária continua nos acessos novos)
+const _cr = require('crypto');
+function darTemp(email, pw = 'TempTeste@2026xyz') {
+  const sal = _cr.randomBytes(16); const h = _cr.scryptSync(pw, sal, 64);
+  const guardado = `scrypt$${sal.toString('base64')}$${h.toString('base64')}`;
+  require('child_process').execSync('psql -h /var/tmp -p 5433 -U postgres -d filapro -tA', { input: `update "Usuario" set "senhaTempHash"='${guardado}', "senhaTempExpiraEm"=now()+interval '24 hours' where email='${email}';` });
+  return pw;
+}
+
 const EMAIL = 'usuario@disparopro.com.br';
 const P1 = 'PrimeiraSenha@2026a', P2 = 'SegundaSenha@2026b';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
@@ -18,7 +27,7 @@ const avisos = () => (log().match(/Assunto: Sua senha foi alterada/g) || []).len
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1280, height: 800 } }); return [c, await c.newPage()]; };
   const entrar = async (p, senha) => { await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.fill('#email', EMAIL); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForTimeout(1500); };
-  const recuperar = async (p) => { sql(`delete from "TentativaLogin"`); await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Esqueci minha senha'); await p.fill('#rec-email', EMAIL); await p.click('text=Enviar senha temporária'); await p.waitForTimeout(1500); return ultimaTemp(); };
+  const recuperar = async () => { sql(`delete from "TentativaLogin"`); return darTemp(EMAIL); }; // estado de primeiro acesso (conta nova com senha temporária)
   const trocar = (p, senha) => p.evaluate(async (s) => { const r = await fetch('/api/auth/trocar-senha', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ senha: s }) }); return { status: r.status, corpo: await r.json().catch(() => ({})) }; }, senha);
   const cookie = async (c) => (await c.cookies()).find((x) => x.name === 'filapro_sessao')?.value;
   try {

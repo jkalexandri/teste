@@ -561,10 +561,10 @@ export default function LoginScreen() {
                         placeholder="voce@empresa.com.br"
                       />
                       <button className="login-cta" type="submit">
-                        <Mail size={15} /> Enviar senha temporária
+                        <Mail size={15} /> Enviar link para nova senha
                       </button>
                       <p className="text-[11px] leading-relaxed text-slate-400">
-                        Se o e-mail existir na base do administrador, enviaremos uma senha temporária para ele.
+                        Se o e-mail existir na base do administrador, enviaremos um link para criar uma nova senha (vale 30 minutos).
                       </p>
                     </form>
                   ) : (
@@ -573,8 +573,8 @@ export default function LoginScreen() {
                         <CircleCheck size={16} /> Solicitação registrada
                       </div>
                       <p className="text-[13px] mt-1.5 leading-relaxed text-slate-300">
-                        Se <b className="[overflow-wrap:anywhere]">{recEmail}</b> estiver cadastrado pelo administrador, uma senha
-                        temporária será enviada para esse e-mail. Ao entrar, crie uma senha com no mínimo 12 caracteres.
+                        Se <b className="[overflow-wrap:anywhere]">{recEmail}</b> estiver cadastrado pelo administrador, um link
+                        para criar uma nova senha será enviado para esse e-mail. O link vale 30 minutos e só pode ser usado uma vez.
                       </p>
                       <button className="login-ghost-btn mt-3" onClick={fecharRecuperacao}>Voltar para o login</button>
                     </div>

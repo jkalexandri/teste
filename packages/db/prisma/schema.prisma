@@ -119,6 +119,9 @@ model Usuario {
   doisFatoresCodigos String[]      @default([])
   /// Último intervalo de 30 s do código TOTP já aceito: cada código vale uma vez (decisão #161 — S6 do Módulo 1)
   doisFatoresUltimoPasso Int?
+  /// Link de uso único para definir a senha (recuperação): só o hash do código; vale 30 min (decisão #164 — S9 do Módulo 1)
+  linkSenhaHash      String?       @unique
+  linkSenhaExpiraEm  DateTime?
   aparelho           String?
   /// Super Admin não pertence a nenhuma empresa.
   empresaId          String?

@@ -1,13 +1,12 @@
-// POST /api/auth/recuperar — envia senha temporária para o e-mail cadastrado.
+// POST /api/auth/recuperar — envia um link de uso único (30 minutos) para criar uma nova senha (decisão #164).
 // A resposta é sempre a mesma, exista o e-mail ou não (não revela quem é cadastrado).
 // A senha atual continua valendo até a pessoa entrar com a temporária e trocá-la.
 import { NextResponse, after } from "next/server";
 import { limitarPorIp } from "@/lib/limite-acesso";
-import { prisma, gerarHash, gerarSenhaTemporaria, StatusUsuario } from "@filapro/db";
-import { enviarEmail, emailSenhaTemporaria } from "@/lib/email";
+import { prisma, StatusUsuario } from "@filapro/db";
+import { enviarEmail, emailLinkRecuperacao } from "@/lib/email";
+import { VALIDADE_LINK_MIN, criarLinkSenha, urlDoLink } from "@/lib/auth/link-senha";
 import { podePedirRecuperacao } from "@/lib/auth/tentativas";
-
-const VALIDADE_TEMP_HORAS = 24;
 
 export async function POST(req: Request) {
   // Limite por endereço de internet (decisão #105): 5 pedidos por hora
@@ -26,16 +25,10 @@ export async function POST(req: Request) {
           // Decisão #160 (S5): no máximo 3 pedidos por hora por e-mail e 10 minutos entre uma senha e outra (a senha do e-mail
           // que o dono está digitando não é anulada por pedidos alheios; contra quem enche a caixa de e-mail). Atômico.
           if (!(await podePedirRecuperacao(email))) return;
-          const temp = gerarSenhaTemporaria();
-          await prisma.usuario.update({
-            where: { id: usuario.id },
-            data: {
-              senhaTempHash: await gerarHash(temp),
-              senhaTempExpiraEm: new Date(Date.now() + VALIDADE_TEMP_HORAS * 3600 * 1000),
-            },
-          });
-          const { texto, html } = emailSenhaTemporaria(usuario.nome, temp, VALIDADE_TEMP_HORAS);
-          await enviarEmail({ para: usuario.email, assunto: "Sua senha temporária — FilaPro Leads", texto, html });
+          // Decisão #164 (S9): link de uso único (30 minutos) no lugar da senha temporária; o anterior deixa de valer
+          const link = urlDoLink(await criarLinkSenha(usuario.id));
+          const { texto, html } = emailLinkRecuperacao(usuario.nome, link, VALIDADE_LINK_MIN);
+          await enviarEmail({ para: usuario.email, assunto: "Crie uma nova senha — FilaPro Leads", texto, html });
         }
       } catch (e) {
         console.error("[recuperar] falha ao gerar/enviar a senha temporária", e);

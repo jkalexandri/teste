@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { MSG_MANUTENCAO, emManutencao, tokenDeSuperAdmin } from "@/lib/manutencao";
 
 const COOKIE_SESSAO = "filapro_sessao";
-const PUBLICAS = ["/login", "/renovar", "/privacidade", "/termos"];
+const PUBLICAS = ["/login", "/definir-senha", "/renovar", "/privacidade", "/termos"];
 // Rotas da API liberadas na manutenção: estado, presença (mostra a tela), login (o Super Admin pode entrar),
 // sair e leads de anúncios (ficam guardados e são atendidos depois)
 const API_LIVRES = ["/api/manutencao", "/api/status", "/api/presenca", "/api/auth/login", "/api/auth/verificar", "/api/auth/sair", "/api/auth/encerrar", "/api/anuncios/"];
