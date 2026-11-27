@@ -1,4 +1,4 @@
-# Módulo 1 (Acesso e segurança): levantamento
+# Módulo 1 (Acesso e segurança): levantamento — **REVISADO em 27/11/2026 (v1.47.0, decisão #167)**
 
 Feito em **26/11/2026** (v1.46.0), a partir do código. **Somente leitura: nada foi alterado.**
 Regra do projeto: cada item recebe uma prévia, o dono aprova e só então é implementado.
