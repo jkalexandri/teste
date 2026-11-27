@@ -37,9 +37,20 @@ Teste: sessão aberta de um usuário de empresa; depois a empresa foi inativada,
   plano vencido e usuário bloqueado por abuso. A `continuidade.md` já guardava isso como "bloqueado/vencido com WhatsApp e IA (decidir)".
 
 ## Baixas
-### S3 — Várias rotas só usam `obterSessao`, sem `motivoSemAcesso` ✅
-`arquivos/[id]`, `suporte`, `push`, `comunicados/[id]`, `presenca`. Conta vencida/bloqueada ainda baixa os próprios arquivos
-e usa o suporte. Em parte é desejado (o bloqueado precisa falar com o suporte); definir a regra por rota.
+### S3 — Rotas que só conferem a sessão, sem olhar a situação da conta ✅ (reproduzido em 26/11/2026)
+Varredura de todas as rotas e ações do servidor: tudo o que é privado confere a sessão; as que não conferem são públicas por desenho
+(pedidos, planos, renovação por link, teste grátis, chat do visitante, webhook do Asaas, webhook de anúncios por token — este já recusa conta
+vencida/inativa/bloqueada —, rotinas protegidas por segredo). Faltam só estas (conta de teste com sessão antiga aberta):
+- **S3a — 4 rotas deixam passar conta inativa, vencida ou bloqueada:** `/api/arquivos/[id]` (baixar arquivo do próprio usuário; o Admin da
+  Empresa vê os dos usuários dele), `/api/suporte/arquivo/[id]`, `/api/comunicados/[id]` (marcar como lido) e `/api/ajuda/prints/[nome]`.
+  Nas 3 situações a resposta foi 404/200 (passou da sessão) em vez de 403. As três últimas também deixam passar uma **sessão em primeiro
+  acesso** (senha temporária ainda não trocada); só `arquivos` recusa.
+- **S3b — rotas só do Super Admin sem a checagem completa (defesa em profundidade):** `relatorios`, `financeiro/relatorios`,
+  `financeiro/comprovante`, `logos` e a parte do Super Admin de `interessados/arquivo` conferem o cargo, mas não `motivoSemAcesso`
+  (Super Admin bloqueado) e, no caso de `interessados/arquivo`, nem o primeiro acesso.
+- **S3c — cancelar a cobrança automática do cartão (`conta/actions`):** não confere o primeiro acesso. Mantida a ideia de que conta vencida
+  ou inativa **pode** desligar a cobrança (direito de cancelar assinatura). **Observação para o Módulo 3:** hoje, na prática, o cliente de plano
+  vencido nem abre o sistema (a tela é bloqueada); desligar a cobrança automática dele só pelo suporte/Super Admin. Decisão de produto.
 
 ### S4 — Dá para descobrir quais e-mails têm conta ✅ (reproduzido em 26/11/2026) — **FEITA na v1.46.3 (decisão #159)**
 Medido no site de teste, com e-mail existente e inexistente:
