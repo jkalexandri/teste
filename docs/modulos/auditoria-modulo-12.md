@@ -7,6 +7,27 @@ está agendado? os arquivos têm as permissões certas? o disco está cheio?) s�
 
 Regra do projeto: cada item recebe uma prévia, o dono aprova e só então é implementado.
 
+## RESULTADO FINAL — Módulo 12 🟢 Revisado (27/11/2026 14:00, v1.49.0)
+
+Todos os itens abaixo foram **implementados, testados e conferidos na VPS real pelo dono** (diagnóstico final: **63 OK, 0 atenção, 0 falha**; ensaio do desastre real: banco, chaves e arquivos baixados do B2 e restaurados num banco temporário em **8 s**).
+
+| Item | O que foi feito | Decisão / versão |
+|---|---|---|
+| Diagnóstico da VPS | `diagnostico-vps.sh` (somente leitura) | #168, v1.47.1–2 |
+| P0-1, P0-2, P0-7, P0-8, P0-9 | Backup completo em camadas: banco + arquivos + chaves criptografadas, 6 em 6 h, retenção 14/8/6, permissões 600/700 | #169, v1.47.3 |
+| P0-4, P0-5 | Restauração segura (nunca apaga antes de provar) e teste semanal de restauração | #170, v1.47.6 |
+| P0-6, O1, O2, O3, O5 | Avisos por e-mail (backup, disco, memória, reinício pendente, relógio, certificado) + monitor externo (UptimeRobot, alerta testado) + reinício controlado | #171, v1.48.0 |
+| O4 | Rotação de logs (logrotate do sistema, journal limitado, logs 600) | #172, v1.48.1 |
+| P0-3 | Cópia fora da VPS no Backblaze B2: criptografada na VPS, imutável (Object Lock), conferida por hash, `--baixar` | #173, v1.48.2 |
+| SSH | Só com chave, com prova de login real e desfazer automático (+ ajuste de 120 s) | #174, v1.48.3–4 |
+| O6, O7, O8 | Rotação de segredos com desfazer; auditoria de dependências (deepmerge-ts corrigido, 0 vulnerabilidades); ensaio mensal do desastre | #175, v1.49.0 |
+
+**Pendências que NÃO bloqueiam o fechamento (opcionais, registradas):**
+- Ensaio do desastre em **servidor novo** (exige outra VPS; o ensaio atual roda na própria VPS com banco/pasta temporários).
+- Usuário comum com `sudo` no lugar do root (hoje o root entra só com chave; mudar exigiria mover pm2, cron e scripts).
+- Migração de re-criptografia para um dia poder rotacionar a `CHAVE_CRIPTO` (só se houver vazamento comprovado).
+- Conferir amanhã (28/11) depois das 3h50 o primeiro backup externo automático e, em 29/11 depois das 9h05, `"enviados3":2` nas rotinas; no domingo, o teste semanal de restauração e a auditoria de dependências; no dia 1/12, o primeiro ensaio automático.
+
 Legenda: ✅ confirmado lendo o código/documentação · ❓ depende do estado real da VPS (o diagnóstico responde).
 
 ## Passo 0 — backup restaurável

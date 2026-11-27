@@ -24,7 +24,7 @@ A plataforma é revisada **por módulo** (decisões #129 e #131). Este quadro ap
 | 9 | Interessados (site) | 🔴 Sem revisão | nunca | — | anterior a 24/11/2026 (ver Novidades) |
 | 10 | Relatórios e painéis | 🔴 Sem revisão | nunca | — | v1.40.1 — 25/11/2026 01:13 (selos do Dashboard) |
 | 11 | Comunicação | 🔴 Sem revisão | nunca | — | v1.46.0 — 27/11/2026 00:30 (suporte encerrado por inatividade do cliente) |
-| 12 | Operação (VPS) | 🟡 Em revisão | levantamento iniciado 27/11/2026 | — | v1.49.0 — 27/11/2026 (rotação de segredos, dependências e ensaio do desastre) |
+| 12 | Operação (VPS) | 🟢 Revisado | 27/11/2026 14:00 | v1.49.0 | v1.49.0 — 27/11/2026 14:00 (revisão concluída: Passo 0 e O1–O8; diagnóstico real 63 OK, 0 atenção, 0 falha) |
 
 Ordem combinada: **4 e 8** → **6** (passos 2–6 da decisão #128) → **5** → **3** → demais.
 
