@@ -59,13 +59,22 @@ export class AtendenteInteressados {
    * material comercial (arquivo do projeto) e o script de atendimento do Super Admin.
    */
   async conhecimento(superAdminId: string | null) {
-    let ficha = superAdminId ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId } }) : null;
-    // O script pode ter sido salvo por outro Super Admin (cada um tem a própria ficha): se a ficha usada não tem script, vale o do primeiro Super Admin que tenha
-    let orientacoes = ficha?.orientacoesVisitante ?? "";
-    if (!orientacoes.trim()) {
-      const outra = await prisma.fichaEmpresa.findFirst({ where: { superAdminId: { not: null }, orientacoesVisitante: { not: "" } }, orderBy: { id: "asc" }, select: { orientacoesVisitante: true } }).catch(() => null);
-      if (outra?.orientacoesVisitante.trim()) orientacoes = outra.orientacoesVisitante;
+    // Cada Super Admin tem a própria ficha. Lê TODAS as fichas de Super Admin de uma vez (são poucas) e escolhe em código, sem depender de consulta
+    // com filtro (e sem engolir erro): 1) a ficha do Super Admin pedido; 2) se ela não tem script, a primeira ficha de Super Admin que tenha (decisão #179)
+    let fichas: { superAdminId: string | null; orientacoesVisitante: string; comoQualificar: string; resumo: string }[] = [];
+    try {
+      fichas = await prisma.fichaEmpresa.findMany({ where: { superAdminId: { not: null } }, orderBy: { id: "asc" }, select: { superAdminId: true, orientacoesVisitante: true, comoQualificar: true, resumo: true } });
+    } catch (e) {
+      this.log.error({ msg: String(e) }, "Fale conosco: não consegui ler as fichas dos Super Admins (a IA segue SEM o script)");
     }
+    const ficha = (superAdminId ? fichas.find((f) => f.superAdminId === superAdminId) : undefined) ?? fichas[0] ?? null;
+    let orientacoes = ficha?.orientacoesVisitante ?? "";
+    let origemScript = orientacoes.trim() ? "ficha-do-super-admin" : "nenhuma";
+    if (!orientacoes.trim()) {
+      const outra = fichas.find((f) => (f.orientacoesVisitante ?? "").trim());
+      if (outra) { orientacoes = outra.orientacoesVisitante; origemScript = "outra-ficha-de-super-admin"; }
+    }
+    this.ultimaOrigem = { origemScript, fichasSuperAdmin: fichas.length, fichasComScript: fichas.filter((f) => (f.orientacoesVisitante ?? "").trim()).length };
     const planos = await prisma.plano.findMany({ where: { visivel: true }, orderBy: { ordem: "asc" } });
     const textoPlanos = textoDosPlanos(planos as PlanoParaTexto[]);
     const ficha_ = [
@@ -80,6 +89,9 @@ export class AtendenteInteressados {
       usando: { script: orientacoes.trim().length, material: comercial.length, planos: planos.length, promocoes },
     };
   }
+
+  /** Diagnóstico da última leitura do conhecimento (só números e o nome da origem; vai para o log) */
+  private ultimaOrigem: { origemScript: string; fichasSuperAdmin: number; fichasComScript: number } = { origemScript: "nenhuma", fichasSuperAdmin: 0, fichasComScript: 0 };
 
   private testes = new Map<string, number[]>();
 
@@ -128,7 +140,7 @@ export class AtendenteInteressados {
       return;
     }
     // Registro (sem conteúdo): o que a IA recebeu nesta resposta — para conferir no log se o script e o material estavam valendo (decisão #179)
-    this.log.info({ id, usando: base.usando, mensagensNaConversa: recentes.length }, "IA do Fale conosco respondeu");
+    this.log.info({ id, usando: base.usando, ...this.ultimaOrigem, superAdminUsado: sa?.id ?? null, mensagensNaConversa: recentes.length }, "IA do Fale conosco respondeu");
     // Pode ter sido assumida enquanto a IA pensava
     const agora = await prisma.interessado.findUnique({ where: { id }, select: { iaPausada: true } });
     if (!agora || agora.iaPausada) return;

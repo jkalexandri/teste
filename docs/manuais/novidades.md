@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.5 — Fale conosco: o script é lido com mais segurança (28/11/2026)
+
+- Ajuste na leitura do script do Fale conosco no atendimento real e registro, no log do serviço 24/7, de onde ele veio (sem mostrar o conteúdo).
+
 ## v1.49.4 — Fale conosco: o script vale em todas as respostas (28/11/2026)
 
 - A IA do Fale conosco agora segue o seu script **em toda resposta**, inclusive em conversas que já tinham respostas antigas (escritas antes do script).
