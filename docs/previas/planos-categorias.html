@@ -1,0 +1,47 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prévia — Planos em 4 categorias</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--tx:#0f1f17;--mu:#5b6b62;--g:#0a8f4f;--gd:#087a44;--bd:#dde6e0;--am:#fff7e0}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1612;--card:#16221b;--tx:#e8f1ec;--mu:#9bb0a4;--bd:#25352c;--am:#2a2410}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,sans-serif;padding:16px}
+.w{max-width:1100px;margin:0 auto}h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mu);margin:0 0 14px}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cat{border:2px solid var(--bd);background:var(--card);border-radius:14px;padding:10px 12px;cursor:pointer;text-align:left;color:var(--tx);font:inherit}
+.cat b{display:block;font-size:15px}.cat span{font-size:12px;color:var(--mu)}
+.cat[aria-selected=true]{border-color:var(--g);box-shadow:0 0 0 3px rgba(10,143,79,.15)}
+.nota{background:var(--am);border:1px solid #f5d48a;border-radius:10px;padding:8px 12px;margin:12px 0;font-size:13px}
+.grupo{margin-top:14px}.grupo h2{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);margin:0 0 8px}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.pl{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.pl.d{border:2px solid var(--g)}.pl h3{margin:0;font-size:17px}.tag{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#e3f5ea;color:var(--gd);align-self:flex-start}
+.pr{font-size:24px;font-weight:800}.pr small{font-size:12px;font-weight:400;color:var(--mu)}.old{text-decoration:line-through;color:var(--mu);font-size:12px}
+.pl ul{margin:4px 0 8px;padding-left:18px;font-size:13px;color:var(--mu)}.btn{margin-top:auto;border:0;border-radius:10px;background:var(--g);color:#fff;font-weight:700;padding:9px;font:inherit;font-weight:700}
+.pl.g .btn{background:transparent;border:2px solid var(--g);color:var(--g)}
+.leg{margin-top:18px;font-size:12px;color:var(--mu)}
+@media(max-width:700px){.cats{grid-template-columns:1fr 1fr}}
+</style></head><body><div class="w">
+<h1>Prévia — popup “Planos” com 4 categorias</h1>
+<p class="sub">Clique nas categorias para ver cada uma. Preços e textos são <b>exemplos</b> (os reais vêm do cadastro de planos).</p>
+<div class="cats" role="tablist" id="cats"></div>
+<div id="tela"></div>
+<p class="leg">Prévia estática para aprovação — nenhuma alteração foi feita no sistema.</p></div>
+<script>
+const P=(n,preco,per,itens,o={})=>`<div class="pl ${o.d?'d':''} ${o.g?'g':''}">${o.tag?`<span class="tag">${o.tag}</span>`:''}<h3>${n}</h3>${o.velho?`<div class="old">${o.velho}</div>`:''}<div class="pr">${preco}<small>${per}</small></div><ul>${itens.map(i=>`<li>${i}</li>`).join('')}</ul><button class="btn">${o.btn||'Escolher plano'}</button></div>`;
+const G=(t,c)=>`<div class="grupo"><h2>${t}</h2><div class="grade">${c}</div></div>`;
+const T={
+ind:{n:'Individual',s:'Free + Individual, tudo junto',nota:'Todos os planos Free e Individual aparecem juntos, sem sub-abas (mensais e por disparos na mesma lista).',h:
+G('Free e Individual',P('Free','Grátis',' · 7 dias ou 20 disparos',['1 usuário','Teste único por e-mail'],{g:1,btn:'Começar grátis'})+P('Individual mensal','R$ 29,90','/mês',['1 usuário','Disparos sem limite','1 WhatsApp (extras com desconto)'],{d:1,tag:'Mais escolhido'})+P('Individual por disparos','R$ 19,90','/ pacote',['1 usuário','500 disparos por período','Pacote extra sob demanda'],{g:1}))},
+bus:{n:'Business',s:'antes “Empresarial” — mensais + por disparos',nota:'“Empresarial” passa a se chamar “Business” em todo o sistema. Mensais e por disparos aparecem juntos, sem sub-abas.',h:
+G('Business — mensais',P('Básico','R$ 99,90','/mês',['3 usuários','Disparos sem limite'],{g:1})+P('Padrão','R$ 199,90','/mês',['10 a 50 usuários (pacotes)','Desconto por quantidade'],{d:1,tag:'Mais escolhido'})+P('Premium','R$ 299,90','/mês',['30 usuários','IA ampliada'],{g:1}))+
+G('Business — por disparos',P('Business por disparos','R$ 149,90','/ pacote',['Equipe da empresa','2.000 disparos por período','Pacote extra sob demanda'],{g:1}))+
+G('Sob medida',P('Personalizado','Fale conosco','',['Definido para a sua empresa'],{g:1,btn:'Falar com a equipe'}))},
+rs:{n:'Redes Sociais',s:'só recepção e qualificação de leads',nota:'Só pacotes MENSAIS (sem disparos). Individual: o próprio usuário recebe e qualifica. Business: os leads são distribuídos à equipe por roleta automática; o Admin da Empresa escolhe quem participa.',h:
+G('Individual',P('Redes Sociais Individual','R$ 39,90','/mês',['Recepção dos leads das redes','Qualificação pela IA','1 usuário'],{d:1}))+
+G('Business',P('Redes Sociais Business','R$ 249,90','/mês',['Recepção e qualificação pela IA','<b>Roleta automática</b> entre a equipe','Admin escolhe os participantes da roleta','Pacotes de usuários'],{d:1,tag:'Com roleta'}))},
+rsd:{n:'Redes Sociais + Disparos',s:'mix: recepção das redes + disparos',nota:'Mix das duas funções: recepção/qualificação das redes sociais + disparos, nas versões Individual e Business (roleta incluída no Business).',h:
+G('Individual',P('Redes + Disparos Individual','R$ 59,90','/mês',['Recepção e qualificação de leads','Disparos de campanha','1 usuário'],{d:1}))+
+G('Business',P('Redes + Disparos Business','R$ 349,90','/mês',['Recepção e qualificação pela IA','<b>Roleta automática</b> da equipe','Disparos de campanha','Pacotes de usuários'],{d:1,tag:'Mais completo'}))}};
+const k=Object.keys(T),c=document.getElementById('cats'),t=document.getElementById('tela');
+function ver(x){[...c.children].forEach(b=>b.setAttribute('aria-selected',b.dataset.k==x));t.innerHTML=`<div class="nota">${T[x].nota}</div>`+T[x].h}
+k.forEach(x=>{const b=document.createElement('button');b.className='cat';b.dataset.k=x;b.setAttribute('role','tab');b.innerHTML=`<b>${T[x].n}</b><span>${T[x].s}</span>`;b.onclick=()=>ver(x);c.appendChild(b)});ver('ind');
+</script></body></html>
