@@ -2,6 +2,9 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.52.2 — Pulso do login mais lento (28/11/2026)
+- A luz que corre na borda da barra de menu do login ficou 50% mais lenta (uma volta a cada 8 segundos).
+
 ## v1.52.1 — Visual da barra de menu do login (28/11/2026)
 - A barra do login ficou como no modelo aprovado: sem fundo, borda cinza fina e nomes em azul-ciano, no topo da tela (no computador).
 

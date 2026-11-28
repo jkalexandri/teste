@@ -1,14 +1,14 @@
 "use client";
 
 // Barra de menu do login (decisão #186): Planos e Preços | Fale conosco | Sobre.
-// Na borda verde corre um pulso estilo cometa: luz na ponta e cauda azul em degradê que ocupa 70% do percurso, uma volta a cada 4 s.
+// Na borda verde corre um pulso estilo cometa: luz na ponta e cauda azul em degradê que ocupa 70% do percurso, uma volta a cada 8 s (velocidade reduzida em 50% a pedido do dono).
 // Os nomes pulsam no mesmo estilo das luzes paradas da tela. Com "reduzir movimento" ligado no sistema, nada se mexe.
 import { useEffect, useRef, useState } from "react";
 import PopupPlanos from "@/components/planos/PopupPlanos";
 import ChatInteressado from "@/components/planos/ChatInteressado";
 import SobreLogin from "./SobreLogin";
 
-const VOLTA_MS = 4000;        // uma volta completa da cabeça
+const VOLTA_MS = 8000;        // uma volta completa da cabeça (8 s: velocidade reduzida em 50%, pedido do dono)
 const CAUDA = 0.7;            // a cauda ocupa 70% do percurso
 const SEGMENTOS = 64;
 const RAIO = 9;               // canto arredondado da barra (px)
