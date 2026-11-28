@@ -7,7 +7,7 @@ export const conectorSimulado: Conector = {
     // Para a geração de mensagens devolve o JSON esperado
     const texto = /ATENDENTE DE SUPORTE/.test(p.sistema)
       ? suporteSimulado(ultimo)
-      : /ATENDENTE DE WHATSAPP/.test(p.sistema)
+      : /ATENDENTE DE WHATSAPP|CONSULTOR COMERCIAL DO FILAPRO/.test(p.sistema)
       ? conversaSimulada(ultimo)
       : /RESUMO DA CONVERSA/.test(p.sistema)
         ? `Resumo simulado da conversa: ${ultimo.replace(/\s+/g, " ").slice(-200)}`
