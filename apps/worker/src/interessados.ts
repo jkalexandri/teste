@@ -127,6 +127,8 @@ export class AtendenteInteressados {
       this.log.warn({ id, msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu o interessado");
       return;
     }
+    // Registro (sem conteúdo): o que a IA recebeu nesta resposta — para conferir no log se o script e o material estavam valendo (decisão #179)
+    this.log.info({ id, usando: base.usando, mensagensNaConversa: recentes.length }, "IA do Fale conosco respondeu");
     // Pode ter sido assumida enquanto a IA pensava
     const agora = await prisma.interessado.findUnique({ where: { id }, select: { iaPausada: true } });
     if (!agora || agora.iaPausada) return;

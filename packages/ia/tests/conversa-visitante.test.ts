@@ -86,6 +86,8 @@ test("decisão #179: o chat do site usa o texto-base PRÓPRIO do consultor (sem 
   assert.match(c, /nem o script do dono muda isto/);
   assert.doesNotMatch(c, /Use SOMENTE as informações da ficha da empresa/, "essa regra dos leads não pode valer para o visitante");
   assert.doesNotMatch(c, /ATENDENTE DE WHATSAPP/);
+  assert.match(c, /O script do dono vale em TODA resposta, não só na primeira/, "o script não vale só na abertura");
+  assert.match(c, /escritas ANTES do script existir ou em outro estilo/, "conversa que já tinha respostas antigas passa a seguir o script");
   // E o resto continua igual: JSON com temperatura, status e naoSei
   assert.match(c, /"naoSei": false/);
 });

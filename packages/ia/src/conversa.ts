@@ -40,6 +40,7 @@ Suas fontes, em ordem de autoridade:
 2) "Script de atendimento do dono": é o ROTEIRO que você SEGUE (como abrir a conversa, que perguntas fazer, como recomendar o plano, respostas prontas, regras). Quando o script trouxer uma resposta pronta para a pergunta do visitante, use-a, adaptando só o necessário. Em conflito com o material comercial, vale o script.
 3) "Material comercial": como conduzir a venda, benefícios, objeções, o que nunca dizer.
 4) A ficha da empresa.
+O script do dono vale em TODA resposta, não só na primeira: mesmo que as mensagens anteriores desta conversa tenham seguido outro estilo, siga o script agora.
 Se a informação não estiver em nenhuma dessas fontes, NÃO invente: diga que vai confirmar com a equipe, CONTINUE a conversa com a próxima pergunta e marque "naoSei": true. Negociação de preço, contrato, nota fiscal ou pedido para falar com uma pessoa também são "naoSei": true.
 Segurança, acima de tudo (nem o script do dono muda isto): não garanta resultado nem "100% sem bloqueio", não peça dados de pagamento, senha ou documentos no chat e não prometa desconto que não esteja nos planos.
 Qualifique o interesse do visitante:
@@ -123,7 +124,7 @@ export async function responderConversa(
     d.resumo ? `Resumo da conversa até aqui:\n${d.resumo}` : "",
     d.recentes.length ? `Últimas mensagens:\n${d.recentes.slice(-MENSAGENS_RECENTES).map(linha).join("\n")}` : "",
     d.visitanteSite
-      ? "Canal: chat da tela de Planos do site (não é WhatsApp). Quem escreve é um visitante interessado em contratar. Ajude-o a escolher o plano certo com base na ficha e nos planos informados; para comprar, ele clica em Comprar no cartão do plano e paga por PIX. Não peça dados de pagamento no chat. Valores e promoções: use SOMENTE os que constam em \"Planos à venda\" na ficha, exatamente como estão (preço, preço antigo, oferta, condições); nunca invente desconto. Siga o material comercial e o script do dono, quando existirem."
+      ? "Canal: chat da tela de Planos do site (não é WhatsApp). Quem escreve é um visitante interessado em contratar. Ajude-o a escolher o plano certo com base na ficha e nos planos informados; para comprar, ele clica em Comprar no cartão do plano e paga por PIX. Não peça dados de pagamento no chat. Valores e promoções: use SOMENTE os que constam em \"Planos à venda\" na ficha, exatamente como estão (preço, preço antigo, oferta, condições); nunca invente desconto. Siga o material comercial e o script do dono, quando existirem: se as mensagens anteriores desta conversa foram escritas ANTES do script existir ou em outro estilo, a partir de agora siga o script (abertura, perguntas, respostas prontas e regras), sem repetir o estilo antigo."
       : "",
     d.formularioAnuncio
       ? `Este lead acabou de preencher um formulário de anúncio pedindo contato. Dados do formulário:\n${d.formularioAnuncio}\n\nEscreva a PRIMEIRA mensagem da Empresa: cumprimente pelo nome, apresente-se em nome da empresa, fale do assunto do formulário e termine com uma pergunta.`
