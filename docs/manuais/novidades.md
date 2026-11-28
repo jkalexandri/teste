@@ -2,6 +2,9 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.52.1 — Visual da barra de menu do login (28/11/2026)
+- A barra do login ficou como no modelo aprovado: sem fundo, borda cinza fina e nomes em azul-ciano, no topo da tela (no computador).
+
 ## v1.52.0 — Barra de menu no login (28/11/2026)
 - O login ganhou a barra **Planos e Preços | Fale conosco | Sobre**, com um pulso de cometa azul correndo na borda e os nomes pulsando.
 - **Sobre** mostra o resumo do FilaPro Leads e os links dos Termos de uso e da Política de privacidade.

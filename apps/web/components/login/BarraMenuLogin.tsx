@@ -97,11 +97,14 @@ export default function BarraMenuLogin() {
     return () => { cancelAnimationFrame(quadro); obs.disconnect(); };
   }, []);
 
-  const item = "login-menu-item px-2.5 sm:px-4 py-2 text-[12px] sm:text-[13px] font-extrabold text-white whitespace-nowrap";
+  // Visual do menu aprovado (print do dono): sem fundo, borda cinza fina arredondada e nomes em azul-ciano
+  const item = "login-menu-item px-2.5 sm:px-4 py-1.5 text-[12.5px] sm:text-[14px] font-semibold tracking-[.02em] whitespace-nowrap";
+  // No computador (altura suficiente) a barra fica fixa no topo da coluna, como no layout aprovado; no celular e em telas baixas fica acima do card
+  const posicao = "lg:[@media(min-height:720px)]:absolute lg:[@media(min-height:720px)]:top-5 lg:[@media(min-height:720px)]:left-1/2 lg:[@media(min-height:720px)]:-translate-x-1/2 lg:[@media(min-height:720px)]:w-[calc(100%-1.5rem)]";
   return (
     <>
-      <div ref={caixa} className="login-menu-barra relative w-full max-w-[420px] mb-1.5" data-testid="barra-menu-login">
-        <nav className="relative flex items-center justify-around rounded-[9px]" aria-label="Menu" style={{ border: "1.5px solid #34d27b", background: "rgba(24,128,158,.72)", backdropFilter: "blur(6px)" }}>
+      <div ref={caixa} className={`login-menu-barra relative w-full max-w-[420px] mb-1.5 ${posicao}`} data-testid="barra-menu-login">
+        <nav className="relative flex items-center justify-around rounded-[9px]" aria-label="Menu" style={{ border: "1.5px solid rgba(150,160,166,.75)", color: "#56bfdc", ["--pulso" as string]: "77,216,255" }}>
           <button type="button" className={item} style={{ ["--atraso" as string]: "0s" }} onClick={() => setPlanos(true)} data-testid="menu-planos">Planos e Preços</button>
           <button type="button" className={item} style={{ ["--atraso" as string]: ".6s" }} onClick={() => setChat(true)} data-testid="menu-fale-conosco">Fale conosco</button>
           <button type="button" className={item} style={{ ["--atraso" as string]: "1.2s" }} onClick={() => setSobre(true)} data-testid="menu-sobre">Sobre</button>
