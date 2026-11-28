@@ -54,7 +54,7 @@ test("Empresarial: pacote de usuários, pacotes a escolher com desconto; quantid
 
 test("planos separados por módulo, na ordem recebida", () => {
   const t = textoDosPlanos([plano({ nome: "A" }), plano({ nome: "B", modulo: "EMPRESARIAL", usuarios: 3 })]);
-  assert.ok(t.indexOf("Módulo Individual") < t.indexOf("- A:") && t.indexOf("- A:") < t.indexOf("Módulo Empresarial") && t.indexOf("Módulo Empresarial") < t.indexOf("- B:"));
+  assert.ok(t.indexOf("Módulo Individual") < t.indexOf("- A:") && t.indexOf("- A:") < t.indexOf("Módulo Business") && t.indexOf("Módulo Business") < t.indexOf("- B:"));
   assert.equal(textoDosPlanos([]), "");
 });
 
@@ -177,4 +177,13 @@ test("script salvo por OUTRO Super Admin: se a ficha do primeiro não tem script
     await prisma.fichaEmpresa.deleteMany({ where: { superAdminId: "tvc-sa2" } });
     await prisma.usuario.deleteMany({ where: { id: "tvc-sa2" } });
   }
+});
+
+test("plano de Redes Sociais: o texto diz que não inclui disparos e que recebe os leads das redes (decisão #185)", () => {
+  const t = textoDoPlano(plano({ nome: "Redes Sociais Individual", redesSociais: true, permiteDisparos: false }));
+  assert.match(t, /NÃO inclui disparos de campanha/);
+  assert.match(t, /leads das redes sociais/);
+  const m = textoDoPlano(plano({ nome: "Redes + Disparos", redesSociais: true, permiteDisparos: true }));
+  assert.match(m, /sem limite de disparos/);
+  assert.match(m, /leads das redes sociais/);
 });

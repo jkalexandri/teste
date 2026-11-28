@@ -26,7 +26,7 @@ export async function lerMaterialComercial(): Promise<string> {
 export type PlanoParaTexto = {
   nome: string; modulo: string; usuarios: number | null; gratis: boolean; personalizado: boolean;
   precoAntigo: number | null; precoAtual: number | null; periodo: string; prazoDias: number;
-  testeDias: number | null; testeDisparos: number | null; limiteLeads: number | null; leadsAnuncios: boolean;
+  testeDias: number | null; testeDisparos: number | null; limiteLeads: number | null; leadsAnuncios: boolean; redesSociais?: boolean; permiteDisparos?: boolean;
   maxWhatsapps: number; precoWhatsappExtra: number | null; descontos: number[]; maxPacotes: number;
   disparosPorPeriodo: number | null; pacoteDisparos: number | null; precoPacoteDisparos: number | null;
   selo: string; frase: string; condicoes: string; ofertaTexto: string; recursos: string[];
@@ -56,7 +56,8 @@ export function textoDoPlano(p: PlanoParaTexto): string {
   // Quantidade de envios
   if (p.disparosPorPeriodo != null) {
     partes.push(`${p.disparosPorPeriodo} disparos por período${p.pacoteDisparos && p.precoPacoteDisparos != null ? `; pacote extra de ${p.pacoteDisparos} disparos por ${reais(p.precoPacoteDisparos)}` : ""}`);
-  } else if (!p.gratis) partes.push("sem limite de disparos");
+  } else if (p.permiteDisparos === false) partes.push("NÃO inclui disparos de campanha (só recepção e qualificação dos leads das redes sociais; pode fazer upgrade para o plano com disparos)");
+  else if (!p.gratis) partes.push("sem limite de disparos");
   // Usuários (Empresarial) e números de WhatsApp (Individual), com desconto progressivo
   const desc = (p.descontos ?? []).slice(0, 4).map((d, i) => `${nome2a5[i]} ${pct(d)}`).join(", ");
   if (p.modulo === "EMPRESARIAL") {
@@ -65,7 +66,8 @@ export function textoDoPlano(p: PlanoParaTexto): string {
     partes.push(`até ${p.maxWhatsapps} números de WhatsApp (o principal + extras); cada extra custa ${reais(p.precoWhatsappExtra)} por período, com desconto progressivo: ${desc}`);
   } else if (p.maxWhatsapps <= 1) partes.push("1 número de WhatsApp");
   if (p.limiteLeads != null) partes.push(`até ${p.limiteLeads} leads`);
-  if (p.leadsAnuncios) partes.push("inclui leads de anúncios");
+  if (p.redesSociais) partes.push("inclui recepção e qualificação pela IA dos leads das redes sociais");
+  else if (p.leadsAnuncios) partes.push("inclui leads de anúncios");
   if (p.recursos?.length) partes.push(p.recursos.join("; "));
   return `- ${p.nome}: ${partes.join(" — ")}`;
 }

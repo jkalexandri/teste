@@ -138,6 +138,12 @@ export class MotorDisparos {
       this.log.warn({ usuarioId, semAcesso }, "campanhas pausadas: conta sem acesso");
       return { acao: "nada", esperaMs: 0, motivo: "conta sem acesso" };
     }
+    // Plano só de Redes Sociais não dispara (decisão #185): se sobrou campanha de antes da troca de plano, cancela sem enviar
+    if (c.usuario.empresa && c.usuario.empresa.permiteDisparos === false) {
+      await prisma.campanha.updateMany({ where: { usuarioId, status: StatusCampanha.EM_ANDAMENTO }, data: { status: StatusCampanha.CANCELADA, motivo: "O plano da conta não inclui disparos de campanha." } });
+      this.log.warn({ usuarioId }, "campanhas canceladas: o plano não inclui disparos");
+      return { acao: "nada", esperaMs: 0, motivo: "plano sem disparos" };
+    }
     const ids = campanhas.map((x) => x.id);
 
     // 1) Números da campanha (rodízio — decisão #79). Nenhum conectado: pausa e volta sozinha quando reconectar.

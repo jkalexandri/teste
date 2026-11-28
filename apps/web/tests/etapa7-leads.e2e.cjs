@@ -36,7 +36,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 1. Usuário de empresa (Ana) =====
   let [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.click('aside nav >> text=Leads'); await p.waitForURL('**/leads');
   ok('Usuário: tela "Seus leads"', (await p.locator('h1:has-text("Seus leads")').count()) === 1);
   ok('Usuário: sem escolha de dono', (await p.locator('#dono').count()) === 0);
@@ -97,7 +97,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 2. Admin da Empresa =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Admin tem "Leads" no menu', (await p.locator('aside nav >> text=Leads').count()) === 1);
   await p.click('aside nav >> text=Leads'); await p.waitForURL('**/leads');
   ok('Admin vê os leads dos usuários com a coluna Usuário', (await p.locator('th:has-text("Usuário")').count()) === 1 && (await p.locator(`td:has-text("${ANA_COD} • Ana")`).count()) >= 1);

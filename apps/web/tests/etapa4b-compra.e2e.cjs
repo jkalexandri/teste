@@ -84,7 +84,7 @@ const ultimaSenha = (email, senha = SENHA_PADRAO) => {
   const temp = ultimaSenha(emailEmp);
   ok('E-mail de boas-vindas com o link para criar a senha (sem senha no e-mail), e o link cria a senha', !!temp);
   [c, p] = await ctx();
-  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Empresarial');
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Business');
   await p.fill('#email', emailEmp); await p.fill('#senha', temp); await p.click('button[type=submit]');
   ok('Novo Admin entra direto, sem tela de primeiro acesso (a senha foi criada pelo link)', !(await p.waitForURL('**/primeiro-acesso', { timeout: 2500 }).then(() => true).catch(() => false)));
   await p.waitForURL('**/dashboard', { timeout: 6000 }).catch(() => {});

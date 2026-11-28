@@ -44,7 +44,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 1. Usuário monta a campanha =====
   let [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.click('aside nav >> text=Campanhas'); await p.waitForURL('**/campanhas'); await espera(600);
   const abas = await p.locator('nav[aria-label="Abas de campanhas"] a').allInnerTexts();
   ok('6 abas, e a aba Nova sem quantidade', abas.length === 6 && abas[0].trim() === 'Nova' && abas.slice(1).every((t) => /\(\d+\)/.test(t)), abas.join(' | '));
@@ -181,7 +181,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 2. Admin da Empresa =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Admin não tem Campanhas no menu', (await p.locator('aside nav >> text=Campanhas').count()) === 0);
   await p.goto(BASE + '/campanhas'); await espera(600);
   ok('Admin que abre /campanhas volta ao dashboard', p.url().endsWith('/dashboard'));

@@ -10,7 +10,7 @@ qualifica os leads (Quente, Morno, Frio) e trata objeções.
 ## Primeiro acesso
 
 1. Você recebe por e-mail um **link para criar a sua senha** (vale 7 dias e só pode ser usado uma vez).
-2. Abra o link e crie a sua senha. Depois, em **filaproleads.com.br**, escolha **Módulo Individual** ou **Módulo Empresarial** e entre com o e-mail e a senha que você criou.
+2. Abra o link e crie a sua senha. Depois, em **filaproleads.com.br**, escolha **Módulo Individual** ou **Módulo Business** e entre com o e-mail e a senha que você criou.
 3. A senha definitiva precisa ter: no mínimo 12 caracteres, com maiúscula, minúscula, número e caractere especial.
    Se preferir, clique em **Gerar senha forte** e depois em **Copiar senha** — guarde-a antes de salvar.
 4. Esqueceu a senha? Na tela de login, clique em **Esqueci minha senha**: chega no seu e-mail um **link para criar uma nova senha**

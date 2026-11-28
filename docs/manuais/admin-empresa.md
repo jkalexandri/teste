@@ -10,7 +10,7 @@ Para o passo a passo do que os usuários fazem (campanhas, conversas, WhatsApp),
 1. Depois da compra, você recebe por e-mail um **link para criar a sua senha** (vale 7 dias e só pode ser usado uma vez).
 2. Abra o link e crie a sua senha (12 caracteres ou mais, com maiúscula, minúscula, número e caractere especial) —
    ou use **Gerar senha forte** e **Copiar senha**.
-3. Abra **filaproleads.com.br**, escolha **Módulo Empresarial** e entre com o e-mail e a senha que você criou.
+3. Abra **filaproleads.com.br**, escolha **Módulo Business** e entre com o e-mail e a senha que você criou.
    Se o link expirar, use **Esqueci minha senha** na tela de login.
 
 ## Dashboard

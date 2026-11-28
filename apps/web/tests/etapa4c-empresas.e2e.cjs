@@ -30,7 +30,7 @@ const diaISO = (q) => sql(q).slice(0, 10);
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', d => d.accept()); return [c, p]; };
   const loginComo = async (p, email, senha, mod) => {
-    await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); if (mod === 'empresarial') await p.click('text=Módulo Empresarial');
+    await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); if (mod === 'empresarial') await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForTimeout(1500);
   };
   const toast = async (p, txt) => (await p.locator(`text=${txt}`).count()) > 0;

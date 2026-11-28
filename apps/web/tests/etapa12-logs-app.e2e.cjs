@@ -28,9 +28,9 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   // ===== 1. Logs =====
   let [c, p] = await novo();
   // senha errada da Ana (gera log de "Senha errada / bloqueio")
-  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Empresarial');
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Business');
   await p.fill('#email', 'ana@empresaexemplo.com.br'); await p.fill('#senha', 'Errada@1234567'); await p.click('button[type=submit]'); await espera(1000);
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   // ação em lead (inativar) gera log de Leads
   await p.goto(BASE + '/leads'); await espera(800);
   const r = await p.evaluate(async () => (await fetch('/api/push')).json());
@@ -40,7 +40,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok('Log de senha errada', sql(`select count(*) from "Log" where tipo='SENHA' and "usuarioId"='${ANA}' and texto like 'Entrada recusada%'`) === '1');
 
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Menu do Admin tem Logs', (await p.locator('aside nav >> text=Logs').count()) === 1);
   await p.goto(BASE + '/logs'); await espera(600);
   const linhas = await p.locator('[data-testid=tabela-logs] tbody tr').allInnerTexts();
@@ -53,7 +53,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   // Log de outra conta não aparece para o Admin
   sql(`insert into "Log"(id,"empresaId",tipo,texto,quem) values ('tl12-x','teste-conta-individual','LEADS','Ação de outra conta','Outro')`);
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.goto(BASE + '/logs'); await espera(600);
   ok('Admin não vê logs de outra conta', (await p.locator('text=Ação de outra conta').count()) === 0);
   await c.close();
@@ -93,7 +93,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ===== 3. Notificações no celular =====
   [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/avisos'); await espera(1200);
   ok('Avisos: opção "Receber também no celular (app)"', (await p.locator('input[name=avisoCelular]').count()) === 1 && (await p.locator('[data-testid=ativar-celular]').count()) === 1);
   await p.locator('input[name=avisoCelular]').uncheck(); await p.click('button:has-text("Salvar")'); await espera(800);

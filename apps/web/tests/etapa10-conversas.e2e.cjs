@@ -39,7 +39,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
 
   // ===== 1. Usuário: lista, conversa, filtros, assumir/devolver, status e temperatura =====
   let [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.click('aside nav >> text=Conversas IA'); await p.waitForURL('**/conversas'); await espera(600);
   const itens = await p.locator('[data-testid=lista-conversas] li').allInnerTexts();
   ok('Lista com as 3 conversas, a mais recente primeiro', itens.length === 3 && itens[0].includes('Maria Quente'), itens.map((x) => x.split('\n')[0]).join(' | '));
@@ -104,7 +104,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
 
   // Celular: lista e conversa em telas separadas
   [c, p] = await novo({ width: 390, height: 844 });
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/conversas?lead=tc10-2'); await espera(800);
   ok('Celular: conversa ocupa a tela, sem rolagem lateral', (await p.locator('[data-testid=conversa]').isVisible()) && (await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)));
   await p.screenshot({ path: OUT + '/conversas-celular.png' });
@@ -113,7 +113,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   // Sem a permissão "conversas"
   sql(`update "Usuario" set permissoes=ARRAY['leads','campanhas','arquivos','empresa-ia'] where id='${ANA}'`);
   [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/conversas'); await espera(600);
   ok('Sem a permissão, não abre Conversas IA', !p.url().includes('/conversas'));
   await c.close();
@@ -121,7 +121,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
 
   // ===== 2. Admin da Empresa: vê as da empresa, só leitura =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Menu do Admin tem Conversas IA', (await p.locator('aside nav >> text=Conversas IA').count()) === 1);
   await p.goto(BASE + '/conversas?lead=tc10-2'); await espera(800);
   ok('Admin vê as conversas da empresa, com o usuário', (await p.locator('[data-testid=lista-conversas] li').count()) >= 3 && (await p.locator('text=Usuário: Ana').count()) >= 1);
@@ -139,7 +139,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
 
   // ===== 4. Empresa | IA: campo "Como qualificar" =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.goto(BASE + '/empresa-ia'); await espera(600);
   // "Como qualificar" abre o editor grande em popup (decisão #120)
   await p.click('#ei-qualificar');

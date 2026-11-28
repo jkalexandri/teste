@@ -94,7 +94,7 @@ export default function CartaoPlano({ plano, onEscolher, quantidadeInicial = 1 }
           style={{ background: "rgba(45,212,255,.08)", color: "#9fefff", border: "1px solid rgba(45,212,255,.25)" }}>
           {plano.disparosPorPeriodo
             ? <>{(plano.disparosPorPeriodo * fator).toLocaleString("pt-BR")} disparos/{plano.periodo}{plano.pacoteDisparos ? <span className="font-semibold text-slate-300"> • extra: {plano.pacoteDisparos.toLocaleString("pt-BR")}{plano.precoPacoteDisparos ? ` por ${formatarReais(plano.precoPacoteDisparos)}` : ""}</span> : null}</>
-            : <>Disparos sem limite no período</>}
+            : plano.permiteDisparos === false ? <>Sem disparos de campanha (só mensal)</> : <>Disparos sem limite no período</>}
         </p>
       )}
 

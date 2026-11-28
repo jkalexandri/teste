@@ -31,7 +31,7 @@ const ate = async (fn, vezes = 60) => { for (let i = 0; i < vezes; i++) { if (aw
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', (d) => d.accept()); return [c, p]; };
   const entrar = async (p, email, senha, empresarial) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-    if (empresarial) await p.click('text=Módulo Empresarial');
+    if (empresarial) await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard');
     await espera(600);
   };

@@ -6,6 +6,8 @@ import { obterSessao } from "@/lib/auth/session";
 import { motivoSemAcesso } from "@/lib/auth/acesso";
 import { DIAS_BLOQUEIO_SAIR } from "@/lib/leads-status";
 
+export const MSG_SEM_DISPAROS = "O seu plano (Redes Sociais) não inclui disparos de campanha. Faça upgrade para Redes Sociais + Disparos.";
+
 /** Quem pode ter campanhas: Usuário com a permissão "campanhas" e o Super Admin (decisão #62). Admin da Empresa não envia. */
 export async function atorCampanhas() {
   const s = await obterSessao();
@@ -13,6 +15,8 @@ export async function atorCampanhas() {
   const u = s.usuario;
   const pode = u.cargo === Cargo.SUPERADMIN || (u.cargo === Cargo.USUARIO && u.permissoes.includes("campanhas"));
   if (!pode) throw new Error("Acesso negado.");
+  // Plano só de Redes Sociais não dispara campanhas (decisão #185)
+  if (u.cargo === Cargo.USUARIO && u.empresa && !u.empresa.permiteDisparos) throw new Error(MSG_SEM_DISPAROS);
   return u;
 }
 

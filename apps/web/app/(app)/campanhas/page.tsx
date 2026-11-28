@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma, Cargo, Modulo, StatusCampanha, StatusWhatsapp, minParaHora } from "@filapro/db";
 import { obterSessao } from "@/lib/auth/session";
 import { disparosRestantes, janelaDe, numerosParaCampanha } from "@/lib/campanhas";
+import BotaoUpgrade from "./BotaoUpgrade";
 import NovaCampanha, { type Rascunho } from "./NovaCampanha";
 import ListaCampanhas, { type CampanhaLinha } from "./ListaCampanhas";
 import AbasCampanhas from "./AbasCampanhas";
@@ -27,6 +28,16 @@ export default async function CampanhasPage({ searchParams }: { searchParams: Pr
   if (!s) redirect("/login");
   const u = s.usuario;
   if (u.cargo === Cargo.ADMIN_EMPRESA) redirect("/dashboard"); // Admin da Empresa não envia
+  // Plano só de Redes Sociais: sem disparos (decisão #185) — a tela explica e leva ao upgrade
+  if (u.cargo === Cargo.USUARIO && u.empresa && !u.empresa.permiteDisparos) {
+    return (
+      <div className="card p-5 max-w-[640px]" data-testid="sem-disparos">
+        <h1 className="font-display font-extrabold text-[18px]">Campanhas não incluídas no seu plano</h1>
+        <p className="help mt-1">O seu plano é <b>Redes Sociais</b>: recebe e qualifica os leads das redes, mas não dispara campanhas. Para disparar, faça o upgrade para <b>Redes Sociais + Disparos</b>.</p>
+        {u.empresa.modulo === Modulo.INDIVIDUAL ? <BotaoUpgrade /> : <p className="help mt-2">Peça ao Admin da Empresa para fazer o upgrade.</p>}
+      </div>
+    );
+  }
   const f = await searchParams;
   const aba: Aba = (ABAS as readonly string[]).includes(f.aba ?? "") ? (f.aba as Aba) : "nova";
 

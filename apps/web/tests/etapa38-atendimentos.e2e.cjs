@@ -42,7 +42,7 @@ const fechar = async () => { const n = await encerrar(); const feito = sql(`sele
   const enviar = async (p, texto) => { await p.fill('[aria-label="Mensagem para o suporte"]', texto); await p.click('[data-testid=janela-suporte] button:has-text("Enviar")'); await espera(1800); };
   try {
     const [cS, pS] = await novo(); await entrar(pS, 'superadmin@disparopro.com.br', 'Super@12345678');
-    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
 
     // ===== 1. Cliente COM o chat aberto na hora do encerramento: vê a mensagem uma vez; a tela só limpa na próxima vez =====
     await abrirChat(pU);

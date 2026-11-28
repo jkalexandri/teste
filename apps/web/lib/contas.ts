@@ -51,7 +51,7 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
   const codigoConta = await proximoCodigo(tx, empresarial ? "empresa" : "individual");
   const codigoUsuario = empresarial ? await proximoCodigo(tx, "usuario_empresa") : codigoConta;
   // Limites de treinamento da IA vêm do plano (decisão #77); o Super Admin pode ajustar depois
-  const plano = dados.planoId ? await tx.plano.findUnique({ where: { id: dados.planoId }, select: { limiteMateriais: true, limitePaginasMes: true, leadsAnuncios: true, disparosPorPeriodo: true } }) : null;
+  const plano = dados.planoId ? await tx.plano.findUnique({ where: { id: dados.planoId }, select: { limiteMateriais: true, limitePaginasMes: true, leadsAnuncios: true, redesSociais: true, permiteDisparos: true, disparosPorPeriodo: true } }) : null;
   const empresa = await tx.empresa.create({
     data: {
       codigo: codigoConta,
@@ -70,6 +70,9 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
       limitePaginasMes: plano?.limitePaginasMes ?? null,
       // Leads de anúncios vem do plano (decisões #90 e #94)
       leadsAnuncios: plano?.leadsAnuncios ?? false,
+      // Redes Sociais e disparos vêm do plano (decisão #185)
+      redesSociais: plano?.redesSociais ?? false,
+      permiteDisparos: plano?.permiteDisparos ?? true,
       whatsappsExtras: dados.modulo === Modulo.INDIVIDUAL ? dados.whatsappsExtras ?? 0 : 0,
     },
   });
@@ -94,7 +97,7 @@ export async function criarConta(dados: NovaConta, tx: Prisma.TransactionClient 
  * tipo "redefinicao": o Admin/Super Admin pediu para a pessoa criar uma nova senha (a anterior deixou de valer).
  */
 export async function enviarEmailBoasVindas(nome: string, email: string, linkSenha: string, plano: string, modulo: Modulo, tipo: "novo" | "redefinicao" = "novo") {
-  const aba = modulo === Modulo.EMPRESARIAL ? "Módulo Empresarial" : "Módulo Individual";
+  const aba = modulo === Modulo.EMPRESARIAL ? "Módulo Business" : "Módulo Individual";
   const link = urlDoLink(linkSenha);
   const dias = VALIDADE_LINK_CONTA_NOVA_DIAS;
   const abertura = tipo === "redefinicao"

@@ -31,7 +31,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   try {
     // ===== 1. Disparos por quantidade =====
     let [cA, pA] = await novo();
-    await entrar(pA, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+    await entrar(pA, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
     const card = await pA.locator('[data-testid=saldo-disparos]').innerText().catch(() => '');
     ok('Admin vê o saldo de disparos do período', /de 10/.test(card), card.replace(/\s+/g, ' ').slice(0, 80));
     await pA.click('[data-testid=comprar-disparos]'); await espera(1500);
@@ -52,7 +52,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
     // Usuário da empresa (não é o dono da conta) não compra
     let [cU, pU] = await novo();
-    await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
     ok('Usuário da empresa não tem o botão de comprar', (await pU.locator('[data-testid=comprar-disparos]').count()) === 0);
 
     // ===== 2. Online =====

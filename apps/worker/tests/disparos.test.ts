@@ -345,6 +345,17 @@ for (const [nome, barrar] of Object.entries(semAcesso)) {
   });
 }
 
+test("plano só de Redes Sociais (sem disparos): a campanha é cancelada sem enviar nada (decisão #185)", async () => {
+  const c = await campanha([await lead(1), await lead(2)]);
+  await prisma.empresa.update({ where: { id: EMP }, data: { permiteDisparos: false } });
+  try {
+    const r = await motor.passo(USU);
+    assert.equal(r.acao, "nada");
+    assert.equal((await status(c.id)).status, StatusCampanha.CANCELADA);
+    assert.equal(wa.enviados.length, 0);
+  } finally { await prisma.empresa.update({ where: { id: EMP }, data: { permiteDisparos: true } }); }
+});
+
 test("conta sem acesso: regra pura (Super Admin nunca é barrado; sem empresa = barrado)", () => {
   const agora0 = new Date("2026-11-23T14:00:00Z");
   const ok = { ativa: true, expiraEm: new Date("2027-01-01") };

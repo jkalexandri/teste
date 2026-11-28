@@ -25,7 +25,7 @@ const ate = async (fn, max = 40) => { for (let i = 0; i < max; i++) { if (fn()) 
 
   const b = await chromium.launch();
   const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', (d) => d.accept());
-  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Empresarial');
+  await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Business');
   await p.fill('#email', 'ana@empresaexemplo.com.br'); await p.fill('#senha', 'User@12345678'); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard');
   await p.goto(BASE + '/campanhas?aba=nova'); await espera(800);
   await p.fill('#assunto', 'Motor 8b'); await p.fill('#msg', 'Olá {nome}');

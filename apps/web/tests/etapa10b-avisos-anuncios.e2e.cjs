@@ -108,7 +108,7 @@ const postar = (url, corpo, tipo = 'application/json') => fetch(url, { method: '
 
   // Admin da Empresa: tem Avisos, não tem Leads de anúncios
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Admin: Avisos sim, Leads de anúncios não', (await p.locator('aside nav >> text=Avisos').count()) === 1 && (await p.locator('aside nav >> text=Leads de anúncios').count()) === 0);
   await p.goto(BASE + '/avisos'); await espera(400);
   ok('Admin: tela explica que recebe os avisos de todos os usuários', (await p.locator('text=de todos os usuários da empresa').count()) === 1);

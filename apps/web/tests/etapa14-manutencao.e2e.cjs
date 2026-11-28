@@ -23,7 +23,7 @@ const desligar = () => sql(`insert into "Manutencao"(id,ligada) values ('geral',
   try {
     // Usuário já dentro do sistema quando a atualização começa
     let [cU, pU] = await novo();
-    await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
     await pU.goto(BASE + '/leads'); await espera(800);
     await pU.click('[data-testid=botao-suporte]');
     await pU.fill('[aria-label="Mensagem para o suporte"]', 'Texto que não pode se perder');
@@ -59,7 +59,7 @@ const desligar = () => sql(`insert into "Manutencao"(id,ligada) values ('geral',
     ok('Login mostra o aviso de atualização', (await pL.locator('[data-testid=tela-manutencao]').count()) === 1);
     await pL.screenshot({ path: OUT + '/manutencao-login.png' });
     await pL.click('text=Sou Super Admin — entrar para conferir');
-    await pL.click('text=Módulo Empresarial');
+    await pL.click('text=Módulo Business');
     await pL.fill('#email', 'admin-empresa@empresaexemplo.com.br'); await pL.fill('#senha', 'Admin@12345678'); await pL.click('button[type=submit]'); await espera(1500);
     ok('Cliente não consegue entrar na manutenção', !pL.url().includes('/dashboard') && (await pL.locator('text=Sistema em atualização').count()) >= 1);
     await cL.close();

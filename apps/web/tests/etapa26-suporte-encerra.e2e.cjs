@@ -27,7 +27,7 @@ const encerrar = async () => (await (await fetch('http://127.0.0.1:4000/suporte/
   const entrar = async (p, email, senha, modulo) => { await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); if (modulo) await p.click(`text=${modulo}`); await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard'); };
   try {
     const [cS, pS] = await novo(); await entrar(pS, 'superadmin@disparopro.com.br', 'Super@12345678');
-    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
 
     ok('Antes de conferir: o atendimento está aberto', sql(`select "encerradaEm" is null from "SuporteConversa" where id='tse26'`) === 't');
     ok('Encerra 1 atendimento inativo há mais de 10 min (a vez era do cliente)', (await encerrar()) === 1);

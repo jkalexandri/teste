@@ -54,7 +54,7 @@ const EMP = 'teste-empresa-exemplo';
 
   // Usuário de empresa (Ana)
   [c, p] = await ctx();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await foto(p, 'u-dashboard', '/dashboard');
   await foto(p, 'u-leads', '/leads');
   await foto(p, 'u-campanhas', '/campanhas');
@@ -77,7 +77,7 @@ const EMP = 'teste-empresa-exemplo';
 
   // Admin da Empresa
   [c, p] = await ctx();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await foto(p, 'a-dashboard', '/dashboard');
   await foto(p, 'a-usuarios', '/usuarios');
   await foto(p, 'a-leads', '/leads');

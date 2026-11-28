@@ -17,7 +17,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   p.on('dialog', (d) => d.accept());
   try {
     ok('Planos já existentes migraram: Free/Individual em Individual e Empresariais em Business',
-      sql(`select count(*) from "Plano" where (modulo='EMPRESARIAL' and categoria<>'BUSINESS') or (modulo='INDIVIDUAL' and categoria<>'INDIVIDUAL') and nome not like 'T40%'`) === '0');
+      sql(`select count(*) from "Plano" where ((modulo='EMPRESARIAL' and categoria<>'BUSINESS') or (modulo='INDIVIDUAL' and categoria<>'INDIVIDUAL')) and nome not like 'T40%' and slug not like 'redes-%'`) === '0');
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
     await p.fill('#email', 'superadmin@disparopro.com.br'); await p.fill('#senha', 'Super@12345678'); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard');
     await p.goto(BASE + '/planos'); await espera(800);
@@ -70,7 +70,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok('Tela de planos tem os 4 grupos de categoria', (await p.locator('[data-testid^=grupo-]').count()) === 4);
     const ordemGrupos = await p.locator('[data-testid^=grupo-]').evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
     ok('Grupos na ordem Individual, Business, Redes Sociais, Redes Sociais + Disparos', ordemGrupos.join() === 'grupo-INDIVIDUAL,grupo-BUSINESS,grupo-REDES,grupo-REDES_DISPAROS');
-    ok('O plano de Redes Sociais fica dentro do grupo dele', await p.evaluate(() => { const g = document.querySelector('[data-testid=grupo-REDES]'); const n = g && g.nextElementSibling; return !!n && n.textContent.includes('T40 Redes Business'); }));
+    ok('O plano de Redes Sociais fica dentro do grupo dele', await p.evaluate(() => { let n = document.querySelector('[data-testid=grupo-REDES]').nextElementSibling; while (n && !n.getAttribute('data-testid')) { if (n.textContent.includes('T40 Redes Business')) return true; n = n.nextElementSibling; } return false; }));
     // Subir/descer só troca com plano da mesma categoria
     sql(`update "Plano" set categoria='BUSINESS' where nome='T40 Redes Business'`);
     await p.reload(); await espera(800);

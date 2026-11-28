@@ -84,7 +84,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
 
   // ===== 2. Admin da Empresa treina a IA =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.click('aside nav >> text=Empresa | IA'); await p.waitForURL('**/empresa-ia');
   ok('Ficha já vem com o nome da empresa', (await p.inputValue('#ei-nome')).length > 0);
   await p.fill('#ei-endereco', 'Rua das Flores, 100 — Campinas/SP'); await p.fill('#ei-telefone', '(19) 3333-4444');
@@ -131,7 +131,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
 
   // ===== 3. Usuário da empresa: só vê (#74) =====
   [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/empresa-ia'); await espera(600);
   ok('Usuário vê a mesma ficha da empresa', (await p.inputValue('#ei-atividade')) === 'Limpeza de clínicas e consultórios' && (await p.locator('[data-testid=ficha-ia]').innerText()).length > 20);
   ok('Usuário não edita nem envia materiais', (await p.locator('#ei-nome').isDisabled()) && (await p.locator('button:has-text("+ Texto")').count()) === 0 && (await p.locator('button:has-text("Esquecer")').count()) === 0);
@@ -143,7 +143,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   await c.close();
   sql(`update "Usuario" set permissoes=ARRAY['leads','campanhas','conversas','arquivos'] where id='${ANA}'`);
   [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/empresa-ia'); await espera(600);
   ok('Sem a permissão, o usuário não abre a tela', !p.url().includes('/empresa-ia'));
   await c.close();
@@ -166,7 +166,7 @@ fs.writeFileSync(PNG, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
   await c.close();
 
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.goto(BASE + '/empresa-ia'); await espera(600);
   ok('Treino desligado: aviso e sem botões de material', (await p.locator('text=O treinamento da IA está desligado').count()) === 1 && (await p.locator('button:has-text("+ Texto")').count()) === 0);
   sql(`update "Empresa" set "treinarIA"=true where id='${EMP}'`);

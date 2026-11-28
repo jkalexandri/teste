@@ -43,7 +43,7 @@ const restauraSenhas = () => { for (const e of [ADM, IND, ANA]) sqlIn(`update "U
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', (d) => d.accept()); return p; };
   const entrarUI = async (p, email) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-    if (MOD[email] === 'empresarial') await p.click('text=Módulo Empresarial');
+    if (MOD[email] === 'empresarial') await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', SENHA[email]); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard', { timeout: 8000 });
   };
   const ativar = async (p) => {

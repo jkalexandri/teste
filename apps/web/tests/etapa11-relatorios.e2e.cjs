@@ -130,7 +130,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ===== 6. Só o Super Admin =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.goto(BASE + '/relatorios/empresarial'); await espera(500);
   ok('Admin da Empresa não abre relatórios', !p.url().includes('/relatorios'));
   ok('Excel recusa quem não é Super Admin', (await p.request.get(BASE + '/api/relatorios/empresarial?conta=' + EMP)).status() === 403);

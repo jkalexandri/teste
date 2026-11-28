@@ -36,7 +36,7 @@ const senhaDe = (email, senha = SENHA_PADRAO) => {
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', d => d.accept()); return [c, p]; };
   const entrar = async (p, email, senha) => {
-    await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Empresarial');
+    await p.goto(BASE + '/login', { waitUntil: 'networkidle' }); await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForTimeout(1500);
   };
   const kpi = async (p) => (await p.locator('main .card .font-display').first().innerText()).trim();

@@ -55,7 +55,7 @@ const PONTOS = ['LEADS', 'CAMPANHAS', 'SUPORTE', 'VISITANTE'];
     ok('Desligar grava a chave de Leads', sql(`select "iaLeadsLigada" from "ConfigVenda" where id='config'`) === 'f');
     await pS.goto(BASE + '/dashboard'); await espera(900);
     ok('Dashboard: Leads fica vermelho', (await cor(pS, 'LEADS')) === 'VERMELHO');
-    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
     await pU.goto(BASE + '/conversas'); await espera(1200);
     ok('Usuário vê o aviso "IA desligada pela plataforma" nas Conversas IA', (await pU.locator('[data-testid=ia-desligada-plataforma]').count()) === 1);
     await pU.screenshot({ path: OUT + '/ia-conversas-desligada.png' });

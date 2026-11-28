@@ -34,7 +34,7 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
 
   try {
     const [cS, pS] = await novo(); await entrar(pS, 'superadmin@disparopro.com.br', 'Super@12345678');
-    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
 
     // ===== Chave geral: começa desligada =====
     await pS.goto(BASE + '/atendimento'); await espera(800);

@@ -22,6 +22,9 @@ export type PlanoPublico = {
   limitePaginasMes?: number | null;
   /** Leads de anúncios incluídos (decisão #90) */
   leadsAnuncios?: boolean;
+  /** Redes Sociais (decisão #185): recebe e qualifica os leads das redes; falso em permiteDisparos = plano não dispara campanhas */
+  redesSociais?: boolean;
+  permiteDisparos?: boolean;
   /** WhatsApp extra (Individual — decisões #79 e #80): máximo de números e preço de cada extra (centavos) */
   maxWhatsapps?: number;
   precoWhatsappExtra?: number | null;

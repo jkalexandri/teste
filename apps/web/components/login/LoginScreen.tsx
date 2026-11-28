@@ -375,7 +375,7 @@ export default function LoginScreen() {
                       ? { background: "#2dd4ff", color: "#04120a" }
                       : { background: "rgba(255,255,255,.08)", color: "#eaf6ff", border: "1px solid rgba(255,255,255,.16)" }}
                   >
-                    Módulo Empresarial
+                    Módulo Business
                   </button>
                 </div>
                 {/* Linha "Módulo atual: ..." removida por ordem do dono do projeto (decisoes.md #7). */}

@@ -104,7 +104,7 @@ export async function aplicarRenovacao(pedido: Pedido, tx: Prisma.TransactionCli
       // WhatsApps extras: os da renovação (o cliente pode diminuir — decisões #80 e #95)
       ...(e.modulo === Modulo.INDIVIDUAL ? { whatsappsExtras: pedido.whatsappsExtras } : {}),
       // Leads de anúncios: copiado do plano a cada renovação (decisão #94)
-      ...(plano ? { leadsAnuncios: plano.leadsAnuncios } : {}),
+      ...(plano ? { leadsAnuncios: plano.leadsAnuncios, redesSociais: plano.redesSociais, permiteDisparos: plano.permiteDisparos } : {}),
       // Novo ciclo: zera os avisos e o link.
       tokenRenovacao: null,
       avisoRenovacao10Em: null,

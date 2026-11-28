@@ -11,7 +11,7 @@ const OUT = process.argv[2];
   const entrar = async (email, senha, modulo, vp = { width: 1440, height: 900 }) => {
     const c = await b.newContext({ viewport: vp, deviceScaleFactor: 1 }); const p = await c.newPage();
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-    if (modulo === 'empresarial') await p.click('text=Módulo Empresarial');
+    if (modulo === 'empresarial') await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]');
     await p.waitForURL('**/dashboard', { timeout: 6000 }).catch(() => {});
     return [c, p];

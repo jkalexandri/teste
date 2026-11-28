@@ -35,9 +35,9 @@ function telas() {
 
 const PERFIS = [
   { nome: 'Super Admin', email: 'superadmin@disparopro.com.br', senha: 'Super@12345678' },
-  { nome: 'Admin da Empresa', email: 'admin-empresa@empresaexemplo.com.br', senha: 'Admin@12345678', modulo: 'Módulo Empresarial' },
+  { nome: 'Admin da Empresa', email: 'admin-empresa@empresaexemplo.com.br', senha: 'Admin@12345678', modulo: 'Módulo Business' },
   { nome: 'Usuário Individual', email: 'usuario@disparopro.com.br', senha: 'User@12345678' },
-  { nome: 'Usuário de empresa', email: 'ana@empresaexemplo.com.br', senha: 'User@12345678', modulo: 'Módulo Empresarial' },
+  { nome: 'Usuário de empresa', email: 'ana@empresaexemplo.com.br', senha: 'User@12345678', modulo: 'Módulo Business' },
 ];
 
 (async () => {

@@ -132,7 +132,7 @@ const amanha = new Date(Date.now() - 3 * 3600_000 + 86400_000).toISOString().sli
 
     // Só o Super Admin
     [c, p] = await novo();
-    await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+    await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
     await p.goto(BASE + '/financeiro'); await espera(600);
     ok('Admin da Empresa não abre o Financeiro', !p.url().includes('/financeiro'));
     const x = await p.evaluate(async () => (await fetch('/api/financeiro/relatorios/resultado')).status);

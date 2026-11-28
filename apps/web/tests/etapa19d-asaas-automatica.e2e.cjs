@@ -34,7 +34,7 @@ const vencimentoBR = (emp) => sql(`select to_char("expiraEm" - interval '3 hours
   const novo = async (vp = { width: 1440, height: 900 }) => { const c = await b.newContext({ viewport: vp }); const p = await c.newPage(); p.on('dialog', (d) => d.accept()); return [c, p]; };
   const entrar = async (p, email, senha, empresarial) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-    if (empresarial) await p.click('text=Módulo Empresarial');
+    if (empresarial) await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha); await p.click('button[type=submit]'); await p.waitForURL('**/dashboard');
   };
   const abrirCompra = async (p, email) => {

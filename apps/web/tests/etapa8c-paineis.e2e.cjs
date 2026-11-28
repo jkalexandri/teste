@@ -37,7 +37,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ===== Usuário (Ana): dashboard =====
   let [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   const kpis = (await p.locator('main .card .font-display.text-\\[24px\\]').allInnerTexts()).map((t) => t.trim());
   ok('Dashboard do usuário: fila 4, enviados hoje 5, bloqueados 3, qualificados 0', kpis.slice(0, 4).join(',') === '4,5,3,0', kpis.join(','));
   ok('Próximos na fila com nomes reais', (await p.locator('text=Próximo 1').count()) === 1);
@@ -48,7 +48,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // ===== Admin da Empresa =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   const kAdmin = (await p.locator('main .card .font-display.text-\\[24px\\]').allInnerTexts()).map((t) => t.trim());
   ok('Dashboard do Admin com números reais da empresa', kAdmin.slice(0, 4).join(',') === '4,5,3,0', kAdmin.join(','));
   ok('Disparos por usuários do dashboard sem o Admin', (await p.locator('td:has-text("Admin da Empresa Exemplo")').count()) === 0 && (await p.locator('tr:has-text("Ana Souza")').innerText()).includes('30'));

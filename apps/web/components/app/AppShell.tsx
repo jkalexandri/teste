@@ -5,7 +5,7 @@
 // menu em "pílulas" no celular e aviso de expiração.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   Bot, Building2, ChartColumn, ChevronRight, Clock3, FolderOpen, MessageCircle,
   Moon, Play, Repeat, ScrollText, Send, Settings, ShieldCheck, Sun, Tag, TriangleAlert, Users, Wallet, CircleHelp,
@@ -70,6 +70,8 @@ export default function AppShell({ dados, children }: { dados: DadosShell; child
   const admin = cargo !== "USUARIO";
   // Popup "Fazer upgrade" (decisão #125)
   const [upgrade, setUpgrade] = useState(false);
+  // Outras telas pedem o popup de upgrade por este evento (ex.: Campanhas no plano só de Redes Sociais — decisão #185)
+  useEffect(() => { const f = () => setUpgrade(true); window.addEventListener("filapro:abrir-upgrade", f); return () => window.removeEventListener("filapro:abrir-upgrade", f); }, []);
 
   return (
     <ToastProvider>

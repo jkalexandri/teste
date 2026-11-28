@@ -62,6 +62,10 @@ model Empresa {
   treinarIA         Boolean @default(true)
   /// Leads de anúncios (recurso pago — decisões #90 e #94): copiado do plano; o Super Admin liga/desliga por conta
   leadsAnuncios     Boolean @default(false)
+  /// Redes Sociais (decisão #185): copiado do plano — recepção e qualificação dos leads das redes; no Business entra a roleta
+  redesSociais      Boolean @default(false)
+  /// Disparos de campanha (decisão #185): copiado do plano — o plano só de Redes Sociais não dispara
+  permiteDisparos   Boolean @default(true)
   /// WhatsApps extras contratados (Individual — decisões #79, #80 e #95); vencem junto com o plano
   whatsappsExtras   Int     @default(0)
   /// Pacotes de usuários do plano (decisão #113): limites de usuários, leads e disparos = plano × pacotes
@@ -206,6 +210,10 @@ model Plano {
   limitePaginasMes  Int?
   /// Leads de anúncios incluídos neste plano (decisão #90)
   leadsAnuncios     Boolean @default(false)
+  /// Categorias Redes Sociais e Redes Sociais + Disparos (decisão #185)
+  redesSociais      Boolean @default(false)
+  /// Falso só na categoria Redes Sociais: o plano não dispara campanhas
+  permiteDisparos   Boolean @default(true)
   /// WhatsApp extra (só Individual — decisões #79 e #80): máximo de números por usuário (contando o principal) e preço de cada extra (centavos, por período)
   maxWhatsapps      Int     @default(1)
   precoWhatsappExtra Int?

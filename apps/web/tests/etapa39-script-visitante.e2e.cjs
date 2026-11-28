@@ -96,7 +96,7 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     ok('Restaurar a cópia e salvar devolve o script', sql(`select length("orientacoesVisitante") from "FichaEmpresa" where "superAdminId"='${SAID}'`) !== '0');
 
     // Quem não é Super Admin não vê o cartão nem consegue chamar as ações
-    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+    const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
     await pU.goto(BASE + '/empresa-ia'); await espera(1000);
     ok('Admin da Empresa não vê o script do Fale conosco', (await pU.locator('[data-testid=orientacoes-visitante]').count()) === 0);
     await cU.close(); await cS.close();

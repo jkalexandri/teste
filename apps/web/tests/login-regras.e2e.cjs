@@ -24,7 +24,7 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); return [c, await c.newPage()]; };
   const login = async (p, email, senha, modulo) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-    if (modulo === 'empresarial') await p.click('text=Módulo Empresarial');
+    if (modulo === 'empresarial') await p.click('text=Módulo Business');
     await p.fill('#email', email); await p.fill('#senha', senha);
     await p.click('button[type=submit]');
     await p.waitForTimeout(1200);

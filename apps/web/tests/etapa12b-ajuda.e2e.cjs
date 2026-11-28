@@ -24,7 +24,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(`Login mostra a versão real (${VERSAO})`, (await p.locator(`text=${VERSAO}`).count()) === 1 && (await p.locator('text=v1.25').count()) === 0);
   await p.screenshot({ path: OUT + '/login.png' });
   // Usuário
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   ok('Rodapé do menu mostra a versão', (await p.locator('[data-testid=versao-menu]').innerText()).includes(VERSAO));
   ok('Usuário vê só o Manual do Usuário', JSON.stringify(await manuais(p)) === JSON.stringify(['Manual do Usuário']));
   await p.click('text=Manual do Usuário'); await p.waitForURL('**/ajuda/usuario'); await espera(800);
@@ -39,7 +39,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // Admin
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   ok('Admin vê só o Manual do Admin da Empresa', JSON.stringify(await manuais(p)) === JSON.stringify(['Manual do Admin da Empresa']));
   await c.close();
 

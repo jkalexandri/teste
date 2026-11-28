@@ -54,9 +54,11 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
     descontos.push(n);
   }
   // Plano por quantidade de envio (decisão #102)
-  const disparosPorPeriodo = atual.gratis ? null : inteiro(form.get("disparosPorPeriodo")) || null;
-  const pacoteDisparos = atual.gratis ? null : inteiro(form.get("pacoteDisparos")) || null;
-  const precoPacoteDisparos = atual.gratis ? null : lerReais(texto(form.get("precoPacoteDisparos")));
+  // Redes Sociais (decisão #185): só mensal (sem plano por disparo nem pacote extra) e sem disparos de campanha
+  const soRedes = categoria === CategoriaPlano.REDES;
+  const disparosPorPeriodo = atual.gratis || categoria === CategoriaPlano.REDES || categoria === CategoriaPlano.REDES_DISPAROS ? null : inteiro(form.get("disparosPorPeriodo")) || null;
+  const pacoteDisparos = atual.gratis || categoria === CategoriaPlano.REDES || categoria === CategoriaPlano.REDES_DISPAROS ? null : inteiro(form.get("pacoteDisparos")) || null;
+  const precoPacoteDisparos = atual.gratis || !pacoteDisparos ? null : lerReais(texto(form.get("precoPacoteDisparos")));
   if (pacoteDisparos && precoPacoteDisparos == null) return { ok: false, mensagem: "Informe o preço do pacote extra de disparos (ou deixe a quantidade vazia)." };
   const recursos = texto(form.get("recursos"), 5000).split("\n").map((r) => r.trim()).filter(Boolean);
 
@@ -74,7 +76,10 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
       limiteMateriais,
       limitePaginasMes,
       // Leads de anúncios incluídos no plano (decisão #90)
-      leadsAnuncios: form.get("leadsAnuncios") === "on",
+      // As categorias de Redes Sociais sempre incluem os leads vindos das redes (decisão #185)
+      leadsAnuncios: form.get("leadsAnuncios") === "on" || categoria === CategoriaPlano.REDES || categoria === CategoriaPlano.REDES_DISPAROS,
+      redesSociais: categoria === CategoriaPlano.REDES || categoria === CategoriaPlano.REDES_DISPAROS,
+      permiteDisparos: !soRedes,
       maxWhatsapps,
       precoWhatsappExtra: null,
       maxPacotes,
@@ -132,7 +137,7 @@ export async function novoPlano(form: FormData): Promise<RespostaAcao> {
   const categoria = (texto(form.get("categoria"), 20) || (modulo === Modulo.INDIVIDUAL ? "INDIVIDUAL" : "BUSINESS")) as CategoriaPlano;
   if (!categoriasDoModulo(modulo).includes(categoria)) return { ok: false, mensagem: "Essa categoria não vale para esse tipo de conta (Individual: Individual, Redes Sociais; Business: Business, Redes Sociais)." };
   const ultimo = await prisma.plano.findFirst({ orderBy: { ordem: "desc" }, select: { ordem: true } });
-  await prisma.plano.create({ data: { slug: slugDe(nome), nome, modulo, categoria, usuarios: modulo === Modulo.INDIVIDUAL ? 1 : 3, ordem: (ultimo?.ordem ?? 0) + 1, visivel: false } });
+  await prisma.plano.create({ data: { slug: slugDe(nome), nome, modulo, categoria, redesSociais: categoria === "REDES" || categoria === "REDES_DISPAROS", permiteDisparos: categoria !== "REDES", leadsAnuncios: categoria === "REDES" || categoria === "REDES_DISPAROS", usuarios: modulo === Modulo.INDIVIDUAL ? 1 : 3, ordem: (ultimo?.ordem ?? 0) + 1, visivel: false } });
   revalidatePath("/planos");
   return { ok: true, mensagem: `Plano ${nome} criado (oculto). Clique em Editar para completar e definir o preço.` };
 }

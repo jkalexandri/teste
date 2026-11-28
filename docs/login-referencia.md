@@ -64,7 +64,7 @@ Tokens do app (resto das telas): ver seção 9.
    - Bolinha verde + `ACESSO SEGURO` (10px, tracking .18em, emerald-300)
    - `Acesse sua conta` (Sora 19px extrabold, branco)
    - ~~Texto "Escolha o módulo..."~~ — **removido** (decisoes.md #7)
-   - **Abas de módulo**: `Módulo Individual` (ativo: fundo `#25D366`) · `Módulo Empresarial` (ativo: fundo `#2dd4ff`)
+   - **Abas de módulo**: `Módulo Individual` (ativo: fundo `#25D366`) · `Módulo Business` (ativo: fundo `#2dd4ff`)
    - ~~Linha "Módulo atual: ..."~~ — **removida**; não usar este espaço para exibir informação (decisoes.md #7)
    - Campo **E-mail** (ícone `Mail`, `#7dffb8`) — placeholder `voce@empresa.com.br`
    - Campo **Senha** (ícone `Lock`, olho mostrar/ocultar) — placeholder `Sua senha de acesso`

@@ -76,7 +76,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 2. Usuário gera a mensagem com a IA =====
   [c, p] = await novo();
-  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
+  await entrar(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Business');
   await p.goto(BASE + '/campanhas?aba=nova'); await espera(800);
   ok('"Atualizar prévia" bloqueado sem referência', await p.locator('button:has-text("Atualizar prévia")').isDisabled());
   await p.fill('#assunto', 'Campanha IA'); await p.fill('#referencia', 'Quero apresentar nosso serviço de limpeza para clínicas');
@@ -116,7 +116,7 @@ const ate = async (fn) => { for (let i = 0; i < 30; i++) { if (fn()) return true
 
   // ===== 4. Admin da Empresa não acessa =====
   [c, p] = await novo();
-  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Empresarial');
+  await entrar(p, 'admin-empresa@empresaexemplo.com.br', 'Admin@12345678', 'Módulo Business');
   await p.goto(BASE + '/inteligencia-artificial'); await espera(600);
   ok('Admin da Empresa não abre o menu de IA', p.url().endsWith('/dashboard'));
   await c.close();
