@@ -166,14 +166,19 @@ export async function excluirPlano(id: string): Promise<RespostaAcao> {
   return { ok: true, mensagem: `Plano ${p.nome} excluído.` };
 }
 
+/** Sobe/desce o plano DENTRO da própria categoria (decisão #184): troca a ordem com o vizinho da mesma categoria. */
 export async function moverPlano(id: string, direcao: -1 | 1): Promise<RespostaAcao> {
   await exigirSuperAdmin();
-  const todos = await prisma.plano.findMany({ orderBy: { ordem: "asc" } });
-  const i = todos.findIndex((p) => p.id === id);
+  const p = await prisma.plano.findUnique({ where: { id } });
+  if (!p) return { ok: false, mensagem: "Plano não encontrado." };
+  const grupo = await prisma.plano.findMany({ where: { categoria: p.categoria }, orderBy: { ordem: "asc" } });
+  const i = grupo.findIndex((x) => x.id === id);
   const j = i + direcao;
-  if (i < 0 || j < 0 || j >= todos.length) return { ok: true, mensagem: "" };
-  [todos[i], todos[j]] = [todos[j], todos[i]];
-  await prisma.$transaction(todos.map((p, ordem) => prisma.plano.update({ where: { id: p.id }, data: { ordem } })));
+  if (i < 0 || j < 0 || j >= grupo.length) return { ok: true, mensagem: "" };
+  const a = grupo[i]!, b = grupo[j]!;
+  // Se as duas ordens forem iguais, separa antes de trocar
+  const oa = a.ordem, ob = b.ordem === a.ordem ? b.ordem + (direcao > 0 ? 1 : -1) : b.ordem;
+  await prisma.$transaction([prisma.plano.update({ where: { id: a.id }, data: { ordem: ob } }), prisma.plano.update({ where: { id: b.id }, data: { ordem: oa } })]);
   revalidatePath("/planos");
   return { ok: true, mensagem: "Ordem atualizada." };
 }

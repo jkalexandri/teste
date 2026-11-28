@@ -1,7 +1,7 @@
 "use client";
 
 // Editor de planos do Super Admin, com prévia ao vivo do popup.
-import { useEffect, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIAS_PLANOS, categoriasDoModulo, nomeCategoria, nomeModulo, descontoDaPosicao, formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
 import { PlanosComAbas } from "@/components/planos/PopupPlanos";
@@ -61,16 +61,25 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
           <table style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                <th>Ordem</th><th>Plano</th><th>Categoria</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
+                <th>Ordem</th><th>Plano</th><th>Tipo</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              {planos.map((p, i) => (
+              {CATEGORIAS_PLANOS.map((cat) => {
+                const grupo = planos.filter((p) => p.categoria === cat.id);
+                return (
+                  <Fragment key={cat.id}>
+                    {/* Cabeçalho de cada categoria (decisão #184): os planos ficam separados nas 4 abas do popup */}
+                    <tr data-testid={`grupo-${cat.id}`} style={{ background: "var(--surface-2, rgba(0,0,0,.04))" }}>
+                      <td colSpan={8} className="font-display font-extrabold text-[13px]">{cat.icone} {cat.titulo} <span className="help font-normal">— {grupo.length} {grupo.length === 1 ? "plano" : "planos"} · 1 destaque por categoria</span></td>
+                    </tr>
+                    {grupo.length === 0 && <tr><td colSpan={8} className="help">Nenhum plano nesta categoria ainda. Crie em “+ Novo plano” ou mude a categoria de um plano em Editar.</td></tr>}
+              {grupo.map((p, i) => (
                 <tr key={p.id} data-plano={p.nome}>
                   <td>
                     <div className="flex gap-1">
                       <button className="btn-ghost !px-2 !py-1" disabled={pendente || i === 0} onClick={() => executar(() => moverPlano(p.id, -1))} aria-label={`Subir ${p.nome}`}>↑</button>
-                      <button className="btn-ghost !px-2 !py-1" disabled={pendente || i === planos.length - 1} onClick={() => executar(() => moverPlano(p.id, 1))} aria-label={`Descer ${p.nome}`}>↓</button>
+                      <button className="btn-ghost !px-2 !py-1" disabled={pendente || i === grupo.length - 1} onClick={() => executar(() => moverPlano(p.id, 1))} aria-label={`Descer ${p.nome}`}>↓</button>
                     </div>
                   </td>
                   <td className="font-bold">{p.nome}{p.gratis && <span className="chip ml-1" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>Teste grátis</span>}</td>
@@ -109,6 +118,9 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                   </td>
                 </tr>
               ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

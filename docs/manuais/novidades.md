@@ -2,6 +2,9 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.50.1 — Tela de planos em 4 grupos (28/11/2026)
+- A tabela de **Planos** agora é separada nas 4 categorias, cada uma com o seu destaque. As setas de ordem movem o plano dentro da categoria.
+
 ## v1.50.0 — Planos em 4 categorias e nome Business (28/11/2026)
 - O popup **Planos** agora tem 4 abas: **Individual**, **Business**, **Redes Sociais** e **Redes Sociais + Disparos**. Mensais e por disparo aparecem juntos dentro de cada aba.
 - **"Empresarial" passou a se chamar "Business"** nas telas, relatórios e pedidos.

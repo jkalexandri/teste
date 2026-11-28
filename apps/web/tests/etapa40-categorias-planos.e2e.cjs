@@ -65,6 +65,20 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await v.screenshot({ path: OUT + '/categorias-redes-disparos.png' });
     ok('Nenhum texto "Empresarial" no popup', !(await v.locator('[aria-label=Planos]').innerText()).includes('Empresarial'));
 
+    // Tela de ajuste separada em 4 grupos (decisão #184)
+    await p.goto(BASE + '/planos'); await espera(800);
+    ok('Tela de planos tem os 4 grupos de categoria', (await p.locator('[data-testid^=grupo-]').count()) === 4);
+    const ordemGrupos = await p.locator('[data-testid^=grupo-]').evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
+    ok('Grupos na ordem Individual, Business, Redes Sociais, Redes Sociais + Disparos', ordemGrupos.join() === 'grupo-INDIVIDUAL,grupo-BUSINESS,grupo-REDES,grupo-REDES_DISPAROS');
+    ok('O plano de Redes Sociais fica dentro do grupo dele', await p.evaluate(() => { const g = document.querySelector('[data-testid=grupo-REDES]'); const n = g && g.nextElementSibling; return !!n && n.textContent.includes('T40 Redes Business'); }));
+    // Subir/descer só troca com plano da mesma categoria
+    sql(`update "Plano" set categoria='BUSINESS' where nome='T40 Redes Business'`);
+    await p.reload(); await espera(800);
+    const ordA = sql(`select ordem from "Plano" where nome='T40 Redes Business'`);
+    await p.locator('tr', { hasText: 'T40 Redes Business' }).locator('button[aria-label^="Subir"]').click(); await espera(1000);
+    ok('Subir troca a ordem só dentro da categoria', sql(`select ordem from "Plano" where nome='T40 Redes Business'`) !== ordA && sql(`select count(*) from "Plano" where categoria='INDIVIDUAL' and ordem=(select ordem from "Plano" where nome='T40 Redes Business')`) === '0');
+    sql(`update "Plano" set categoria='REDES' where nome='T40 Redes Business'`);
+
     // Destaque: um por categoria
     sql(`update "Plano" set destaque=true where nome='T40 Redes Business'`);
     await p.goto(BASE + '/planos'); await espera(800);
