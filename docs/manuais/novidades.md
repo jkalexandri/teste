@@ -2,6 +2,9 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.53.1 — Pulso no plano em destaque (28/11/2026)
+- O plano em destaque do popup de Planos agora tem uma luz de cometa correndo em volta do cartão.
+
 ## v1.53.0 — Sobre editável (28/11/2026)
 - Em **Planos**, o Super Admin agora edita o texto do botão **Sobre** do login. Vazio = texto padrão.
 

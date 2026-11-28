@@ -6,6 +6,7 @@
 import { Check, Gift, Sparkles } from "@/components/icons";
 import { useState } from "react";
 import { formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
+import PulsoBorda from "@/components/login/PulsoBorda";
 
 export default function CartaoPlano({ plano, onEscolher, quantidadeInicial = 1 }: { plano: PlanoPublico; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number }) {
   const d = plano.destaque;
@@ -26,6 +27,7 @@ export default function CartaoPlano({ plano, onEscolher, quantidadeInicial = 1 }
 
   return (
     <article
+      data-destaque={d ? "1" : undefined}
       className="cartao-plano relative flex flex-col rounded-[24px] p-5 text-[#eaf6ff] min-w-0"
       style={
         d
@@ -41,6 +43,8 @@ export default function CartaoPlano({ plano, onEscolher, quantidadeInicial = 1 }
             }
       }
     >
+      {/* Plano em destaque: pulso de cometa correndo pela borda do cartão (decisão #190) */}
+      {d && <PulsoBorda raio={24} voltaMs={8000} testid="pulso-destaque" />}
       {/* Selo de desconto */}
       <div className="min-h-[24px] flex justify-end">
         {plano.selo && (

@@ -41,6 +41,20 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
       if (nome === 'celular') await p.screenshot({ path: OUT + '/login-barra-celular.png' });
       await p.context().close();
     }
+    // Pulso no plano em destaque (decisão #190)
+    const IND = sql(`select id||':'||destaque||':'||visivel from "Plano" where slug='individual'`).split(':');
+    sql(`update "Plano" set destaque=true, visivel=true, "precoAtual"=coalesce("precoAtual",2990) where slug='individual'`);
+    const pd = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+    await pd.goto(BASE + '/login', { waitUntil: 'networkidle' }); await pd.click('[data-testid=menu-planos]'); await espera(1500);
+    ok('O plano em destaque tem o pulso correndo na borda', (await pd.locator('article[data-destaque="1"] [data-testid=pulso-destaque]').count()) === 1);
+    ok('Os outros planos não têm pulso', (await pd.locator('article:not([data-destaque]) [data-testid=pulso-destaque]').count()) === 0);
+    await espera(1200);
+    const pxd = await pd.evaluate(() => { const c = document.querySelector('[data-testid=pulso-destaque]'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 20) n++; return n; });
+    ok('O pulso do destaque está sendo desenhado', pxd > 50, String(pxd));
+    await pd.screenshot({ path: OUT + '/planos-destaque-pulso.png' });
+    sql(`update "Plano" set destaque=${IND[1]}, visivel=${IND[2]} where slug='individual'`);
+    await pd.context().close();
+
     // Texto do Sobre editável pelo Super Admin (decisão #189)
     sql(`update "ConfigVenda" set "sobreTexto"='' where id='config'`);
     const cs = await b.newContext({ viewport: { width: 1440, height: 900 } }); const ps = await cs.newPage(); ps.on('dialog', (d) => d.accept());
