@@ -32,8 +32,20 @@ export default function OrientacoesVisitante({ inicial, sugestao, max }: { inici
         <CampoTextoGrande id="ev-orientacoes" name="orientacoesVisitante" rotulo="Script do Fale conosco" valorInicial={inicial} maxLength={max} sugestao={sugestao}
           placeholder="Ex.: como abrir a conversa, perguntas para entender o visitante, como recomendar o plano, respostas prontas…"
           ajuda="Só a IA do Fale conosco usa este texto. Use “Texto sugestão” para começar de um modelo e troque o que está entre colchetes." />
-        <div className="flex justify-end mt-2">
-          <button type="submit" className="btn-primary" disabled={salvando} data-testid="salvar-orientacoes-visitante">Salvar script</button>
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+          <p className="text-[12px] font-bold" style={{ color: inicial.trim() ? "#087a44" : "#8a5a00" }} data-testid="estado-script-visitante">
+            {inicial.trim() ? `Script salvo: ${inicial.trim().length.toLocaleString("pt-BR")} caracteres${inicial.trim().length >= max ? " (no limite: o que passar disso é cortado)" : ""}` : "Nenhum script salvo ainda: a IA usa só o material comercial."}
+          </p>
+          <div className="flex gap-2">
+            {inicial.trim() && (
+              <button type="button" className="btn-ghost" disabled={salvando} data-testid="apagar-script-visitante" onClick={() => {
+                if (!window.confirm("Apagar o script do Fale conosco? A IA volta a usar só o material comercial.")) return;
+                const f = new FormData(); f.set("orientacoesVisitante", ""); f.set("apagar", "1");
+                salvar(async () => { const r = await salvarOrientacoesVisitante(f); toast(r.mensagem, r.ok ? "ok" : "erro"); });
+              }}>Apagar script</button>
+            )}
+            <button type="submit" className="btn-primary" disabled={salvando} data-testid="salvar-orientacoes-visitante">Salvar script</button>
+          </div>
         </div>
       </form>
 

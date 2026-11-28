@@ -217,13 +217,21 @@ export async function testarSuporteIA(pergunta: string): Promise<TesteSuporte> {
 export async function salvarOrientacoesVisitante(form: FormData): Promise<R> {
   const s = await exigirSuperAdmin();
   const texto = String(form.get("orientacoesVisitante") ?? "").trim().slice(0, MAX_ORIENTACOES_VISITANTE);
+  const apagar = form.get("apagar") === "1";
+  // Proteção contra perder o script por engano (decisão #180): salvar com o campo VAZIO não apaga um script que já está salvo; para apagar, use "Apagar script"
+  if (!texto && !apagar) {
+    const atual = await prisma.fichaEmpresa.findUnique({ where: { superAdminId: s.usuario.id }, select: { orientacoesVisitante: true } });
+    if (atual?.orientacoesVisitante.trim()) {
+      return { ok: false, mensagem: `O campo está vazio e há um script salvo (${atual.orientacoesVisitante.trim().length.toLocaleString("pt-BR")} caracteres). NADA foi alterado. Cole o script de novo e salve, ou use "Apagar script" se quer mesmo apagar.` };
+    }
+  }
   await prisma.fichaEmpresa.upsert({
     where: { superAdminId: s.usuario.id },
     update: { orientacoesVisitante: texto },
     create: { superAdminId: s.usuario.id, nome: "", orientacoesVisitante: texto },
   });
   revalidatePath("/empresa-ia");
-  return { ok: true, mensagem: texto ? "Script do Fale conosco salvo." : "Script do Fale conosco apagado." };
+  return { ok: true, mensagem: texto ? `Script do Fale conosco salvo (${texto.length.toLocaleString("pt-BR")} caracteres).` : "Script do Fale conosco apagado." };
 }
 
 export type TesteVisitante = { ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string; usando: { script: number; material: number; planos: number; promocoes: number } } | { ok: false; mensagem: string };

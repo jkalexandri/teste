@@ -45,9 +45,26 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1500);
     const salvo = sql(`select "orientacoesVisitante" from "FichaEmpresa" where "superAdminId"='${SAID}'`);
     ok('Salvar grava o script do Super Admin', /SCRIPT-E2E-178/.test(salvo), salvo.slice(0, 60));
+    ok('A tela mostra "Script salvo: N caracteres"', /Script salvo: \d+ caracteres/.test(await pS.locator('[data-testid=estado-script-visitante]').innerText()));
+    // Proteção: salvar com o campo vazio NÃO apaga o script salvo (decisão #180)
+    await pS.click('#ev-orientacoes'); await espera(400);
+    await pS.locator('[data-testid=editor-orientacoesVisitante] textarea').fill('');
+    await pS.click('[data-testid=salvar-orientacoesVisitante]'); await espera(500);
+    await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1500);
+    ok('Salvar com o campo VAZIO não apaga o script salvo (e avisa)', /SCRIPT-E2E-178/.test(sql(`select "orientacoesVisitante" from "FichaEmpresa" where "superAdminId"='${SAID}'`)) && /campo está vazio/.test(await pS.locator('body').innerText()));
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
     ok('Salvar o script não mexe nas orientações do suporte nem refaz a ficha', sql(`select count(*) from "FichaEmpresa" where "superAdminId"='${SAID}' and montando`) === '0');
     ok('Editor limitado a 6.000 caracteres', (await (async () => { await pS.click('#ev-orientacoes'); await espera(400); const m = await pS.locator('[data-testid=editor-orientacoesVisitante] textarea').getAttribute('maxlength'); await pS.click('[data-testid=editor-orientacoesVisitante] >> text=Cancelar'); return m; })()) === '6000');
 
+    // Apagar de propósito (botão próprio, com confirmação) e voltar a salvar
+    await pS.click('[data-testid=apagar-script-visitante]'); await espera(1500);
+    ok('"Apagar script" apaga de propósito', sql(`select length("orientacoesVisitante") from "FichaEmpresa" where "superAdminId"='${SAID}'`) === '0');
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
+    ok('Sem script salvo, a tela avisa que a IA usa só o material comercial', /Nenhum script salvo ainda/.test(await pS.locator('[data-testid=estado-script-visitante]').innerText()));
+    await pS.click('#ev-orientacoes'); await espera(400);
+    await pS.locator('[data-testid=editor-orientacoesVisitante] textarea').fill('Abra perguntando o ramo do visitante. SCRIPT-E2E-178');
+    await pS.click('[data-testid=salvar-orientacoesVisitante]'); await espera(500);
+    await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1500);
     // Testar uma mensagem
     await pS.goto(BASE + '/empresa-ia'); await espera(1200);
     const msgsAntes = sql(`select count(*) from "InteressadoMensagem"`); const intAntes = sql(`select count(*) from "Interessado"`);

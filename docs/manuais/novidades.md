@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.6 — Fale conosco: o script não se perde mais por engano (28/11/2026)
+
+- A tela **Script do Fale conosco** mostra se há script salvo ("Script salvo: N caracteres") e **não deixa um salvamento com o campo vazio apagar** o script que já existe. Para apagar de propósito, use o botão **Apagar script**.
+
 ## v1.49.5 — Fale conosco: o script é lido com mais segurança (28/11/2026)
 
 - Ajuste na leitura do script do Fale conosco no atendimento real e registro, no log do serviço 24/7, de onde ele veio (sem mostrar o conteúdo).
