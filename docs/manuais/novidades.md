@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.7 — aviso de colchetes mais preciso (28/11/2026)
+
+- Nos campos de texto grande com **Texto sugestão**, o aviso amarelo "Troque os textos entre colchetes [ ]" agora só aparece para os colchetes **do modelo** que ainda não foram trocados, e **mostra quais são**. Colchetes que você mesmo escreveu não disparam mais o aviso.
+
 ## v1.49.6 — Fale conosco: o script não se perde mais por engano (28/11/2026)
 
 - A tela **Script do Fale conosco** mostra se há script salvo ("Script salvo: N caracteres") e **não deixa um salvamento com o campo vazio apagar** o script que já existe. Para apagar de propósito, use o botão **Apagar script**.

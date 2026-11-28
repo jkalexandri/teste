@@ -26,13 +26,14 @@ type Props = {
   avisarColchetes?: boolean;
 };
 
-/** Há algo entre colchetes, como [NOME DA IA]? */
-const temColchetes = (t: string) => /\[[^\]\n]+\]/.test(t);
+import { colchetesPendentes } from "@/lib/colchetes";
+const resumo = (l: string[]) => l.slice(0, 3).map((c) => (c.length > 40 ? c.slice(0, 40) + "…]" : c)).join("  ") + (l.length > 3 ? `  (+${l.length - 3})` : "");
 
 export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLength, placeholder, ajuda, alturaCampo = "min-h-[70px]", sugestao, rotuloSugestao = "Texto sugestão", avisarColchetes = true }: Props) {
   const [valor, setValor] = useState(valorInicial);
   const [rascunho, setRascunho] = useState(valorInicial);
   const [aberto, setAberto] = useState(false);
+  const pendentes = avisarColchetes ? colchetesPendentes(rascunho, sugestao) : [];
   const campo = useRef<HTMLTextAreaElement>(null);
   const editor = useRef<HTMLTextAreaElement>(null);
 
@@ -70,7 +71,8 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
   }
 
   function salvar() {
-    if (avisarColchetes && temColchetes(rascunho) && !window.confirm("Ainda há textos entre colchetes [ ]. Salvar mesmo assim?")) return;
+    const pend = avisarColchetes ? colchetesPendentes(rascunho, sugestao) : [];
+    if (pend.length && !window.confirm(`Ainda há ${pend.length} texto(s) do modelo entre colchetes para trocar:\n${resumo(pend)}\n\nSalvar mesmo assim?`)) return;
     setValor(rascunho);
     setAberto(false);
     // Envia o formulário da tela depois de o campo receber o texto novo
@@ -109,9 +111,10 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
                 <button type="button" className="btn-ghost !p-2" onClick={fechar} aria-label="Fechar sem salvar"><X size={16} /></button>
               </div>
             </div>
-            {avisarColchetes && temColchetes(rascunho) && (
+            {avisarColchetes && pendentes.length > 0 && (
               <div className="mt-3 rounded-lg px-3 py-2 text-[12px] font-semibold" style={{ background: "#fff7e0", color: "#8a5a00", border: "1px solid #f5d48a" }} data-testid={`aviso-colchetes-${name}`}>
                 Troque os textos entre colchetes [ ] pelas informações reais. Exemplo: [NOME DA IA] → Sofia.
+                <span className="block font-normal mt-0.5" data-testid={`colchetes-achados-${name}`}>Ainda faltam trocar ({pendentes.length}): {resumo(pendentes)}</span>
               </div>
             )}
             <textarea
