@@ -249,6 +249,8 @@ model ConfigVenda {
   cidadeRecebedor       String   @default("")
   /// Contato do plano Personalizado (decisão #35), ex.: WhatsApp.
   contatoPersonalizado  String   @default("")
+  /// Texto do "Sobre" do login (decisão #189), editado pelo Super Admin. Vazio = texto padrão
+  sobreTexto            String   @default("")
   /// WhatsApp do Super Admin que recebe os avisos de novo pedido (decisão #38).
   numeroAvisos          String   @default("")
   /// Cotação do dólar informada pelo Super Admin, para mostrar as despesas com IA em reais (decisão #77)

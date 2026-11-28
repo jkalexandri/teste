@@ -7,6 +7,7 @@ import { lerLimite } from "@/lib/limite";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
 import { lerReais, semPrecoDeVenda, categoriasDoModulo, DESCONTOS_PADRAO, MAX_NUMEROS_INDIVIDUAL } from "@/lib/planos";
 import { Modulo, CategoriaPlano } from "@filapro/db";
+import { MAX_SOBRE } from "@/lib/sobre";
 
 export type RespostaAcao = { ok: boolean; mensagem: string };
 
@@ -186,4 +187,13 @@ export async function moverPlano(id: string, direcao: -1 | 1): Promise<RespostaA
   await prisma.$transaction([prisma.plano.update({ where: { id: a.id }, data: { ordem: ob } }), prisma.plano.update({ where: { id: b.id }, data: { ordem: oa } })]);
   revalidatePath("/planos");
   return { ok: true, mensagem: "Ordem atualizada." };
+}
+
+/** Texto do "Sobre" do login (decisão #189): vazio volta ao texto padrão. */
+export async function salvarSobre(form: FormData): Promise<RespostaAcao> {
+  await exigirSuperAdmin();
+  const sobreTexto = texto(form.get("sobreTexto"), MAX_SOBRE);
+  await prisma.configVenda.upsert({ where: { id: "config" }, update: { sobreTexto }, create: { id: "config", sobreTexto } });
+  revalidatePath("/planos");
+  return { ok: true, mensagem: sobreTexto ? `Texto do Sobre salvo (${sobreTexto.length.toLocaleString("pt-BR")} caracteres).` : "Texto do Sobre voltou ao padrão." };
 }

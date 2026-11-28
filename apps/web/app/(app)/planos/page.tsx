@@ -3,6 +3,7 @@
 import { prisma } from "@filapro/db";
 import Cabecalho from "@/components/app/Cabecalho";
 import EditorPlanos from "./EditorPlanos";
+import EditorSobre from "./EditorSobre";
 import { protegerTela } from "@/lib/auth/tela";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PlanosPage() {
   await protegerTela(); // trava da tela antes de qualquer dado (decisão #130)
   const planos = await prisma.plano.findMany({ orderBy: { ordem: "asc" } });
+  const config = await prisma.configVenda.findUnique({ where: { id: "config" }, select: { sobreTexto: true } });
   return (
     <section className="flex-1 flex flex-col">
       <Cabecalho
@@ -18,6 +20,7 @@ export default async function PlanosPage() {
         descricao="Edite os cartões do popup “Planos” da tela de login. Só os planos marcados como visíveis aparecem para o cliente."
       />
       <EditorPlanos planos={planos.map(({ criadoEm, atualizadoEm, ...p }) => p)} />
+      <EditorSobre inicial={config?.sobreTexto ?? ""} />
     </section>
   );
 }

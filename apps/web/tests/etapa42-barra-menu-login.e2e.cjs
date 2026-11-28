@@ -1,6 +1,8 @@
 // Teste de ponta a ponta da decisão #186: barra de menu do login (Planos e Preços | Fale conosco | Sobre) com o pulso de cometa na borda.
 // Uso: node apps/web/tests/etapa42-barra-menu-login.e2e.cjs <pasta-prints>
 const { chromium } = require('playwright');
+const { execSync } = require('child_process');
+const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
 const OUT = process.argv[2] || '/tmp';
@@ -39,6 +41,37 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
       if (nome === 'celular') await p.screenshot({ path: OUT + '/login-barra-celular.png' });
       await p.context().close();
     }
+    // Texto do Sobre editável pelo Super Admin (decisão #189)
+    sql(`update "ConfigVenda" set "sobreTexto"='' where id='config'`);
+    const cs = await b.newContext({ viewport: { width: 1440, height: 900 } }); const ps = await cs.newPage(); ps.on('dialog', (d) => d.accept());
+    await ps.goto(BASE + '/login', { waitUntil: 'networkidle' });
+    await ps.fill('#email', 'superadmin@disparopro.com.br'); await ps.fill('#senha', 'Super@12345678'); await ps.click('button[type=submit]'); await ps.waitForURL('**/dashboard');
+    await ps.goto(BASE + '/planos'); await espera(900);
+    ok('Planos tem o cartão "Texto do Sobre" com o estado "texto padrão"', (await ps.locator('[data-testid=editor-sobre]').count()) === 1 && /texto padrão/i.test(await ps.locator('[data-testid=estado-sobre]').innerText()));
+    await ps.click('#ev-sobre'); await espera(400);
+    await ps.locator('[data-testid=editor-sobreTexto] textarea').fill('Somos a SOBRE-E2E-189, especialista em WhatsApp.\n\nSaiba mais em https://exemplo.com.br/sobre, ou fale conosco.');
+    await ps.click('[data-testid=salvar-sobreTexto]'); await espera(1800);
+    ok('Salvar grava o texto do Sobre', /SOBRE-E2E-189/.test(sql(`select "sobreTexto" from "ConfigVenda" where id='config'`)));
+    const pv = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+    await pv.goto(BASE + '/login', { waitUntil: 'networkidle' }); await pv.click('[data-testid=menu-sobre]'); await espera(900);
+    const txt = await pv.locator('[data-testid=sobre-texto]').innerText();
+    ok('O visitante vê o texto escrito pelo Super Admin (e não o padrão)', /SOBRE-E2E-189/.test(txt) && !/Antibloqueio/.test(txt));
+    ok('Endereço https vira link, sem levar a vírgula', (await pv.locator('[data-testid=sobre-texto] a[href="https://exemplo.com.br/sobre"]').count()) === 1);
+    ok('Termos, Privacidade e versão continuam embaixo', (await pv.locator('[data-testid=popup-sobre] a[href="/privacidade"]').count()) === 1 && /v\d+\.\d+\.\d+/.test(await pv.locator('[data-testid=popup-sobre]').innerText()));
+    await pv.screenshot({ path: OUT + '/login-sobre-editado.png' });
+    // HTML digitado não é interpretado
+    sql(`update "ConfigVenda" set "sobreTexto"='<b>negrito</b><script>window.__x=1</script>' where id='config'`);
+    await pv.reload({ waitUntil: 'networkidle' }); await pv.click('[data-testid=menu-sobre]'); await espera(700);
+    ok('HTML no texto aparece como texto, sem executar', (await pv.locator('[data-testid=sobre-texto] b').count()) === 0 && (await pv.evaluate(() => window.__x)) === undefined);
+    // Voltar ao padrão: salvar vazio
+    await ps.goto(BASE + '/planos'); await espera(900);
+    await ps.click('#ev-sobre'); await espera(400);
+    await ps.locator('[data-testid=editor-sobreTexto] textarea').fill('');
+    await ps.click('[data-testid=salvar-sobreTexto]'); await espera(1800);
+    ok('Salvar vazio volta ao texto padrão', sql(`select length("sobreTexto") from "ConfigVenda" where id='config'`) === '0');
+    await pv.reload({ waitUntil: 'networkidle' }); await pv.click('[data-testid=menu-sobre]'); await espera(700);
+    ok('O Sobre volta a mostrar o texto padrão', /Antibloqueio/.test(await pv.locator('[data-testid=sobre-texto]').innerText()));
+    await cs.close();
     // Reduzir movimento: sem pulso e sem animação dos nomes
     const c2 = await b.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' }); const p2 = await c2.newPage();
     await p2.goto(BASE + '/login', { waitUntil: 'networkidle' }); await espera(1200);
@@ -46,7 +79,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok('Com "reduzir movimento": nada se mexe', px === 0 && (await p2.evaluate(() => getComputedStyle(document.querySelector('.login-menu-item')).animationName)) === 'none');
     await c2.close();
   } catch (e) { ok('Erro inesperado', false, String(e.message).split('\n')[0].slice(0, 160)); }
-  finally { await b.close(); }
+  finally { sql(`update "ConfigVenda" set "sobreTexto"='' where id='config'`); await b.close(); }
   const f = res.filter((x) => x.startsWith('FALHOU')).length;
   console.log(res.join('\n')); console.log(`\nResultado: ${res.length - f} passaram, ${f} falharam`);
   process.exit(f ? 1 : 0);
