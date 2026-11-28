@@ -145,7 +145,13 @@ test("teste do Super Admin: responde com o script salvo, NÃO cria conversa nem 
   const r = await a.testar(sa, "Oi, quanto custa?");
   assert.equal(r.ok, true);
   if (r.ok) { assert.equal(r.resposta, "Resposta de teste da IA"); assert.equal(r.temperatura, "QUENTE"); assert.equal(r.vaiParaAtendente, false); }
-  const d = chamadas.at(-1)!.dados as { orientacoesVisitante: string; recentes: { texto: string }[]; nomeLead: string };
+  if (r.ok) {
+    assert.equal(r.usando.script, "SCRIPT-DE-TESTE: abra perguntando o ramo".length, "o teste informa quantos caracteres do script a IA recebeu");
+    assert.equal(r.usando.material, "MATERIAL-DE-TESTE".length);
+    assert.ok(r.usando.planos >= 1 && r.usando.promocoes >= 1, "conta os planos visíveis e os que têm promoção");
+  }
+  const d = chamadas.at(-1)!.dados as { orientacoesVisitante: string; recentes: { texto: string }[]; nomeLead: string; usando?: unknown };
+  assert.equal(d.usando, undefined, "o resumo 'usando' é só para a tela: não vai para a IA");
   assert.match(d.orientacoesVisitante, /SCRIPT-DE-TESTE/);
   assert.equal(d.recentes[0]!.texto, "Oi, quanto custa?");
   assert.equal(await prisma.interessado.count(), antesI);
@@ -154,4 +160,21 @@ test("teste do Super Admin: responde com o script salvo, NÃO cria conversa nem 
   const bloqueado = await a.testar(sa, "mais um");
   assert.equal(bloqueado.ok, false);
   if (!bloqueado.ok) assert.match(bloqueado.mensagem, /Limite de 10 testes por hora/);
+});
+
+test("script salvo por OUTRO Super Admin: se a ficha do primeiro não tem script, a IA usa o que existe (não fica sem as diretrizes)", async () => {
+  const primeiro = (await prisma.usuario.findFirst({ where: { cargo: Cargo.SUPERADMIN }, orderBy: { criadoEm: "asc" }, select: { id: true } }))!.id;
+  await prisma.usuario.deleteMany({ where: { id: "tvc-sa2" } });
+  await prisma.usuario.create({ data: { id: "tvc-sa2", codigo: "TVC2", nome: "Outro Super Admin", email: "tvc-sa2@teste.local", cargo: Cargo.SUPERADMIN } });
+  const antes = (await prisma.fichaEmpresa.findUnique({ where: { superAdminId: primeiro } }))!.orientacoesVisitante;
+  try {
+    await prisma.fichaEmpresa.update({ where: { superAdminId: primeiro }, data: { orientacoesVisitante: "" } });
+    await prisma.fichaEmpresa.upsert({ where: { superAdminId: "tvc-sa2" }, update: { orientacoesVisitante: "SCRIPT-DO-OUTRO-SA" }, create: { superAdminId: "tvc-sa2", nome: "", orientacoesVisitante: "SCRIPT-DO-OUTRO-SA" } });
+    await at().responder(INT);
+    assert.match((chamadas.at(-1)!.dados as { orientacoesVisitante: string }).orientacoesVisitante, /SCRIPT-DO-OUTRO-SA/);
+  } finally {
+    await prisma.fichaEmpresa.update({ where: { superAdminId: primeiro }, data: { orientacoesVisitante: antes } });
+    await prisma.fichaEmpresa.deleteMany({ where: { superAdminId: "tvc-sa2" } });
+    await prisma.usuario.deleteMany({ where: { id: "tvc-sa2" } });
+  }
 });

@@ -226,7 +226,7 @@ export async function salvarOrientacoesVisitante(form: FormData): Promise<R> {
   return { ok: true, mensagem: texto ? "Script do Fale conosco salvo." : "Script do Fale conosco apagado." };
 }
 
-export type TesteVisitante = { ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string } | { ok: false; mensagem: string };
+export type TesteVisitante = { ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string; usando: { script: number; material: number; planos: number; promocoes: number } } | { ok: false; mensagem: string };
 
 /** Mostra o que a IA do Fale conosco responderia a esta mensagem (usa o script SALVO). Não cria conversa nem avisa ninguém. */
 export async function testarVisitanteIA(pergunta: string): Promise<TesteVisitante> {

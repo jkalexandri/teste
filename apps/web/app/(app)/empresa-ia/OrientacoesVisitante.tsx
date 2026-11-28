@@ -57,6 +57,9 @@ export default function OrientacoesVisitante({ inicial, sugestao, max }: { inici
               <>
                 {resultado.vaiParaAtendente && <p className="font-bold text-[12px]" style={{ color: "#8a5a00" }} data-testid="teste-visitante-atendente">Isso iria para o atendente (a IA não soube responder).</p>}
                 <p className="whitespace-pre-wrap mt-0.5" data-testid="teste-visitante-resposta">{resultado.resposta}</p>
+                <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }} data-testid="teste-visitante-usando">
+                  A IA recebeu: {resultado.usando.script > 0 ? `seu script (${resultado.usando.script.toLocaleString("pt-BR")} caracteres)` : "SEM script seu (salve o script acima)"} • {resultado.usando.material > 0 ? `material comercial (${resultado.usando.material.toLocaleString("pt-BR")} caracteres)` : "SEM material comercial"} • {resultado.usando.planos} plano(s) visível(is), {resultado.usando.promocoes} com promoção.
+                </p>
                 <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>Interesse percebido: {resultado.temperatura === "QUENTE" ? "Quente" : resultado.temperatura === "FRIO" ? "Frio" : "Morno"}</p>
               </>
             )}

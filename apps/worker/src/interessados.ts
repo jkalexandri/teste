@@ -59,7 +59,13 @@ export class AtendenteInteressados {
    * material comercial (arquivo do projeto) e o script de atendimento do Super Admin.
    */
   async conhecimento(superAdminId: string | null) {
-    const ficha = superAdminId ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId } }) : null;
+    let ficha = superAdminId ? await prisma.fichaEmpresa.findUnique({ where: { superAdminId } }) : null;
+    // O script pode ter sido salvo por outro Super Admin (cada um tem a própria ficha): se a ficha usada não tem script, vale o do primeiro Super Admin que tenha
+    let orientacoes = ficha?.orientacoesVisitante ?? "";
+    if (!orientacoes.trim()) {
+      const outra = await prisma.fichaEmpresa.findFirst({ where: { superAdminId: { not: null }, orientacoesVisitante: { not: "" } }, orderBy: { id: "asc" }, select: { orientacoesVisitante: true } }).catch(() => null);
+      if (outra?.orientacoesVisitante.trim()) orientacoes = outra.orientacoesVisitante;
+    }
     const planos = await prisma.plano.findMany({ where: { visivel: true }, orderBy: { ordem: "asc" } });
     const textoPlanos = textoDosPlanos(planos as PlanoParaTexto[]);
     const ficha_ = [
@@ -68,13 +74,17 @@ export class AtendenteInteressados {
       textoPlanos ? `Planos à venda (valores, promoções e condições valem EXATAMENTE como estão aqui):\n${textoPlanos}` : "",
     ].filter(Boolean).join("\n\n");
     const comercial = await (this.op.lerMaterial ?? lerMaterialComercial)().catch(() => "");
-    return { ficha: ficha_, comoQualificar: ficha?.comoQualificar ?? "", comercial, orientacoesVisitante: ficha?.orientacoesVisitante ?? "" };
+    const promocoes = (planos as PlanoParaTexto[]).filter((p) => p.precoAntigo != null && p.precoAtual != null && p.precoAntigo > p.precoAtual && !p.gratis && !p.personalizado).length;
+    return {
+      ficha: ficha_, comoQualificar: ficha?.comoQualificar ?? "", comercial, orientacoesVisitante: orientacoes,
+      usando: { script: orientacoes.trim().length, material: comercial.length, planos: planos.length, promocoes },
+    };
   }
 
   private testes = new Map<string, number[]>();
 
   /** Teste do Super Admin: o que a IA do Fale conosco responderia a esta mensagem (usa o script SALVO). Não cria conversa nem avisa ninguém. */
-  async testar(superAdminId: string, pergunta: string): Promise<{ ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string } | { ok: false; mensagem: string }> {
+  async testar(superAdminId: string, pergunta: string): Promise<{ ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string; usando: { script: number; material: number; planos: number; promocoes: number } } | { ok: false; mensagem: string }> {
     const texto = pergunta.trim().slice(0, 1000);
     if (!texto) return { ok: false, mensagem: "Escreva uma pergunta." };
     const agora = Date.now();
@@ -85,11 +95,12 @@ export class AtendenteInteressados {
     }
     this.testes.set(superAdminId, [...usados, agora]);
     try {
+      const k = await this.conhecimento(superAdminId);
       const r = await (this.op.ia ?? responderConversa)(
-        { ...(await this.conhecimento(superAdminId)), resumo: "", nomeLead: "Visitante", recentes: [{ autor: "LEAD", texto }], visitanteSite: true },
+        { ficha: k.ficha, comoQualificar: k.comoQualificar, comercial: k.comercial, orientacoesVisitante: k.orientacoesVisitante, resumo: "", nomeLead: "Visitante", recentes: [{ autor: "LEAD", texto }], visitanteSite: true },
         { empresaId: null, usuarioId: superAdminId },
       );
-      return { ok: true, resposta: r.resposta, vaiParaAtendente: r.naoSei, temperatura: r.temperatura };
+      return { ok: true, resposta: r.resposta, vaiParaAtendente: r.naoSei, temperatura: r.temperatura, usando: k.usando };
     } catch (e) {
       this.log.warn({ msg: e instanceof ErroIA ? e.message : String(e) }, "IA não respondeu o teste do Fale conosco");
       return { ok: false, mensagem: e instanceof ErroIA ? e.message : "A IA não respondeu agora. Tente de novo." };
@@ -109,7 +120,7 @@ export class AtendenteInteressados {
     let r;
     try {
       r = await (this.op.ia ?? responderConversa)(
-        { ...base, resumo: "", nomeLead: it.nome, recentes: recentes.map(paraIA), visitanteSite: true },
+        { ficha: base.ficha, comoQualificar: base.comoQualificar, comercial: base.comercial, orientacoesVisitante: base.orientacoesVisitante, resumo: "", nomeLead: it.nome, recentes: recentes.map(paraIA), visitanteSite: true },
         { empresaId: null, usuarioId: sa?.id ?? null },
       );
     } catch (e) {

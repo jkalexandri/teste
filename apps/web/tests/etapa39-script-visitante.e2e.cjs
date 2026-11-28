@@ -53,6 +53,7 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     const msgsAntes = sql(`select count(*) from "InteressadoMensagem"`); const intAntes = sql(`select count(*) from "Interessado"`);
     await pS.fill('[data-testid=pergunta-teste-visitante]', 'Oi, quanto custa e como funciona? TESTE-TELA-178'); await pS.click('[data-testid=testar-visitante]');
     ok('Testar mostra a resposta da IA do Fale conosco', await ate(async () => (await pS.locator('[data-testid=teste-visitante-resposta]').count()) === 1, 20000) && (await pS.locator('[data-testid=teste-visitante-resposta]').innerText()).length > 10);
+    ok('O teste mostra o que a IA recebeu: o SEU script, o material comercial e os planos', /seu script \(\d+ caracteres\)/.test(await pS.locator('[data-testid=teste-visitante-usando]').innerText()) && /material comercial \(\d/.test(await pS.locator('[data-testid=teste-visitante-usando]').innerText()) && /plano\(s\) visível/.test(await pS.locator('[data-testid=teste-visitante-usando]').innerText()));
     ok('O teste mostra o interesse percebido', /Interesse percebido/.test(await pS.locator('[data-testid=resultado-teste-visitante]').innerText()));
     ok('O teste NÃO cria visitante nem mensagem', sql(`select count(*) from "InteressadoMensagem"`) === msgsAntes && sql(`select count(*) from "Interessado"`) === intAntes);
     await pS.screenshot({ path: OUT + '/script-visitante-teste.png', fullPage: true });

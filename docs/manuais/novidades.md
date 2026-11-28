@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.3 — Fale conosco: a IA agora segue o seu script (28/11/2026)
+
+- **Correção:** a IA do Fale conosco não estava seguindo o **Script do Fale conosco** nem o material comercial. Agora ela tem um roteiro próprio de consultora e **segue o seu script** (e usa as suas respostas prontas), com os valores e promoções dos planos sempre como cadastrados.
+- Em **Testar uma mensagem**, a tela agora mostra **o que a IA recebeu**: o seu script (quantos caracteres), o material comercial e quantos planos e promoções.
+- Se o script foi salvo por outro Super Admin, a IA também o usa.
+
 ## v1.49.2 — Fale conosco: script de atendimento, material comercial e promoções dos planos (27/11/2026)
 
 - Novo cartão **Script do Fale conosco** em **Configurações → Empresa | IA** (só Super Admin): escreva (ou comece pelo **Texto sugestão**) o roteiro que a IA do Fale conosco segue ao conversar com quem ainda não é cliente. Dá para **testar uma mensagem** antes de valer.

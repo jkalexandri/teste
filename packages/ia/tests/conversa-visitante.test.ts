@@ -53,17 +53,17 @@ test("chat do site: o material comercial e o script do dono vão para a IA, com 
   assert.match(c, /PROMOÇÃO: de R\$ 49,90 por R\$ 29,90/, "os planos com a promoção cadastrada vão na ficha");
   assert.match(c, /vale mais que o material comercial quando houver conflito, mas NUNCA mais que os dados dos planos/);
   assert.match(c, /use SOMENTE os que constam em "Planos à venda"/, "o canal manda usar só os valores cadastrados");
-  assert.ok(c.indexOf("Material comercial") < c.indexOf("Script de atendimento do dono"), "o script vem depois do material (vale mais)");
+  assert.ok(c.indexOf("Material comercial (como conduzir") < c.indexOf("Script de atendimento do dono do FilaPro Leads ("), "no contexto, o script vem depois do material (vale mais)");
 });
 
 test("sem script, só o material; sem os dois, a conversa segue como antes", async () => {
   pedidos = [];
   await responderConversa({ ...base, visitanteSite: true, comercial: "SO-MATERIAL" }, quem);
   assert.match(conteudo(), /SO-MATERIAL/);
-  assert.doesNotMatch(conteudo(), /Script de atendimento do dono/);
+  assert.doesNotMatch(conteudo(), /Script de atendimento do dono do FilaPro Leads \(/, "sem script, o bloco do script não entra no contexto");
   pedidos = [];
   await responderConversa({ ...base, visitanteSite: true }, quem);
-  assert.doesNotMatch(conteudo(), /Material comercial|Script de atendimento/);
+  assert.doesNotMatch(conteudo(), /Material comercial \(como conduzir|Script de atendimento do dono do FilaPro Leads \(/);
 });
 
 test("conversa de LEAD (WhatsApp dos clientes): o material comercial e o script do Fale conosco NUNCA entram, mesmo se passados", async () => {
@@ -72,4 +72,29 @@ test("conversa de LEAD (WhatsApp dos clientes): o material comercial e o script 
   const c = conteudo();
   assert.doesNotMatch(c, /MATERIAL-QUE-NAO-PODE-VAZAR|SCRIPT-QUE-NAO-PODE-VAZAR/);
   assert.doesNotMatch(c, /Canal: chat da tela de Planos/);
+});
+
+test("decisão #179: o chat do site usa o texto-base PRÓPRIO do consultor (sem a regra de usar SOMENTE a ficha, que fazia a IA ignorar o script)", async () => {
+  pedidos = [];
+  await responderConversa({ ...base, visitanteSite: true, comercial: "MAT", orientacoesVisitante: "SCR" }, quem);
+  const c = conteudo();
+  assert.match(c, /CONSULTOR COMERCIAL DO FILAPRO LEADS/);
+  assert.match(c, /"Script de atendimento do dono": é o ROTEIRO que você SEGUE/);
+  assert.match(c, /em ordem de autoridade/);
+  assert.match(c, /ÚNICA fonte de valores/);
+  assert.match(c, /Em conflito com o material comercial, vale o script/);
+  assert.match(c, /nem o script do dono muda isto/);
+  assert.doesNotMatch(c, /Use SOMENTE as informações da ficha da empresa/, "essa regra dos leads não pode valer para o visitante");
+  assert.doesNotMatch(c, /ATENDENTE DE WHATSAPP/);
+  // E o resto continua igual: JSON com temperatura, status e naoSei
+  assert.match(c, /"naoSei": false/);
+});
+
+test("conversa de LEAD continua com o texto-base de sempre (só a ficha)", async () => {
+  pedidos = [];
+  await responderConversa({ ...base }, quem);
+  const c = conteudo();
+  assert.match(c, /ATENDENTE DE WHATSAPP/);
+  assert.match(c, /Use SOMENTE as informações da ficha da empresa/);
+  assert.doesNotMatch(c, /CONSULTOR COMERCIAL/);
 });
