@@ -2,6 +2,11 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.4 — Fale conosco: o script vale em todas as respostas (28/11/2026)
+
+- A IA do Fale conosco agora segue o seu script **em toda resposta**, inclusive em conversas que já tinham respostas antigas (escritas antes do script).
+- O serviço 24/7 registra no log, a cada resposta, o que a IA recebeu (tamanho do script e do material, planos e promoções), para você conferir.
+
 ## v1.49.3 — Fale conosco: a IA agora segue o seu script (28/11/2026)
 
 - **Correção:** a IA do Fale conosco não estava seguindo o **Script do Fale conosco** nem o material comercial. Agora ela tem um roteiro próprio de consultora e **segue o seu script** (e usa as suas respostas prontas), com os valores e promoções dos planos sempre como cadastrados.
