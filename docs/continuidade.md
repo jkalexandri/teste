@@ -153,3 +153,8 @@ Falta o dono atualizar a VPS e testar com um lead. Melhoria futura possível: re
 ### Próximas funcionalidades combinadas
 - Integração direta com Facebook/Instagram Lead Ads (hoje entra pelo Make/Zapier).
 - Fase 2: cobrança automática — em andamento pelo Asaas (acima).
+
+
+## Pendência — Categorias de planos e Redes Sociais (não esquecer)
+- Dono pediu (28/11/2026): 4 categorias (Individual = Free+Individual juntos; Business = antigo Empresarial, mensais e por disparos juntos; Redes Sociais e Redes Sociais + Disparos = só mensais, Individual e Business). Campo "Categoria" no cadastro de planos; renomear Empresarial→Business em tudo; roleta aleatória entre quem está LOGADO (Admin da Empresa escolhe participantes); layout aguardando aprovação (prévia em `docs/previas/planos-categorias.html`, opções A e B).
+- **NÃO ESQUECER:** começar pelos leads de anúncios (endereço de recebimento / Make/Zapier); a **integração direta com Facebook/Instagram (mensagens diretas, comentários, "todas as redes") fica para depois, mas é obrigatória** — o dono exigiu que não seja esquecida.

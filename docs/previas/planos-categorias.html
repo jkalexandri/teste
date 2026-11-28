@@ -22,7 +22,7 @@
 </style></head><body><div class="w">
 <h1>Prévia — popup “Planos” com 4 categorias</h1>
 <p class="sub">Clique nas categorias para ver cada uma. Preços e textos são <b>exemplos</b> (os reais vêm do cadastro de planos).</p>
-<div class="cats" role="tablist" id="cats"></div>
+<div class="cats" style="grid-template-columns:1fr 1fr;margin-bottom:12px" id="opc"><button class="cat" data-o="A"><b>Opção A</b><span>4 abas por categoria (como você descreveu)</span></button><button class="cat" data-o="B"><b>Opção B</b><span>2 níveis: Individual | Business, e dentro o que fazer</span></button></div><div class="cats" role="tablist" id="cats"></div>
 <div id="tela"></div>
 <p class="leg">Prévia estática para aprovação — nenhuma alteração foi feita no sistema.</p></div>
 <script>
@@ -41,7 +41,22 @@ G('Business',P('Redes Sociais Business','R$ 249,90','/mês',['Recepção e quali
 rsd:{n:'Redes Sociais + Disparos',s:'mix: recepção das redes + disparos',nota:'Mix das duas funções: recepção/qualificação das redes sociais + disparos, nas versões Individual e Business (roleta incluída no Business).',h:
 G('Individual',P('Redes + Disparos Individual','R$ 59,90','/mês',['Recepção e qualificação de leads','Disparos de campanha','1 usuário'],{d:1}))+
 G('Business',P('Redes + Disparos Business','R$ 349,90','/mês',['Recepção e qualificação pela IA','<b>Roleta automática</b> da equipe','Disparos de campanha','Pacotes de usuários'],{d:1,tag:'Mais completo'}))}};
-const k=Object.keys(T),c=document.getElementById('cats'),t=document.getElementById('tela');
-function ver(x){[...c.children].forEach(b=>b.setAttribute('aria-selected',b.dataset.k==x));t.innerHTML=`<div class="nota">${T[x].nota}</div>`+T[x].h}
-k.forEach(x=>{const b=document.createElement('button');b.className='cat';b.dataset.k=x;b.setAttribute('role','tab');b.innerHTML=`<b>${T[x].n}</b><span>${T[x].s}</span>`;b.onclick=()=>ver(x);c.appendChild(b)});ver('ind');
+const c=document.getElementById('cats'),t=document.getElementById('tela'),opc=document.getElementById('opc');
+const B={ind:{n:'Individual',s:'para quem atende sozinho'},bus:{n:'Business',s:'para equipes'}};
+const FN={d:'Disparos',r:'Redes Sociais',rd:'Redes Sociais + Disparos'};
+const CARD={ind:{d:[P('Free','Grátis',' · 7 dias ou 20 disparos',['1 usuário','Teste único por e-mail'],{g:1,btn:'Começar grátis'}),P('Individual mensal','R$ 29,90','/mês',['Disparos sem limite','1 WhatsApp'],{d:1,tag:'Mais escolhido'}),P('Individual por disparos','R$ 19,90','/ pacote',['500 disparos por período'],{g:1})],
+r:[P('Redes Sociais Individual','R$ 39,90','/mês',['Recepção dos leads das redes','Qualificação pela IA','Mensal, sem disparos'],{d:1})],
+rd:[P('Redes + Disparos Individual','R$ 59,90','/mês',['Recepção e qualificação pela IA','Disparos sem limite'],{d:1})]},
+bus:{d:[P('Básico','R$ 99,90','/mês',['3 usuários','Disparos sem limite'],{g:1}),P('Padrão','R$ 199,90','/mês',['10 a 50 usuários'],{d:1,tag:'Mais escolhido'}),P('Business por disparos','R$ 149,90','/ pacote',['2.000 disparos por período'],{g:1})],
+r:[P('Redes Sociais Business','R$ 249,90','/mês',['Qualificação pela IA','<b>Roleta aleatória</b> entre quem está logado','Admin escolhe os participantes'],{d:1,tag:'Com roleta'})],
+rd:[P('Redes + Disparos Business','R$ 349,90','/mês',['Qualificação pela IA','<b>Roleta aleatória</b> entre quem está logado','Disparos sem limite'],{d:1,tag:'Mais completo'})]}};
+let O='A',nivel='ind',fn='d';
+function nota(){return O=='A'?'':''}
+function verA(x){[...c.children].forEach(b=>b.setAttribute('aria-selected',b.dataset.k==x));t.innerHTML=`<div class="nota">${T[x].nota}</div>`+T[x].h}
+function verB(){c.innerHTML='';['ind','bus'].forEach(x=>{const b=document.createElement('button');b.className='cat';b.setAttribute('aria-selected',x==nivel);b.innerHTML=`<b>${B[x].n}</b><span>${B[x].s}</span>`;b.onclick=()=>{nivel=x;verB()};c.appendChild(b)});c.style.gridTemplateColumns='1fr 1fr';
+ const ch=['d','r','rd'].map(f=>`<button class="cat" style="padding:8px 12px;display:inline-block;margin-right:6px" aria-selected="${f==fn}" data-f="${f}"><b>${FN[f]}</b></button>`).join('');
+ t.innerHTML=`<div style="margin:12px 0">${ch}</div><div class="nota">${fn=='d'?'Disparos: planos mensais (sem limite) e por disparos juntos.':'Só mensal, sem plano por disparo. '+(nivel=='bus'?'Leads distribuídos por roleta aleatória entre os participantes que estão logados.':'')}</div><div class="grade">${CARD[nivel][fn].join('')}</div>`;
+ t.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{fn=b.dataset.f;verB()})}
+function mostrar(){[...opc.children].forEach(b=>b.setAttribute('aria-selected',b.dataset.o==O));if(O=='A'){c.style.gridTemplateColumns='';c.innerHTML='';Object.keys(T).forEach(x=>{const b=document.createElement('button');b.className='cat';b.dataset.k=x;b.setAttribute('role','tab');b.innerHTML=`<b>${T[x].n}</b><span>${T[x].s}</span>`;b.onclick=()=>verA(x);c.appendChild(b)});verA('ind')}else verB()}
+[...opc.children].forEach(b=>b.onclick=()=>{O=b.dataset.o;mostrar()});mostrar();
 </script></body></html>
