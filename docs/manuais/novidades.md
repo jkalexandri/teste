@@ -2,6 +2,10 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.52.0 — Barra de menu no login (28/11/2026)
+- O login ganhou a barra **Planos e Preços | Fale conosco | Sobre**, com um pulso de cometa azul correndo na borda e os nomes pulsando.
+- **Sobre** mostra o resumo do FilaPro Leads e os links dos Termos de uso e da Política de privacidade.
+
 ## v1.51.0 — Planos de Redes Sociais (28/11/2026)
 - Já existem os planos das categorias **Redes Sociais** (só mensal, sem disparos) e **Redes Sociais + Disparos** (cópia dos mensais com as informações das redes). Eles nascem **ocultos**: defina os preços e ligue em Planos.
 - Quem tem plano só de Redes Sociais vê, em Campanhas, o aviso com o caminho do **upgrade para Redes Sociais + Disparos**.

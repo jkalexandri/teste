@@ -3,6 +3,7 @@
 // Uso: node apps/web/tests/etapa41-planos-redes.e2e.cjs <pasta-prints>
 const { chromium } = require('playwright');
 const { execSync } = require('child_process');
+const fs = require('fs');
 const sql = (q) => execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -tAc "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const BASE = 'http://localhost:3005';
 const res = []; const ok = (n, c, x = '') => res.push(`${c ? 'PASSOU' : 'FALHOU'} — ${n}${x ? ' (' + x + ')' : ''}`);
@@ -16,7 +17,11 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const b = await chromium.launch();
   const novo = async () => { const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = await c.newPage(); p.on('dialog', (d) => d.accept()); return [c, p]; };
   try {
-    // 1. Planos criados na migração
+    // 1. Planos criados pela migração: refaz o trecho de INSERT da própria migração sobre os planos de hoje (outros testes zeram os planos)
+    sql(`delete from "Plano" where slug like 'redes-%'`);
+    sql(`update "Plano" set "precoAtual"=2990, recursos='{"1 usuário","Disparos"}' where slug='individual'`);
+    const mig = fs.readFileSync(__dirname + '/../../../packages/db/prisma/migrations/20261129050000_planos_redes_sociais/migration.sql', 'utf8');
+    execSync(`psql -h /var/tmp -p 5433 -U postgres -d filapro -v ON_ERROR_STOP=1 -q`, { input: mig.slice(mig.indexOf('-- Categoria REDES SOCIAIS:')) });
     ok('Há planos nas categorias Redes Sociais e Redes Sociais + Disparos (um por plano mensal)', Number(sql(`select count(*) from "Plano" where categoria='REDES'`)) >= 2 && Number(sql(`select count(*) from "Plano" where categoria='REDES_DISPAROS'`)) >= 2);
     ok('Redes Sociais: sem disparos, sem plano por disparo, com leads das redes', sql(`select count(*) from "Plano" where categoria='REDES' and ("permiteDisparos" or not "redesSociais" or not "leadsAnuncios" or "disparosPorPeriodo" is not null or "precoAtual" is not null)`) === '0');
     ok('Redes Sociais + Disparos: com disparos e redes, e o mesmo preço do mensal de origem', sql(`select count(*) from "Plano" r join "Plano" o on 'redes-disparos-'||o.slug = r.slug where r.categoria='REDES_DISPAROS' and (not r."permiteDisparos" or not r."redesSociais" or r."precoAtual" is distinct from o."precoAtual")`) === '0');

@@ -52,7 +52,7 @@ const ok = (nome, cond, extra = '') => res.push(`${cond ? 'PASSOU' : 'FALHOU'} �
   // 3. Aba errada
   [c, p] = await novo();
   await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'individual');
-  ok('Aba errada é bloqueada', (await erroTxt(p)).includes('pertence ao módulo Empresarial'), await erroTxt(p));
+  ok('Aba errada é bloqueada', (await erroTxt(p)).includes('pertence ao módulo Business'), await erroTxt(p));
   await login(p, 'ana@empresaexemplo.com.br', 'User@12345678', 'empresarial');
   ok('Aba certa entra', p.url().endsWith('/dashboard'));
   await c.close();

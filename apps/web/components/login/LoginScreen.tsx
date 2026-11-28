@@ -7,9 +7,9 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEven
 import CircuitBackground from "./CircuitBackground";
 import {
   ArrowRight, Building2, ChevronRight, CircleCheck, CircleDashed, Eye, EyeOff,
-  Lock, Mail, Moon, ShieldCheck, Sparkles, Sun, Tag, TriangleAlert, Users, Zap,
+  Lock, Mail, Moon, ShieldCheck, Sparkles, Sun, TriangleAlert, Users, Zap,
 } from "@/components/icons";
-import PopupPlanos from "@/components/planos/PopupPlanos";
+import BarraMenuLogin from "./BarraMenuLogin";
 import BotaoInstalar from "@/components/pwa/BotaoInstalar";
 import { checkPassword } from "@/lib/password-policy";
 import { useTheme } from "@/lib/theme";
@@ -120,8 +120,6 @@ export default function LoginScreen() {
   const regras = useMemo(() => checkPassword(senha), [senha]);
   const formOk = regras.every((r) => r.ok) && email.includes("@");
 
-  // Popup "Planos" (decisão #25)
-  const [planosAberto, setPlanosAberto] = useState(false);
 
   // Recuperação de senha
   const [recuperando, setRecuperando] = useState(false);
@@ -319,18 +317,12 @@ export default function LoginScreen() {
 
         {/* ===== Lado direito: tema + card de login ===== */}
         <div className="login-right relative z-[1] lg:w-[48%] flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center p-2 sm:p-2.5 lg:p-3">
-          {/* Botão "Planos" antes do tema; tema só com ícone (decisão #28) */}
+          {/* Barra de menu: Planos e Preços | Fale conosco | Sobre, com o pulso de cometa na borda (decisão #186) */}
+          <BarraMenuLogin />
+          {/* Tema só com ícone (decisão #28) */}
           <div className="w-full max-w-[420px] flex justify-end gap-1.5 mb-1">
             {/* "Instalar app": só no celular e se ainda não estiver instalado (decisão #112) */}
             <BotaoInstalar />
-            <button
-              type="button"
-              onClick={() => setPlanosAberto(true)}
-              className="rounded-xl px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1.5"
-              style={{ background: "#2dd4ff", color: "#04120a" }}
-            >
-              <Tag size={13} /> Planos
-            </button>
             <button
               onClick={toggleTheme}
               className="login-ghost-btn !px-2 !py-1.5"
@@ -585,7 +577,6 @@ export default function LoginScreen() {
           </div>
         </div>
       </div>
-      {planosAberto && <PopupPlanos onFechar={() => setPlanosAberto(false)} />}
     </div>
   );
 }

@@ -17,7 +17,7 @@ const OUT = process.argv[2];
   await p.click('text=Entrar como Super Admin'); await p.waitForURL('**/dashboard');
   ok('Menu do Super Admin tem Planos e Pagamento', (await p.locator('aside nav').innerText()).includes('Planos') && (await p.locator('aside nav').innerText()).includes('Pagamento'));
   await p.click('aside nav >> text=Planos'); await p.waitForURL('**/planos');
-  ok('Tela Planos lista 7 planos', await p.locator('table tbody tr[data-plano]').count() === 7);
+  ok('Tela Planos lista todos os planos cadastrados', await p.locator('table tbody tr[data-plano]').count() === Number(sql('select count(*) from "Plano"')));
   ok('Padrão começa em destaque', (await p.locator('tr[data-plano="Padrão"]').innerText()).includes('Em destaque'));
   // tentar exibir sem preço
   await p.click('tr[data-plano="Básico"] >> text=Oculto'); await p.waitForTimeout(800);
