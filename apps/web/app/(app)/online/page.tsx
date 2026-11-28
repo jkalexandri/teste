@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const ABAS = [
   { id: "superadmin", label: "Super Admin" },
   { id: "individual", label: "Individual" },
-  { id: "empresarial", label: "Empresarial" },
+  { id: "empresarial", label: "Business" },
   { id: "todos", label: "Todos" },
 ] as const;
 type Aba = (typeof ABAS)[number]["id"];

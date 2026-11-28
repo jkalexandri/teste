@@ -45,7 +45,7 @@ export async function relatorioEmpresarial(empresaId: string) {
   const linhas = e.usuarios.map((u) => [u.codigo ?? "", u.nome, u.email, u.cargo === Cargo.ADMIN_EMPRESA ? "Admin da Empresa" : "Usuário", u._count.leads]);
   const total = e.usuarios.reduce((s, u) => s + u._count.leads, 0);
   return {
-    titulo: `Relatório Empresarial — ${e.nome}`,
+    titulo: `Relatório Business — ${e.nome}`,
     resumo: [["Empresa", `${e.codigo ?? ""} ${e.nome}`.trim()], ["Pacote", e.pacote], ["Expira em", data(e.expiraEm)], ["Usuários", String(e.usuarios.length)], ["Total de leads da empresa", total.toLocaleString("pt-BR")]],
     tabela: { colunas: ["Código", "Usuário", "E-mail", "Perfil", "Leads"], linhas: [...linhas, ["", "Total da empresa", "", "", total]] } as Tabela,
   };
@@ -66,7 +66,7 @@ export async function relatorioIndividual(usuarioId: string) {
   };
 }
 
-// ===================== 3 e 4. Leads Empresarial e Lead Individual =====================
+// ===================== 3 e 4. Leads Business e Lead Individual =====================
 
 function filtroLeads(base: Prisma.LeadWhereInput, f: Filtros): Prisma.LeadWhereInput {
   const w: Prisma.LeadWhereInput = { ...base };
@@ -110,7 +110,7 @@ export async function relatorioLeadsEmpresarial(empresaId: string, f: Filtros, t
   if (!e || e.modulo !== Modulo.EMPRESARIAL) return null;
   const usuario = f.usuario && e.usuarios.some((u) => u.id === f.usuario) ? f.usuario : undefined;
   const t = await tabelaLeads(filtroLeads({ empresaId }, { ...f, usuario }), f, tudo, true);
-  return { titulo: `Leads Empresarial — ${e.nome}`, nome: e.nome, usuarios: e.usuarios, ...t };
+  return { titulo: `Leads Business — ${e.nome}`, nome: e.nome, usuarios: e.usuarios, ...t };
 }
 
 /** Leads de um usuário individual (ou do próprio Super Admin). */
@@ -193,9 +193,9 @@ export async function contasParaCampanhas(superAdminId: string) {
 // ===================== Um ponto de entrada para tela, impressão e Excel =====================
 
 export const TIPOS = {
-  empresarial: "Relatório Empresarial",
+  empresarial: "Relatório Business",
   individual: "Relatório Individual",
-  "leads-empresarial": "Leads Empresarial",
+  "leads-empresarial": "Leads Business",
   "lead-individual": "Lead Individual",
   campanhas: "Relatório de campanhas",
 } as const;

@@ -35,7 +35,7 @@ const parcelas = (v, n, j) => { const i = j / 100; const p = Math.ceil((v * i) /
   const abrirPlano = async (p, nome) => {
     await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
     await p.click('button:has-text("Planos")'); await espera(800);
-    if (!(await p.locator(`[aria-label="Planos"] article:has-text("${nome}")`).count()) && (await p.locator('[data-testid=aba-modulo-EMPRESARIAL]').count())) { await p.click('[data-testid=aba-modulo-EMPRESARIAL]'); await espera(300); }
+    if (!(await p.locator(`[aria-label="Planos"] article:has-text("${nome}")`).count()) && (await p.locator('[data-testid=aba-categoria-BUSINESS]').count())) { await p.click('[data-testid=aba-categoria-BUSINESS]'); await espera(300); }
     await p.locator(`[aria-label="Planos"] article:has-text("${nome}")`).first().locator('[data-parte=botao]').click(); await espera(500);
   };
   const dados = async (p, email) => { await p.fill('#ck-nome', 'Paula Pagamento'); await p.fill('#ck-email', email); await p.fill('#ck-whats', '11987650000'); };

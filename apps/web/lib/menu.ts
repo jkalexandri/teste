@@ -85,9 +85,9 @@ const SUPERADMIN: ItemMenu[] = [
   { href: "/empresas", label: "Empresas", icone: "empresa", grupo: "Administrativo", etapa: 4 },
   { href: "/usuarios-individuais", label: "Usuários Individuais", icone: "usuarios", grupo: "Administrativo", etapa: 4 },
   { href: "/despesas-ia", label: "Despesas com IA", icone: "dashboard", grupo: "Administrativo", etapa: 9 },
-  { href: "/relatorios/empresarial", label: "Relatório Empresarial", icone: "empresa", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
+  { href: "/relatorios/empresarial", label: "Relatório Business", icone: "empresa", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/individual", label: "Relatório Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
-  { href: "/relatorios/leads-empresarial", label: "Leads Empresarial", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
+  { href: "/relatorios/leads-empresarial", label: "Leads Business", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   { href: "/relatorios/lead-individual", label: "Lead Individual", icone: "usuarios", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },
   // Decisão #96: relatório de campanhas por conta e período
   { href: "/relatorios/campanhas", label: "Relatório de campanhas", icone: "envio", grupo: "Administrativo", subgrupo: "Relatório", etapa: 11 },

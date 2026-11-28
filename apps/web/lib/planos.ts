@@ -4,6 +4,8 @@ export type PlanoPublico = {
   slug: string;
   nome: string;
   modulo: "INDIVIDUAL" | "EMPRESARIAL";
+  /** Aba do popup Planos (decisão #183) */
+  categoria: CategoriaPlano;
   usuarios: number | null;
   gratis: boolean;
   personalizado: boolean;
@@ -42,14 +44,25 @@ export type PlanoPublico = {
   ordem: number;
 };
 
-// ===== Abas do popup Planos (decisões #111 e #113) =====
-// 1º nível: Individual | Empresarial. 2º nível: Mensal (sem limite de disparos) | Por disparo (por quantidade).
+// ===== Categorias do popup Planos (decisão #183) =====
+// 4 abas: Individual (Free + Individual, mensais e por disparo juntos), Business (antigo Empresarial, tudo junto),
+// Redes Sociais e Redes Sociais + Disparos (só mensais, para Individual e Business).
+export type CategoriaPlano = "INDIVIDUAL" | "BUSINESS" | "REDES" | "REDES_DISPAROS";
+export const CATEGORIAS_PLANOS: { id: CategoriaPlano; titulo: string; frase: string; icone: string }[] = [
+  { id: "INDIVIDUAL", titulo: "Individual", frase: "Para quem vende sozinho", icone: "👤" },
+  { id: "BUSINESS", titulo: "Business", frase: "Para equipes de vendas", icone: "🏢" },
+  { id: "REDES", titulo: "Redes Sociais", frase: "Receba e qualifique os leads das redes", icone: "📲" },
+  { id: "REDES_DISPAROS", titulo: "Redes Sociais + Disparos", frase: "Leads das redes e disparos juntos", icone: "🚀" },
+];
+export const nomeCategoria = (c: CategoriaPlano) => CATEGORIAS_PLANOS.find((x) => x.id === c)?.titulo ?? c;
+/** Nome do módulo para o cliente: "Empresarial" passou a se chamar "Business" (decisão #183); o valor interno EMPRESARIAL não muda. */
+export const nomeModulo = (m: "INDIVIDUAL" | "EMPRESARIAL") => (m === "EMPRESARIAL" ? "Business" : "Individual");
+/** Categorias permitidas para cada módulo: conta Individual → Individual, Redes, Redes + Disparos; conta Business → Business, Redes, Redes + Disparos. */
+export const categoriasDoModulo = (m: "INDIVIDUAL" | "EMPRESARIAL"): CategoriaPlano[] => [m === "EMPRESARIAL" ? "BUSINESS" : "INDIVIDUAL", "REDES", "REDES_DISPAROS"];
+
+// ===== Tipos de cobrança (decisões #111 e #113) — hoje usados só na gestão de usuários; no popup os dois tipos aparecem juntos =====
 export type AbaPlanos = "ilimitado" | "quantidade";
 export type ModuloPlano = "INDIVIDUAL" | "EMPRESARIAL";
-export const MODULOS_PLANOS: { id: ModuloPlano; titulo: string; frase: string; icone: string }[] = [
-  { id: "INDIVIDUAL", titulo: "Individual", frase: "Para quem vende sozinho", icone: "👤" },
-  { id: "EMPRESARIAL", titulo: "Empresarial", frase: "Para equipes de vendas", icone: "🏢" },
-];
 export const ABAS_PLANOS: { id: AbaPlanos; titulo: string; frase: string; icone: string }[] = [
   { id: "ilimitado", titulo: "Mensal", frase: "Sem limite de disparos no período", icone: "🚀" },
   { id: "quantidade", titulo: "Por disparo", frase: "Pague pelo volume que usar", icone: "📦" },

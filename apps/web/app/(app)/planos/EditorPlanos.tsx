@@ -3,15 +3,13 @@
 // Editor de planos do Super Admin, com prévia ao vivo do popup.
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { abasDoPlano, descontoDaPosicao, formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
+import { CATEGORIAS_PLANOS, categoriasDoModulo, nomeCategoria, nomeModulo, descontoDaPosicao, formatarReais, maxQuantidade, precoComQuantidade, rotuloQuantidade, semPrecoDeVenda, type PlanoPublico } from "@/lib/planos";
 import { PlanosComAbas } from "@/components/planos/PopupPlanos";
 import { Eye, EyeOff, Pencil, Sparkles, X } from "@/components/icons";
 import { useToast } from "@/components/app/Toast";
 import CampoLimite from "@/components/app/CampoLimite";
 import { alternarVisivel, definirDestaque, duplicarPlano, excluirPlano, moverPlano, novoPlano, salvarPlano } from "./actions";
 
-const NOME_ABA = { ilimitado: "Mensal", quantidade: "Por disparo" } as const;
-const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" } as const;
 
 const reais = (c: number | null) => (c == null ? "" : (c / 100).toFixed(2).replace(".", ","));
 
@@ -46,10 +44,15 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
           }}>
             <div><label className="label" htmlFor="novo-nome">Nome do plano</label><input id="novo-nome" name="nome" className="input !w-[220px]" required maxLength={60} /></div>
             <div><label className="label" htmlFor="novo-modulo">Módulo</label>
-              <select id="novo-modulo" name="modulo" className="input !w-auto"><option value="EMPRESARIAL">Empresarial</option><option value="INDIVIDUAL">Individual</option></select></div>
+              <select id="novo-modulo" name="modulo" className="input !w-auto"><option value="EMPRESARIAL">Business</option><option value="INDIVIDUAL">Individual</option></select></div>
+            <div><label className="label" htmlFor="novo-categoria">Categoria (aba do popup)</label>
+              <select id="novo-categoria" name="categoria" className="input !w-auto" defaultValue="">
+                <option value="">Automática (Individual ou Business)</option>
+                {CATEGORIAS_PLANOS.filter((c) => c.id === "REDES" || c.id === "REDES_DISPAROS").map((c) => <option key={c.id} value={c.id}>{c.titulo}</option>)}
+              </select></div>
             <button className="btn-primary" disabled={pendente}>Criar</button>
             <button type="button" className="btn-ghost" onClick={() => setNovo(false)}>Cancelar</button>
-            <p className="help w-full">O plano nasce <b>oculto</b>. Depois clique em <b>Editar</b>: com “Disparos por período” preenchido ele vai para a aba <b>Por quantidade</b>; vazio, para <b>Sem limite</b>.</p>
+            <p className="help w-full">O plano nasce <b>oculto</b>. Depois clique em <b>Editar</b>: a <b>categoria</b> define em qual aba do popup ele aparece (Individual, Business, Redes Sociais ou Redes Sociais + Disparos).</p>
           </form>
         )}
       </div>
@@ -58,7 +61,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
           <table style={{ minWidth: 900 }}>
             <thead>
               <tr>
-                <th>Ordem</th><th>Plano</th><th>Aba</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
+                <th>Ordem</th><th>Plano</th><th>Categoria</th><th>Usuários</th><th>Preço</th><th>No popup</th><th>Destaque</th><th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -71,7 +74,7 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
                     </div>
                   </td>
                   <td className="font-bold">{p.nome}{p.gratis && <span className="chip ml-1" style={{ background: "var(--surface-3)", color: "var(--muted)" }}>Teste grátis</span>}</td>
-                  <td className="text-[12px]" data-testid="aba-do-plano">{NOME_MODULO[p.modulo]} • {abasDoPlano(p).length > 1 ? "Mensal e Por disparo" : NOME_ABA[abasDoPlano(p)[0]!]}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo}</span> : null}</td>
+                  <td className="text-[12px]" data-testid="aba-do-plano">{nomeCategoria(p.categoria)} • {nomeModulo(p.modulo)}{p.disparosPorPeriodo ? <span className="help block">{p.disparosPorPeriodo.toLocaleString("pt-BR")}/{p.periodo} (por disparo)</span> : null}</td>
                   <td>{p.personalizado ? "Sob medida" : p.usuarios}</td>
                   <td>{p.gratis ? "Grátis" : p.personalizado && p.precoAtual == null ? "Sob consulta" : semPrecoDeVenda(p) ? <span style={{ color: "#b45309" }} data-testid="preco-em-breve">Em breve — defina o preço</span> : `${formatarReais(p.precoAtual!)}/${p.periodo}`}</td>
                   <td>
@@ -149,6 +152,15 @@ export default function EditorPlanos({ planos }: { planos: PlanoPublico[] }) {
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 grid sm:grid-cols-2 gap-2.5">
               <Campo nome="nome" rotulo="Nome do plano" valor={editando.nome} />
+              {!editando.gratis && (
+                <div>
+                  <label className="label" htmlFor="f-categoria">Categoria (aba do popup)</label>
+                  <select id="f-categoria" name="categoria" className="input" defaultValue={editando.categoria}>
+                    {categoriasDoModulo(editando.modulo).map((c) => <option key={c} value={c}>{nomeCategoria(c)}</option>)}
+                  </select>
+                  <p className="help mt-0.5">Conta {nomeModulo(editando.modulo)}. Redes Sociais: só pacote mensal.</p>
+                </div>
+              )}
               <Campo nome="usuarios" rotulo={editando.personalizado ? "Usuários (opcional)" : "Quantidade de usuários (o Admin não conta)"} valor={editando.usuarios ?? ""} tipo="number" />
               {!editando.gratis && (
                 <>

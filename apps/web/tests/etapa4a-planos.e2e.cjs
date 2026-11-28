@@ -36,7 +36,7 @@ const OUT = process.argv[2];
   for (const n of ['Free', 'Individual', 'Básico', 'Padrão']) { await p.click(`tr[data-plano="${n}"] >> text=Oculto`); await p.waitForTimeout(700); }
   // Prévia em abas (decisão #113): Individual (Free + Individual) e Empresarial (Básico + Padrão)
   const ind = await p.locator('.login-future article').count();
-  await p.click('.login-future [data-testid=aba-modulo-EMPRESARIAL]'); await p.waitForTimeout(400);
+  await p.click('.login-future [data-testid=aba-categoria-BUSINESS]'); await p.waitForTimeout(400);
   const emp = await p.locator('.login-future article').count();
   ok('Prévia mostra os 4 planos (2 Individual + 2 Empresarial)', ind === 2 && emp === 2, `${ind}+${emp}`);
   await p.screenshot({ path: OUT + '/admin-planos.png', fullPage: true });
@@ -57,7 +57,7 @@ const OUT = process.argv[2];
   await q.click('button:has-text("Planos")'); await q.waitForTimeout(1200);
   // Abas Individual | Empresarial (decisão #113): 2 planos em cada
   const nInd = await q.locator('[aria-label="Planos"] article').count();
-  await q.click('[data-testid=aba-modulo-EMPRESARIAL]'); await q.waitForTimeout(300);
+  await q.click('[data-testid=aba-categoria-BUSINESS]'); await q.waitForTimeout(300);
   const nEmp = await q.locator('[aria-label="Planos"] article').count();
   ok('Popup mostra os 4 planos visíveis (2 Individual + 2 Empresarial)', nInd === 2 && nEmp === 2, `${nInd}+${nEmp}`);
   await q.setViewportSize({ width: 1440, height: 900 }); await q.waitForTimeout(500);

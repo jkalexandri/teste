@@ -47,11 +47,11 @@ const OUT = process.argv[2];
   // Super Admin
   [c, p] = await entrar('superadmin@disparopro.com.br', 'Super@12345678', 'individual');
   const m = await menu(p);
-  ok('Menu do Super Admin', m.length === 39 && m.includes('Painel financeiro') && m.includes('Lançamentos') && m.includes('Segurança') && m.includes('Online') && m.includes('Atendimento') && m.includes('Mensagens aos usuários') && m.includes('Ajuda') && m.includes('Logs') && m.includes('Logos') && m.includes('Relatório de campanhas') && m.includes('Avisos') && m.includes('Leads de anúncios') && m.includes('Conversas IA') && m.includes('Empresa | IA') && m.includes('Dados legais') && m.includes('Inteligência Artificial') && m.includes('Despesas com IA') && m.includes('Regras de envio') && m.includes('Arquivos') && m.includes('Meu WhatsApp') && m.includes('Número da plataforma') && m.includes('Pedidos') && m.includes('Relatório Empresarial') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
+  ok('Menu do Super Admin', m.length === 39 && m.includes('Painel financeiro') && m.includes('Lançamentos') && m.includes('Segurança') && m.includes('Online') && m.includes('Atendimento') && m.includes('Mensagens aos usuários') && m.includes('Ajuda') && m.includes('Logs') && m.includes('Logos') && m.includes('Relatório de campanhas') && m.includes('Avisos') && m.includes('Leads de anúncios') && m.includes('Conversas IA') && m.includes('Empresa | IA') && m.includes('Dados legais') && m.includes('Inteligência Artificial') && m.includes('Despesas com IA') && m.includes('Regras de envio') && m.includes('Arquivos') && m.includes('Meu WhatsApp') && m.includes('Número da plataforma') && m.includes('Pedidos') && m.includes('Relatório Business') && m.includes('Planos') && m.includes('Pagamento'), m.join(', '));
   ok('Subgrupo Relatório dentro de Administrativo', (await p.locator('aside nav').innerText()).includes('Relatório'));
   await p.screenshot({ path: OUT + '/dash-superadmin.png' });
   await p.goto(BASE + '/relatorios/empresarial'); await p.waitForTimeout(500);
-  ok('Super Admin abre relatório', (await p.locator('main').innerText()).includes('Relatório Empresarial') && (await p.locator('#rel-conta').count()) === 1);
+  ok('Super Admin abre relatório', (await p.locator('main').innerText()).includes('Relatório Business') && (await p.locator('#rel-conta').count()) === 1);
   await c.close();
 
   // Aviso de expiração (≤ 10 dias)

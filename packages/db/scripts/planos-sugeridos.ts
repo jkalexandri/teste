@@ -65,7 +65,7 @@ async function main() {
   for (const s of sugestao) {
     const pago = !s.gratis && !s.personalizado;
     const dados = {
-      nome: s.nome, modulo: s.modulo, usuarios: s.usuarios, gratis: !!s.gratis, personalizado: !!s.personalizado,
+      nome: s.nome, modulo: s.modulo, categoria: s.modulo === Modulo.EMPRESARIAL ? "BUSINESS" as const : "INDIVIDUAL" as const, usuarios: s.usuarios, gratis: !!s.gratis, personalizado: !!s.personalizado,
       // Preços zerados (o Super Admin ajusta); Free = grátis; Personalizado = sob consulta
       precoAtual: pago ? 0 : null, precoAntigo: null, periodo: "mês", prazoDias: s.gratis ? 7 : 31,
       testeDias: s.gratis ? s.testeDias ?? 7 : null, testeDisparos: s.gratis ? s.testeDisparos ?? null : null,

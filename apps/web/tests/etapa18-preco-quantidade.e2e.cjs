@@ -30,7 +30,7 @@ const ate = async (fn, vezes = 40) => { for (let i = 0; i < vezes; i++) { if (aw
   };
   // Abre o cartão do plano no popup: aba Empresarial e, se preciso, a aba "Por disparo"
   const cartaoPadrao = async (p) => {
-    await p.click('[data-testid=aba-modulo-EMPRESARIAL]'); await espera(300);
+    await p.click('[data-testid=aba-categoria-BUSINESS]'); await espera(300);
     if (!(await p.locator('[aria-label="Planos"] article:has-text("Padrão")').count())) { await p.click('[data-testid=aba-planos-quantidade]'); await espera(300); }
     return p.locator('[aria-label="Planos"] article:has-text("Padrão")').first();
   };

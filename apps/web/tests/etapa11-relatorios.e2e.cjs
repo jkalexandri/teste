@@ -43,7 +43,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
   let [c, p] = await novo();
   await entrar(p, 'superadmin@disparopro.com.br', 'Super@12345678');
-  ok('Menu: 5 relatórios', (await p.locator('aside nav >> text=Relatório de campanhas').count()) === 1 && (await p.locator('aside nav >> text=Leads Empresarial').count()) === 1);
+  ok('Menu: 5 relatórios', (await p.locator('aside nav >> text=Relatório de campanhas').count()) === 1 && (await p.locator('aside nav >> text=Leads Business').count()) === 1);
 
   // ===== 1. Empresarial =====
   await p.goto(BASE + '/relatorios/empresarial'); await espera(500);
@@ -96,7 +96,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await p.emulateMedia({ media: 'screen' });
   // Decisão #97: cabeçalho com a logo, quem emitiu e a linha; quebra de página e "Página X de Y"
   const cab = await p.locator('[data-testid=cabecalho-impressao]').innerText();
-  ok('Cabeçalho da impressão com o relatório e quem emitiu', cab.includes('Leads Empresarial') && cab.includes('Emitido por') && cab.includes(sql(`select nome from "Usuario" where id='${SA}'`)));
+  ok('Cabeçalho da impressão com o relatório e quem emitiu', cab.includes('Leads Business') && cab.includes('Emitido por') && cab.includes(sql(`select nome from "Usuario" where id='${SA}'`)));
   ok('Logo no cabeçalho', await p.evaluate(() => { const i = document.querySelector('.impressao-logo'); return !!i && i.complete && i.naturalWidth > 0; }));
   ok('Menu do celular não aparece na impressão', await (async () => { await p.emulateMedia({ media: 'print' }); const v = await p.locator('.nao-imprimir').evaluateAll((es) => es.every((e) => getComputedStyle(e).display === 'none')); await p.emulateMedia({ media: 'screen' }); return v; })());
   const pdf = path.join(OUT, 'relatorio.pdf');

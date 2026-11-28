@@ -5,7 +5,7 @@
 // número de colunas se ajustam à quantidade de planos.
 import { useEffect, useState } from "react";
 import { X } from "@/components/icons";
-import { ABAS_PLANOS, MODULOS_PLANOS, abasDoPlano, linkContato, type AbaPlanos, type ModuloPlano, type PlanoPublico } from "@/lib/planos";
+import { CATEGORIAS_PLANOS, linkContato, type CategoriaPlano, type PlanoPublico } from "@/lib/planos";
 import CartaoPlano from "./CartaoPlano";
 import Checkout from "./Checkout";
 import ChatInteressado from "./ChatInteressado";
@@ -59,18 +59,13 @@ function Aba({ ativa, onClick, titulo, frase, testid, grande }: { ativa: boolean
   );
 }
 
-/** Planos em abas (decisão #113): Individual | Empresarial e, em cada um, Mensal | Por disparo.
- *  Uma aba só aparece se tiver planos; se só houver um tipo, mostra direto a grade. */
+/** Planos em 4 abas por categoria (decisão #183): Individual | Business | Redes Sociais | Redes Sociais + Disparos.
+ *  Dentro de cada aba, mensais e por disparo aparecem juntos. Uma aba só aparece se tiver planos visíveis. */
 export function PlanosComAbas({ planos, onEscolher, quantidadeInicial, fixarAbas }: { planos: PlanoPublico[]; onEscolher?: (p: PlanoPublico, quantidade: number) => void; quantidadeInicial?: number; fixarAbas?: boolean }) {
-  const modulos = MODULOS_PLANOS.filter((m) => planos.some((p) => p.modulo === m.id));
-  const [modulo, setModulo] = useState<ModuloPlano>(modulos[0]?.id ?? "INDIVIDUAL");
-  const [aba, setAba] = useState<AbaPlanos>("ilimitado");
-  const doModulo = planos.filter((p) => p.modulo === modulo);
-  // Tipos com planos próprios (o Free sozinho não cria aba)
-  const tipos = ABAS_PLANOS.filter((a) => doModulo.some((p) => !p.gratis && !p.personalizado && abasDoPlano(p).includes(a.id)));
-  const abaAtual = tipos.some((t) => t.id === aba) ? aba : tipos[0]?.id ?? "ilimitado";
-  const daAba = tipos.length > 1 ? doModulo.filter((p) => abasDoPlano(p).includes(abaAtual)) : doModulo;
-  const nomeModulo = MODULOS_PLANOS.find((m) => m.id === modulo)?.titulo ?? "";
+  const categorias = CATEGORIAS_PLANOS.filter((c) => planos.some((p) => p.categoria === c.id));
+  const [categoria, setCategoria] = useState<CategoriaPlano>(categorias[0]?.id ?? "INDIVIDUAL");
+  const atual = categorias.some((c) => c.id === categoria) ? categoria : categorias[0]?.id ?? "INDIVIDUAL";
+  const daCategoria = planos.filter((p) => p.categoria === atual);
   return (
     <>
       {/* Celular: abas fixas no topo do popup ao rolar (decisão #119), para trocar de aba de qualquer ponto da lista.
@@ -79,22 +74,15 @@ export function PlanosComAbas({ planos, onEscolher, quantidadeInicial, fixarAbas
         className={fixarAbas ? "sticky -top-3 z-10 -mx-3 px-3 pt-3 pb-1 bg-[rgba(3,6,14,.96)] backdrop-blur-[8px] sm:static sm:mx-0 sm:px-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:backdrop-blur-none" : undefined}
         data-testid={fixarAbas ? "abas-fixas" : undefined}
       >
-      {modulos.length > 1 && (
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2.5 max-w-[900px] mx-auto" role="tablist" aria-label="Tipo de conta">
-          {modulos.map((m) => (
-            <Aba key={m.id} grande ativa={m.id === modulo} onClick={() => { setModulo(m.id); setAba("ilimitado"); }} titulo={`${m.icone} ${m.titulo}`} frase={m.frase} testid={`aba-modulo-${m.id}`} />
-          ))}
-        </div>
-      )}
-      {tipos.length > 1 && (
-        <div className="grid grid-cols-2 gap-2 mb-4 max-w-[640px] mx-auto" role="tablist" aria-label="Forma de cobrança">
-          {tipos.map((a) => (
-            <Aba key={a.id} ativa={a.id === abaAtual} onClick={() => setAba(a.id)} titulo={`${a.icone} ${nomeModulo} • ${a.titulo}`} frase={a.frase} testid={`aba-planos-${a.id}`} />
+      {categorias.length > 1 && (
+        <div className={`grid gap-2 sm:gap-3 mb-4 max-w-[1100px] mx-auto ${categorias.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}`} role="tablist" aria-label="Categoria de plano">
+          {categorias.map((c) => (
+            <Aba key={c.id} grande ativa={c.id === atual} onClick={() => setCategoria(c.id)} titulo={`${c.icone} ${c.titulo}`} frase={c.frase} testid={`aba-categoria-${c.id}`} />
           ))}
         </div>
       )}
       </div>
-      <GradePlanos planos={daAba} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} />
+      <GradePlanos planos={daCategoria} onEscolher={onEscolher} quantidadeInicial={quantidadeInicial} />
     </>
   );
 }

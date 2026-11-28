@@ -21,7 +21,7 @@ let hashFalso: Promise<string> | null = null;
 const obterHashFalso = () => (hashFalso ??= gerarHash(randomBytes(16).toString("hex")));
 const msgBloqueio = (min: number) => `Muitas tentativas erradas. Tente novamente em ${min} ${min === 1 ? "minuto" : "minutos"}.`;
 
-const NOME_MODULO: Record<Modulo, string> = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" };
+const NOME_MODULO: Record<Modulo, string> = { INDIVIDUAL: "Individual", EMPRESARIAL: "Business" };
 
 export async function tentarLogin(emailBruto: string, senha: string, modulo: Modulo, ip = "local"): Promise<ResultadoLogin> {
   const email = emailBruto.trim().toLowerCase();

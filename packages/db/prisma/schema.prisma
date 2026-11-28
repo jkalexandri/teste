@@ -16,6 +16,14 @@ enum Modulo {
   EMPRESARIAL
 }
 
+/// Aba do popup Planos (decisão #183): Individual (Free + Individual), Business (antigo Empresarial), Redes Sociais e Redes Sociais + Disparos
+enum CategoriaPlano {
+  INDIVIDUAL
+  BUSINESS
+  REDES
+  REDES_DISPAROS
+}
+
 /// Papéis. Admin da Empresa NÃO envia mensagens e NÃO usa API/WhatsApp.
 enum Cargo {
   SUPERADMIN
@@ -178,6 +186,8 @@ model Plano {
   /// Quantidade de usuários do pacote (o Admin da Empresa não conta — decisão #23).
   /// Vazio no Personalizado (definido pelo Super Admin em cada empresa).
   usuarios        Int?
+  /// Aba do popup Planos (decisão #183). O módulo continua dizendo se é conta Individual ou de Empresa (Business)
+  categoria       CategoriaPlano @default(INDIVIDUAL)
   gratis          Boolean  @default(false)
   personalizado   Boolean  @default(false)
   precoAntigo     Int?

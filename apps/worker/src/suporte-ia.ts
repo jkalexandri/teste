@@ -225,7 +225,7 @@ export class AtendenteSuporte {
     const linhas: string[] = [`Perfil: ${c.cargo === Cargo.ADMIN_EMPRESA ? "Admin da Empresa" : "Usuário"}`];
     if (c.empresa) {
       const plano = c.empresa.planoId ? await prisma.plano.findUnique({ where: { id: c.empresa.planoId }, select: { nome: true } }) : null;
-      linhas.push(`Conta: ${c.empresa.nome} (${c.empresa.modulo === "EMPRESARIAL" ? "Empresarial" : "Individual"})`);
+      linhas.push(`Conta: ${c.empresa.nome} (${c.empresa.modulo === "EMPRESARIAL" ? "Business" : "Individual"})`);
       if (plano) linhas.push(`Plano: ${plano.nome}`);
       linhas.push(`Vencimento do plano: ${c.empresa.expiraEm.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`);
     }

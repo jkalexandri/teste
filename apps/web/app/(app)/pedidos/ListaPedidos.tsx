@@ -77,7 +77,7 @@ export default function ListaPedidos({ pedidos }: { pedidos: Pedido[] }) {
                   <td>
                     <b>{p.planoNome}</b>
                     <span className="block text-[11px]" style={{ color: "var(--muted)" }}>
-                      {p.modulo === "EMPRESARIAL" ? `Empresarial • ${p.usuarios ?? "—"} usuários` : "Individual"}
+                      {p.modulo === "EMPRESARIAL" ? `Business • ${p.usuarios ?? "—"} usuários` : "Individual"}
                     </span>
                   </td>
                   <td className="font-bold">{formatarReais(p.valor)}<span className="block text-[11px] font-semibold" style={{ color: "var(--muted)" }} data-testid="forma-pedido">{p.forma}</span></td>

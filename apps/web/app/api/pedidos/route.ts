@@ -9,7 +9,7 @@ import { criarPedidoPix, lerPagamento } from "@/lib/pedidos";
 import { avisarNovoPedido } from "@/lib/avisos-whatsapp";
 
 const MAX_PEDIDOS_ABERTOS_POR_EMAIL = 3;
-const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Empresarial" } as const;
+const NOME_MODULO = { INDIVIDUAL: "Individual", EMPRESARIAL: "Business" } as const;
 
 export async function POST(req: Request) {
   // Limite por endereço de internet (decisão #105): 10 pedidos por hora

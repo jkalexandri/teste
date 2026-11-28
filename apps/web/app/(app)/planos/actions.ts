@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@filapro/db";
 import { lerLimite } from "@/lib/limite";
 import { exigirSuperAdmin } from "@/lib/auth/exigir";
-import { lerReais, abasDoPlano, semPrecoDeVenda, DESCONTOS_PADRAO, MAX_NUMEROS_INDIVIDUAL } from "@/lib/planos";
-import { Modulo } from "@filapro/db";
+import { lerReais, semPrecoDeVenda, categoriasDoModulo, DESCONTOS_PADRAO, MAX_NUMEROS_INDIVIDUAL } from "@/lib/planos";
+import { Modulo, CategoriaPlano } from "@filapro/db";
 
 export type RespostaAcao = { ok: boolean; mensagem: string };
 
@@ -23,6 +23,9 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
 
   const nome = texto(form.get("nome"), 60);
   if (!nome) return { ok: false, mensagem: "Informe o nome do plano." };
+  // Categoria (decisão #183): só as permitidas para o módulo do plano; o Free fica sempre em Individual
+  const categoria = atual.gratis ? CategoriaPlano.INDIVIDUAL : (texto(form.get("categoria"), 20) || atual.categoria) as CategoriaPlano;
+  if (!atual.gratis && !categoriasDoModulo(atual.modulo).includes(categoria)) return { ok: false, mensagem: "Categoria não permitida para este tipo de conta." };
 
   const precoAtual = lerReais(texto(form.get("precoAtual")));
   const precoAntigo = lerReais(texto(form.get("precoAntigo")));
@@ -61,6 +64,7 @@ export async function salvarPlano(id: string, form: FormData): Promise<RespostaA
     where: { id },
     data: {
       nome,
+      categoria,
       usuarios,
       precoAtual: atual.gratis ? null : precoAtual,
       precoAntigo: atual.gratis ? null : precoAntigo,
@@ -103,16 +107,13 @@ export async function alternarVisivel(id: string, visivel: boolean): Promise<Res
   return { ok: true, mensagem: `${p.nome} ${visivel ? (semPrecoDeVenda(p) ? "aparece como “Em breve” (defina o preço para vender)" : "aparece") : "não aparece mais"} no popup.` };
 }
 
-/** Um destaque por aba do popup (decisão #111): tira o destaque só dos planos da mesma aba. */
+/** Um destaque por categoria do popup (decisão #183): tira o destaque só dos planos da mesma categoria. */
 export async function definirDestaque(id: string): Promise<RespostaAcao> {
   await exigirSuperAdmin();
   const p = await prisma.plano.findUnique({ where: { id } });
   if (!p) return { ok: false, mensagem: "Plano não encontrado." };
-  const abas = abasDoPlano(p);
-  const todos = await prisma.plano.findMany({ select: { id: true, gratis: true, personalizado: true, disparosPorPeriodo: true } });
-  const mesmaAba = todos.filter((x) => abasDoPlano(x).some((a) => abas.includes(a))).map((x) => x.id);
   await prisma.$transaction([
-    prisma.plano.updateMany({ where: { id: { in: mesmaAba } }, data: { destaque: false } }),
+    prisma.plano.updateMany({ where: { categoria: p.categoria }, data: { destaque: false } }),
     prisma.plano.update({ where: { id }, data: { destaque: true } }),
   ]);
   revalidatePath("/planos");
@@ -127,8 +128,11 @@ export async function novoPlano(form: FormData): Promise<RespostaAcao> {
   const nome = texto(form.get("nome"), 60);
   if (!nome) return { ok: false, mensagem: "Informe o nome do plano." };
   const modulo = form.get("modulo") === "INDIVIDUAL" ? Modulo.INDIVIDUAL : Modulo.EMPRESARIAL;
+  // Categoria (decisão #183): Individual só em conta Individual; Business só em conta Business; Redes Sociais valem para as duas
+  const categoria = (texto(form.get("categoria"), 20) || (modulo === Modulo.INDIVIDUAL ? "INDIVIDUAL" : "BUSINESS")) as CategoriaPlano;
+  if (!categoriasDoModulo(modulo).includes(categoria)) return { ok: false, mensagem: "Essa categoria não vale para esse tipo de conta (Individual: Individual, Redes Sociais; Business: Business, Redes Sociais)." };
   const ultimo = await prisma.plano.findFirst({ orderBy: { ordem: "desc" }, select: { ordem: true } });
-  await prisma.plano.create({ data: { slug: slugDe(nome), nome, modulo, usuarios: modulo === Modulo.INDIVIDUAL ? 1 : 3, ordem: (ultimo?.ordem ?? 0) + 1, visivel: false } });
+  await prisma.plano.create({ data: { slug: slugDe(nome), nome, modulo, categoria, usuarios: modulo === Modulo.INDIVIDUAL ? 1 : 3, ordem: (ultimo?.ordem ?? 0) + 1, visivel: false } });
   revalidatePath("/planos");
   return { ok: true, mensagem: `Plano ${nome} criado (oculto). Clique em Editar para completar e definir o preço.` };
 }

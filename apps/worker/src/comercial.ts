@@ -76,6 +76,6 @@ export function textoDosPlanos(planos: PlanoParaTexto[]): string {
   const ind = por("INDIVIDUAL"), emp = por("EMPRESARIAL");
   return [
     ind.length ? `Módulo Individual (para quem usa sozinho):\n${ind.join("\n")}` : "",
-    emp.length ? `Módulo Empresarial (empresa com equipe; o administrador cria os usuários):\n${emp.join("\n")}` : "",
+    emp.length ? `Módulo Business (empresa com equipe; o administrador cria os usuários):\n${emp.join("\n")}` : "",
   ].filter(Boolean).join("\n\n");
 }

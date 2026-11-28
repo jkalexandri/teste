@@ -28,7 +28,7 @@ export default async function TermosPage() {
         <ul>
           <li>As contas são criadas pelo FilaPro Leads após a compra ou o teste grátis; não há cadastro público.</li>
           <li>Você é responsável por manter sua senha em segredo e por tudo o que for feito com o seu acesso.</li>
-          <li>No plano Empresarial, o Administrador da Empresa cria os usuários e responde pelo uso que eles fazem.</li>
+          <li>No plano Business, o Administrador da Empresa cria os usuários e responde pelo uso que eles fazem.</li>
         </ul>
       </Secao>
 

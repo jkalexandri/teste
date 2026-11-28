@@ -2,6 +2,12 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.50.0 — Planos em 4 categorias e nome Business (28/11/2026)
+- O popup **Planos** agora tem 4 abas: **Individual**, **Business**, **Redes Sociais** e **Redes Sociais + Disparos**. Mensais e por disparo aparecem juntos dentro de cada aba.
+- **"Empresarial" passou a se chamar "Business"** nas telas, relatórios e pedidos.
+- No cadastro de planos (Super Admin) há o campo **Categoria**; o destaque vale por categoria.
+- Os planos de Redes Sociais aparecem na aba, mas as funções deles (recepção, qualificação e roleta) chegam nas próximas etapas.
+
 ## v1.49.8 — Fale conosco: script protegido contra sumiço (28/11/2026)
 O script do Fale conosco agora guarda a **versão anterior** (botão "Restaurar a versão anterior"), mantém uma cópia neste navegador e não deixa uma atualização atrasada da tela zerar o campo. Salvar vazio nunca apaga: só o botão "Apagar script".
 
