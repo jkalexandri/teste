@@ -702,6 +702,8 @@ model FichaEmpresa {
   orientacoesSuporte String   @default("")
   /// Script de atendimento do Fale conosco (decisão #178): texto do Super Admin lido só pela IA do Visitante não Cliente (chat da tela de Planos)
   orientacoesVisitante String @default("")
+  /// Versão anterior do script (decisão #182): guardada a cada salvamento que muda um script existente, para poder restaurar se o texto se perder
+  orientacoesVisitanteAnterior String @default("")
   /// Resumo compacto que a IA monta a partir dos campos e materiais (tamanho máximo fixo)
   resumo        String       @default("")
   resumoEm      DateTime?

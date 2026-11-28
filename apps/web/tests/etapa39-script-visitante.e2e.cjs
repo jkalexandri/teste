@@ -75,6 +75,26 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     ok('O teste NÃO cria visitante nem mensagem', sql(`select count(*) from "InteressadoMensagem"`) === msgsAntes && sql(`select count(*) from "Interessado"`) === intAntes);
     await pS.screenshot({ path: OUT + '/script-visitante-teste.png', fullPage: true });
 
+    // Versão anterior (decisão #182): salvar outro texto guarda o anterior e permite restaurar
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
+    await pS.click('#ev-orientacoes'); await espera(400);
+    await pS.locator('[data-testid=editor-orientacoesVisitante] textarea').fill('SEGUNDA-VERSAO-182 texto novo');
+    await pS.click('[data-testid=salvar-orientacoesVisitante]'); await espera(500);
+    await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1500);
+    ok('Salvar um texto novo guarda a versão anterior', /SCRIPT-E2E-178/.test(sql(`select "orientacoesVisitanteAnterior" from "FichaEmpresa" where "superAdminId"='${SAID}'`)));
+    // Salvar várias vezes seguidas sem mudar nada mantém o texto e a versão anterior
+    for (let i = 0; i < 3; i++) { await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1200); }
+    ok('Salvar várias vezes seguidas mantém o texto', /SEGUNDA-VERSAO-182/.test(sql(`select "orientacoesVisitante" from "FichaEmpresa" where "superAdminId"='${SAID}'`)) && /SCRIPT-E2E-178/.test(sql(`select "orientacoesVisitanteAnterior" from "FichaEmpresa" where "superAdminId"='${SAID}'`)));
+    await pS.goto(BASE + '/empresa-ia'); await espera(1200);
+    await pS.click('[data-testid=restaurar-anterior-visitante]'); await espera(1500);
+    ok('"Restaurar a versão anterior" volta o texto antigo', /SCRIPT-E2E-178/.test(sql(`select "orientacoesVisitante" from "FichaEmpresa" where "superAdminId"='${SAID}'`)) && /SEGUNDA-VERSAO-182/.test(sql(`select "orientacoesVisitanteAnterior" from "FichaEmpresa" where "superAdminId"='${SAID}'`)));
+    // Cópia no navegador: se o texto salvo sumir do banco, a tela oferece restaurar
+    sql(`update "FichaEmpresa" set "orientacoesVisitante"='' where "superAdminId"='${SAID}'`);
+    await pS.goto(BASE + '/empresa-ia'); await espera(1500);
+    ok('Texto sumiu do banco: a tela oferece a cópia deste navegador', (await pS.locator('[data-testid=copia-orientacoesVisitante]').count()) === 1);
+    await pS.click('[data-testid=restaurar-copia-orientacoesVisitante]'); await pS.click('[data-testid=salvar-orientacoes-visitante]'); await espera(1500);
+    ok('Restaurar a cópia e salvar devolve o script', sql(`select length("orientacoesVisitante") from "FichaEmpresa" where "superAdminId"='${SAID}'`) !== '0');
+
     // Quem não é Super Admin não vê o cartão nem consegue chamar as ações
     const [cU, pU] = await novo(); await entrar(pU, 'ana@empresaexemplo.com.br', 'User@12345678', 'Módulo Empresarial');
     await pU.goto(BASE + '/empresa-ia'); await espera(1000);
@@ -82,7 +102,7 @@ const ate = async (f, ms = 15000) => { for (let i = 0; i < ms / 300; i++) { if (
     await cU.close(); await cS.close();
   } finally {
     await b.close();
-    sql(`update "FichaEmpresa" set "orientacoesVisitante"='${scriptAntes.replace(/'/g, "''")}' where "superAdminId"='${SAID}'`);
+    sql(`update "FichaEmpresa" set "orientacoesVisitanteAnterior"='', "orientacoesVisitante"='${scriptAntes.replace(/'/g, "''")}' where "superAdminId"='${SAID}'`);
     if (conversarAntes) sql(`update "ConfigIA" set provedor='${conversarAntes}' where tarefa='conversar'`); else sql(`delete from "ConfigIA" where tarefa='conversar'`);
   }
   const f = res.filter((x) => x.startsWith('FALHOU')).length;

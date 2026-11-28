@@ -2,6 +2,9 @@
 
 Histórico das versões. A versão atual aparece no rodapé do menu e na Ajuda.
 
+## v1.49.8 — Fale conosco: script protegido contra sumiço (28/11/2026)
+O script do Fale conosco agora guarda a **versão anterior** (botão "Restaurar a versão anterior"), mantém uma cópia neste navegador e não deixa uma atualização atrasada da tela zerar o campo. Salvar vazio nunca apaga: só o botão "Apagar script".
+
 ## v1.49.7 — aviso de colchetes mais preciso (28/11/2026)
 
 - Nos campos de texto grande com **Texto sugestão**, o aviso amarelo "Troque os textos entre colchetes [ ]" agora só aparece para os colchetes **do modelo** que ainda não foram trocados, e **mostra quais são**. Colchetes que você mesmo escreveu não disparam mais o aviso.

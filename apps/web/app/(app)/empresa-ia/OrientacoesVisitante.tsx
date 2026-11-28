@@ -5,9 +5,9 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/app/Toast";
 import CampoTextoGrande from "@/components/app/CampoTextoGrande";
-import { salvarOrientacoesVisitante, testarVisitanteIA, type TesteVisitante } from "./actions";
+import { restaurarVersaoAnteriorVisitante, salvarOrientacoesVisitante, testarVisitanteIA, type TesteVisitante } from "./actions";
 
-export default function OrientacoesVisitante({ inicial, sugestao, max }: { inicial: string; sugestao: string; max: number }) {
+export default function OrientacoesVisitante({ inicial, anterior, sugestao, max }: { inicial: string; anterior: string; sugestao: string; max: number }) {
   const toast = useToast();
   const [salvando, salvar] = useTransition();
   const [testando, testar] = useTransition();
@@ -29,7 +29,7 @@ export default function OrientacoesVisitante({ inicial, sugestao, max }: { inici
         salvar(async () => { const r = await salvarOrientacoesVisitante(f); toast(r.mensagem, r.ok ? "ok" : "erro"); });
       }}>
         <label className="label" htmlFor="ev-orientacoes">Script</label>
-        <CampoTextoGrande id="ev-orientacoes" name="orientacoesVisitante" rotulo="Script do Fale conosco" valorInicial={inicial} maxLength={max} sugestao={sugestao}
+        <CampoTextoGrande id="ev-orientacoes" name="orientacoesVisitante" guardarRascunho rotulo="Script do Fale conosco" valorInicial={inicial} maxLength={max} sugestao={sugestao}
           placeholder="Ex.: como abrir a conversa, perguntas para entender o visitante, como recomendar o plano, respostas prontas…"
           ajuda="Só a IA do Fale conosco usa este texto. Use “Texto sugestão” para começar de um modelo e troque o que está entre colchetes." />
         <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
@@ -47,6 +47,15 @@ export default function OrientacoesVisitante({ inicial, sugestao, max }: { inici
             <button type="submit" className="btn-primary" disabled={salvando} data-testid="salvar-orientacoes-visitante">Salvar script</button>
           </div>
         </div>
+        {anterior.trim() && anterior.trim() !== inicial.trim() && (
+          <p className="text-[12px] mt-1.5" data-testid="versao-anterior-visitante">
+            Há uma <b>versão anterior</b> guardada ({anterior.trim().length.toLocaleString("pt-BR")} caracteres).{" "}
+            <button type="button" className="underline font-bold" disabled={salvando} data-testid="restaurar-anterior-visitante" onClick={() => {
+              if (!window.confirm("Restaurar a versão anterior do script? A versão de agora fica guardada como anterior (dá para desfazer).")) return;
+              salvar(async () => { const r = await restaurarVersaoAnteriorVisitante(); toast(r.mensagem, r.ok ? "ok" : "erro"); });
+            }}>Restaurar a versão anterior</button>
+          </p>
+        )}
       </form>
 
       <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>

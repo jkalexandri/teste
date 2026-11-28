@@ -24,12 +24,14 @@ type Props = {
   rotuloSugestao?: string;
   /** Faixa amarela e confirmação quando há colchetes (padrão: sim). O Super Admin, editando a sugestão, não precisa. */
   avisarColchetes?: boolean;
+  /** Guarda uma cópia do que foi escrito NESTE navegador (decisão #182): se o texto salvo sumir, oferece restaurar. */
+  guardarRascunho?: boolean;
 };
 
 import { colchetesPendentes } from "@/lib/colchetes";
 const resumo = (l: string[]) => l.slice(0, 3).map((c) => (c.length > 40 ? c.slice(0, 40) + "…]" : c)).join("  ") + (l.length > 3 ? `  (+${l.length - 3})` : "");
 
-export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLength, placeholder, ajuda, alturaCampo = "min-h-[70px]", sugestao, rotuloSugestao = "Texto sugestão", avisarColchetes = true }: Props) {
+export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLength, placeholder, ajuda, alturaCampo = "min-h-[70px]", sugestao, rotuloSugestao = "Texto sugestão", avisarColchetes = true, guardarRascunho = false }: Props) {
   const [valor, setValor] = useState(valorInicial);
   const [rascunho, setRascunho] = useState(valorInicial);
   const [aberto, setAberto] = useState(false);
@@ -38,7 +40,21 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
   const editor = useRef<HTMLTextAreaElement>(null);
 
   // Texto salvo de novo no servidor (ex.: tela atualizada): acompanha
-  useEffect(() => { setValor(valorInicial); }, [valorInicial]);
+  // Decisão #182: uma atualização atrasada da tela (texto antigo/vazio) NÃO pode zerar o que a pessoa acabou de escrever e ainda não foi confirmado como salvo.
+  const pendente = useRef(false);
+  useEffect(() => {
+    if (pendente.current && !valorInicial.trim()) return; // chegou "vazio" enquanto há texto novo aguardando salvar: ignora
+    pendente.current = false;
+    setValor(valorInicial);
+  }, [valorInicial]);
+
+  // Cópia no navegador (decisão #182): guardada a cada "Salvar" do editor. Se a tela abrir com o texto do servidor VAZIO e houver cópia aqui, oferece restaurar.
+  const chaveCopia = `filapro-copia-${id}`;
+  const [copia, setCopia] = useState("");
+  useEffect(() => {
+    if (!guardarRascunho) return;
+    try { const c = localStorage.getItem(chaveCopia) ?? ""; setCopia(!valorInicial.trim() && c.trim() ? c : ""); } catch { /* sem armazenamento */ }
+  }, [guardarRascunho, chaveCopia, valorInicial]);
 
   function abrir() {
     setRascunho(valor);
@@ -74,6 +90,8 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
     const pend = avisarColchetes ? colchetesPendentes(rascunho, sugestao) : [];
     if (pend.length && !window.confirm(`Ainda há ${pend.length} texto(s) do modelo entre colchetes para trocar:\n${resumo(pend)}\n\nSalvar mesmo assim?`)) return;
     setValor(rascunho);
+    pendente.current = rascunho.trim() !== valorInicial.trim();
+    if (guardarRascunho) { try { if (rascunho.trim()) localStorage.setItem(chaveCopia, rascunho); } catch { /* sem armazenamento */ } }
     setAberto(false);
     // Envia o formulário da tela depois de o campo receber o texto novo
     const form = campo.current?.form;
@@ -82,6 +100,14 @@ export default function CampoTextoGrande({ id, name, rotulo, valorInicial, maxLe
 
   return (
     <>
+      {copia && (
+        <div className="rounded-lg px-3 py-2 mb-2 text-[12px]" style={{ background: "#fff7e0", color: "#8a5a00", border: "1px solid #f5d48a" }} data-testid={`copia-${name}`}>
+          O texto salvo está vazio, mas há uma <b>cópia de {copia.length.toLocaleString("pt-BR")} caracteres neste navegador</b>.{" "}
+          <button type="button" className="underline font-bold" data-testid={`restaurar-copia-${name}`} onClick={() => { setValor(copia); setCopia(""); }}>Restaurar no campo</button>{" "}
+          (depois clique em Salvar) ·{" "}
+          <button type="button" className="underline" onClick={() => { try { localStorage.removeItem(chaveCopia); } catch { /* sem armazenamento */ } setCopia(""); }}>Descartar a cópia</button>
+        </div>
+      )}
       <textarea
         ref={campo}
         id={id}

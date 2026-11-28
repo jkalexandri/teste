@@ -218,20 +218,30 @@ export async function salvarOrientacoesVisitante(form: FormData): Promise<R> {
   const s = await exigirSuperAdmin();
   const texto = String(form.get("orientacoesVisitante") ?? "").trim().slice(0, MAX_ORIENTACOES_VISITANTE);
   const apagar = form.get("apagar") === "1";
-  // Proteção contra perder o script por engano (decisão #180): salvar com o campo VAZIO não apaga um script que já está salvo; para apagar, use "Apagar script"
-  if (!texto && !apagar) {
-    const atual = await prisma.fichaEmpresa.findUnique({ where: { superAdminId: s.usuario.id }, select: { orientacoesVisitante: true } });
-    if (atual?.orientacoesVisitante.trim()) {
-      return { ok: false, mensagem: `O campo está vazio e há um script salvo (${atual.orientacoesVisitante.trim().length.toLocaleString("pt-BR")} caracteres). NADA foi alterado. Cole o script de novo e salve, ou use "Apagar script" se quer mesmo apagar.` };
-    }
+  const atual = (await prisma.fichaEmpresa.findUnique({ where: { superAdminId: s.usuario.id }, select: { orientacoesVisitante: true } }))?.orientacoesVisitante ?? "";
+  // Proteção contra perder o script por engano (decisão #181): salvar com o campo VAZIO não apaga um script que já está salvo; para apagar, use "Apagar script"
+  if (!texto && !apagar && atual.trim()) {
+    return { ok: false, mensagem: `O campo está vazio e há um script salvo (${atual.trim().length.toLocaleString("pt-BR")} caracteres). NADA foi alterado. Cole o script de novo e salve, ou use "Apagar script" se quer mesmo apagar.` };
   }
+  // Guarda a versão anterior (decisão #182) sempre que o salvamento muda um script que já existia
+  const anterior = atual.trim() && atual.trim() !== texto ? { orientacoesVisitanteAnterior: atual } : {};
   await prisma.fichaEmpresa.upsert({
     where: { superAdminId: s.usuario.id },
-    update: { orientacoesVisitante: texto },
+    update: { orientacoesVisitante: texto, ...anterior },
     create: { superAdminId: s.usuario.id, nome: "", orientacoesVisitante: texto },
   });
   revalidatePath("/empresa-ia");
-  return { ok: true, mensagem: texto ? `Script do Fale conosco salvo (${texto.length.toLocaleString("pt-BR")} caracteres).` : "Script do Fale conosco apagado." };
+  return { ok: true, mensagem: texto ? `Script do Fale conosco salvo (${texto.length.toLocaleString("pt-BR")} caracteres).` : "Script do Fale conosco apagado. A versão anterior continua guardada para restaurar." };
+}
+
+/** Troca o script atual pela versão anterior guardada (e guarda o atual como anterior: dá para desfazer de novo). */
+export async function restaurarVersaoAnteriorVisitante(): Promise<R> {
+  const s = await exigirSuperAdmin();
+  const f = await prisma.fichaEmpresa.findUnique({ where: { superAdminId: s.usuario.id }, select: { orientacoesVisitante: true, orientacoesVisitanteAnterior: true } });
+  if (!f?.orientacoesVisitanteAnterior.trim()) return { ok: false, mensagem: "Não há versão anterior guardada." };
+  await prisma.fichaEmpresa.update({ where: { superAdminId: s.usuario.id }, data: { orientacoesVisitante: f.orientacoesVisitanteAnterior, orientacoesVisitanteAnterior: f.orientacoesVisitante } });
+  revalidatePath("/empresa-ia");
+  return { ok: true, mensagem: `Versão anterior restaurada (${f.orientacoesVisitanteAnterior.trim().length.toLocaleString("pt-BR")} caracteres).` };
 }
 
 export type TesteVisitante = { ok: true; resposta: string; vaiParaAtendente: boolean; temperatura: string; usando: { script: number; material: number; planos: number; promocoes: number } } | { ok: false; mensagem: string };

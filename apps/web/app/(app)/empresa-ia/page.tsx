@@ -56,7 +56,7 @@ export default async function EmpresaIAPage() {
       )}
       {/* Script do Fale conosco (decisão #178): só o Super Admin */}
       {a.u.cargo === Cargo.SUPERADMIN && (
-        <OrientacoesVisitante inicial={f.orientacoesVisitante} sugestao={SUGESTAO_ORIENTACOES_VISITANTE} max={MAX_ORIENTACOES_VISITANTE} />
+        <OrientacoesVisitante inicial={f.orientacoesVisitante} anterior={f.orientacoesVisitanteAnterior} sugestao={SUGESTAO_ORIENTACOES_VISITANTE} max={MAX_ORIENTACOES_VISITANTE} />
       )}
     </section>
   );
